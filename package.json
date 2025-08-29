@@ -1,0 +1,10 @@
+{
+  "name": "Battle-Square",
+  "uuid": "bc6d0bd6-9a3c-4896-b9fa-b2b4aa12a0c3",
+  "creator": {
+    "version": "3.8.6"
+  },
+  "dependencies": {
+    "inversify": "^7.10.0"
+  }
+}

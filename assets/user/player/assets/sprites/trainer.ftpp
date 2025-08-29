@@ -1,0 +1,516 @@
+{
+  "meta": {
+    "version": "0.6.7"
+  },
+  "savePath": "/Users/andersonfernandes/Battle-Square/assets/modules/player/assets/sprites",
+  "images": [
+    {
+      "name": "0.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/0.png",
+      "folder": ""
+    },
+    {
+      "name": "1.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/1.png",
+      "folder": ""
+    },
+    {
+      "name": "2.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/2.png",
+      "folder": ""
+    },
+    {
+      "name": "3.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/3.png",
+      "folder": ""
+    },
+    {
+      "name": "4.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/4.png",
+      "folder": ""
+    },
+    {
+      "name": "5.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/5.png",
+      "folder": ""
+    },
+    {
+      "name": "6.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/6.png",
+      "folder": ""
+    },
+    {
+      "name": "7.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/7.png",
+      "folder": ""
+    },
+    {
+      "name": "8.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/8.png",
+      "folder": ""
+    },
+    {
+      "name": "9.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/9.png",
+      "folder": ""
+    },
+    {
+      "name": "10.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/10.png",
+      "folder": ""
+    },
+    {
+      "name": "11.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/11.png",
+      "folder": ""
+    },
+    {
+      "name": "12.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/12.png",
+      "folder": ""
+    },
+    {
+      "name": "13.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/13.png",
+      "folder": ""
+    },
+    {
+      "name": "14.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/14.png",
+      "folder": ""
+    },
+    {
+      "name": "15.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/15.png",
+      "folder": ""
+    },
+    {
+      "name": "16.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/16.png",
+      "folder": ""
+    },
+    {
+      "name": "17.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/17.png",
+      "folder": ""
+    },
+    {
+      "name": "18.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/18.png",
+      "folder": ""
+    },
+    {
+      "name": "19.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/19.png",
+      "folder": ""
+    },
+    {
+      "name": "20.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/20.png",
+      "folder": ""
+    },
+    {
+      "name": "21.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/21.png",
+      "folder": ""
+    },
+    {
+      "name": "22.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/22.png",
+      "folder": ""
+    },
+    {
+      "name": "23.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/23.png",
+      "folder": ""
+    },
+    {
+      "name": "24.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/24.png",
+      "folder": ""
+    },
+    {
+      "name": "25.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/25.png",
+      "folder": ""
+    },
+    {
+      "name": "26.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/26.png",
+      "folder": ""
+    },
+    {
+      "name": "27.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/27.png",
+      "folder": ""
+    },
+    {
+      "name": "28.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/28.png",
+      "folder": ""
+    },
+    {
+      "name": "29.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/29.png",
+      "folder": ""
+    },
+    {
+      "name": "30.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/30.png",
+      "folder": ""
+    },
+    {
+      "name": "31.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/31.png",
+      "folder": ""
+    },
+    {
+      "name": "32.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/32.png",
+      "folder": ""
+    },
+    {
+      "name": "33.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/33.png",
+      "folder": ""
+    },
+    {
+      "name": "34.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/34.png",
+      "folder": ""
+    },
+    {
+      "name": "35.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/35.png",
+      "folder": ""
+    },
+    {
+      "name": "36.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/36.png",
+      "folder": ""
+    },
+    {
+      "name": "37.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/37.png",
+      "folder": ""
+    },
+    {
+      "name": "38.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/38.png",
+      "folder": ""
+    },
+    {
+      "name": "39.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/39.png",
+      "folder": ""
+    },
+    {
+      "name": "40.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/40.png",
+      "folder": ""
+    },
+    {
+      "name": "41.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/41.png",
+      "folder": ""
+    },
+    {
+      "name": "42.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/42.png",
+      "folder": ""
+    },
+    {
+      "name": "43.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/43.png",
+      "folder": ""
+    },
+    {
+      "name": "44.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/44.png",
+      "folder": ""
+    },
+    {
+      "name": "45.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/45.png",
+      "folder": ""
+    },
+    {
+      "name": "46.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/46.png",
+      "folder": ""
+    },
+    {
+      "name": "47.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/47.png",
+      "folder": ""
+    },
+    {
+      "name": "48.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/48.png",
+      "folder": ""
+    },
+    {
+      "name": "49.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/49.png",
+      "folder": ""
+    },
+    {
+      "name": "50.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/50.png",
+      "folder": ""
+    },
+    {
+      "name": "51.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/51.png",
+      "folder": ""
+    },
+    {
+      "name": "52.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/52.png",
+      "folder": ""
+    },
+    {
+      "name": "53.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/53.png",
+      "folder": ""
+    },
+    {
+      "name": "54.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/54.png",
+      "folder": ""
+    },
+    {
+      "name": "55.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/55.png",
+      "folder": ""
+    },
+    {
+      "name": "56.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/56.png",
+      "folder": ""
+    },
+    {
+      "name": "57.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/57.png",
+      "folder": ""
+    },
+    {
+      "name": "58.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/58.png",
+      "folder": ""
+    },
+    {
+      "name": "59.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/59.png",
+      "folder": ""
+    },
+    {
+      "name": "60.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/60.png",
+      "folder": ""
+    },
+    {
+      "name": "61.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/61.png",
+      "folder": ""
+    },
+    {
+      "name": "62.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/62.png",
+      "folder": ""
+    },
+    {
+      "name": "63.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/63.png",
+      "folder": ""
+    },
+    {
+      "name": "64.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/64.png",
+      "folder": ""
+    },
+    {
+      "name": "65.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/65.png",
+      "folder": ""
+    },
+    {
+      "name": "66.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/66.png",
+      "folder": ""
+    },
+    {
+      "name": "67.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/67.png",
+      "folder": ""
+    },
+    {
+      "name": "68.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/68.png",
+      "folder": ""
+    },
+    {
+      "name": "69.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/69.png",
+      "folder": ""
+    },
+    {
+      "name": "70.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/70.png",
+      "folder": ""
+    },
+    {
+      "name": "71.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/71.png",
+      "folder": ""
+    },
+    {
+      "name": "72.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/72.png",
+      "folder": ""
+    },
+    {
+      "name": "73.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/73.png",
+      "folder": ""
+    },
+    {
+      "name": "74.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/74.png",
+      "folder": ""
+    },
+    {
+      "name": "75.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/75.png",
+      "folder": ""
+    },
+    {
+      "name": "76.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/76.png",
+      "folder": ""
+    },
+    {
+      "name": "77.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/77.png",
+      "folder": ""
+    },
+    {
+      "name": "78.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/78.png",
+      "folder": ""
+    },
+    {
+      "name": "79.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/79.png",
+      "folder": ""
+    },
+    {
+      "name": "80.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/80.png",
+      "folder": ""
+    },
+    {
+      "name": "81.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/81.png",
+      "folder": ""
+    },
+    {
+      "name": "82.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/82.png",
+      "folder": ""
+    },
+    {
+      "name": "83.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/83.png",
+      "folder": ""
+    },
+    {
+      "name": "84.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/84.png",
+      "folder": ""
+    },
+    {
+      "name": "85.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/85.png",
+      "folder": ""
+    },
+    {
+      "name": "86.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/86.png",
+      "folder": ""
+    },
+    {
+      "name": "87.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/87.png",
+      "folder": ""
+    },
+    {
+      "name": "88.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/88.png",
+      "folder": ""
+    },
+    {
+      "name": "89.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/89.png",
+      "folder": ""
+    },
+    {
+      "name": "90.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/90.png",
+      "folder": ""
+    },
+    {
+      "name": "91.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/91.png",
+      "folder": ""
+    },
+    {
+      "name": "92.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/92.png",
+      "folder": ""
+    },
+    {
+      "name": "93.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/93.png",
+      "folder": ""
+    },
+    {
+      "name": "94.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/94.png",
+      "folder": ""
+    },
+    {
+      "name": "95.png",
+      "path": "/Users/andersonfernandes/Downloads/character (1)/95.png",
+      "folder": ""
+    }
+  ],
+  "folders": [],
+  "packOptions": {
+    "textureName": "trainer",
+    "textureFormat": "png",
+    "removeFileExtension": false,
+    "prependFolderName": true,
+    "base64Export": false,
+    "tinify": false,
+    "tinifyKey": "",
+    "scale": 1,
+    "filter": "none",
+    "exporter": "cocos2d",
+    "fileName": "pack-result",
+    "savePath": "/Users/andersonfernandes/Battle-Square/assets/modules/player/assets/sprites",
+    "width": 2048,
+    "height": 2048,
+    "fixedSize": false,
+    "powerOfTwo": false,
+    "padding": 0,
+    "extrude": 0,
+    "allowRotation": true,
+    "allowTrim": true,
+    "trimMode": "trim",
+    "alphaThreshold": "0",
+    "detectIdentical": true,
+    "packer": "MaxRectsBin",
+    "packerMethod": "BestShortSideFit"
+  }
+}

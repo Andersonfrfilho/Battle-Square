@@ -1,0 +1,76 @@
+{
+  "meta": {
+    "version": "0.6.7"
+  },
+  "savePath": "/Users/andersonfernandes/Battle-Square/assets/modules/control/assets/sprites",
+  "images": [
+    {
+      "name": "arrow-down.png",
+      "path": "/Users/andersonfernandes/Battle-Square/assets/modules/control/assets/sprites/arrow-down.png",
+      "folder": ""
+    },
+    {
+      "name": "arrow-left-down.png",
+      "path": "/Users/andersonfernandes/Battle-Square/assets/modules/control/assets/sprites/arrow-left-down.png",
+      "folder": ""
+    },
+    {
+      "name": "arrow-left-up.png",
+      "path": "/Users/andersonfernandes/Battle-Square/assets/modules/control/assets/sprites/arrow-left-up.png",
+      "folder": ""
+    },
+    {
+      "name": "arrow-left.png",
+      "path": "/Users/andersonfernandes/Battle-Square/assets/modules/control/assets/sprites/arrow-left.png",
+      "folder": ""
+    },
+    {
+      "name": "arrow-right-down.png",
+      "path": "/Users/andersonfernandes/Battle-Square/assets/modules/control/assets/sprites/arrow-right-down.png",
+      "folder": ""
+    },
+    {
+      "name": "arrow-right-up.png",
+      "path": "/Users/andersonfernandes/Battle-Square/assets/modules/control/assets/sprites/arrow-right-up.png",
+      "folder": ""
+    },
+    {
+      "name": "arrow-right.png",
+      "path": "/Users/andersonfernandes/Battle-Square/assets/modules/control/assets/sprites/arrow-right.png",
+      "folder": ""
+    },
+    {
+      "name": "arrow-up.png",
+      "path": "/Users/andersonfernandes/Battle-Square/assets/modules/control/assets/sprites/arrow-up.png",
+      "folder": ""
+    }
+  ],
+  "folders": [],
+  "packOptions": {
+    "textureName": "arrows",
+    "textureFormat": "png",
+    "removeFileExtension": false,
+    "prependFolderName": true,
+    "base64Export": false,
+    "tinify": false,
+    "tinifyKey": "",
+    "scale": 1,
+    "filter": "none",
+    "exporter": "cocos2d",
+    "fileName": "pack-result",
+    "savePath": "/Users/andersonfernandes/Battle-Square/assets/modules/control/assets/sprites",
+    "width": 2048,
+    "height": 2048,
+    "fixedSize": false,
+    "powerOfTwo": false,
+    "padding": 0,
+    "extrude": 0,
+    "allowRotation": true,
+    "allowTrim": true,
+    "trimMode": "trim",
+    "alphaThreshold": "0",
+    "detectIdentical": true,
+    "packer": "MaxRectsBin",
+    "packerMethod": "BestShortSideFit"
+  }
+}

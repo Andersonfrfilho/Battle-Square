@@ -1,0 +1,996 @@
+{
+  "meta": {
+    "version": "0.6.7"
+  },
+  "savePath": "/Users/andersonfernandes/Battle-Square/assets/modules/player/assets/sprites",
+  "images": [
+    {
+      "name": "0.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/0.png",
+      "folder": ""
+    },
+    {
+      "name": "1.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/1.png",
+      "folder": ""
+    },
+    {
+      "name": "2.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/2.png",
+      "folder": ""
+    },
+    {
+      "name": "3.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/3.png",
+      "folder": ""
+    },
+    {
+      "name": "4.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/4.png",
+      "folder": ""
+    },
+    {
+      "name": "5.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/5.png",
+      "folder": ""
+    },
+    {
+      "name": "6.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/6.png",
+      "folder": ""
+    },
+    {
+      "name": "7.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/7.png",
+      "folder": ""
+    },
+    {
+      "name": "8.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/8.png",
+      "folder": ""
+    },
+    {
+      "name": "9.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/9.png",
+      "folder": ""
+    },
+    {
+      "name": "10.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/10.png",
+      "folder": ""
+    },
+    {
+      "name": "11.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/11.png",
+      "folder": ""
+    },
+    {
+      "name": "12.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/12.png",
+      "folder": ""
+    },
+    {
+      "name": "13.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/13.png",
+      "folder": ""
+    },
+    {
+      "name": "14.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/14.png",
+      "folder": ""
+    },
+    {
+      "name": "15.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/15.png",
+      "folder": ""
+    },
+    {
+      "name": "16.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/16.png",
+      "folder": ""
+    },
+    {
+      "name": "17.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/17.png",
+      "folder": ""
+    },
+    {
+      "name": "18.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/18.png",
+      "folder": ""
+    },
+    {
+      "name": "19.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/19.png",
+      "folder": ""
+    },
+    {
+      "name": "20.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/20.png",
+      "folder": ""
+    },
+    {
+      "name": "21.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/21.png",
+      "folder": ""
+    },
+    {
+      "name": "22.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/22.png",
+      "folder": ""
+    },
+    {
+      "name": "23.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/23.png",
+      "folder": ""
+    },
+    {
+      "name": "24.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/24.png",
+      "folder": ""
+    },
+    {
+      "name": "25.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/25.png",
+      "folder": ""
+    },
+    {
+      "name": "26.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/26.png",
+      "folder": ""
+    },
+    {
+      "name": "27.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/27.png",
+      "folder": ""
+    },
+    {
+      "name": "28.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/28.png",
+      "folder": ""
+    },
+    {
+      "name": "29.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/29.png",
+      "folder": ""
+    },
+    {
+      "name": "30.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/30.png",
+      "folder": ""
+    },
+    {
+      "name": "31.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/31.png",
+      "folder": ""
+    },
+    {
+      "name": "32.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/32.png",
+      "folder": ""
+    },
+    {
+      "name": "33.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/33.png",
+      "folder": ""
+    },
+    {
+      "name": "34.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/34.png",
+      "folder": ""
+    },
+    {
+      "name": "35.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/35.png",
+      "folder": ""
+    },
+    {
+      "name": "36.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/36.png",
+      "folder": ""
+    },
+    {
+      "name": "37.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/37.png",
+      "folder": ""
+    },
+    {
+      "name": "38.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/38.png",
+      "folder": ""
+    },
+    {
+      "name": "39.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/39.png",
+      "folder": ""
+    },
+    {
+      "name": "40.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/40.png",
+      "folder": ""
+    },
+    {
+      "name": "41.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/41.png",
+      "folder": ""
+    },
+    {
+      "name": "42.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/42.png",
+      "folder": ""
+    },
+    {
+      "name": "43.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/43.png",
+      "folder": ""
+    },
+    {
+      "name": "44.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/44.png",
+      "folder": ""
+    },
+    {
+      "name": "45.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/45.png",
+      "folder": ""
+    },
+    {
+      "name": "46.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/46.png",
+      "folder": ""
+    },
+    {
+      "name": "47.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/47.png",
+      "folder": ""
+    },
+    {
+      "name": "48.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/48.png",
+      "folder": ""
+    },
+    {
+      "name": "49.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/49.png",
+      "folder": ""
+    },
+    {
+      "name": "50.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/50.png",
+      "folder": ""
+    },
+    {
+      "name": "51.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/51.png",
+      "folder": ""
+    },
+    {
+      "name": "52.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/52.png",
+      "folder": ""
+    },
+    {
+      "name": "53.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/53.png",
+      "folder": ""
+    },
+    {
+      "name": "54.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/54.png",
+      "folder": ""
+    },
+    {
+      "name": "55.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/55.png",
+      "folder": ""
+    },
+    {
+      "name": "56.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/56.png",
+      "folder": ""
+    },
+    {
+      "name": "57.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/57.png",
+      "folder": ""
+    },
+    {
+      "name": "58.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/58.png",
+      "folder": ""
+    },
+    {
+      "name": "59.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/59.png",
+      "folder": ""
+    },
+    {
+      "name": "60.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/60.png",
+      "folder": ""
+    },
+    {
+      "name": "61.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/61.png",
+      "folder": ""
+    },
+    {
+      "name": "62.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/62.png",
+      "folder": ""
+    },
+    {
+      "name": "63.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/63.png",
+      "folder": ""
+    },
+    {
+      "name": "64.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/64.png",
+      "folder": ""
+    },
+    {
+      "name": "65.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/65.png",
+      "folder": ""
+    },
+    {
+      "name": "66.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/66.png",
+      "folder": ""
+    },
+    {
+      "name": "67.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/67.png",
+      "folder": ""
+    },
+    {
+      "name": "68.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/68.png",
+      "folder": ""
+    },
+    {
+      "name": "69.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/69.png",
+      "folder": ""
+    },
+    {
+      "name": "70.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/70.png",
+      "folder": ""
+    },
+    {
+      "name": "71.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/71.png",
+      "folder": ""
+    },
+    {
+      "name": "72.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/72.png",
+      "folder": ""
+    },
+    {
+      "name": "73.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/73.png",
+      "folder": ""
+    },
+    {
+      "name": "74.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/74.png",
+      "folder": ""
+    },
+    {
+      "name": "75.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/75.png",
+      "folder": ""
+    },
+    {
+      "name": "76.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/76.png",
+      "folder": ""
+    },
+    {
+      "name": "77.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/77.png",
+      "folder": ""
+    },
+    {
+      "name": "78.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/78.png",
+      "folder": ""
+    },
+    {
+      "name": "79.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/79.png",
+      "folder": ""
+    },
+    {
+      "name": "80.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/80.png",
+      "folder": ""
+    },
+    {
+      "name": "81.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/81.png",
+      "folder": ""
+    },
+    {
+      "name": "82.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/82.png",
+      "folder": ""
+    },
+    {
+      "name": "83.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/83.png",
+      "folder": ""
+    },
+    {
+      "name": "84.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/84.png",
+      "folder": ""
+    },
+    {
+      "name": "85.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/85.png",
+      "folder": ""
+    },
+    {
+      "name": "86.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/86.png",
+      "folder": ""
+    },
+    {
+      "name": "87.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/87.png",
+      "folder": ""
+    },
+    {
+      "name": "88.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/88.png",
+      "folder": ""
+    },
+    {
+      "name": "89.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/89.png",
+      "folder": ""
+    },
+    {
+      "name": "90.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/90.png",
+      "folder": ""
+    },
+    {
+      "name": "91.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/91.png",
+      "folder": ""
+    },
+    {
+      "name": "92.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/92.png",
+      "folder": ""
+    },
+    {
+      "name": "93.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/93.png",
+      "folder": ""
+    },
+    {
+      "name": "94.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/94.png",
+      "folder": ""
+    },
+    {
+      "name": "95.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/95.png",
+      "folder": ""
+    },
+    {
+      "name": "96.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/96.png",
+      "folder": ""
+    },
+    {
+      "name": "97.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/97.png",
+      "folder": ""
+    },
+    {
+      "name": "98.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/98.png",
+      "folder": ""
+    },
+    {
+      "name": "99.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/99.png",
+      "folder": ""
+    },
+    {
+      "name": "100.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/100.png",
+      "folder": ""
+    },
+    {
+      "name": "101.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/101.png",
+      "folder": ""
+    },
+    {
+      "name": "102.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/102.png",
+      "folder": ""
+    },
+    {
+      "name": "103.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/103.png",
+      "folder": ""
+    },
+    {
+      "name": "104.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/104.png",
+      "folder": ""
+    },
+    {
+      "name": "105.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/105.png",
+      "folder": ""
+    },
+    {
+      "name": "106.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/106.png",
+      "folder": ""
+    },
+    {
+      "name": "107.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/107.png",
+      "folder": ""
+    },
+    {
+      "name": "108.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/108.png",
+      "folder": ""
+    },
+    {
+      "name": "109.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/109.png",
+      "folder": ""
+    },
+    {
+      "name": "110.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/110.png",
+      "folder": ""
+    },
+    {
+      "name": "111.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/111.png",
+      "folder": ""
+    },
+    {
+      "name": "112.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/112.png",
+      "folder": ""
+    },
+    {
+      "name": "113.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/113.png",
+      "folder": ""
+    },
+    {
+      "name": "114.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/114.png",
+      "folder": ""
+    },
+    {
+      "name": "115.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/115.png",
+      "folder": ""
+    },
+    {
+      "name": "116.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/116.png",
+      "folder": ""
+    },
+    {
+      "name": "117.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/117.png",
+      "folder": ""
+    },
+    {
+      "name": "118.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/118.png",
+      "folder": ""
+    },
+    {
+      "name": "119.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/119.png",
+      "folder": ""
+    },
+    {
+      "name": "120.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/120.png",
+      "folder": ""
+    },
+    {
+      "name": "121.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/121.png",
+      "folder": ""
+    },
+    {
+      "name": "122.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/122.png",
+      "folder": ""
+    },
+    {
+      "name": "123.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/123.png",
+      "folder": ""
+    },
+    {
+      "name": "124.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/124.png",
+      "folder": ""
+    },
+    {
+      "name": "125.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/125.png",
+      "folder": ""
+    },
+    {
+      "name": "126.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/126.png",
+      "folder": ""
+    },
+    {
+      "name": "127.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/127.png",
+      "folder": ""
+    },
+    {
+      "name": "128.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/128.png",
+      "folder": ""
+    },
+    {
+      "name": "129.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/129.png",
+      "folder": ""
+    },
+    {
+      "name": "130.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/130.png",
+      "folder": ""
+    },
+    {
+      "name": "131.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/131.png",
+      "folder": ""
+    },
+    {
+      "name": "132.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/132.png",
+      "folder": ""
+    },
+    {
+      "name": "133.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/133.png",
+      "folder": ""
+    },
+    {
+      "name": "134.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/134.png",
+      "folder": ""
+    },
+    {
+      "name": "135.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/135.png",
+      "folder": ""
+    },
+    {
+      "name": "136.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/136.png",
+      "folder": ""
+    },
+    {
+      "name": "137.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/137.png",
+      "folder": ""
+    },
+    {
+      "name": "138.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/138.png",
+      "folder": ""
+    },
+    {
+      "name": "139.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/139.png",
+      "folder": ""
+    },
+    {
+      "name": "140.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/140.png",
+      "folder": ""
+    },
+    {
+      "name": "141.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/141.png",
+      "folder": ""
+    },
+    {
+      "name": "142.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/142.png",
+      "folder": ""
+    },
+    {
+      "name": "143.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/143.png",
+      "folder": ""
+    },
+    {
+      "name": "144.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/144.png",
+      "folder": ""
+    },
+    {
+      "name": "145.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/145.png",
+      "folder": ""
+    },
+    {
+      "name": "146.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/146.png",
+      "folder": ""
+    },
+    {
+      "name": "147.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/147.png",
+      "folder": ""
+    },
+    {
+      "name": "148.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/148.png",
+      "folder": ""
+    },
+    {
+      "name": "149.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/149.png",
+      "folder": ""
+    },
+    {
+      "name": "150.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/150.png",
+      "folder": ""
+    },
+    {
+      "name": "151.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/151.png",
+      "folder": ""
+    },
+    {
+      "name": "152.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/152.png",
+      "folder": ""
+    },
+    {
+      "name": "153.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/153.png",
+      "folder": ""
+    },
+    {
+      "name": "154.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/154.png",
+      "folder": ""
+    },
+    {
+      "name": "155.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/155.png",
+      "folder": ""
+    },
+    {
+      "name": "156.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/156.png",
+      "folder": ""
+    },
+    {
+      "name": "157.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/157.png",
+      "folder": ""
+    },
+    {
+      "name": "158.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/158.png",
+      "folder": ""
+    },
+    {
+      "name": "159.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/159.png",
+      "folder": ""
+    },
+    {
+      "name": "160.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/160.png",
+      "folder": ""
+    },
+    {
+      "name": "161.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/161.png",
+      "folder": ""
+    },
+    {
+      "name": "162.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/162.png",
+      "folder": ""
+    },
+    {
+      "name": "163.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/163.png",
+      "folder": ""
+    },
+    {
+      "name": "164.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/164.png",
+      "folder": ""
+    },
+    {
+      "name": "165.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/165.png",
+      "folder": ""
+    },
+    {
+      "name": "166.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/166.png",
+      "folder": ""
+    },
+    {
+      "name": "167.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/167.png",
+      "folder": ""
+    },
+    {
+      "name": "168.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/168.png",
+      "folder": ""
+    },
+    {
+      "name": "169.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/169.png",
+      "folder": ""
+    },
+    {
+      "name": "170.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/170.png",
+      "folder": ""
+    },
+    {
+      "name": "171.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/171.png",
+      "folder": ""
+    },
+    {
+      "name": "172.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/172.png",
+      "folder": ""
+    },
+    {
+      "name": "173.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/173.png",
+      "folder": ""
+    },
+    {
+      "name": "174.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/174.png",
+      "folder": ""
+    },
+    {
+      "name": "175.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/175.png",
+      "folder": ""
+    },
+    {
+      "name": "176.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/176.png",
+      "folder": ""
+    },
+    {
+      "name": "177.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/177.png",
+      "folder": ""
+    },
+    {
+      "name": "178.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/178.png",
+      "folder": ""
+    },
+    {
+      "name": "179.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/179.png",
+      "folder": ""
+    },
+    {
+      "name": "180.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/180.png",
+      "folder": ""
+    },
+    {
+      "name": "181.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/181.png",
+      "folder": ""
+    },
+    {
+      "name": "182.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/182.png",
+      "folder": ""
+    },
+    {
+      "name": "183.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/183.png",
+      "folder": ""
+    },
+    {
+      "name": "184.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/184.png",
+      "folder": ""
+    },
+    {
+      "name": "185.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/185.png",
+      "folder": ""
+    },
+    {
+      "name": "186.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/186.png",
+      "folder": ""
+    },
+    {
+      "name": "187.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/187.png",
+      "folder": ""
+    },
+    {
+      "name": "188.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/188.png",
+      "folder": ""
+    },
+    {
+      "name": "189.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/189.png",
+      "folder": ""
+    },
+    {
+      "name": "190.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/190.png",
+      "folder": ""
+    },
+    {
+      "name": "191.png",
+      "path": "/Users/andersonfernandes/Downloads/soldier/191.png",
+      "folder": ""
+    }
+  ],
+  "folders": [],
+  "packOptions": {
+    "textureName": "warrior",
+    "textureFormat": "png",
+    "removeFileExtension": false,
+    "prependFolderName": true,
+    "base64Export": false,
+    "tinify": false,
+    "tinifyKey": "",
+    "scale": 1,
+    "filter": "none",
+    "exporter": "cocos2d",
+    "fileName": "pack-result",
+    "savePath": "/Users/andersonfernandes/Battle-Square/assets/modules/player/assets/sprites",
+    "width": 2048,
+    "height": 2048,
+    "fixedSize": false,
+    "powerOfTwo": false,
+    "padding": 0,
+    "extrude": 0,
+    "allowRotation": true,
+    "allowTrim": true,
+    "trimMode": "trim",
+    "alphaThreshold": "0",
+    "detectIdentical": true,
+    "packer": "MaxRectsBin",
+    "packerMethod": "BestShortSideFit"
+  }
+}

@@ -1,10 +1,7 @@
-import { _decorator, Component, Node } from "cc";
 import { Actions } from "../../control/enums/ActionsEnum";
 import { Params } from "./types";
-const { ccclass, property } = _decorator;
 
-@ccclass("Pet")
-export class Pet extends Component {
+export class PetModel {
   private readonly _petName: string;
   private readonly _type: string;
   private readonly _level: number;
@@ -28,7 +25,6 @@ export class Pet extends Component {
     ownerId = "",
     actions = [],
   }: Params) {
-    super();
     this._petName = petName;
     this._type = type;
     this._level = level;
@@ -76,20 +72,56 @@ export class Pet extends Component {
     const index = this._actions.indexOf(undefined as unknown as Actions);
     if (index !== -1) {
       this._actions[index] = actions;
-      this.node.emit("actions-updated", this._actions);
+      this.node.emit("pet-actions-updated", this._actions);
       return;
     }
 
     this._actions.push(actions);
 
-    this.node.emit("actions-updated", this._actions);
+    this.node.emit("pet-actions-updated", this._actions);
   }
 
   public set removeActions(action: Actions) {
     const index = this._actions.indexOf(action);
     if (index !== -1) {
       this._actions.splice(index, 1);
-      this.node.emit("actions-updated", this._actions);
+      this.node.emit("pet-actions-updated", this._actions);
+    }
+  }
+
+  applyActions(actions: Actions[]): void {
+    actions.forEach((action) => {
+      switch (action) {
+        case Actions.ATTACK:
+          console.log(`${this._petName} is attacking!`);
+          break;
+        case Actions.DEFEND:
+          console.log(`${this._petName} is defending!`);
+          break;
+        case Actions.HEAL:
+          console.log(`${this._petName} is healing!`);
+          break;
+        default:
+          console.log(`${this._petName} does nothing.`);
+      }
+    });
+  }
+
+  getDamageFromAction(
+    action: Actions,
+    target: PetModel,
+    targetHpBefore: number
+  ): number {
+    switch (action) {
+      case Actions.ATTACK:
+        const baseDamage = this._attack - target.defense;
+        return Math.max(1, baseDamage); // dano mínimo de 1
+      case Actions.DEFEND:
+        return 0; // não causa dano
+      case Actions.HEAL:
+        return 0; // não causa dano
+      default:
+        return 0; // ação desconhecida não causa dano
     }
   }
 }

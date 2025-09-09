@@ -1,13 +1,13 @@
 import { _decorator, Animation, Component, Node } from "cc";
-import { Player } from "../../enemy/models/Enemy";
 import { MAX_HEALTH, MAX_LEVEL, Movements } from "../constants";
+import { PlayerModel } from "../models/PlayerModel";
 const { ccclass, property } = _decorator;
 
 @ccclass("PlayerView")
 export class PlayerView extends Component {
-  model: Player;
+  model: PlayerModel;
   start() {
-    this.model = new Player({
+    this.model = new PlayerModel({
       name: "Player",
       health: MAX_HEALTH,
       level: MAX_LEVEL,

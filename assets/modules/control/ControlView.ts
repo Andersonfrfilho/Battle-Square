@@ -1,4 +1,4 @@
-import { _decorator, Button, Component, EventMouse, Node, sys } from "cc";
+import { _decorator, Component, EventMouse, Node, sys } from "cc";
 import { ActionsControls } from "./ControlEnum";
 import { BUTTON_NAMES, NUMBER_ACTIONS_ENABLE } from "./constant";
 const { ccclass, property } = _decorator;
@@ -73,5 +73,8 @@ export class ControlView extends Component {
         // newButton.setPosition(196.008, 9.562);
       }
     }
+  }
+  getComponent(): this | null {
+    return this;
   }
 }

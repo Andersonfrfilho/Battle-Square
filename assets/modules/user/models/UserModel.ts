@@ -3,7 +3,7 @@ interface UserProps {
   level: number;
   health: number;
 }
-export class User {
+export class UserModel {
   name: string;
   level: number;
   health: number;

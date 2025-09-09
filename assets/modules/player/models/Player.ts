@@ -1,3 +1,0 @@
-import { User } from "../../user/models/User";
-
-export class Payer extends User {}

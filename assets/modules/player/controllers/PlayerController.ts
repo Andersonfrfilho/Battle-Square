@@ -1,10 +1,10 @@
 import { _decorator, Component, Node } from "cc";
 import { PlayerView } from "../views/PlayerView";
-import { Player } from "../../enemy/models/Enemy";
+import { EnemyModel } from "../../enemy/models/EnemyModel";
 const { ccclass, property } = _decorator;
 
 export class PlayerController {
-  constructor(private view: PlayerView, private model: Player) {}
+  constructor(private view: PlayerView, private model: EnemyModel) {}
   handleInput(action: string) {
     if (action === "up" || action === "down") {
       this.view.move(action);

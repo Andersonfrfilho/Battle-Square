@@ -1,8 +1,9 @@
-import { _decorator, Component, Node } from "cc";
+import { _decorator, Component } from "cc";
 import { PlayerController } from "../player/controllers/PlayerController";
-import { Player } from "../enemy/models/Enemy";
 import { PlayerView } from "../player/views/PlayerView";
-const { ccclass, property } = _decorator;
+import { PlayerModel } from "../player/models/PlayerModel";
+import { PetModel } from "../pets/models/PetModel";
+const { ccclass } = _decorator;
 
 @ccclass("ArenaView")
 export class ArenaView extends Component {
@@ -11,10 +12,9 @@ export class ArenaView extends Component {
     const playerView = this.node
       .getChildByName("Trainer")
       ?.getComponent(PlayerView)!;
-    const playerModel = new Player({
+    const playerModel = new PlayerModel({
       name: "Player",
-      health: 100,
-      level: 1,
+      pets: [],
     });
     this.playerController = new PlayerController(playerView, playerModel);
 
@@ -29,4 +29,18 @@ export class ArenaView extends Component {
   }
 
   update(deltaTime: number) {}
+
+  updatePet(pet: PetModel) {
+    // aqui você pode atualizar barras de vida, sprites, animações etc.
+    console.log(`Atualizando ${pet.getName} => HP: ${pet.health}/${pet.maxHp}`);
+
+    // Exemplo: se tiver uma barra de vida ligada ao pet
+    // const hpPercent = (pet.hp / pet.maxHp) * 100;
+    // pet.nodeHealthBar.width = hpPercent;
+  }
+
+  showResult(message: string) {
+    console.log("Resultado:", message);
+    // poderia mostrar uma tela de vitória/empate na UI
+  }
 }

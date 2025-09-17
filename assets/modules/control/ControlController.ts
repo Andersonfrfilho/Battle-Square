@@ -1,36 +1,49 @@
-import { ControlModel } from "./ControlModel";
-import { ControlView } from "./ControlView";
+import { GameController } from "../../shared/GameController";
+import { EnemyModel } from "../enemy/models/EnemyModel";
+import { PlayerModel } from "../player/models/PlayerModel";
+import { AddActionToActivePetProps } from "./types";
 
 export class ControlController {
-  private model = new ControlModel();
-  private view!: ControlView;
+  private readonly player: PlayerModel;
+  private readonly playerIndex: number = 0;
+  private readonly enemy: EnemyModel;
+  private readonly enemyIndex: number = 0;
+  private petChoiceIndexPlayer: number = 0;
+  private petChoiceIndexEnemy: number = 0;
 
-  onLoad() {
-    this.view = this.getComponent(ControlView)!;
-    this.view.node.on("control-input", this.onControlInput, this);
+  constructor() {
+    this.player = GameController.instance.players[this.playerIndex];
+    this.enemy = GameController.instance.enemies[this.enemyIndex];
   }
 
-  private onControlInput(direction: string) {
-    switch (direction) {
-      case "arrow-up":
-        this.model.setDirection(0, 1);
-        break;
-      case "arrow-down":
-        this.model.setDirection(0, -1);
-        break;
-      case "arrow-left":
-        this.model.setDirection(-1, 0);
-        break;
-      case "arrow-right":
-        this.model.setDirection(1, 0);
-        break;
-      case "stop":
-        this.model.setDirection(0, 0);
-        break;
+  addActionToActivePet(action: AddActionToActivePetProps): number {
+    if (!this.player.pets[this.petChoiceIndexPlayer]) return;
+    const added = this.player.pets[this.petChoiceIndexPlayer].addAction(action);
+    if (!added) {
+      console.warn("Pet já atingiu o limite de ações!");
+    } else {
+      console.log(
+        "Ação adicionada ao Pet:",
+        this.player.pets[this.petChoiceIndexPlayer].name,
+        "Ações atuais:",
+        this.player.pets[this.petChoiceIndexPlayer].actions
+      );
     }
+    return this.player.pets[this.petChoiceIndexPlayer].actions.length;
   }
 
-  getControlState() {
-    return this.model;
+  applyActionsPets() {
+    if (!this.player.pets[this.petChoiceIndexPlayer]) return;
+
+    this.player.pets[this.petChoiceIndexPlayer].actions.forEach((action) => {
+      this.player.pets[this.petChoiceIndexPlayer].applyAction();
+      this.enemy.pets[this.petChoiceIndexEnemy].applyAction();
+    });
+    this.resetActionsPets();
+  }
+
+  resetActionsPets() {
+    if (!this.player.pets[this.petChoiceIndexPlayer]) return;
+    this.player.pets[this.petChoiceIndexPlayer].clearActions();
   }
 }

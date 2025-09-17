@@ -32,7 +32,7 @@ export class ArenaView extends Component {
 
   updatePet(pet: PetModel) {
     // aqui você pode atualizar barras de vida, sprites, animações etc.
-    console.log(`Atualizando ${pet.getName} => HP: ${pet.health}/${pet.maxHp}`);
+    console.log(`Atualizando ${pet.name} => HP: ${pet.health}/${pet.health}`);
 
     // Exemplo: se tiver uma barra de vida ligada ao pet
     // const hpPercent = (pet.hp / pet.maxHp) * 100;

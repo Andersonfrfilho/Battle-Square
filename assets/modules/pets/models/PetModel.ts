@@ -1,8 +1,15 @@
-import { Actions } from "../../control/enums/ActionsEnum";
-import { Params } from "./types";
+import { MAX_ACTIONS_BY_PET } from "../../commons/constants";
+import { ActionsControls } from "../../control/ControlEnum";
+import {
+  ActionsPet,
+  AddActionProps,
+  Params,
+  RemoveActionsProps,
+} from "./types";
 
+export type Position = { x: number; y: number };
 export class PetModel {
-  private readonly _petName: string;
+  private readonly _name: string;
   private readonly _type: string;
   private readonly _level: number;
   private readonly _health: number;
@@ -11,10 +18,14 @@ export class PetModel {
   private readonly _speed: number;
   private readonly _experience: number;
   private readonly _ownerId: string;
-  private readonly _actions: Actions[];
+  private readonly _actions: ActionsPet;
+  private readonly _position: Position;
+  private readonly _width: number = 50;
+  private readonly _height: number = 50;
+  private readonly _weight: number = 1;
 
   constructor({
-    petName,
+    name,
     type,
     level,
     health,
@@ -24,8 +35,12 @@ export class PetModel {
     experience,
     ownerId = "",
     actions = [],
+    position = { x: 0, y: 0 },
+    height = 50,
+    width = 50,
+    weight = 1,
   }: Params) {
-    this._petName = petName;
+    this._name = name;
     this._type = type;
     this._level = level;
     this._health = health;
@@ -35,15 +50,19 @@ export class PetModel {
     this._experience = experience;
     this._ownerId = ownerId;
     this._actions = actions;
+    this._position = position;
+    this._height = height;
+    this._width = width;
+    this._weight = weight;
   }
 
-  public get getName(): string {
-    return this._petName;
+  public get name(): string {
+    return this._name;
   }
-  public get petType(): string {
+  public get type(): string {
     return this._type;
   }
-  public get petLevel(): number {
+  public get level(): number {
     return this._level;
   }
   public get health(): number {
@@ -64,64 +83,124 @@ export class PetModel {
   public get ownerId(): string {
     return this._ownerId;
   }
-  public get actions(): Actions[] {
+  public get actions(): ActionsPet {
     return this._actions;
   }
-
-  public set addActions(actions: Actions) {
-    const index = this._actions.indexOf(undefined as unknown as Actions);
-    if (index !== -1) {
-      this._actions[index] = actions;
-      this.node.emit("pet-actions-updated", this._actions);
-      return;
-    }
-
-    this._actions.push(actions);
-
-    this.node.emit("pet-actions-updated", this._actions);
+  public get position(): Position {
+    return this._position;
+  }
+  public get width(): number {
+    return this._width;
+  }
+  public get height(): number {
+    return this._height;
+  }
+  public get weight(): number {
+    return this._weight;
   }
 
-  public set removeActions(action: Actions) {
+  public set position(position: Position) {
+    this._position.x = position.x;
+    this._position.y = position.y;
+  }
+
+  public addAction(action: AddActionProps): boolean {
+    if (this.limitActions) return false;
+
+    const index = this._actions.indexOf(undefined);
+    if (index !== -1) {
+      this._actions[index] = action;
+      // this.node.emit("pet-actions-updated", this._actions);
+      return true;
+    }
+
+    this._actions.push(action);
+
+    // this.node.emit("pet-actions-updated", this._actions);
+    return true;
+  }
+  public get limitActions(): boolean {
+    return this._actions.length >= MAX_ACTIONS_BY_PET;
+  }
+
+  public set removeActions(action: RemoveActionsProps) {
     const index = this._actions.indexOf(action);
     if (index !== -1) {
       this._actions.splice(index, 1);
-      this.node.emit("pet-actions-updated", this._actions);
+      // this.node.emit("pet-actions-updated", this._actions);
     }
   }
 
-  applyActions(actions: Actions[]): void {
-    actions.forEach((action) => {
-      switch (action) {
-        case Actions.ATTACK:
-          console.log(`${this._petName} is attacking!`);
-          break;
-        case Actions.DEFEND:
-          console.log(`${this._petName} is defending!`);
-          break;
-        case Actions.HEAL:
-          console.log(`${this._petName} is healing!`);
-          break;
-        default:
-          console.log(`${this._petName} does nothing.`);
-      }
+  applyAction(): void {
+    const action = this._actions.shift();
+    if (action) {
+      this.useAction(action);
+    }
+  }
+
+  applyActions(): void {
+    this._actions.forEach((action) => {
+      this.useAction(action!);
     });
   }
+  public clearActions(): void {
+    this._actions.splice(0);
+  }
 
-  getDamageFromAction(
-    action: Actions,
-    target: PetModel,
-    targetHpBefore: number
-  ): number {
+  private useAction(action: ActionsControls): void {
     switch (action) {
-      case Actions.ATTACK:
-        const baseDamage = this._attack - target.defense;
-        return Math.max(1, baseDamage); // dano mínimo de 1
-      case Actions.DEFEND:
-        return 0; // não causa dano
-      case Actions.HEAL:
-        return 0; // não causa dano
+      case ActionsControls.LEFT:
+        console.log(`${this._name} is LEFT!`);
+        break;
+      case ActionsControls.LEFT_DOWN:
+        console.log(`${this._name} is LEFT_DOWN!`);
+        break;
+      case ActionsControls.DOWN:
+        console.log(`${this._name} is DOWN!`);
+        break;
+      case ActionsControls.RIGHT_DOWN:
+        console.log(`${this._name} is RIGHT_DOWN!`);
+        break;
+      case ActionsControls.RIGHT:
+        console.log(`${this._name} is RIGHT!`);
+        break;
+      case ActionsControls.RIGHT_UP:
+        console.log(`${this._name} is RIGHT_UP!`);
+        break;
+      case ActionsControls.UP:
+        console.log(`${this._name} is UP!`);
+        break;
+      case ActionsControls.LEFT_UP:
+        console.log(`${this._name} is LEFT_UP!`);
+        break;
       default:
-        return 0; // ação desconhecida não causa dano
+        console.log(`${this._name} does nothing.`);
     }
   }
+  getBounds() {
+    return {
+      x: this.position.x,
+      y: this.position.y,
+      width: this.width,
+      height: this.height,
+    };
+  }
+
+  // getDamageFromAction(
+  //   action: Actions,
+  //   target: PetModel,
+  //   targetHpBefore: number
+  // ): number {
+  //   switch (action) {
+  //     case Actions.ATTACK:
+  //       const baseDamage = this._attack - target.defense;
+  //       return Math.max(1, baseDamage); // dano mínimo de 1
+  //     case Actions.DEFEND:
+  //       return 0; // não causa dano
+  //     case Actions.HEAL:
+  //       return 0; // não causa dano
+  //     default:
+  //       return 0; // ação desconhecida não causa dano
+  //   }
+  // }
 }

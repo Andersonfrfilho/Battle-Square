@@ -1,3 +1,7 @@
-import { UserModel } from "../../user/models/UserModel";
+import { UserModel, UserProps } from "../../user/models/UserModel";
 
-export class EnemyModel extends UserModel {}
+export class EnemyModel extends UserModel {
+  constructor(param: UserProps) {
+    super(param);
+  }
+}

@@ -1,3 +1,5 @@
+História
+quero desenvolver um jogo de seleção de ações ou seja cada jogador tera 3 ações e seus pets realizaram as ações em um quadrado 3x3 ações incluem direções cima, baixo, esquerda, direita e diagonais ações: esquivas, ataques (tipos), magias (tipos) e defesa. eu tenho bastante experiencia em typescript qual seria a melhor linguagem ou motor de jogos para utilizar para desenvolve-lo ? ele sera multiplayer e futuramente ou desde ja 3d melhor ja seria desenvolver ele em 3d ? Ele tera de ser multiplataformas consoles entre outros. motor de jogos deve ser gratuito e ilimitado
 📂 Estrutura de Projeto Recomendada (Cocos Creator)
 assets/
 ├── core/ # Núcleo do jogo (independente do domínio)
@@ -148,3 +150,15 @@ TiledMap → Só se quiser mapas baseados em tiles.
 SpriteSplash → Apenas para tela inicial.
 
 SpriteRenderer → Normalmente não precisa, prefira Sprite.
+
+/\* FLUXO DE AÇÕES DOS PETS
+
+- PUXA A POSIÇÀO DE CADA PET NA ARENA
+- VERIFICA SE O PET DO PLAYER ESTA NA MESMA POSIÇÃO DO PET INIMIGO
+- SE SIM, AÇÃO DE ATAQUE É APLICADA PARA OS DOIS PETS COM VERIFICACAO DE HABILIDADES
+- SE NÃO, AÇÃO É APLICADA PARA OS DOIS PETS AO MESMO TEMPO
+- VERIFICA SE O PET DO PLAYER ESTA NA MESMA POSIÇÃO DO PET INIMIGO
+- SE SIM, AÇÃO DE ATAQUE É APLICADA PARA OS DOIS PETS COM VERIFICACAO DE HABILIDADES
+- SE NÃO, AÇÃO É APLICADA PARA OS DOIS PETS AO MESMO TEMPO
+  ESSE FLUXO SE REPETE ATÉ QUE TODOS OS PETS TENHAM AÇÕES APLICADAS
+  \*/

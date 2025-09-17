@@ -1,20 +1,26 @@
+import { GameController } from "../../shared/GameController";
+import { PetModel } from "../pets/models/PetModel";
 import { PlayerModel } from "../player/models/PlayerModel";
+import { ArenaModel } from "./ArenaModel";
 import { ArenaView } from "./ArenaView";
 
 interface ArenaControllerParams {
   view: ArenaView;
+  model: ArenaModel;
   players: PlayerModel[];
   enemies: PlayerModel[];
 }
 export class ArenaController {
   private readonly view: ArenaView;
+  private readonly model: ArenaModel;
   private readonly players: PlayerModel[];
   private readonly enemies: PlayerModel[];
 
-  constructor({ view, enemies, players }: ArenaControllerParams) {
+  constructor({ view, enemies, players, model }: ArenaControllerParams) {
+    this.players = GameController.instance.players;
+    this.enemies = GameController.instance.enemies;
     this.view = view;
-    this.enemies = enemies;
-    this.players = players;
+    this.model = new ArenaModel({ blockSize: 64 });
   }
 
   startBattle() {
@@ -58,6 +64,37 @@ export class ArenaController {
       this.view.showResult(`${p1.name} venceu!`);
     } else {
       this.view.showResult("Ninguém caiu ainda, segue a batalha!");
+    }
+  }
+
+  checkCollision(petA: PetModel, petB: PetModel): boolean {
+    const boundsA = petA.getBounds();
+    const boundsB = petB.getBounds();
+
+    return (
+      boundsA.x < boundsB.x + boundsB.width &&
+      boundsA.x + boundsA.width > boundsB.x &&
+      boundsA.y < boundsB.y + boundsB.height &&
+      boundsA.y + boundsA.height > boundsB.y
+    );
+  }
+
+  processActions(pets: PetModel[]): void {
+    for (let i = 0; i < pets.length; i++) {
+      for (let j = i + 1; j < pets.length; j++) {
+        const petA = pets[i];
+        const petB = pets[j];
+
+        if (this.checkCollision(petA, petB)) {
+          // colisão -> aplicar ataque/defesa
+          petA.applyActions(petA.actions);
+          petB.applyActions(petB.actions);
+        } else {
+          // sem colisão -> cada um aplica ação normal
+          petA.applyActions(petA.actions);
+          petB.applyActions(petB.actions);
+        }
+      }
     }
   }
 }

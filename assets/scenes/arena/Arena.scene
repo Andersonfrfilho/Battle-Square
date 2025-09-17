@@ -52,7 +52,7 @@
     },
     "autoReleaseAssets": false,
     "_globals": {
-      "__id__": 62
+      "__id__": 63
     },
     "_id": "3e7f71e2-aa96-4316-9219-c632fd8b8ae6"
   },
@@ -84,13 +84,13 @@
     "_active": true,
     "_components": [
       {
-        "__id__": 59
-      },
-      {
         "__id__": 60
       },
       {
         "__id__": 61
+      },
+      {
+        "__id__": 62
       }
     ],
     "_prefab": null,
@@ -1173,6 +1173,9 @@
     "_components": [
       {
         "__id__": 58
+      },
+      {
+        "__id__": 59
       }
     ],
     "_prefab": null,
@@ -2230,6 +2233,45 @@
     "_id": "66MMq4/RlOeoMptMEQdqTu"
   },
   {
+    "__type__": "7cd5a8UHd1ORZoxSJrV3TMe",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 30
+    },
+    "_enabled": true,
+    "__prefab": null,
+    "leftButton": {
+      "__id__": 37
+    },
+    "leftUpButton": {
+      "__id__": 34
+    },
+    "upButton": {
+      "__id__": 40
+    },
+    "rightUpButton": {
+      "__id__": 46
+    },
+    "rightButton": {
+      "__id__": 49
+    },
+    "leftDownButton": {
+      "__id__": 31
+    },
+    "downButton": {
+      "__id__": 43
+    },
+    "rightDownButton": {
+      "__id__": 52
+    },
+    "startRoundButton": {
+      "__id__": 55
+    },
+    "_id": "bcVswryXpH5qZUQjbC1Fne"
+  },
+  {
     "__type__": "cc.UITransform",
     "_name": "",
     "_objFlags": 0,
@@ -2300,28 +2342,28 @@
   {
     "__type__": "cc.SceneGlobals",
     "ambient": {
-      "__id__": 63
-    },
-    "shadows": {
       "__id__": 64
     },
-    "_skybox": {
+    "shadows": {
       "__id__": 65
     },
-    "fog": {
+    "_skybox": {
       "__id__": 66
     },
-    "octree": {
+    "fog": {
       "__id__": 67
     },
-    "skin": {
+    "octree": {
       "__id__": 68
     },
-    "lightProbeInfo": {
+    "skin": {
       "__id__": 69
     },
-    "postSettings": {
+    "lightProbeInfo": {
       "__id__": 70
+    },
+    "postSettings": {
+      "__id__": 71
     },
     "bakedWithStationaryMainLight": false,
     "bakedWithHighpLightmap": false

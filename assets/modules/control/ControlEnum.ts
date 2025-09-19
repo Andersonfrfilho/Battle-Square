@@ -7,4 +7,5 @@ export enum ActionsControls {
   RIGHT = "RIGHT",
   RIGHT_DOWN = "RIGHT_DOWN",
   DOWN = "DOWN",
+  NOTHING = "NOTHING",
 }

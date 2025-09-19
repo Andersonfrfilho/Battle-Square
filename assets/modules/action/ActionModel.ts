@@ -1,7 +1,7 @@
-export type ActionType = "ATTACK" | "DEFEND" | "HEAL";
+import { ActionsControls } from "../control/ControlEnum";
 
 interface ActionProps {
-  type: ActionType;
+  type: ActionsControls;
   power: number;
 }
 export class Action {
@@ -10,5 +10,5 @@ export class Action {
     this.type = type;
   }
   power: number;
-  type: ActionType;
+  type: ActionsControls;
 }

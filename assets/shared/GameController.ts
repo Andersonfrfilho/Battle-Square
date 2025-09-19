@@ -4,6 +4,9 @@ import { PlayerModel } from "../modules/player/models/PlayerModel";
 import { EnemyModel } from "../modules/enemy/models/EnemyModel";
 import { GameControllerStartBattleSessionProps } from "./types";
 import { PetModel } from "../modules/pets/models/PetModel";
+import { ArenaController } from "../modules/arena/ArenaController";
+import { ControlController } from "../modules/control/ControlController";
+import { eventBus } from "./event-bus/EventBus";
 const { ccclass } = _decorator;
 
 @ccclass("GameController")
@@ -11,6 +14,14 @@ export class GameController extends Component {
   private static _instance: GameController;
   players: PlayerModel[] = [];
   enemies: EnemyModel[] = [];
+  private arena: ArenaController;
+  private control: ControlController;
+
+  constructor(pets: PetModel[], enemies: PetModel[]) {
+    super();
+    this.arena = new ArenaController({ pets, enemies, eventBus });
+    this.control = new ControlController({ eventBus });
+  }
   public static get instance(): GameController {
     return this._instance;
   }

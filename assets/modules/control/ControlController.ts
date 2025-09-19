@@ -1,8 +1,12 @@
+import { EventBus } from "../../shared/event-bus/EventBus";
 import { GameController } from "../../shared/GameController";
 import { EnemyModel } from "../enemy/models/EnemyModel";
 import { PlayerModel } from "../player/models/PlayerModel";
 import { AddActionToActivePetProps } from "./types";
 
+interface ControlControllerProps {
+  eventBus?: any;
+}
 export class ControlController {
   private readonly player: PlayerModel;
   private readonly playerIndex: number = 0;
@@ -10,11 +14,22 @@ export class ControlController {
   private readonly enemyIndex: number = 0;
   private petChoiceIndexPlayer: number = 0;
   private petChoiceIndexEnemy: number = 0;
+  private eventBus: EventBus;
 
-  constructor() {
+  constructor({ eventBus }: ControlControllerProps) {
     this.player = GameController.instance.players[this.playerIndex];
     this.enemy = GameController.instance.enemies[this.enemyIndex];
+    this.eventBus = eventBus;
   }
+
+  onExecuteClick() {
+    this.eventBus.emit("USER_EXECUTE_ACTION");
+  }
+
+  // executeTurn() {
+  //   console.log("Executando turno da arena...");
+  //   this.eventBus.emit("ARENA_ACTION_EXECUTED", { log: "Pet A atacou Pet B" });
+  // }
 
   addActionToActivePet(action: AddActionToActivePetProps): number {
     if (!this.player.pets[this.petChoiceIndexPlayer]) return;
@@ -35,9 +50,11 @@ export class ControlController {
   applyActionsPets() {
     if (!this.player.pets[this.petChoiceIndexPlayer]) return;
 
-    this.player.pets[this.petChoiceIndexPlayer].actions.forEach((action) => {
-      this.player.pets[this.petChoiceIndexPlayer].applyAction();
-      this.enemy.pets[this.petChoiceIndexEnemy].applyAction();
+    this.arenaController.processSimultaneousActions({
+      playerPet: this.player.pets[this.petChoiceIndexPlayer],
+      enemyPet: this.enemy.pets[this.petChoiceIndexEnemy],
+      actionPlayer: this.player.pets[this.petChoiceIndexPlayer].actions[0],
+      actionEnemy: this.enemy.pets[this.petChoiceIndexEnemy].actions[0],
     });
     this.resetActionsPets();
   }

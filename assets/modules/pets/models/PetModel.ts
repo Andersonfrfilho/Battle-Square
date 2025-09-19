@@ -131,52 +131,10 @@ export class PetModel {
     }
   }
 
-  applyAction(): void {
-    const action = this._actions.shift();
-    if (action) {
-      this.useAction(action);
-    }
-  }
-
-  applyActions(): void {
-    this._actions.forEach((action) => {
-      this.useAction(action!);
-    });
-  }
   public clearActions(): void {
     this._actions.splice(0);
   }
 
-  private useAction(action: ActionsControls): void {
-    switch (action) {
-      case ActionsControls.LEFT:
-        console.log(`${this._name} is LEFT!`);
-        break;
-      case ActionsControls.LEFT_DOWN:
-        console.log(`${this._name} is LEFT_DOWN!`);
-        break;
-      case ActionsControls.DOWN:
-        console.log(`${this._name} is DOWN!`);
-        break;
-      case ActionsControls.RIGHT_DOWN:
-        console.log(`${this._name} is RIGHT_DOWN!`);
-        break;
-      case ActionsControls.RIGHT:
-        console.log(`${this._name} is RIGHT!`);
-        break;
-      case ActionsControls.RIGHT_UP:
-        console.log(`${this._name} is RIGHT_UP!`);
-        break;
-      case ActionsControls.UP:
-        console.log(`${this._name} is UP!`);
-        break;
-      case ActionsControls.LEFT_UP:
-        console.log(`${this._name} is LEFT_UP!`);
-        break;
-      default:
-        console.log(`${this._name} does nothing.`);
-    }
-  }
   getBounds() {
     return {
       x: this.position.x,

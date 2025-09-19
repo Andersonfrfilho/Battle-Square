@@ -1,3 +1,5 @@
+import { Position } from "../position/model/Position";
+
 export type ArenaBlock = {
   x: number;
   y: number;
@@ -10,6 +12,12 @@ export type ArenaModelProps = {
   blockSize: number;
   initialPosition?: { x: number; y: number };
 };
+
+export type GetNextPositionParams = {
+  position: Position;
+  direction: { x: number; y: number };
+};
+
 export class ArenaModel {
   private readonly size: number;
   private readonly blocks: ArenaBlock[][];
@@ -39,5 +47,35 @@ export class ArenaModel {
 
   public getAllBlocks(): ArenaBlock[][] {
     return this.blocks;
+  }
+
+  isInsideBounds(position: { x: number; y: number }): boolean {
+    return !!this.getBlockAt(position);
+  }
+
+  isInRange(
+    posA: { x: number; y: number },
+    posB: { x: number; y: number },
+    range: number
+  ): boolean {
+    const dx = posA.x - posB.x;
+    const dy = posA.y - posB.y;
+    return Math.sqrt(dx * dx + dy * dy) <= range;
+  }
+
+  getNextPosition({ position, direction }: GetNextPositionParams) {
+    return { x: position.x + direction.x, y: position.y + direction.y };
+  }
+
+  private getBlockAt(position: { x: number; y: number }) {
+    return this.blocks
+      .flat()
+      .find(
+        (b) =>
+          position.x >= b.x &&
+          position.x < b.x + b.width &&
+          position.y >= b.y &&
+          position.y < b.y + b.height
+      );
   }
 }

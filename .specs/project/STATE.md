@@ -1,7 +1,7 @@
 # State
 
 **Última atualização:** 2026-08-25
-**Trabalho atual:** Backend de Dados de Pet — **Fase 4 completa e verificada** (T11–T14). Sidecar `apps/worker-pet-sync` funcional: espelho criptografado, verificação de assinatura reusando pares reais do backend, loop de sync resiliente a backend fora do ar e a registro adulterado (testado com mock assinado + adulterado, sem travar o ciclo). Seguindo para Fase 5 (T15–T19, integração C++ na Unreal — SQLite/Ed25519 como third-party, skill `unreal-thirdparty`).
+**Trabalho atual:** Apresentação do Combate — **Fases 1–4 completas e verificadas** (T1–T10). `UBattleTracePlayer::PlayTrace/SkipToEnd` (T7) despacha eventos via delegate multicast simples (não dinâmico, para permitir binding por lambda/AddUObject). `APetView` (T8) reage a eventos sem recalcular nada. `ABattleArena` (T9) tem câmera fixa em diorama com checagem de frustum programática (matemática de FOV/AspectRatio própria, sem depender de PlayerController/Viewport) e grade 3x3 configurável por material soft-pointer. Fiação completa (T10): `PlayerActionQueue` (componente) → `HandlePlayerCommitted` → `FDumbOpponentAI` gera commit do oponente → `FBattleResolver::ResolveTurn` roda de verdade → `UBattleTracePlayer` anima as `APetView`. Bateria completa de **29 testes rodada headless: Success 29 / Fail 0** (`BattleSquare.ActionQueue.*` 9, `BattleSquare.BattleArena.*` 2, `BattleSquare.BattleDataTranslator.*` 3, `BattleSquare.DumbOpponentAI.*` 4, `BattleSquare.PetCrypto.*` 2, `BattleSquare.PetDataLoader.*` 4, `BattleSquare.PetView.*` 1, `BattleSquare.TracePlayer.*` 4). Corrigido no processo: teste de `PetView` checava `TargetId` em vez de `ActorId` no evento `DanoAplicado` (esse evento carrega quem sofreu o dano em `ActorId`, `TargetId` é `BattleEventNoActor` — campo usado só em `AtaqueAcertou`/`AtaqueErrou`, F4). Funções que recebem `FBattleState`/`FBattleEvent`/`FPetState`/`FPetPresentationInfo` diretamente (não são `BlueprintType`) ficaram fora do Blueprint, mesmo padrão já usado em `BuildCommit()`. Próximo: Fase 5 (T11–T12, classes base C++ de widgets — sem UMG) e Fase 6 (T13 sonda anti-recálculo, T14 roteiro de verificação visual).
 
 ---
 
@@ -304,6 +304,13 @@ find "$HOME/Library/Logs/Unreal Engine/BattleSquareEditor" Saved/Logs -newer <ma
 **Causa raiz do design da sonda:** testar "o header X existe" é um proxy falho para "o módulo Y depende de Z" quando X coincide com algo que o sistema operacional já fornece globalmente.
 **Correção:** trocado o alvo da sonda de `sqlite3.h` (ambíguo) para os próprios headers do `BattleSquare` (`Data/PetDataLoader.h`) — nunca pode colidir com nada do sistema, e testa exatamente a direção de dependência que importa (núcleo nunca alcança a feature construída em cima dele).
 **Previne:** ao desenhar uma sonda negativa contra biblioteca de terceiro, checar antes se o nome do header/símbolo é genérico o bastante para existir em bibliotecas de sistema do SO. Rastrear a resolução real (`clang -H` ou equivalente) antes de aceitar um resultado de sonda como prova — mesma disciplina de L-004/L-007, aplicada ao desenho do próprio teste de verificação, não só ao código sendo verificado.
+
+### L-016: `FBattleRandom` nunca tinha sido exportado entre módulos — ninguém tinha chamado seus métodos de fora do `BattleSim` até agora
+
+**Contexto:** T5 (IA burra, Apresentação do Combate) — primeira vez que `BattleSquare` chama `FBattleRandom::NextRange` diretamente. Link falhou: `Undefined symbols... FBattleRandom::NextRange`.
+**Causa:** `struct FBattleRandom` nunca teve `BATTLESIM_API`. Isso nunca deu problema porque todo consumo anterior do `BattleSquare` tocava campos de `FBattleState`/`FPetState` (dados, sem chamar método), nunca um método de `FBattleRandom` em si — a lacuna de exportação estava latente, sem sintoma.
+**Solução:** `struct BATTLESIM_API FBattleRandom` — só anotação de visibilidade entre módulos, não adiciona dependência nenhuma; a fronteira do núcleo (AD-011/AD-012) continua intacta.
+**Previne:** ao expor uma struct nova do núcleo para consumo por outro módulo, checar se ela (e não só o módulo) tem `_API` — a ausência não aparece até o primeiro consumidor de fora tentar chamar um método dela, exatamente como aconteceu aqui, meses (nesta sessão, mensagens) depois da struct ter sido criada.
 
 ---
 

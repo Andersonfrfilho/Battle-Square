@@ -12,7 +12,7 @@
 //
 // PCG32 (O'Neill, 2014): estado de 64 bits, saída de 32 bits, período 2^64.
 USTRUCT()
-struct FBattleRandom
+struct BATTLESIM_API FBattleRandom
 {
 	GENERATED_BODY()
 

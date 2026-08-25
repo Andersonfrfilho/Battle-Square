@@ -1,0 +1,70 @@
+// Copyright 2026 Anderson. All Rights Reserved.
+
+#include "Battle/BattleResolver.h"
+#include "Battle/BattlePhases.h"
+
+namespace
+{
+	void EmitTurnBoundary(TArray<FBattleEvent>& OutTrace, EBattleEventType Type, uint8 SlotIndex, uint8 Phase)
+	{
+		FBattleEvent Event;
+		Event.Type = Type;
+		Event.SlotIndex = SlotIndex;
+		Event.Phase = Phase;
+		Event.ActorId = BattleEventNoActor;
+		Event.TargetId = BattleEventNoActor;
+		OutTrace.Add(Event);
+	}
+}
+
+// NOTA sobre desempate por velocidade (T9, tasks.md): as quatro fases
+// (T5–T8) foram desenhadas para que Left e Right sejam resolvidos de
+// forma simétrica dentro de cada fase — postura não compete, movimento
+// coleta todas as intenções antes de aplicar qualquer uma, combate
+// acumula dano em vez de aplicar sequencialmente. Não existe, hoje, um
+// ponto de decisão em v1 (1 pet por lado) onde a ordem Left-antes-de-Right
+// mude o resultado. O desempate por velocidade fica como infraestrutura
+// para M3 (N pets por lado, onde múltiplos pets do MESMO lado podem
+// competir por precedência) — implementá-lo agora seria código morto,
+// o mesmo problema já registrado em B-003 para BTL-05. Ver STATE.md.
+FBattleResolveResult FBattleResolver::ResolveTurn(
+	const FBattleState& InState,
+	const FTurnCommit& LeftCommit,
+	const FTurnCommit& RightCommit)
+{
+	// Pureza: NextState é uma CÓPIA de InState. InState nunca é mutado —
+	// é o que torna ResolveTurn chamável repetidamente com o mesmo
+	// argumento e sempre produzir o mesmo resultado (BTL-16).
+	FBattleResolveResult Result;
+	Result.NextState = InState;
+
+	FBattleState& State = Result.NextState;
+	TArray<FBattleEvent>& Trace = Result.Trace;
+
+	EmitTurnBoundary(Trace, EBattleEventType::TurnoIniciado, 0, /*Phase=*/1);
+
+	for (uint8 SlotIndex = 0; SlotIndex < FTurnCommit::ActionsPerTurn; ++SlotIndex)
+	{
+		// Pet morto: as fases de T5 a T8 já ignoram pets sem IsAlive() em
+		// cada busca (FindAlivePetOnSide, CollectIntent, FindLivingOpponentAtCell)
+		// — "ações restantes descartadas" é garantido por construção,
+		// sem código extra necessário aqui.
+		const FBattleAction& LeftAction = LeftCommit.Actions[SlotIndex];
+		const FBattleAction& RightAction = RightCommit.Actions[SlotIndex];
+
+		// F1 — Declaração. Nada muda; apenas marca o início do slot.
+		EmitTurnBoundary(Trace, EBattleEventType::SlotIniciado, SlotIndex, /*Phase=*/1);
+
+		// F2 → F3 → F4 → F5, sempre nesta ordem (design.md).
+		BattlePhases::ApplyPostures(State, LeftAction, RightAction, SlotIndex, Trace);
+		BattlePhases::ApplyMovement(State, LeftAction, RightAction, SlotIndex, Trace);
+		BattlePhases::ApplyCombat(State, LeftAction, RightAction, SlotIndex, Trace);
+		BattlePhases::ApplyResolution(State, SlotIndex, Trace);
+	}
+
+	State.TurnNumber += 1;
+
+	EmitTurnBoundary(Trace, EBattleEventType::TurnoEncerrado, FTurnCommit::ActionsPerTurn - 1, /*Phase=*/5);
+
+	return Result;
+}

@@ -1,24 +1,28 @@
+# ---------------------------------------------------------------
+# Unreal Engine
+# ---------------------------------------------------------------
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+Build/
 
-#///////////////////////////
-# Cocos Creator 3D Project
-#///////////////////////////
-library/
-temp/
-local/
-build/
-profiles/
-native
-#//////////////////////////
-# NPM
-#//////////////////////////
-node_modules/
+# Content/ NÃO entra aqui — os assets são versionados, via LFS.
 
-#//////////////////////////
-# VSCode
-#//////////////////////////
+# Projetos de IDE gerados
+*.sln
+*.xcodeproj/
+*.xcworkspace/
+*.VC.db
+*.VC.opendb
+*.opensdf
+*.sdf
+*.suo
+.vs/
+
+# Editores
+.idea/
 .vscode/
 
-#//////////////////////////
-# WebStorm
-#//////////////////////////
-.idea/
+# macOS
+.DS_Store

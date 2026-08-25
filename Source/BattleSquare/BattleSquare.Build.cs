@@ -20,7 +20,13 @@ public class BattleSquare : ModuleRules
 			// AD-019: SQLite isolado em módulo barreira (regras de warning
 			// próprias — ver SQLiteLibrary.Build.cs) para ler o espelho
 			// local de pets.
-			"SQLiteLibrary"
+			"SQLiteLibrary",
+			// T11/T12 (apresentacao-combate): classes base C++ de widget —
+			// só a classe, sem layout UMG (ver design.md, Limite de
+			// Ferramenta).
+			"UMG",
+			"Slate",
+			"SlateCore"
 		});
 
 		// AD-019: OpenSSL já vem empacotado na engine (1.1.1t) — cobre

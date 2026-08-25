@@ -25,9 +25,10 @@
 - Câmera de arena, seleção de ações, indicação de limite (3/3)
 - Feedback de vida, dano e ação inválida
 
-**Dados de Pet** — PLANNED
-- DataAsset de pet e de skill
-- 6 a 10 pets de teste carregados por dados
+**Backend de Dados de Pet** — PLANNED (spec escrita, `.specs/features/backend-dados-pet/`)
+- Backend próprio (Bun + PostgreSQL + Drizzle), API REST `/v1/pets`, CRUD
+- Espelho local sincronizado no servidor de combate — batalha nunca lê a rede diretamente (AD-014)
+- 6 a 10 pets de teste cadastrados via API
 
 ---
 
@@ -97,6 +98,19 @@
 
 **Mobile** — PLANNED (exige orçamento de performance definido desde M5)
 **Console** — PLANNED (exige licença de desenvolvedor e devkit)
+
+---
+
+## M7 — Contas e Moderação
+
+**Objetivo:** identidade de jogador persistente entre partidas, pré-requisito para qualquer consequência que precise sobreviver ao fim de uma sessão — banimento, histórico, reputação, progressão de conta.
+
+**Dependência registrada:** AD-017 (backend de dados de pet) já prevê a trilha de auditoria de adulteração de cache no Nível 1 (sessão); banimento persistente (Nível 2) só é implementável quando este marco existir. Não é bloqueante para nenhum marco anterior — é consumidor do que eles já produzem.
+
+### Features
+
+**Conta de Jogador** — PLANNED
+**Moderação e Banimento** — PLANNED (consome a trilha de auditoria do backend de dados de pet)
 
 ---
 

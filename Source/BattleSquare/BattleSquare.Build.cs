@@ -16,7 +16,17 @@ public class BattleSquare : ModuleRules
 			"InputCore",
 			"EnhancedInput",
 			"GameplayTags",
-			"BattleSim"
+			"BattleSim",
+			// AD-019: SQLite isolado em módulo barreira (regras de warning
+			// próprias — ver SQLiteLibrary.Build.cs) para ler o espelho
+			// local de pets.
+			"SQLiteLibrary"
 		});
+
+		// AD-019: OpenSSL já vem empacotado na engine (1.1.1t) — cobre
+		// AES-256-GCM (decifrar o espelho) e Ed25519 (verificar
+		// assinatura). Padrão preferido da skill unreal-thirdparty:
+		// consumir o que a engine já tem, não vendorizar de novo.
+		AddEngineThirdPartyPrivateStaticDependencies(Target, "OpenSSL");
 	}
 }

@@ -1,7 +1,7 @@
 # State
 
 **Última atualização:** 2026-08-25
-**Trabalho atual:** Combate Núcleo — **as 14 tarefas completas e verificadas.** 44/44 testes automatizados Success, 0 falhas. `audit_determinism.sh` e `probe_isolation.sh` autoverificados. Feature pronta para commit. Próximo trabalho: camada de dados/apresentação (BTL-02, BTL-19–22) ou M2 (rede).
+**Trabalho atual:** Backend de Dados de Pet — **Fase 4 completa e verificada** (T11–T14). Sidecar `apps/worker-pet-sync` funcional: espelho criptografado, verificação de assinatura reusando pares reais do backend, loop de sync resiliente a backend fora do ar e a registro adulterado (testado com mock assinado + adulterado, sem travar o ciclo). Seguindo para Fase 5 (T15–T19, integração C++ na Unreal — SQLite/Ed25519 como third-party, skill `unreal-thirdparty`).
 
 ---
 
@@ -52,7 +52,7 @@
 **Trade-off:** abre-se mão do ferramental pronto de efeitos, cooldowns e stacking, que teria de ser escrito.
 **Revisitar em:** M3 (escala de skills) e M5 (mundo aberto) — no mundo aberto, com efeitos de status em tempo real, GAS provavelmente passa a valer.
 
-### AD-008: Camada de dados — DataTable com CSV, DataAsset e Gameplay Tags (2026-08-24)
+### ~~AD-008~~ SUPERADA por AD-014 (2026-08-25): Camada de dados — DataTable com CSV, DataAsset e Gameplay Tags
 
 **Decisão:** os 250 pets vivem em `UDataTable` alimentada por **CSV versionado**; skills em `UDataAsset`; tipos, estados e classificação em `FGameplayTag`, nunca em `enum`.
 **Razão:** DataTable é o certo para conjunto grande e homogêneo e permite editar balanceamento em planilha; DataAsset ganha quando os itens são poucos, variados e usam herança. Gameplay Tags são hierárquicas e criáveis por designer, e são a espinha dorsal do UE moderno.
@@ -116,6 +116,55 @@
 **Decisão:** T9 (`FBattleResolver::ResolveTurn`) não implementa nenhum desempate por velocidade/PetId, apesar de "Pronto quando" (tasks.md) listar isso.
 **Razão:** analisado antes de codificar — as quatro fases (T5–T8) foram desenhadas para que Left e Right resolvam simetricamente dentro de cada fase (postura não compete, movimento coleta tudo antes de aplicar, combate acumula em vez de aplicar sequencialmente). Não existe, em v1 (1 pet por lado), nenhum ponto de decisão onde ordem Left-antes-de-Right mudaria o resultado. Implementar desempate agora seria código morto — mesmo problema já registrado em B-003 para BTL-05.
 **Impacto:** desempate por velocidade é infraestrutura de M3 (N pets por lado), onde múltiplos pets do MESMO lado poderiam competir por precedência de fato. Fica documentado no comentário de `BattleResolver.cpp`, não escondido.
+
+### AD-014: Dados de pet vêm de um backend externo, consultado ao carregar a batalha (2026-08-25)
+
+**Decisão:** os 250 pets deixam de viver em `UDataTable`/CSV dentro do projeto Unreal (supera AD-008) e passam a viver num **backend próprio, separado do servidor de combate** — fonte da verdade em PostgreSQL, administrável por API.
+
+**Arquitetura de leitura — réplica local sincronizada, não busca remota por batalha (refinado em 2026-08-25):**
+O caminho de leitura NÃO é o servidor de combate chamando o backend remoto a cada partida. É um **espelho local sincronizado** (cache/réplica no processo do servidor de combate — SQLite embarcado ou estrutura em memória, atualizado por polling periódico ou push do backend) que fica sempre razoavelmente atualizado. A montagem da batalha lê **do espelho local**, nunca da rede diretamente. Isso resolve duas coisas ao mesmo tempo:
+- **Performance:** nenhuma latência de rede no caminho de montar uma partida, mesmo com muitas batalhas simultâneas.
+- **Resiliência:** se o backend cair, o espelho local segue servindo dados (podem ficar levemente desatualizados, mas o jogo não para).
+
+**Fronteira de determinismo preservada:** a sincronização acontece **fora** do caminho de resolução de turno. Uma vez que a batalha monta `FBattleState` a partir do espelho local, os valores (inteiros, formato `FPetState`) ficam congelados — `FBattleResolver::ResolveTurn` nunca toca rede nem disco, sob nenhuma circunstância (AD-004, AD-011, AD-012 continuam intactos).
+
+**Razão:** pets administráveis por banco de dados, desacoplado do servidor de combate (dois sistemas, decisão do usuário), sem pagar latência de rede nem criar ponto único de falha no caminho crítico.
+**Trade-off:** dado no espelho local pode estar levemente atrasado em relação ao backend (janela de sincronização) — aceitável para balanceamento de pets, que não muda a cada segundo. Complexidade adicional: precisa de estratégia de sync (intervalo, invalidação, versionamento de schema entre backend e espelho).
+**Impacto:** cria uma feature nova, fora do núcleo de combate — ver `.specs/features/backend-dados-pet/`. Não muda nada dentro de `BattleSim` (a fronteira do núcleo continua intacta); só muda quem preenche `FPetState` antes da batalha começar, e adiciona um componente de sincronização entre o backend e o servidor de combate.
+
+### AD-015: Stack do backend de dados segue os padrões já documentados do usuário (2026-08-25)
+
+**Decisão:** Bun + `Bun.serve`, TypeScript ESM, PostgreSQL via Drizzle ORM, validação Zod na fronteira, resposta em envelope (`{data}`/`{error}`), rotas versionadas (`/v1/...`), autenticação por token de curta duração.
+**Razão:** não é uma escolha nova — é aplicar literalmente `nodejs.md`, `apis.md` e `database.md` (padrões globais do usuário) a este projeto. Nenhuma decisão de stack original aqui; só conformidade.
+**Impacto:** qualquer desvio desses padrões neste backend deve ser justificado explicitamente, não presumido por conveniência.
+
+### AD-016: Espelho local — criptografia em repouso + verificação de integridade por assinatura (2026-08-25)
+
+**Decisão:** o espelho local (SQLite embarcado no servidor de combate) recebe duas camadas de proteção com propósitos distintos: criptografia em repouso (SQLCipher) e verificação de integridade por assinatura/HMAC por registro, emitida pelo backend na sincronização.
+**Razão:** o usuário pediu criptografia para reduzir risco de "hacks alterarem o cache". Esclarecido antes de registrar: como o espelho só existe no processo do servidor autoritativo (nunca no cliente), o servidor precisa da chave para ler o próprio dado em runtime — logo, criptografia sozinha NÃO impede adulteração por quem já tem acesso equivalente ao processo do servidor. O que detecta e rejeita adulteração é a assinatura: se o arquivo for editado fora do fluxo de sincronização, a assinatura não bate e o registro é descartado.
+**Trade-off:** nenhum — as duas camadas são baratas e não competem entre si. Cada uma cobre um cenário de ameaça diferente (disco roubado vs. adulteração em tempo de execução).
+**Impacto:** PETDB-10 e PETDB-11 na spec do backend de dados de pet.
+
+### AD-017: Adulteração de cache local não muda resultado — é sinal, não vetor de trapaça (2026-08-25)
+
+**Decisão:** detectar cache de pet adulterado no cliente encerra a sessão daquele cliente e declara o oponente vencedor por W.O. Banimento persistente entre partidas fica fora de escopo até existir conta de jogador.
+**Razão:** AD-005 (servidor autoritativo) já garante que o cliente nunca decide resultado — adulterar o cache local não consegue mudar quem vence, só sinaliza intenção hostil. A resposta correta é consequência de sessão, não "corrigir" um resultado que a arquitetura já protege.
+**Por que banimento persistente fica de fora:** exige identidade de jogador entre sessões, que o projeto não tem — v1 usa código de sala (PROJECT.md, Out of Scope: matchmaking real). Prometer bloqueio permanente sem essa infraestrutura seria documentar algo que não pode ser implementado hoje.
+**Impacto:** PETDB-12 na spec do backend de dados de pet. A trilha de auditoria do Nível 1 (evidência de adulteração) é desenhada para ser reaproveitada por um sistema de moderação futuro, sem precisar ser reconstruída quando conta de jogador existir.
+
+### AD-018: `bun:sqlite` não tem SQLCipher — criptografia por arquivo (AES-256-GCM) com temporário em RAM (2026-08-25)
+
+**Descoberto:** ao implementar T12, testei `PRAGMA key` no `bun:sqlite` diretamente — foi aceito sem erro e o dado ficou em **texto plano** no arquivo. `bun:sqlite` não tem a extensão SQLCipher compilada; teria sido uma falsa sensação de segurança se eu não tivesse testado (mesmo padrão de L-004/L-007: verificar em vez de afirmar).
+**Decisão:** o espelho local usa `AES-256-GCM` (autenticado) sobre o **arquivo inteiro** via `node:crypto` — decifra para um temporário, opera com `bun:sqlite`, cifra de volta. O temporário vive em **tmpfs (RAM)**, nunca em disco persistente, removido mesmo em caminho de erro.
+**Trade-off explicitamente aceito:** existe uma janela onde texto plano existe na RAM do processo (não no disco). Só é explorável por quem já tem acesso de leitura à memória do processo — nível de privilégio que já compromete `MIRROR_ENCRYPTION_KEY`, `SYNC_API_TOKEN` e o processo inteiro por outras vias. SQLCipher nativo eliminaria essa janela por completo, mas o ganho marginal não justificou a dependência C nativa extra (avaliado e descartado com o usuário).
+**Nomenclatura corrigida:** a env var `SQLCIPHER_KEY` virou `MIRROR_ENCRYPTION_KEY` — o nome antigo prometia um mecanismo que não é o que está implementado.
+
+### AD-019: Fase 5 usa o OpenSSL já empacotado na engine, não libsodium (2026-08-25)
+
+**Descoberto:** UE 5.8 traz `OpenSSL 1.1.1t` pronto em `Engine/Source/ThirdParty/OpenSSL`, com binários estáticos para Mac (`libcrypto.a`, `libssl.a`) — confirmado no `OpenSSL.Build.cs`, não presumido.
+**Decisão:** T15/T16 deixam de vendorizar `libsodium`. Em vez disso: consumir o módulo `OpenSSL` da própria engine via `AddEngineThirdPartyPrivateStaticDependencies(Target, "OpenSSL")` (padrão preferido da skill `unreal-thirdparty`) para as duas necessidades de criptografia — decifrar o espelho local (`AES-256-GCM`, EVP API) e verificar assinatura (`Ed25519`, `EVP_PKEY`). OpenSSL 1.1.1 suporta as duas nativamente.
+**SQLite:** continua sendo vendorizado, mas agora **puro** (sem extensão de criptografia) — a decisão AD-018 já havia movido a criptografia para fora do SQLite (arquivo inteiro cifrado por AES-256-GCM). É a amalgamation de domínio público (`sqlite3.c`/`sqlite3.h`), trivial de compilar como fonte dentro do módulo, sem a complexidade de `ModuleType.External` de biblioteca binária.
+**Impacto:** zero binário terceiro novo para compilar/vendorizar — só consumo do que a engine já tem, mais uma fonte de domínio público de arquivo único. Reduz superfície de risco da Fase 5 significativamente frente ao plano original (SQLCipher + libsodium).
 
 ---
 
@@ -213,9 +262,56 @@ find "$HOME/Library/Logs/Unreal Engine/BattleSquareEditor" Saved/Logs -newer <ma
 **Não era bug de produção.** Era erro no cenário do teste. Corrigido ajustando a posição de um pet para ficar adjacente antes do ataque.
 **Por que isto é uma lição boa, não uma lição de erro:** é exatamente o processo funcionando como desenhado — um teste real pegou uma inconsistência real antes de eu declarar a tarefa pronta, e a falha veio com mensagem específica (`Expected 'Right morreu no slot 0' to be false`), não um `exit 0` mudo. Contraste com L-007: aquele falso alarme não tinha teste nenhum rodando, só observação no lugar errado. Este é o comportamento correto do sistema de testes, e vale registrar como calibração: nem toda falha é motivo de alarme — é motivo de olhar a mensagem.
 
+### L-010: Bun carrega `.env` automaticamente — teste de validação de ambiente precisa rodar fora do diretório do projeto
+
+**Contexto:** T1 (backend de pets) verificaria que `environment.ts` falha alto e claro sem `ADMIN_API_TOKEN`. Rodei o teste passando env vars incompletas na linha de comando, de dentro do diretório do projeto — o servidor subiu normalmente, como se a validação não existisse.
+**Causa:** Bun carrega `.env` da pasta atual automaticamente, por cima de qualquer env var passada na linha de comando que não sobrescreva a mesma chave. O `.env` já tinha `ADMIN_API_TOKEN` de uma rodada anterior — ele preencheu a lacuna que o teste tentava criar.
+**Solução:** rodar o teste de "falta env var" de um diretório SEM `.env` (`/tmp/...`), apontando para o script por caminho absoluto. Confirmado: `ZodError` apontando exatamente o campo ausente.
+**Previne:** todo teste que simula ambiente incompleto num projeto Bun precisa isolar do `.env` real do projeto — de outra forma, o teste "passa" por engano, exatamente como aconteceu aqui na primeira tentativa.
+
+### L-011: Mensagem de erro não é código, e "too_small" não é sempre "ausente"
+
+**Contexto:** T3 (validação de pet) — primeira versão fazia `message` duplicar o `code` (`"message": "PET_NAME_REQUIRED"`, ilegível para humano) e classificava QUALQUER `too_small` do Zod como campo ausente, incluindo `attack: -5` (valor presente, mas fora do mínimo) — gerava `PET_ATTACK_REQUIRED` para um valor negativo, o que é enganoso.
+**Causa:** assumi a forma do erro do Zod em vez de inspecionar. O objeto real de issue expõe `origin` ("string" vs "number"), que distingue "string vazia" (campo ausente de fato) de "número abaixo do mínimo" (valor inválido) — as duas colapsam no mesmo `code: "too_small"`, mas são causas diferentes.
+**Solução:** derivar o código do erro a partir de `issue.code` **e** `issue.origin`, nunca do texto da mensagem; mensagem fica livre para ser legível a humano.
+**Previne:** mesma disciplina de T9 no combate núcleo (não confiar em nome de API sem checar a fonte) — aqui aplicada a bibliotecas TypeScript, não só à Unreal. `bun -e` com o schema real, três cenários, foi o que expôs os dois bugs antes de virarem código "pronto".
+
+### L-012: Comparação `updatedAfter` exata no limite ainda inclui o registro — precisão de timestamp, não bug
+
+**Contexto:** T6 (backend de pets) — filtro `updatedAfter` usa `gt` (estritamente maior). Testado com o cutoff igual ao `updatedAt` exato de um registro: o registro apareceu na lista mesmo assim. Com 1 segundo de diferença real, o filtro excluiu corretamente.
+**Causa:** o Postgres guarda mais precisão em `timestamp with time zone` do que sobrevive ao round-trip por uma string ISO 8601 de milissegundos processada pelo `Date` do JS — o valor armazenado é ligeiramente "maior" que o que o cliente recebeu de volta.
+**Por que não é bug:** o uso real (sync incremental) é idempotente — reenviar o mesmo registro verificado de novo não causa dano, só uma leitura redundante no pior caso. Corrigir isso exigiria precisão extra ou cursor sequencial, engenharia que a spec não pede.
+**Previne:** ao testar filtro de "maior que" sobre timestamp, sempre testar o caso de fronteira exata separado do caso com folga real — são achados diferentes, e só o segundo prova que o operador funciona.
+
+### L-013: `ANSI_TO_TCHAR` presume string terminada em `\0` — não use em buffer de bytes crus
+
+**Contexto:** teste de interoperabilidade AES-256-GCM (T15/T16) — a decriptação em si passou (GCM autenticou corretamente), mas a comparação de string falhou com um caractere extra no fim (`...PLAINTEXTt` em vez de `...PLAINTEXT`).
+**Causa:** `ANSI_TO_TCHAR` é uma macro que assume C-string terminada em `\0` e usa `strlen` internamente — aplicada a um `TArray<uint8>` de bytes decifrados (sem terminador), ela lê memória além do fim do buffer.
+**Solução:** `FUTF8ToTCHAR` com comprimento explícito (`Converter(Data, Length)`), que não depende de terminador.
+**Previne:** mesma disciplina de L-004 (verificar em vez de afirmar) — o resultado "quase certo, com um caractere a mais" é o tipo de falha que parece sutil mas aponta para uma suposição errada sobre o formato dos dados, não para lógica de negócio quebrada. A criptografia estava certa desde o início; o teste que a media é que estava errado.
+
+### L-014: Automação da Unreal falha o teste automaticamente em qualquer `UE_LOG(Error)`, mesmo intencional
+
+**Contexto:** T17 — dois testes de caminho negativo (espelho ausente, chave errada) fizeram exatamente o esperado (`bLoaded=false`, log de erro correto), mas o framework de automação reportou `Result={Fail}` mesmo assim.
+**Causa:** a Unreal conta qualquer `UE_LOG(..., Error, ...)` emitido durante um teste como falha implícita, independente das asserções `TestTrue`/`TestFalse` passarem. Erro de log intencional precisa ser declarado com `AddExpectedError(padrão, MatchType::Contains, ocorrências)` antes do código que o emite.
+**Também nesta rodada:** um teste comparava contra "Fluffy" com `attack: 10` — valor que eu mesmo tinha mudado para 15 num `PUT` de verificação manual, fases atrás. O carregador leu o dado real corretamente; o teste é que dependia de estado externo mutável. Corrigido criando um pet de fixture dedicado (`UnrealTestFixturePet`), nunca reusando dado de teste manual anterior.
+**Previne:** ao testar caminho de erro EM Unreal, sempre declarar `AddExpectedError` antes de rodar; ao fixar dado esperado, nunca depender de um registro que outra parte do teste (ou sessão) pode ter mutado.
+
+### L-015: `sqlite3.h` é um header de SISTEMA no macOS — sonda de isolação deu falso positivo
+
+**Contexto:** T19 — sonda de isolação estendida testando se `BattleSim` conseguia referenciar SQLite/OpenSSL. A metade OpenSSL falhou corretamente; a metade SQLite **compilou**, parecendo indicar fronteira furada.
+**Investigação (não aceitei o resultado sem checar a causa):** compilação manual com `clang -H` (rastreio de resolução de header) mostrou que `#include "sqlite3.h"` resolvia para `/usr/include/sqlite3.h` — **o SQLite do próprio SDK do macOS**, não o vendorizado do projeto. Apple embute SQLite como biblioteca de sistema há anos; qualquer programa C/C++ no Mac encontra esse header e linka essa lib, independente de qualquer dependência de módulo do projeto.
+**Causa raiz do design da sonda:** testar "o header X existe" é um proxy falho para "o módulo Y depende de Z" quando X coincide com algo que o sistema operacional já fornece globalmente.
+**Correção:** trocado o alvo da sonda de `sqlite3.h` (ambíguo) para os próprios headers do `BattleSquare` (`Data/PetDataLoader.h`) — nunca pode colidir com nada do sistema, e testa exatamente a direção de dependência que importa (núcleo nunca alcança a feature construída em cima dele).
+**Previne:** ao desenhar uma sonda negativa contra biblioteca de terceiro, checar antes se o nome do header/símbolo é genérico o bastante para existir em bibliotecas de sistema do SO. Rastrear a resolução real (`clang -H` ou equivalente) antes de aceitar um resultado de sonda como prova — mesma disciplina de L-004/L-007, aplicada ao desenho do próprio teste de verificação, não só ao código sendo verificado.
+
 ---
 
 ## Ideias Adiadas
+
+- [ ] `apps/worker-pet-sync` usa o prefixo `worker-` (code-standart.md §2), mas as rules globais de Worker (`backend/worker.md`) descrevem especificamente consumidor RabbitMQ com ack manual/DLQ/prefetch — o sidecar de sync é um poller de intervalo (`setInterval`), não consome fila nenhuma. Nenhuma das três categorias documentadas (api/worker/cron) descreve exatamente esse padrão ("processo de fundo que se auto-agenda via poll HTTP periódico, sem fila e sem gatilho externo"). Não bloqueia nada — só fica registrado para quando as rules globais de backend forem revisadas, se fizer sentido nomear essa categoria explicitamente. Capturado em: 2026-08-25, Fase 5 do Backend de Dados de Pet.
+
+- [ ] Criar um arquivo de **rules de desenvolvimento de jogos** (`~/.claude/rules/rules/games/unreal.md` ou similar), no mesmo espírito de `code-standart.md`, `frontend/web.md`, `apis.md` — nomenclatura C++/Blueprint, convenção de módulo, padrão de fronteira núcleo-vs-engine (o que este projeto já praticou em AD-011/AD-012), convenção de teste headless, checklist de auditoria de determinismo. Motivo: o usuário já tem rules globais para outros tipos de app (Bun/API, frontend web, banco de dados); faltam para jogos, e este projeto acumulou padrões reais que valeriam virar rule reaproveitável em outros projetos Unreal. Capturado em: 2026-08-25, durante o Backend de Dados de Pet.
 
 - [ ] Espectador e replay a partir do trace de eventos — sai quase de graça do AD-005. Capturado em: Specify do Combate Núcleo.
 - [ ] Simulação headless em lote para balanceamento (rodar 10.000 combates e medir taxa de vitória). Capturado em: Specify do Combate Núcleo.

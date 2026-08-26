@@ -6,7 +6,7 @@
 
 namespace
 {
-	FBattleState MakeDuelState()
+	FBattleState MakePetViewDuelState()
 	{
 		FBattleState State;
 		FPetState Left;
@@ -31,7 +31,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FPetViewAppliesEventsFromRealTraceTest::RunTest(const FString& Parameters)
 {
-	const FBattleState State = MakeDuelState();
+	const FBattleState State = MakePetViewDuelState();
 
 	FTurnCommit LeftCommit;
 	LeftCommit.Actions[0] = { EActionType::Atacar, EBattleDirection::Direita };

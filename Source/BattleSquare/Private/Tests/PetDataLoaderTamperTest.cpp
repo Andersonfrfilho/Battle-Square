@@ -19,7 +19,7 @@
 
 namespace
 {
-	TArray<uint8> HexStringToBytes(const FString& HexString)
+	TArray<uint8> TamperTestHexStringToBytes(const FString& HexString)
 	{
 		TArray<uint8> Bytes;
 		Bytes.SetNumUninitialized(HexString.Len() / 2);
@@ -47,7 +47,7 @@ bool FPetDataLoaderTamperedRecordTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	const TArray<uint8> Key = HexStringToBytes(TEXT("ad2f50e7781fcca5148299d249825f117ff78cc0b1758de30ce9832f01918e39"));
+	const TArray<uint8> Key = TamperTestHexStringToBytes(TEXT("ad2f50e7781fcca5148299d249825f117ff78cc0b1758de30ce9832f01918e39"));
 	const FString PublicKeyPem =
 		TEXT("-----BEGIN PUBLIC KEY-----\n")
 		TEXT("MCowBQYDK2VwAyEASmCzzcPySYHgKJgbH2uuAjtP4gXGRl2jP4ynBxOF2K0=\n")

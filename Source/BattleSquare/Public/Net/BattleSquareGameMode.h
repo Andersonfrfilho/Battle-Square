@@ -72,6 +72,13 @@ public:
 	/** Devolve o motivo quando não conseguiu ligar — nunca falha em silêncio. */
 	FString SetUpWorldEncounterFlow();
 
+	/**
+	 * Carrega os pets do espelho configurado em DefaultGame.ini. Extraído para
+	 * ser reusado por quem monta uma partida sem passar pelo mundo aberto
+	 * (a tela de batalha). Devolve o motivo em caso de falha, nunca vazio.
+	 */
+	FString LoadConfiguredMirrorPets(TArray<FLoadedPetRecord>& OutPets) const;
+
 private:
 	// Em nível com World Partition os atores chegam por streaming DEPOIS do
 	// BeginPlay do GameMode — tentar uma vez só encontra um mundo vazio.

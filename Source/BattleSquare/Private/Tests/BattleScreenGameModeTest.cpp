@@ -1,0 +1,117 @@
+// Copyright 2026 Anderson. All Rights Reserved.
+
+#include "UI/BattleScreenGameMode.h"
+#include "Battle/BattleArena.h"
+#include "Misc/AutomationTest.h"
+#include "Misc/Paths.h"
+#include "Engine/World.h"
+#include "Engine/Engine.h"
+
+namespace
+{
+	ABattleScreenGameMode* SpawnConfiguredScreenGameMode(UWorld* World)
+	{
+		ABattleScreenGameMode* GameMode = World->SpawnActor<ABattleScreenGameMode>();
+		GameMode->WorldEncounterMirrorPath =
+			FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("PetMirrorFixture"), TEXT("pets-mirror.sqlite"));
+		GameMode->WorldEncounterMirrorKeyHex =
+			TEXT("ad2f50e7781fcca5148299d249825f117ff78cc0b1758de30ce9832f01918e39");
+		GameMode->WorldEncounterMirrorPublicKeyPem =
+			TEXT("-----BEGIN PUBLIC KEY-----\n")
+			TEXT("MCowBQYDK2VwAyEASmCzzcPySYHgKJgbH2uuAjtP4gXGRl2jP4ynBxOF2K0=\n")
+			TEXT("-----END PUBLIC KEY-----\n");
+		// Slot dedicado: nunca poluir o slot de produção em teste.
+		GameMode->PetCollectionSlotName = TEXT("BattleScreenTestCollection");
+		return GameMode;
+	}
+
+	UWorld* CreateScreenTestWorld()
+	{
+		UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
+		FWorldContext& WorldContext = GEngine->CreateNewWorldContext(EWorldType::Game);
+		WorldContext.SetCurrentWorld(World);
+		World->InitializeActorsForPlay(FURL());
+		return World;
+	}
+
+	void DestroyScreenTestWorld(UWorld* World)
+	{
+		if (!World)
+		{
+			return;
+		}
+		GEngine->DestroyWorldContext(World);
+		World->DestroyWorld(false);
+	}
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattleScreenAssemblesWithoutWorldTest,
+	"BattleSquare.UI.BattleScreenGameMode.AssemblesArenaWithoutOpenWorld",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FBattleScreenAssemblesWithoutWorldTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateScreenTestWorld();
+	ABattleScreenGameMode* GameMode = SpawnConfiguredScreenGameMode(World);
+
+	// Sem classe de widget: a batalha ainda tem de MONTAR. A ausência de
+	// interface degrada, não impede (DP-ui-04).
+	const FString Problem = GameMode->StartScreenBattle();
+
+	TestNotNull(TEXT("a arena foi montada sem nenhum mundo aberto envolvido"), GameMode->ScreenArena.Get());
+	TestEqual(TEXT("a arena recebeu os dois pets"),
+		GameMode->ScreenArena ? GameMode->ScreenArena->GetCurrentState().Pets.Num() : 0, 2);
+	TestTrue(TEXT("o motivo devolvido é só sobre a interface ausente"),
+		Problem.Contains(TEXT("ActionSelectorWidgetClassPath")));
+
+	DestroyScreenTestWorld(World);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattleScreenPicksDistinctOpponentTest,
+	"BattleSquare.UI.BattleScreenGameMode.DefaultOpponentDiffersFromPlayer",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FBattleScreenPicksDistinctOpponentTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateScreenTestWorld();
+	ABattleScreenGameMode* GameMode = SpawnConfiguredScreenGameMode(World);
+	GameMode->StartScreenBattle();
+
+	if (!GameMode->ScreenArena)
+	{
+		AddError(TEXT("arena não montou"));
+		DestroyScreenTestWorld(World);
+		return false;
+	}
+
+	const TArray<FPetState>& Pets = GameMode->ScreenArena->GetCurrentState().Pets;
+	TestEqual(TEXT("dois pets"), Pets.Num(), 2);
+	// Sem ids configurados, o padrão não pode escalar o mesmo pet dos dois lados.
+	TestNotEqual(TEXT("os dois lados são pets diferentes"),
+		static_cast<int32>(Pets[0].PetId), static_cast<int32>(Pets[1].PetId));
+	TestEqual(TEXT("lado 0 é o jogador"), static_cast<int32>(Pets[0].Side), 0);
+	TestEqual(TEXT("lado 1 é o oponente"), static_cast<int32>(Pets[1].Side), 1);
+
+	DestroyScreenTestWorld(World);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattleScreenMissingMirrorIsAReasonTest,
+	"BattleSquare.UI.BattleScreenGameMode.MissingMirrorIsAReasonNotACrash",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FBattleScreenMissingMirrorIsAReasonTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateScreenTestWorld();
+	ABattleScreenGameMode* GameMode = SpawnConfiguredScreenGameMode(World);
+	GameMode->WorldEncounterMirrorPath.Reset();
+
+	const FString Problem = GameMode->StartScreenBattle();
+
+	TestFalse(TEXT("devolve motivo legível"), Problem.IsEmpty());
+	TestNull(TEXT("e não deixa arena pela metade"), GameMode->ScreenArena.Get());
+
+	DestroyScreenTestWorld(World);
+	return true;
+}

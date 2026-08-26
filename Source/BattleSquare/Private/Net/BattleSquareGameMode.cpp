@@ -69,6 +69,44 @@ namespace
 	}
 }
 
+FString ABattleSquareGameMode::LoadConfiguredMirrorPets(TArray<FLoadedPetRecord>& OutPets) const
+{
+	if (WorldEncounterMirrorPath.IsEmpty())
+	{
+		return TEXT("WorldEncounterMirrorPath não configurado em DefaultGame.ini");
+	}
+
+	// Caminho relativo tem DOIS significados possíveis, e os dois aparecem de
+	// verdade: o do .ini é relativo ao PROJETO ("Saved/..."), e o que a própria
+	// engine devolve em FPaths::ProjectSavedDir() é relativo ao PROCESSO
+	// ("../../../Projeto/Saved/..."). Resolver só de um jeito quebra o outro —
+	// foi assim que o teste de bootstrap caiu. Tenta projeto, cai para processo.
+	FString ResolvedMirrorPath = WorldEncounterMirrorPath;
+	if (FPaths::IsRelative(ResolvedMirrorPath))
+	{
+		const FString ProjectRelative =
+			FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectDir(), WorldEncounterMirrorPath));
+		ResolvedMirrorPath = FPaths::FileExists(ProjectRelative)
+			? ProjectRelative
+			: FPaths::ConvertRelativePathToFull(WorldEncounterMirrorPath);
+	}
+
+	int32 RejectedCount = 0;
+	const bool bLoaded = FPetDataLoader::LoadVerifiedPets(
+		ResolvedMirrorPath,
+		MirrorKeyHexToBytes(WorldEncounterMirrorKeyHex),
+		WorldEncounterMirrorPublicKeyPem,
+		OutPets,
+		RejectedCount);
+
+	if (!bLoaded || OutPets.Num() == 0)
+	{
+		return FString::Printf(TEXT("espelho de pets não carregou em '%s'"), *ResolvedMirrorPath);
+	}
+
+	return FString();
+}
+
 FString ABattleSquareGameMode::SetUpWorldEncounterFlow()
 {
 	UWorld* World = GetWorld();
@@ -122,38 +160,10 @@ FString ABattleSquareGameMode::SetUpWorldEncounterFlow()
 
 	bWorldEncounterSetupIsTransient = false;
 
-	if (WorldEncounterMirrorPath.IsEmpty())
-	{
-		return TEXT("WorldEncounterMirrorPath não configurado em DefaultGame.ini");
-	}
-
-	// Caminho relativo tem DOIS significados possíveis, e os dois aparecem de
-	// verdade: o do .ini é relativo ao PROJETO ("Saved/..."), e o que a própria
-	// engine devolve em FPaths::ProjectSavedDir() é relativo ao PROCESSO
-	// ("../../../Projeto/Saved/..."). Resolver só de um jeito quebra o outro —
-	// foi assim que o teste de bootstrap caiu. Tenta projeto, cai para processo.
-	FString ResolvedMirrorPath = WorldEncounterMirrorPath;
-	if (FPaths::IsRelative(ResolvedMirrorPath))
-	{
-		const FString ProjectRelative =
-			FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectDir(), WorldEncounterMirrorPath));
-		ResolvedMirrorPath = FPaths::FileExists(ProjectRelative)
-			? ProjectRelative
-			: FPaths::ConvertRelativePathToFull(WorldEncounterMirrorPath);
-	}
-
 	TArray<FLoadedPetRecord> Pets;
-	int32 RejectedCount = 0;
-	const bool bLoaded = FPetDataLoader::LoadVerifiedPets(
-		ResolvedMirrorPath,
-		MirrorKeyHexToBytes(WorldEncounterMirrorKeyHex),
-		WorldEncounterMirrorPublicKeyPem,
-		Pets,
-		RejectedCount);
-
-	if (!bLoaded || Pets.Num() == 0)
+	if (const FString MirrorProblem = LoadConfiguredMirrorPets(Pets); !MirrorProblem.IsEmpty())
 	{
-		return FString::Printf(TEXT("espelho de pets não carregou em '%s'"), *ResolvedMirrorPath);
+		return MirrorProblem;
 	}
 
 	FEncounterMatchParams MatchParams;

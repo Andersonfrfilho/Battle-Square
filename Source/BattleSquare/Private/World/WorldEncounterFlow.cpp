@@ -1,0 +1,59 @@
+// Copyright 2026 Anderson. All Rights Reserved.
+
+#include "World/WorldEncounterFlow.h"
+#include "World/EncounterDetectionComponent.h"
+#include "World/WorldBattleTransitionService.h"
+#include "World/WorldEncounterActor.h"
+#include "Battle/BattleArena.h"
+
+void UWorldEncounterFlow::Initialize(AActor* InWorldPawn,
+	UEncounterDetectionComponent* InDetection,
+	TSubclassOf<ABattleArena> InArenaClass,
+	const FEncounterMatchParams& InMatchParams)
+{
+	WorldPawn = InWorldPawn;
+	Detection = InDetection;
+	ArenaClass = InArenaClass;
+	MatchParams = InMatchParams;
+
+	if (!TransitionService)
+	{
+		TransitionService = NewObject<UWorldBattleTransitionService>(this);
+	}
+
+	if (Detection)
+	{
+		Detection->OnEncounterTriggered.AddUObject(this, &UWorldEncounterFlow::HandleEncounterTriggeredInternal);
+	}
+}
+
+ABattleArena* UWorldEncounterFlow::HandleEncounterTriggered(AWorldEncounterActor* Encounter)
+{
+	if (!Encounter || !WorldPawn || !Detection || !TransitionService)
+	{
+		return nullptr;
+	}
+
+	FEncounterMatchParams Params = MatchParams;
+	Params.EncounterCatalogId = Encounter->CatalogId.ToString();
+
+	FBattleState InitialState;
+	TArray<FPetPresentationInfo> Presentations;
+	if (!FEncounterMatchAssembler::AssembleFromEncounter(Params, InitialState, Presentations))
+	{
+		// Montagem impossível não vira batalha meia-boca: a detecção volta a
+		// ligar para o jogador não ficar preso num encontro que nunca começa.
+		Detection->SetDetectionEnabled(true);
+		return nullptr;
+	}
+
+	ABattleArena* Arena = TransitionService->BeginTransition(WorldPawn, Detection, Encounter, ArenaClass);
+	if (!Arena)
+	{
+		Detection->SetDetectionEnabled(true);
+		return nullptr;
+	}
+
+	Arena->BeginBattle(InitialState, Presentations);
+	return Arena;
+}

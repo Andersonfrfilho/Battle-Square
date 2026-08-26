@@ -13,12 +13,27 @@
 			"Name": "BattleSquare",
 			"Type": "Runtime",
 			"LoadingPhase": "Default",
-			"AdditionalDependencies": [ "Engine" ]
+			"AdditionalDependencies": [
+				"Engine"
+			]
 		}
 	],
 	"Plugins": [
-		{ "Name": "ModelContextProtocol", "Enabled": true },
-		{ "Name": "AllToolsets", "Enabled": true },
-		{ "Name": "EnhancedInput", "Enabled": true }
+		{
+			"Name": "ModelContextProtocol",
+			"Enabled": true
+		},
+		{
+			"Name": "AllToolsets",
+			"Enabled": true
+		},
+		{
+			"Name": "EnhancedInput",
+			"Enabled": true
+		},
+		{
+			"Name": "SQLiteCore",
+			"Enabled": true
+		}
 	]
 }

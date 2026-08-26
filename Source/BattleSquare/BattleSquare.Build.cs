@@ -17,10 +17,13 @@ public class BattleSquare : ModuleRules
 			"EnhancedInput",
 			"GameplayTags",
 			"BattleSim",
-			// AD-019: SQLite isolado em módulo barreira (regras de warning
-			// próprias — ver SQLiteLibrary.Build.cs) para ler o espelho
-			// local de pets.
-			"SQLiteLibrary",
+			// AD-019 revisada em 2026-08-26: o SQLite vem do plugin SQLiteCore
+			// da engine, que expõe a API C de propósito
+			// (SQLITE_API=SQLITECORE_API). Antes havia um módulo barreira
+			// compilando a própria cópia de sqlite3.c — o que passava no
+			// Editor (um dylib por módulo) e QUEBRAVA o build empacotado, que
+			// é monolítico: 270 símbolos duplicados contra os do SQLiteCore.
+			"SQLiteCore",
 			// T11/T12 (apresentacao-combate): classes base C++ de widget —
 			// só a classe, sem layout UMG (ver design.md, Limite de
 			// Ferramenta).

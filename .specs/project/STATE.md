@@ -171,6 +171,12 @@ O caminho de leitura NÃO é o servidor de combate chamando o backend remoto a c
 **Por que banimento persistente fica de fora:** exige identidade de jogador entre sessões, que o projeto não tem — v1 usa código de sala (PROJECT.md, Out of Scope: matchmaking real). Prometer bloqueio permanente sem essa infraestrutura seria documentar algo que não pode ser implementado hoje.
 **Impacto:** PETDB-12 na spec do backend de dados de pet. A trilha de auditoria do Nível 1 (evidência de adulteração) é desenhada para ser reaproveitada por um sistema de moderação futuro, sem precisar ser reconstruída quando conta de jogador existir.
 
+### AD-019 (revisada em 2026-08-26): o SQLite vem da engine, não vendorizado
+
+**Decisão original (2025-08-25):** módulo barreira `SQLiteLibrary` compilando a própria cópia de `sqlite3.c`, com regras de warning próprias.
+**O que mudou:** a cópia própria colidia com o `SQLiteCore` da engine no build empacotado (270 símbolos duplicados — ver **L-027**). O projeto passou a depender do plugin `SQLiteCore`, que expõe a API C de propósito, e o módulo barreira foi removido por ter ficado sem conteúdo.
+**O que se manteve:** a intenção original — `BattleSquare` continua consumindo `#include "sqlite3.h"` sem saber de onde vem — e o princípio que o próprio AD-019 já enunciava para o OpenSSL: consumir o que a engine já tem.
+
 ### AD-018: `bun:sqlite` não tem SQLCipher — criptografia por arquivo (AES-256-GCM) com temporário em RAM (2026-08-25)
 
 **Descoberto:** ao implementar T12, testei `PRAGMA key` no `bun:sqlite` diretamente — foi aceito sem erro e o dado ficou em **texto plano** no arquivo. `bun:sqlite` não tem a extensão SQLCipher compilada; teria sido uma falsa sensação de segurança se eu não tivesse testado (mesmo padrão de L-004/L-007: verificar em vez de afirmar).
@@ -456,6 +462,21 @@ find "$HOME/Library/Logs/Unreal Engine/BattleSquareEditor" Saved/Logs -newer <ma
 **Causa:** era outra coisa. O teste `MissingInputAssetsDoNotCrash` chamava `Explorer->SetupPlayerInputComponent(nullptr)`, e o `Super::` da engine desreferencia o ponteiro — SIGSEGV dentro do `AutomationWorker`. O processo morreu no meio da bateria, e **todo teste que viria depois em ordem alfabética simplesmente não rodou** (`WorldTraversalMotion` vem depois de `WorldExplorerCharacter`). O `Automation RunTests` não reporta isso como falha: ele reporta os que conseguiram terminar, e o resto some.
 **Solução:** passar um `UEnhancedInputComponent` real com os *assets* nulos — que é o estado que o teste queria exercitar de verdade (ninguém autorou os `UInputAction` ainda), não um `UInputComponent` nulo, que é um estado que a engine nunca produz. O código de produção estava correto o tempo todo.
 **Previne:** "faltam testes na contagem" tem pelo menos duas causas, e elas se confundem: binário velho (L-025) e **processo morto no meio da bateria**. O que as separa é uma linha — `grep -a StaticShutdownAfterError` no log; se aparecer, houve crash e o problema é um teste, não o build. E a lição de fundo: ao escrever um teste de robustez, exercitar o estado inválido que o **sistema real produz**, não o mais nulo que o compilador aceita — `nullptr` num parâmetro que a engine sempre preenche testa a engine, não o nosso código.
+
+### L-027: bug que só existe no build empacotado — o Editor é modular, o pacote é monolítico
+
+**Contexto:** M6, ao empacotar para Mac pela primeira vez (`RunUAT BuildCookRun`). O link falhou com **270 símbolos duplicados** de `sqlite3` entre o módulo `SQLiteLibrary` do projeto (que compilava a própria cópia de `sqlite3.c`) e o plugin `SQLiteCore` da engine.
+**Por que nunca apareceu antes:** o alvo **Editor é modular** — cada módulo vira um `.dylib` e o símbolo duplicado se resolve por precedência de link dinâmico, em silêncio. O alvo de **jogo é monolítico**: tudo entra num binário só, e aí o duplicado é erro de link. **As 118 verdes do Editor não diziam nada sobre isso**, e não tinham como dizer.
+**Causa raiz:** `AD-019` escolheu um módulo barreira para o SQLite e, no mesmo texto, registrou o princípio certo ao falar do OpenSSL — *"consumir o que a engine já tem, não vendorizar de novo"*. O princípio simplesmente não foi aplicado ao SQLite: `sqlite3.c` foi vendorizado em `Source/SQLiteLibrary/Public/`.
+**Solução:** o projeto passou a depender do plugin `SQLiteCore` da engine, que expõe a API C **de propósito** (`SQLiteCore.Build.cs`: `SQLITE_API=SQLITECORE_API`, com o comentário *"Allow direct access to the SQLite API from outside this module"*). O módulo barreira foi removido: sem nada vendorizado para isolar, ele não tinha mais função — e, esvaziado, uma `PublicDependencyModuleNames` dele nem propagava (módulo sem fonte alguma não repassa a dependência, o que gerou um segundo erro de link, agora de símbolo **indefinido**, antes de a causa ficar clara). Os 118 testes continuam verdes, incluindo os do `FPetDataLoader`, que de fato abrem o espelho SQLite — prova de que a implementação da engine serve igual.
+**Previne:** **empacotar cedo, mesmo sem precisar do pacote.** Uma classe inteira de defeito — símbolo duplicado, dependência de módulo faltando, plugin não habilitado, config malformada — é invisível para `Automation RunTests` no Editor e só aparece no primeiro `BuildCookRun`. Este projeto passou de M1 a M7 sem empacotar uma vez, e acumulou dois defeitos silenciosos até aqui (este e o `ProjectID` de L-028).
+
+### L-028: `FGuid` em `.ini` com hífens faz o cook falhar por "1 error"
+
+**Contexto:** logo depois de L-027, o cook falhou com `Failure - 1 error(s)` e a única linha de erro era `LogObj: Error: LoadConfig (/Script/EngineSettings.Default__GeneralProjectSettings): import failed for ProjectID in: 59423EED-39EA-47AB-A1F5-090E34A682C6`.
+**Causa:** `ProjectID` é um `FGuid`, e o importador de `FGuid` da Unreal espera os 32 dígitos hexadecimais **sem hífens**. Com hífens o import falha; o cook conta como erro e aborta o empacotamento inteiro.
+**Solução:** `ProjectID=59423EED39EA47ABA1F5090E34A682C6`.
+**Previne:** um erro de *parse de config* aborta o cook com a mesma severidade de um asset quebrado, e a mensagem não diz "corrija o formato" — diz só "import failed". Ao ver um cook falhar com 1 erro e nenhum problema de conteúdo aparente, procurar `LoadConfig .* import failed` antes de suspeitar de asset.
 
 ---
 

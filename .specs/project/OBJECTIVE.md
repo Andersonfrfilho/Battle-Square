@@ -73,8 +73,17 @@ M7 (Contas e Moderação)
 
 - Não specifica M3–M7 antecipadamente — cada marco ganha spec própria na hora, com o contexto real de quando chegar lá (o que se aprendeu nos marcos anteriores muda decisões, sempre mudou nesta sessão).
 - Não compromete prazo — não há estimativa de tempo aqui, só ordem e dependência.
-- Não é permissão para pular os portões de aprovação spec-driven (Specify → Design → Tasks → Execute) de cada feature — o objetivo dá a direção; a disciplina de execução continua a mesma de M1/M2.
+
+## Modo de execução (atualizado 2026-08-26, instrução explícita do usuário)
+
+A partir de M4, a instrução foi **"terminar todas as tarefas sem parar"**, com **uma varredura final de bugs** ao fim de cada marco. Isso muda o que os portões de aprovação (Specify → Design → Tasks → Execute) significam na prática:
+
+- **Os documentos continuam sendo escritos e commitados** em cada fase — spec, design, tasks — exatamente como em M1–M3. A disciplina de registro não é o que muda.
+- **A pausa para aprovação explícita entre fases é suspensa** para o trabalho de rotina — sigo de Specify direto a Execute sem esperar confirmação a cada portão, pelo tempo que esta instrução estiver de pé.
+- **B-001 continua sendo uma exceção que exige parar de verdade.** É um gate marcado como "decisão consciente de go/no-go", não técnica — "sem parar" não sobrescreve isso. Ao chegar em M5, o gate é apresentado ao usuário explicitamente antes de specar/implementar, mesmo sob esta instrução.
+- **Ambiguidade de produto real (não técnica) ainda pausa para perguntar** — como já aconteceu ao decidir o gatilho de captura de M4. "Sem parar" cobre execução mecânica, não decisões que só o usuário pode tomar.
+- **Um bug real que muda o resultado de uma feature já entregue** (como L-019/L-020 em M3) é corrigido na hora, registrado em `STATE.md`, e o trabalho continua — não é motivo de pausa, é o tipo de coisa que a varredura final de bugs existe para pegar quando passar despercebida.
 
 ## Próximo passo concreto
 
-M3 — Conteúdo e Balanceamento. Primeira feature: **Escala de Pets e Skills** (tipos/fraquezas/resistências por dados, ferramenta de balanceamento em lote). Segue o mesmo fluxo: `spec.md` primeiro, aprovação, depois design.
+M4 — Progressão e Meta. Primeira feature: **Coleção e Captura** — captura disparada por vitória em batalha contra um pet de espécie ainda não coletada (decisão do usuário, 2026-08-26, dado que o Mundo Aberto de M5 ainda não existe para dar um mecanismo de encontro). Depois, **Níveis, Experiência e Evolução**, construída sobre a coleção.

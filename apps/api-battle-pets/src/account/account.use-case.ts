@@ -19,6 +19,7 @@ import {
   issueAccessToken,
 } from './account.token';
 import { validatePasswordPolicy, type PasswordPolicyViolation } from './account.password';
+import { getBanState } from '../moderation/moderation.use-case';
 
 // Um hash descartável, de senha aleatória, usado só para gastar tempo no
 // caminho de e-mail inexistente (DP-conta-04). Sem isto, o TEMPO de resposta
@@ -92,7 +93,8 @@ function isUniqueViolation(error: unknown): boolean {
 
 export type AuthenticateResult =
   | { readonly ok: true; readonly session: AccountSession }
-  | { readonly ok: false };
+  | { readonly ok: false }
+  | { readonly ok: false; readonly banned: true; readonly reason: string; readonly expiresAt: Date | null };
 
 export async function authenticateAccount(input: {
   email: string;
@@ -111,6 +113,12 @@ export async function authenticateAccount(input: {
   const passwordMatches = await Bun.password.verify(input.password, account.passwordHash);
   if (!passwordMatches || account.status !== AccountStatus.ACTIVE) {
     return { ok: false };
+  }
+
+  // O banimento vale AGORA, não quando o token expirar (DP-mod-03).
+  const banState = await getBanState(account.id, input.now);
+  if (banState.banned) {
+    return { ok: false, banned: true, reason: banState.ban.reason, expiresAt: banState.ban.expiresAt };
   }
 
   return { ok: true, session: await issueSession(account.id, input.now) };

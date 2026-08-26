@@ -1,6 +1,6 @@
 # Roadmap
 
-**Marco atual:** M6 — Plataformas. M5 concluído em 2026-08-26 (gate B-001 liberado pelo usuário); as três features de mundo aberto estão entregues.
+**Marco atual:** roadmap percorrido até onde esta máquina permite (2026-08-26). M1–M5 e M7 concluídos; **M6 é o único incompleto**, e por bloqueio de infraestrutura, não de código — ver B-006/B-006b/B-007 (nenhuma plataforma móvel compila aqui) e B-008 (console exige licença e devkit).
 **Status:** M1, M2, M3 e M4 concluídos
 **Objetivo de fechamento do roadmap inteiro (M3→M7):** `.specs/project/OBJECTIVE.md` — ordem, dependências entre marcos, gates (B-001, B-004) e critério de "pronto" do projeto completo.
 
@@ -108,7 +108,7 @@
 
 ---
 
-## M6 — Plataformas
+## M6 — Plataformas — ⚠️ INCOMPLETO (bloqueado por infraestrutura)
 
 **Objetivo:** sair do PC.
 
@@ -119,7 +119,7 @@
 
 ---
 
-## M7 — Contas e Moderação
+## M7 — Contas e Moderação — ✅ CONCLUÍDO (2026-08-26)
 
 **Objetivo:** identidade de jogador persistente entre partidas, pré-requisito para qualquer consequência que precise sobreviver ao fim de uma sessão — banimento, histórico, reputação, progressão de conta.
 
@@ -128,7 +128,7 @@
 ### Features
 
 **Conta de Jogador** — ✅ CONCLUÍDO (2026-08-26) — serviço e contrato entregues; cliente C++ e sincronização de coleção ficaram fora de escopo por decisão da spec.
-**Moderação e Banimento** — PLANNED (consome a trilha de auditoria do backend de dados de pet)
+**Moderação e Banimento** — ✅ CONCLUÍDO (2026-08-26) — o Nível 2 que AD-017 prometeu. Cliente C++ reportando adulteração ficou fora de escopo por decisão da spec.
 
 ---
 

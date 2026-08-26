@@ -5,7 +5,11 @@ import { defineConfig } from 'drizzle-kit';
 import { environment } from './src/config/environment';
 
 export default defineConfig({
-  schema: ['./src/pet/pet.schema.ts', './src/account/account.schema.ts'],
+  schema: [
+    './src/pet/pet.schema.ts',
+    './src/account/account.schema.ts',
+    './src/moderation/moderation.schema.ts',
+  ],
   out: './drizzle',
   dialect: 'postgresql',
   dbCredentials: { url: environment.DATABASE_URL },

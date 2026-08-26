@@ -15,6 +15,13 @@
       "when": 1787744351007,
       "tag": "0001_cuddly_omega_sentinel",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787744656485,
+      "tag": "0002_red_cobalt_man",
+      "breakpoints": true
     }
   ]
 }

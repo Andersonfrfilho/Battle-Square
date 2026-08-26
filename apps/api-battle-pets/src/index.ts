@@ -8,6 +8,12 @@ import {
   handleRegisterAccount,
 } from './account/account.controller';
 import {
+  handleBanAccount,
+  handleLiftBan,
+  handleListModerationHistory,
+  handleRecordModerationEvent,
+} from './moderation/moderation.controller';
+import {
   handleCreatePet,
   handleDeletePet,
   handleExportPets,
@@ -18,6 +24,9 @@ import {
 
 const UUID_PATTERN = '[0-9a-fA-F-]{36}';
 const petByIdPattern = new RegExp(`^/v1/pets/(${UUID_PATTERN})$`);
+const accountModerationEventsPattern = new RegExp(`^/v1/accounts/(${UUID_PATTERN})/moderation-events$`);
+const accountBansPattern = new RegExp(`^/v1/accounts/(${UUID_PATTERN})/bans$`);
+const banByIdPattern = new RegExp(`^/v1/bans/(${UUID_PATTERN})$`);
 
 const server = Bun.serve({
   port: environment.PORT,
@@ -39,6 +48,23 @@ const server = Bun.serve({
 
     if (url.pathname === '/v1/accounts/sessions/refresh') {
       if (request.method === 'POST') return handleRefreshSession(request);
+    }
+
+    const moderationEventsMatch = url.pathname.match(accountModerationEventsPattern);
+    if (moderationEventsMatch) {
+      const accountId = moderationEventsMatch[1]!;
+      if (request.method === 'POST') return handleRecordModerationEvent(request, accountId);
+      if (request.method === 'GET') return handleListModerationHistory(request, accountId);
+    }
+
+    const accountBansMatch = url.pathname.match(accountBansPattern);
+    if (accountBansMatch) {
+      if (request.method === 'POST') return handleBanAccount(request, accountBansMatch[1]!);
+    }
+
+    const banMatch = url.pathname.match(banByIdPattern);
+    if (banMatch) {
+      if (request.method === 'DELETE') return handleLiftBan(request, banMatch[1]!);
     }
 
     if (url.pathname === '/v1/pets/export') {

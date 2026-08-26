@@ -64,6 +64,17 @@ export async function handleLogin(request: Request): Promise<Response> {
   }
 
   const result = await AccountUseCase.authenticateAccount({ ...parsed.data, now });
+
+  if (!result.ok && 'banned' in result) {
+    // Credencial estava CERTA — não conta como tentativa falha, senão banir
+    // alguém também o tranca por força bruta que ele não cometeu.
+    loginLimiter.registerSuccess(limiterKey);
+    return jsonError(403, 'ACCOUNT_BANNED', 'Esta conta está banida', [
+      { field: 'account', message: result.reason },
+      { field: 'expiresAt', message: result.expiresAt ? result.expiresAt.toISOString() : 'permanente' },
+    ]);
+  }
+
   if (!result.ok) {
     loginLimiter.registerFailure(limiterKey, now);
     // MESMA resposta para e-mail inexistente e senha errada: distinguir os dois

@@ -191,3 +191,84 @@ bool FBattleTurnCoordinatorCommitAfterTimeoutRejectedTest::RunTest(const FString
 
 	return true;
 }
+
+// T13 (NET-07/DP-online-03): reconexão simulada — chamar
+// GetCurrentBattleState diretamente entrega o FBattleState atual, sem
+// exigir replay de trace nenhum.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FBattleTurnCoordinatorReconnectionReturnsCurrentStateTest,
+	"BattleSquare.Net.ReconnectionAndAbandon.ReconnectionReturnsCurrentState",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FBattleTurnCoordinatorReconnectionReturnsCurrentStateTest::RunTest(const FString& Parameters)
+{
+	UBattleTurnCoordinator* Coordinator = NewObject<UBattleTurnCoordinator>();
+	const FBattleState StateAtBeginTurn = MakeCoordinatorDuelState();
+	Coordinator->BeginTurn(StateAtBeginTurn, 0.0);
+
+	const FBattleState& Reconnected = Coordinator->GetCurrentBattleState();
+	TestEqual(TEXT("Reconexão recebe o mesmo número de pets do estado atual"), Reconnected.Pets.Num(), StateAtBeginTurn.Pets.Num());
+	TestEqual(TEXT("Reconexão recebe a vida real do pet, sem recalcular"), Reconnected.Pets[0].Health, StateAtBeginTurn.Pets[0].Health);
+	TestEqual(TEXT("Reconexão recebe a posição real do pet"), Reconnected.Pets[1].Column, StateAtBeginTurn.Pets[1].Column);
+
+	return true;
+}
+
+// T13 (NET-08): jogador desconectado continua sujeito ao MESMO
+// CommitTimeoutSeconds — nenhum tratamento especial que prenda o outro
+// jogador além do timeout normal de commit (a ausência por queda de
+// rede não é distinguível de AFK do ponto de vista do turno).
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FBattleTurnCoordinatorDisconnectedStillSubjectToTimeoutTest,
+	"BattleSquare.Net.ReconnectionAndAbandon.DisconnectedStillSubjectToCommitTimeout",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FBattleTurnCoordinatorDisconnectedStillSubjectToTimeoutTest::RunTest(const FString& Parameters)
+{
+	UBattleTurnCoordinator* Coordinator = NewObject<UBattleTurnCoordinator>();
+	bool bResolvedFired = false;
+	Coordinator->OnTurnResolved.AddLambda([&bResolvedFired](const FBattleState&, const TArray<FBattleEvent>&) { bResolvedFired = true; });
+
+	Coordinator->BeginTurn(MakeCoordinatorDuelState(), 0.0);
+	Coordinator->SubmitCommit(0, MakeAttackCommit());
+	// Lado 1 "desconectado" — nunca commita. Mesmo caminho de CheckTimeout
+	// de sempre, sem exceção nem prazo estendido por causa da queda.
+
+	Coordinator->CheckTimeout(static_cast<double>(BattleNetConstants::CommitTimeoutSeconds) - 1.0);
+	TestFalse(TEXT("Antes do CommitTimeoutSeconds normal, não resolve — mesma regra de sempre"), bResolvedFired);
+
+	Coordinator->CheckTimeout(static_cast<double>(BattleNetConstants::CommitTimeoutSeconds));
+	TestTrue(TEXT("No CommitTimeoutSeconds normal, resolve preenchendo o lado desconectado — nenhum prazo especial"), bResolvedFired);
+
+	return true;
+}
+
+// T13 (NET-11): abandono declara vitória ao jogador presente via o
+// evento BatalhaEncerrada já existente — nenhum EBattleEventType novo.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FBattleTurnCoordinatorAbandonmentDeclaresVictoryTest,
+	"BattleSquare.Net.ReconnectionAndAbandon.AbandonmentDeclaresVictoryForPresentSide",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FBattleTurnCoordinatorAbandonmentDeclaresVictoryTest::RunTest(const FString& Parameters)
+{
+	UBattleTurnCoordinator* Coordinator = NewObject<UBattleTurnCoordinator>();
+
+	bool bAbandonmentFired = false;
+	FBattleEvent ReceivedEvent;
+	Coordinator->OnAbandonment.AddLambda([&bAbandonmentFired, &ReceivedEvent](const FBattleEvent& Event)
+	{
+		bAbandonmentFired = true;
+		ReceivedEvent = Event;
+	});
+
+	// Lado 1 abandonou (nunca reconectou dentro de AbandonTimeoutSeconds)
+	// — lado 0 é o presente, e vence.
+	Coordinator->DeclareAbandonment(/*PresentSide=*/0);
+
+	TestTrue(TEXT("Abandono dispara o delegate"), bAbandonmentFired);
+	TestTrue(TEXT("Evento é o BatalhaEncerrada já existente, não um tipo novo"), ReceivedEvent.Type == EBattleEventType::BatalhaEncerrada);
+	TestEqual(TEXT("Value do evento é o lado presente (vencedor)"), ReceivedEvent.Value, 0);
+
+	return true;
+}

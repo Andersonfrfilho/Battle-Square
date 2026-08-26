@@ -105,3 +105,20 @@ FTurnCommit UBattleTurnCoordinator::MakeWaitOnlyCommit()
 	Commit.Actions[2] = { EActionType::Aguardar, EBattleDirection::Nenhuma };
 	return Commit;
 }
+
+void UBattleTurnCoordinator::DeclareAbandonment(uint8 PresentSide)
+{
+	OnAbandonment.Broadcast(MakeAbandonmentEvent(PresentSide));
+}
+
+FBattleEvent UBattleTurnCoordinator::MakeAbandonmentEvent(uint8 PresentSide)
+{
+	FBattleEvent Event;
+	Event.Type = EBattleEventType::BatalhaEncerrada;
+	Event.SlotIndex = 0;
+	Event.Phase = 0;
+	Event.ActorId = BattleEventNoActor;
+	Event.TargetId = BattleEventNoActor;
+	Event.Value = static_cast<int32>(PresentSide);
+	return Event;
+}

@@ -220,6 +220,8 @@ T11/T12/T13 ──→ T14
 **Verificar:** relatório honesto do resultado — sucesso ou limitação documentada, nunca "presumo que funciona"
 **Commit:** `test(battlesquare): investigação de teste PIE multiplayer para commit de rede` (só se produzir algo versionável)
 
+**✅ Concluída (2026-08-26) — não viabilizou, e por um motivo mais decisivo do que o esperado.** `Build.sh BattleSquareServer` falhou com `Server targets are not currently supported from this engine distribution` — a engine instalada (Epic Games Launcher, binária) não compila `TargetType.Server` de jeito nenhum, restrição de distribuição, não de código nem de headless/`-nullrhi`. Registrado como AD-020/B-004 em `STATE.md`. As 3 linhas ❌ do design.md permanecem ❌, com a causa real documentada. `ListenServer` não tem essa restrição mas não é o modo de produção pretendido (DP-online-01).
+
 ---
 
 ### T12: Teste real de commit atravessando 2 processos (condicional a T11) [P]
@@ -234,6 +236,8 @@ T11/T12/T13 ──→ T14
 
 **Verificar:** ver acima
 **Commit:** `test(battlesquare): commit real de 3 ações confirmado atravessando processos separados` (condicional)
+
+**⏭️ Pulada (2026-08-26)** — T11 não viabilizou (ver acima). O caso fica coberto pelo roteiro manual de T14, honestamente marcado como não verificado, até a engine ser trocada por uma build de fonte (B-004).
 
 ---
 

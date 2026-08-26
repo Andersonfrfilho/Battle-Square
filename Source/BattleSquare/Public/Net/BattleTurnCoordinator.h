@@ -25,6 +25,11 @@
 // lógica de timeout e de corrida (T6) sem depender de tempo real.
 DECLARE_MULTICAST_DELEGATE_TwoParams(FBattleTurnResolvedSignature, const FBattleState& /*NextState*/, const TArray<FBattleEvent>& /*Trace*/);
 
+// T13 (NET-11): dispara quando um lado é declarado abandonado. Carrega
+// o mesmo FBattleEvent BatalhaEncerrada que o núcleo já usa — nenhum
+// tipo de evento novo, mesmo vocabulário de sempre (BTL-22).
+DECLARE_MULTICAST_DELEGATE_OneParam(FBattleAbandonmentSignature, const FBattleEvent& /*BatalhaEncerradaEvent*/);
+
 UCLASS()
 class BATTLESQUARE_API UBattleTurnCoordinator : public UObject
 {
@@ -53,6 +58,23 @@ public:
 	void CheckTimeout(double CurrentTimeSeconds);
 
 	bool IsTurnResolved() const { return bResolved; }
+
+	// T13 (NET-07, DP-online-03): estado para um jogador que reconecta —
+	// entrega o FBattleState atual direto, NUNCA replay do trace
+	// acumulado. Quem chama isto (fora de escopo desta feature: sessão/
+	// GameMode) usa o resultado para reconstruir a visão local via
+	// ABattleArena::BeginBattle (SpawnPetViews + SetInitialState, já
+	// existentes) — mesmo caminho que já existe, sem componente novo.
+	const FBattleState& GetCurrentBattleState() const { return CurrentState; }
+
+	FBattleAbandonmentSignature OnAbandonment;
+
+	// T13 (NET-11): declara abandono do lado ausente — jogador presente
+	// vence. Reaproveita o vocabulário existente do trace (BatalhaEncerrada,
+	// Value = lado vencedor), nunca inventa um evento novo.
+	void DeclareAbandonment(uint8 PresentSide);
+
+	static FBattleEvent MakeAbandonmentEvent(uint8 PresentSide);
 
 private:
 	void TryResolveIfBothPresent();

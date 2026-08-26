@@ -169,10 +169,29 @@ void ABattleArena::HandleCoordinatorTurnResolved(const FBattleState& NextState, 
 	CurrentState = NextState;
 	CheckForCapture(Trace);
 	GrantExperienceIfOwned(Trace);
+	AnnounceBattleFinishedIfEnded(Trace);
 
 	if (TracePlayer)
 	{
 		TracePlayer->PlayTrace(Trace);
+	}
+}
+
+void ABattleArena::AnnounceBattleFinishedIfEnded(const TArray<FBattleEvent>& Trace)
+{
+	if (bHasAnnouncedBattleFinished)
+	{
+		return;
+	}
+
+	for (const FBattleEvent& Event : Trace)
+	{
+		if (Event.Type == EBattleEventType::BatalhaEncerrada)
+		{
+			bHasAnnouncedBattleFinished = true;
+			OnBattleFinished.Broadcast();
+			return;
+		}
 	}
 }
 
@@ -295,6 +314,7 @@ void ABattleArena::HandlePlayerCommitted()
 	CurrentState = Result.NextState;
 	CheckForCapture(Result.Trace);
 	GrantExperienceIfOwned(Result.Trace);
+	AnnounceBattleFinishedIfEnded(Result.Trace);
 
 	if (TracePlayer)
 	{

@@ -22,6 +22,8 @@ class UMaterialInterface;
 // visual manual — ver T14. O que este ator garante por código é: as 9
 // casas caem dentro do frustum da câmera, e a grade usa um material
 // configurável (nunca cor hardcoded).
+DECLARE_MULTICAST_DELEGATE(FBattleFinishedSignature);
+
 UCLASS()
 class BATTLESQUARE_API ABattleArena : public AActor
 {
@@ -68,6 +70,13 @@ public:
 	// algum pet estivesse posicionado numa casa Blocked — erro de
 	// configuração, nunca reposicionado silenciosamente.
 	bool BeginBattle(const FBattleState& InitialState, const TArray<FPetPresentationInfo>& Presentations);
+
+	// T4 (encontros-transicao-batalha): a arena não tinha como anunciar o
+	// próprio fim — CheckForCapture/GrantExperienceIfOwned varrem o trace em
+	// silêncio, e quem está de fora não fica sabendo. Dispara UMA vez, e
+	// sempre DEPOIS de captura e XP terem rodado: quem escuta (a transição de
+	// volta ao mundo) destrói esta arena, e destruí-la antes perderia os dois.
+	FBattleFinishedSignature OnBattleFinished;
 
 	const FBattleState& GetCurrentState() const { return CurrentState; }
 
@@ -144,4 +153,10 @@ private:
 	// em qualquer resultado (vitória/derrota/empate), quantidades
 	// diferentes. Pet ainda não capturado não gera XP fantasma.
 	void GrantExperienceIfOwned(const TArray<FBattleEvent>& Trace);
+
+	// Dispara OnBattleFinished se o trace contiver BatalhaEncerrada, no
+	// máximo uma vez por arena.
+	void AnnounceBattleFinishedIfEnded(const TArray<FBattleEvent>& Trace);
+
+	bool bHasAnnouncedBattleFinished = false;
 };

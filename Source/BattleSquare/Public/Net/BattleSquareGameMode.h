@@ -17,7 +17,12 @@ class ABattleSquarePlayerController;
 // Toda decisão de "pode ou não pode" já mora no registro; este ator só
 // reage aos delegates dele e monta o que o Combate Online já construiu
 // (ABattleArena, UBattleTurnCoordinator, UBattleNetCommitComponent).
-UCLASS()
+class UWorldEncounterFlow;
+
+// config=Game: as credenciais do espelho de pets e o pet do jogador vêm de
+// DefaultGame.ini, não de um Blueprint. O projeto não tem Blueprint algum, e
+// sem isto não haveria onde configurar um GameMode escolhido por World Settings.
+UCLASS(config = Game)
 class BATTLESQUARE_API ABattleSquareGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
@@ -31,6 +36,37 @@ public:
 
 	UPROPERTY()
 	TObjectPtr<UBattleRoomRegistry> RoomRegistry;
+
+	// --- Encontros no mundo aberto (M5) ---
+	// Ligam o UEncounterDetectionComponent do pawn ao UWorldBattleTransitionService,
+	// que é o que faz "andar → encontrar → batalhar → voltar" acontecer em jogo.
+	// Sem esta fiação as classes existem e são testadas, mas nada as instancia.
+
+	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
+	FString WorldEncounterPlayerCatalogId;
+
+	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
+	FString WorldEncounterMirrorPath;
+
+	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
+	FString WorldEncounterMirrorKeyHex;
+
+	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
+	FString WorldEncounterMirrorPublicKeyPem;
+
+	UPROPERTY()
+	TObjectPtr<UWorldEncounterFlow> WorldEncounterFlow;
+
+	/** Devolve o motivo quando não conseguiu ligar — nunca falha em silêncio. */
+	FString SetUpWorldEncounterFlow();
+
+private:
+	// Em nível com World Partition os atores chegam por streaming DEPOIS do
+	// BeginPlay do GameMode — tentar uma vez só encontra um mundo vazio.
+	// A tentativa se repete no Tick até pegar, e o motivo é logado uma vez.
+	bool bHasLoggedWorldEncounterProblem = false;
+
+public:
 
 	// Registrado pelo controller depois de CreateRoom/JoinRoom bem-
 	// sucedidos — é como o GameMode sabe qual controller pertence a

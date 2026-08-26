@@ -43,13 +43,17 @@ public:
 protected:
 	// Assets de input ficam FORA do C++ (DP-trav-06): a decisão de teclas não
 	// exige recompilar. Ausência degrada para "não anda", nunca para crash.
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	//
+	// EditAnywhere, não EditDefaultsOnly: este ator é colocado DIRETO no nível,
+	// sem Blueprint — com EditDefaultsOnly não existiria lugar nenhum onde
+	// atribuir os assets, e o personagem ficaria permanentemente sem input.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputMappingContext> TraversalMappingContext;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputAction> MoveAction;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputAction> LookAction;
 
 	void HandleMove(const FInputActionValue& Value);

@@ -5,6 +5,13 @@
 #include "Data/PetDataLoader.h"
 #include "Meta/PetCollectionService.h"
 #include "Meta/PetProgressionService.h"
+#include "World/WorldEncounterFlow.h"
+#include "World/EncounterDetectionComponent.h"
+#include "World/EncounterMatchAssembler.h"
+#include "Battle/BattleArena.h"
+#include "EngineUtils.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
 
 ABattleSquareGameMode::ABattleSquareGameMode()
 {
@@ -21,6 +28,100 @@ void ABattleSquareGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 	EnsureRoomRegistry();
+
+}
+
+namespace
+{
+	TArray<uint8> HexStringToBytes(const FString& Hex)
+	{
+		TArray<uint8> Bytes;
+		Bytes.Reserve(Hex.Len() / 2);
+		for (int32 Index = 0; Index + 1 < Hex.Len(); Index += 2)
+		{
+			Bytes.Add(static_cast<uint8>(FParse::HexNumber(*Hex.Mid(Index, 2))));
+		}
+		return Bytes;
+	}
+}
+
+FString ABattleSquareGameMode::SetUpWorldEncounterFlow()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return TEXT("sem UWorld");
+	}
+
+	// O pawn de exploração é quem carrega a detecção. Sem ele, não há
+	// encontro possível — e isso é um nível legítimo, não um erro.
+	//
+	// O nível de verificação tem DOIS pawns com detecção (o de rota
+	// determinística e o de exploração). Escolher "o primeiro que o iterador
+	// achar" deixaria a decisão para a ordem de registro do mundo — o mesmo
+	// não-determinismo silencioso que AD-004 recusa. A regra é explícita:
+	// vence o pawn POSSUÍDO pelo jogador; só na ausência dele o primeiro serve.
+	UEncounterDetectionComponent* Detection = nullptr;
+	APawn* DetectingPawn = nullptr;
+
+	if (const APlayerController* PlayerController = World->GetFirstPlayerController())
+	{
+		if (APawn* PossessedPawn = PlayerController->GetPawn())
+		{
+			if (UEncounterDetectionComponent* Found = PossessedPawn->FindComponentByClass<UEncounterDetectionComponent>())
+			{
+				Detection = Found;
+				DetectingPawn = PossessedPawn;
+			}
+		}
+	}
+
+	if (!Detection)
+	{
+		for (TActorIterator<APawn> Iterator(World); Iterator; ++Iterator)
+		{
+			if (UEncounterDetectionComponent* Found = Iterator->FindComponentByClass<UEncounterDetectionComponent>())
+			{
+				Detection = Found;
+				DetectingPawn = *Iterator;
+				break;
+			}
+		}
+	}
+
+	if (!Detection)
+	{
+		return TEXT("nenhum pawn com UEncounterDetectionComponent no nível");
+	}
+	if (WorldEncounterMirrorPath.IsEmpty())
+	{
+		return TEXT("WorldEncounterMirrorPath não configurado em DefaultGame.ini");
+	}
+
+	TArray<FLoadedPetRecord> Pets;
+	int32 RejectedCount = 0;
+	const bool bLoaded = FPetDataLoader::LoadVerifiedPets(
+		WorldEncounterMirrorPath,
+		HexStringToBytes(WorldEncounterMirrorKeyHex),
+		WorldEncounterMirrorPublicKeyPem,
+		Pets,
+		RejectedCount);
+
+	if (!bLoaded || Pets.Num() == 0)
+	{
+		return TEXT("espelho de pets não carregou");
+	}
+
+	FEncounterMatchParams MatchParams;
+	MatchParams.AvailablePets = Pets;
+	MatchParams.PetCollectionSlotName = PetCollectionSlotName;
+	// Sem pet declarado, o primeiro do espelho serve — é nível de teste, e
+	// travar por configuração ausente aqui não ajudaria ninguém.
+	MatchParams.PlayerCatalogId = WorldEncounterPlayerCatalogId.IsEmpty() ? Pets[0].Id : WorldEncounterPlayerCatalogId;
+
+	WorldEncounterFlow = NewObject<UWorldEncounterFlow>(this);
+	WorldEncounterFlow->Initialize(DetectingPawn, Detection, ABattleArena::StaticClass(), MatchParams);
+	return FString();
 }
 
 void ABattleSquareGameMode::EnsureRoomRegistry()
@@ -54,6 +155,23 @@ void ABattleSquareGameMode::Tick(float DeltaSeconds)
 	// ver o resultado (spec.md, edge case de fechamento de sala).
 	RoomRegistry->CheckAbandonment(CurrentTime);
 	RoomRegistry->CheckEmptyRooms(CurrentTime);
+
+	// Encontros no mundo são opcionais: um nível sem pawn de exploração (ou
+	// sem espelho configurado) segue funcionando exatamente como antes.
+	if (!WorldEncounterFlow)
+	{
+		const FString Problem = SetUpWorldEncounterFlow();
+		if (Problem.IsEmpty())
+		{
+			UE_LOG(LogTemp, Display, TEXT("ABattleSquareGameMode: encontros de mundo ATIVOS."));
+		}
+		else if (!bHasLoggedWorldEncounterProblem)
+		{
+			// Uma vez só: o Tick roda 1x/s e isto viraria enxurrada de log.
+			bHasLoggedWorldEncounterProblem = true;
+			UE_LOG(LogTemp, Log, TEXT("ABattleSquareGameMode: encontros de mundo ainda inativos — %s"), *Problem);
+		}
+	}
 }
 
 void ABattleSquareGameMode::Logout(AController* Exiting)

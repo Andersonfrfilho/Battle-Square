@@ -27,12 +27,17 @@ executar, anotando data e quem verificou.
    termina em `(-3600,3600)`).
 3. Confirmar que o `DebugRoutePawn` tem, além do `DebugRouteMover`, um
    `UEncounterDetectionComponent`.
-4. **Pré-requisito de dados:** o espelho de pets precisa estar configurado com
-   `CatalogId` que batam com os dos atores de encontro do nível. Sem isso a
-   montagem é recusada de propósito (é o comportamento testado em
-   `EncounterMatchAssembler.RejectsUnknownCatalogId`), a detecção religa e
-   **nenhuma batalha começa** — o que parece "não funcionou" e na verdade é a
-   recusa explícita fazendo o trabalho dela. Conferir antes de reportar bug.
+4. **Dados — já resolvidos.** Os três atores de encontro carregam `CatalogId`
+   **reais** do espelho de pets (Whiskers, Spike e Fluffy), e o pet do jogador
+   vem de `DefaultGame.ini` (`UnrealTestFixturePet`, o único que os testes
+   tratam como estável). O espelho apontado é o de **fixture**, de propósito:
+   `WorldStreamingTest` é nível de verificação, e o espelho de produção só
+   existe depois que o worker de sync roda contra a API.
+5. **Quem dispara os encontros:** o `DebugRoutePawn` é quem tem
+   `AutoPossessPlayer`, e o bootstrap escolhe o pawn **possuído** — então dar
+   Play já faz ele percorrer a rota e encostar nos encontros sozinho, sem
+   ninguém no teclado. Para testar andando, trocar a posse para o
+   `WorldExplorer` (e devolver depois).
 
 ---
 

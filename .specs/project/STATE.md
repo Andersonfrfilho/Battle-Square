@@ -480,6 +480,20 @@ find "$HOME/Library/Logs/Unreal Engine/BattleSquareEditor" Saved/Logs -newer <ma
 **Solução:** `ProjectID=59423EED39EA47ABA1F5090E34A682C6`.
 **Previne:** um erro de *parse de config* aborta o cook com a mesma severidade de um asset quebrado, e a mensagem não diz "corrija o formato" — diz só "import failed". Ao ver um cook falhar com 1 erro e nenhum problema de conteúdo aparente, procurar `LoadConfig .* import failed` antes de suspeitar de asset.
 
+### L-029: em World Partition, os atores do nível não existem no `BeginPlay` do GameMode
+
+**Contexto:** ao ligar o bootstrap de encontros de mundo (M5), `ABattleSquareGameMode::BeginPlay` varria o mundo por um pawn com `UEncounterDetectionComponent` e não achava nada — `"nenhum pawn com UEncounterDetectionComponent no nível"` — apesar de o nível ter **dois**.
+**Causa:** em nível com World Partition os atores vivem em pacotes externos e chegam por **streaming**, depois do `BeginPlay` do GameMode. Varrer o mundo naquele instante encontra um mundo praticamente vazio. É a mesma família de L-018 (`BeginPlay` não é o gancho confiável que parece), agora por streaming em vez de ordem de spawn.
+**Solução:** a tentativa passou para o `Tick` do GameMode (que já roda 1x/s), repetindo até conseguir, e o motivo da falha é logado **uma vez só** — no Tick, um log por tentativa viraria enxurrada.
+**Segundo achado, no mesmo lugar:** a varredura escolhia "o primeiro pawn que o iterador achar", e o nível de verificação tem dois pawns com detecção (o de rota e o de exploração). Isso deixaria a decisão para a ordem de registro do mundo — não-determinismo silencioso, do tipo que AD-004 recusa. A regra virou explícita: **vence o pawn possuído pelo jogador**; só na ausência dele o primeiro serve.
+**Previne:** em World Partition, qualquer código que precise ENCONTRAR atores do nível tem de tolerar que eles ainda não estejam lá. E toda varredura que escolhe "o primeiro" precisa de uma regra de desempate escrita, ou a ordem do mundo decide por você.
+
+### L-030: verificar runtime por `grep` em log de binário empacotado é método ruim
+
+**Contexto:** para provar que a corrente "andar → encontrar → batalhar" funcionava, tentei rodar o jogo (`-game` sem cook, depois o pacote) e procurar as linhas de log do bootstrap. `-game` sem cook **não monta o streaming do World Partition**; o pacote monta, mas não emitiu nenhuma das nossas linhas de `LogTemp`, e cada tentativa custava um ciclo de empacotar/rodar/matar/procurar. Um `kill -9` ainda comeu o log inteiro por matar antes do flush.
+**Solução:** parar e escrever o teste headless que faltava — `BattleSquare.World.WorldEncounterBootstrap`, três casos (fia com pawn e espelho; sem pawn devolve motivo; sem espelho devolve motivo). Ele carrega o espelho criptografado de verdade e prova a fiação em segundos, de forma repetível.
+**Previne:** quando a verificação vira arqueologia de log, o sinal não é "melhorar o grep" — é que falta um teste. O que o pacote prova, e só ele, é a parte de **engine** (streaming real, posse, colisão); isso continua em roteiro manual, por DP-enc-05. A parte que é **decisão nossa** sempre cabe num teste, e cabia neste.
+
 ---
 
 ## Ideias Adiadas

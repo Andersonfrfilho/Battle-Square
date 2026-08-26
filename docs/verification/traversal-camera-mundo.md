@@ -20,16 +20,12 @@ coberta por `Automation RunTests BattleSquare.World.WorldTraversalMotion` e
    - `StreamingFloor/` com 25 pisos (um por célula, topo em `z = 0`);
    - `StreamingDebug/` com `DebugRoutePawn` **e** `WorldExplorer`;
    - `StreamingEncounters/` com os 3 atores de encontro.
-3. **Pré-requisito de input — este é o primeiro passo que pode faltar.** O C++
-   declara os ponteiros de Enhanced Input, mas **os assets não existem ainda**
-   (DP-trav-06 os deixa fora do C++ de propósito). Sem eles o personagem
-   simplesmente não anda — é o comportamento projetado, não um bug. Antes de
-   TRT-01, criar no Editor:
-   - um `InputMappingContext` (ex.: `IMC_Traversal`);
-   - um `InputAction` de valor `Axis2D` para mover (WASD / setas);
-   - um `InputAction` de valor `Axis2D` para olhar (mouse XY);
-   - atribuí-los ao `WorldExplorer` em `TraversalMappingContext` / `MoveAction`
-     / `LookAction`.
+3. **Assets de input — já existem.** `/Game/Input/IMC_Traversal`, `IA_Move`
+   (WASD, com swizzle/negate para bater com `FWorldTraversalMotion`) e
+   `IA_Look` (Mouse2D) foram criados e **já estão atribuídos** ao
+   `WorldExplorer`. Se o personagem não andar, o problema não é asset faltando
+   — é outra coisa, e vale investigar em vez de recriar os assets.
+
 4. **Posse:** o `DebugRoutePawn` está com `Auto Possess Player = Player 0` (é o
    que os roteiros anteriores usam). Para verificar traversal, trocar a posse
    para o `WorldExplorer` — e **devolver ao `DebugRoutePawn` no fim**, senão os

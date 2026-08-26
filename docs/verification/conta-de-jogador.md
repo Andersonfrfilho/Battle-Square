@@ -2,7 +2,16 @@
 
 **Feature:** `.specs/features/conta-de-jogador/`
 **Serviço:** `apps/api-battle-pets`
-**Status:** **não verificado ainda** — nenhum item foi executado contra um banco real.
+**Status:** ✅ **VERIFICADO em 2026-08-26** — os 8 itens rodados contra o
+Postgres real (`battle-square-postgres`, porta 5445), com a API numa instância
+dedicada na porta 3101.
+
+**Dois defeitos reais foram encontrados justamente por rodar isto**, e os dois
+estão corrigidos (ver `STATE.md`, L-031 e L-032):
+1. E-mail duplicado devolvia **500** em vez de 409, e a página de erro do Bun
+   **vazava o e-mail e o hash Argon2 da senha** na resposta.
+2. A senha fraca devolvia **um** motivo, não todos — o `.min()` do Zod
+   recusava antes de a política de senha rodar.
 
 Cobre só o que exige Postgres de pé (DP-conta-07). Tudo que é **decisão** —
 token, política de senha, normalização de e-mail, limite de tentativas — já está
@@ -27,7 +36,7 @@ não há token para apresentar.
 
 ## CTA-01 — Criar conta
 
-- [ ] **Não verificado**
+- [x] **Verificado em 2026-08-26** — 201, e-mail normalizado para minúsculas, e nenhum campo interno na resposta.
 
 ```bash
 curl -si -X POST http://localhost:3100/v1/accounts \
@@ -43,7 +52,7 @@ nem nenhum campo interno. Conferir isso lendo o corpo inteiro, não só o status
 
 ## CTA-02 — E-mail duplicado é recusado com código estável
 
-- [ ] **Não verificado**
+- [x] **Verificado em 2026-08-26** — 409 `ACCOUNT_EMAIL_TAKEN` ancorado em `email`, testado com a caixa TROCADA — prova que a normalização vale no banco. **Este item pegou o defeito 1.**
 
 Repetir CTA-01, variando a caixa do e-mail (`JOGADOR@exemplo.com`):
 
@@ -56,7 +65,7 @@ duas contas para o mesmo e-mail.
 
 ## CTA-03 — Senha fraca devolve todos os motivos
 
-- [ ] **Não verificado**
+- [x] **Verificado em 2026-08-26** — 400 `ACCOUNT_WEAK_PASSWORD` com **dois** motivos (`TOO_SHORT` + `MISSING_DIGIT`). **Este item pegou o defeito 2.**
 
 ```bash
 curl -s -X POST http://localhost:3100/v1/accounts \
@@ -71,7 +80,7 @@ sem dígito). Um motivo só significa que a validação está parando no primeir
 
 ## CTA-04 — Entrar e renovar
 
-- [ ] **Não verificado**
+- [x] **Verificado em 2026-08-26** — 200, `accessTokenExpiresInSeconds: 900`, e a renovação emitiu um par novo.
 
 ```bash
 # login
@@ -97,7 +106,7 @@ curl -s -X POST http://localhost:3100/v1/accounts/sessions/refresh \
 
 ## CTA-05 — Reuso de token de renovação é recusado ⭐ o mais importante
 
-- [ ] **Não verificado**
+- [x] **Verificado em 2026-08-26** — 401 `ACCOUNT_REFRESH_INVALID` no reuso do token já rotacionado.
 
 Repetir o comando de refresh de CTA-04 com o **mesmo** `refreshToken`, agora já
 rotacionado.
@@ -112,7 +121,7 @@ o token de acesso ser de vida curta. É a falha que mais custa e a menos visíve
 
 ## CTA-06 — Credenciais erradas não revelam qual metade falhou
 
-- [ ] **Não verificado**
+- [x] **Verificado em 2026-08-26** — Respostas byte a byte idênticas. Tempos medidos 3x: inexistente 0,060/0,056/0,052s contra senha errada 0,059/0,057/0,050s — **indistinguíveis**, o `DUMMY_PASSWORD_HASH` está fazendo o trabalho.
 
 Dois pedidos: um com e-mail que **não existe**, outro com e-mail existente e
 senha errada.
@@ -130,7 +139,7 @@ resposta virou o oráculo de enumeração que a mensagem idêntica escondeu.
 
 ## CTA-07 — Limite de tentativas
 
-- [ ] **Não verificado**
+- [x] **Verificado em 2026-08-26** — 5 tentativas passam, a 6ª devolve 429 com `Retry-After: 900`. Bloqueada, nem a senha certa entra — bloqueio por conta, como projetado.
 
 Errar a senha da mesma conta 6 vezes seguidas.
 
@@ -146,7 +155,7 @@ diferente e não é regressão.
 
 ## CTA-08 — Nenhum log com PII
 
-- [ ] **Não verificado**
+- [x] **Verificado em 2026-08-26** — Log do servidor com 1 linha (a de boot). Zero ocorrências de e-mail, `argon2` ou token.
 
 **Passo:** com o serviço rodando em terminal visível, executar CTA-01 a CTA-07 e
 ler a saída inteira.

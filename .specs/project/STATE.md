@@ -494,6 +494,21 @@ find "$HOME/Library/Logs/Unreal Engine/BattleSquareEditor" Saved/Logs -newer <ma
 **Solução:** parar e escrever o teste headless que faltava — `BattleSquare.World.WorldEncounterBootstrap`, três casos (fia com pawn e espelho; sem pawn devolve motivo; sem espelho devolve motivo). Ele carrega o espelho criptografado de verdade e prova a fiação em segundos, de forma repetível.
 **Previne:** quando a verificação vira arqueologia de log, o sinal não é "melhorar o grep" — é que falta um teste. O que o pacote prova, e só ele, é a parte de **engine** (streaming real, posse, colisão); isso continua em roteiro manual, por DP-enc-05. A parte que é **decisão nossa** sempre cabe num teste, e cabia neste.
 
+### L-031: exceção não tratada no `Bun.serve` devolveu e-mail e hash da senha AO CLIENTE
+
+**Contexto:** primeiro item do roteiro de conta rodado contra Postgres real (M7). Registrar um e-mail duplicado devolveu **HTTP 500** com a página de diagnóstico do Bun — e dentro dela, em base64, a query e os **parâmetros**: `params: jogador...@exemplo.com,$argon2id$v=19$m=65536,...`. Ou seja, o e-mail (PII) e o hash da senha viajaram para o cliente.
+**Causa, em duas camadas:** (1) `isUniqueViolation` checava `error.code === '23505'` no topo, mas o Drizzle embrulha o erro do driver num `DrizzleQueryError` e o código do Postgres fica na **causa** — a checagem dava `false`, o 409 nunca acontecia e a exceção subia; (2) o `Bun.serve` não tinha handler `error`, e o padrão dele é uma página de diagnóstico que inclui os parâmetros da query.
+**Solução:** `isUniqueViolation` passou a caminhar a cadeia de causas (com profundidade limitada, para cadeia circular não virar laço) e virou `src/db/postgres-error.ts` com 6 testes próprios; e o `Bun.serve` ganhou handler `error` devolvendo `500 INTERNAL_ERROR` genérico, logando só o **nome** do erro — nunca params, nem no log.
+**A segunda camada é a que importa:** a primeira era um bug de mapeamento; a segunda era a ausência de uma barreira que **qualquer** rota precisava. O módulo de pets tinha o mesmo buraco desde M4, e ninguém tinha esbarrado nele.
+**Previne:** todo servidor HTTP precisa de barreira de erro global **antes** da primeira rota, não depois do primeiro vazamento. E um defeito de mapeamento de erro (`409` virando `500`) é barato; o que ele revela — que o caminho de exceção não tratada expõe dado — é o que custa caro.
+
+### L-032: dois validadores para a mesma regra, e o de fora escondia o de dentro
+
+**Contexto:** ainda no roteiro de conta, `CTA-03` (senha fraca) devolvia **um** motivo, não todos. `validatePasswordPolicy` devolve todos de uma vez, tem teste próprio provando isso, e mesmo assim o usuário via um.
+**Causa:** `registerAccountSchema` tinha `password: z.string().min(PASSWORD_MINIMUM_LENGTH)`. O Zod recusava antes, e a política — escrita justamente para não devolver um motivo por vez — nunca era alcançada. **O teste unitário da política passava e continuava passando**: ele testava a função, e o problema era que ninguém a chamava naquele caminho.
+**Solução:** o schema valida **forma** (é string? cabe no teto?); as **regras** ficam na política. O `.max()` permaneceu no schema de propósito: é proteção contra Argon2id sobre entrada gigante, e precisa recusar antes de hashear.
+**Previne:** quando a mesma regra existe em duas camadas, a de fora decide e a de baixo vira código morto que continua verde. Vale perguntar, a cada validação nova, **qual camada é dona daquela regra** — e deixar só ela com a regra.
+
 ---
 
 ## Ideias Adiadas

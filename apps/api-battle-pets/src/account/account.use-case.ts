@@ -6,6 +6,7 @@ import { and, eq, isNull } from 'drizzle-orm';
 
 import { environment } from '../config/environment';
 import { db } from '../db/client';
+import { isUniqueViolation } from '../db/postgres-error';
 import { normalizeEmail } from './account.email';
 import {
   AccountStatus,
@@ -85,10 +86,6 @@ export async function registerAccount(input: {
     }
     throw error;
   }
-}
-
-function isUniqueViolation(error: unknown): boolean {
-  return typeof error === 'object' && error !== null && 'code' in error && (error as { code: unknown }).code === '23505';
 }
 
 export type AuthenticateResult =

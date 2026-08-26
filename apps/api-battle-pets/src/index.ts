@@ -30,6 +30,31 @@ const banByIdPattern = new RegExp(`^/v1/bans/(${UUID_PATTERN})$`);
 
 const server = Bun.serve({
   port: environment.PORT,
+
+  /**
+   * Barreira de erro global. Sem ela, uma exceção não tratada faz o Bun
+   * devolver uma página de diagnóstico com a QUERY e os PARÂMETROS — foi
+   * assim que um e-mail duplicado devolveu, ao cliente, o e-mail e o hash
+   * Argon2 da senha. security.md §1 (PII) e a regra de nunca expor erro de
+   * banco proíbem as duas coisas.
+   *
+   * O detalhe fica só no log do servidor; o cliente recebe código estável.
+   */
+  error(error: unknown) {
+    console.error(
+      JSON.stringify({
+        level: 'error',
+        message: 'unhandled_request_error',
+        // Só o nome e a mensagem: params e query NUNCA saem daqui, nem para o log.
+        errorName: error instanceof Error ? error.name : typeof error,
+      }),
+    );
+    return Response.json(
+      { error: { code: 'INTERNAL_ERROR', message: 'Erro interno' } },
+      { status: 500 },
+    );
+  },
+
   async fetch(request) {
     const url = new URL(request.url);
 

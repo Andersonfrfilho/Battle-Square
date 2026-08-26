@@ -8,6 +8,7 @@
 #include "Battle/PetView.h"
 #include "Battle/BattleActionQueueComponent.h"
 #include "Battle/BattleTracePlayer.h"
+#include "Net/BattleTurnCoordinator.h"
 #include "Data/BattleDataTranslator.h"
 #include "BattleArena.generated.h"
 
@@ -69,6 +70,14 @@ public:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UBattleActionQueueComponent> PlayerActionQueue;
 
+	// T8 (tasks.md, Combate Online, NET-09/NET-10): registra que o
+	// oponente é um jogador humano real, servido por InCoordinator — a
+	// partir daqui, HandlePlayerCommitted delega ao coordenador em vez de
+	// chamar FDumbOpponentAI. Presença de oponente real decide o caminho,
+	// nunca uma flag de "modo online/offline" separada. Sem esta chamada,
+	// o comportamento continua byte a byte o de antes (Standalone).
+	void ConfigureNetworkedOpponent(UBattleTurnCoordinator* InCoordinator);
+
 protected:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USceneComponent> ArenaRoot;
@@ -86,10 +95,18 @@ private:
 	UPROPERTY()
 	FBattleState CurrentState;
 
+	// Presença, não flag: null quando o oponente é FDumbOpponentAI
+	// (Standalone/sem oponente humano); setado por ConfigureNetworkedOpponent
+	// quando um jogador real está do outro lado.
+	UPROPERTY()
+	TObjectPtr<UBattleTurnCoordinator> ServerCoordinator;
+
 	bool IsPointInCameraFrustum(const FVector& WorldPoint) const;
 
 	UFUNCTION()
 	void HandlePlayerCommitted();
+
+	void HandleCoordinatorTurnResolved(const FBattleState& NextState, const TArray<FBattleEvent>& Trace);
 
 	void DispatchEventToPetViews(const FBattleEvent& Event);
 };

@@ -127,13 +127,42 @@ void ABattleArena::DispatchEventToPetViews(const FBattleEvent& Event)
 	}
 }
 
+void ABattleArena::ConfigureNetworkedOpponent(UBattleTurnCoordinator* InCoordinator)
+{
+	ServerCoordinator = InCoordinator;
+	if (ServerCoordinator)
+	{
+		ServerCoordinator->OnTurnResolved.AddUObject(this, &ABattleArena::HandleCoordinatorTurnResolved);
+	}
+}
+
+void ABattleArena::HandleCoordinatorTurnResolved(const FBattleState& NextState, const TArray<FBattleEvent>& Trace)
+{
+	CurrentState = NextState;
+	if (TracePlayer)
+	{
+		TracePlayer->PlayTrace(Trace);
+	}
+}
+
 void ABattleArena::HandlePlayerCommitted()
 {
-	// T10: jogador commitou — IA gera o commit dela (Side=1 por convenção
-	// nesta fiação: PlayerActionQueue sempre representa o Side 0), o
-	// resolvedor real roda com os dois commits, e o trace resultante
-	// anima as views. Nenhum cálculo de batalha aqui — só orquestração.
 	const FTurnCommit PlayerCommit = PlayerActionQueue->BuildCommit();
+
+	// T8 (tasks.md, Combate Online, NET-09/NET-10): oponente real presente
+	// (ServerCoordinator setado por ConfigureNetworkedOpponent) — o
+	// resultado chega via HandleCoordinatorTurnResolved, não aqui.
+	// FDumbOpponentAI nunca é chamado neste caminho.
+	if (ServerCoordinator)
+	{
+		ServerCoordinator->SubmitCommit(/*Side=*/0, PlayerCommit);
+		return;
+	}
+
+	// Sem oponente humano (Standalone): comportamento idêntico ao de
+	// antes desta feature — IA gera o commit dela (Side=1 por convenção),
+	// o resolvedor real roda com os dois commits, e o trace resultante
+	// anima as views. Nenhum cálculo de batalha aqui — só orquestração.
 	const FTurnCommit OpponentCommit = FDumbOpponentAI::GenerateRandomValidCommit(CurrentState, /*Side=*/1, CurrentState.Random);
 
 	const FBattleResolveResult Result = FBattleResolver::ResolveTurn(CurrentState, PlayerCommit, OpponentCommit);

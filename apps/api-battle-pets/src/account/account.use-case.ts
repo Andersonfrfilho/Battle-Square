@@ -141,7 +141,8 @@ async function issueSession(accountId: string, now: Date): Promise<AccountSessio
 
 export type RefreshResult =
   | { readonly ok: true; readonly session: AccountSession }
-  | { readonly ok: false };
+  | { readonly ok: false }
+  | { readonly ok: false; readonly banned: true; readonly reason: string; readonly expiresAt: Date | null };
 
 export async function refreshSession(input: { refreshToken: string; now: Date }): Promise<RefreshResult> {
   const tokenHash = hashRefreshToken(input.refreshToken);
@@ -156,6 +157,17 @@ export async function refreshSession(input: { refreshToken: string; now: Date })
   // rotacionado é o sinal clássico de token roubado, e é recusado (DP-conta-03).
   if (!stored || stored.expiresAt <= input.now) {
     return { ok: false };
+  }
+
+  // O banimento vale AGORA (DP-mod-03). Sem esta checagem, quem entrou ANTES
+  // de ser banido renova para sempre — a renovação emite um refresh novo a
+  // cada vez, então o banimento nunca chegaria a valer. Foi assim que MOD-04
+  // falhou na primeira execução contra banco real.
+  const banState = await getBanState(stored.accountId, input.now);
+  if (banState.banned) {
+    // Consome o token mesmo assim: ele não deve continuar utilizável.
+    await db.update(refreshTokens).set({ revokedAt: input.now }).where(eq(refreshTokens.id, stored.id));
+    return { ok: false, banned: true, reason: banState.ban.reason, expiresAt: banState.ban.expiresAt };
   }
 
   await db.update(refreshTokens).set({ rotatedAt: input.now }).where(eq(refreshTokens.id, stored.id));

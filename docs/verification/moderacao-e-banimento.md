@@ -2,7 +2,15 @@
 
 **Feature:** `.specs/features/moderacao-e-banimento/`
 **Serviço:** `apps/api-battle-pets`
-**Status:** **não verificado ainda** — nenhum item foi executado contra um banco real.
+**Status:** ✅ **VERIFICADO em 2026-08-26** — os 8 itens rodados contra o
+Postgres real (`battle-square-postgres`, porta 5445), com a API numa instância
+dedicada na porta 3101.
+
+**MOD-04 falhou na primeira execução, exatamente como este roteiro previa.**
+Uma conta banida continuava renovando a sessão indefinidamente: `refreshSession`
+não checava o banimento, e como cada renovação emite um refresh novo, o
+banimento nunca chegaria a valer para quem já tinha entrado. Corrigido e
+reverificado em cenário limpo (ver `STATE.md`, L-033).
 
 Cobre só o que exige Postgres de pé (DP-mod-06). A regra de decisão —
 "esta conta está banida neste instante?" — já está coberta por `bun test`
@@ -26,7 +34,7 @@ Criar uma conta de teste com `CTA-01` de `conta-de-jogador.md` e guardar o
 
 ## MOD-01 — Registrar evidência não bane
 
-- [ ] **Não verificado**
+- [x] **Verificado em 2026-08-26** — 201 com `recordedBy: "sync"`, e o login da conta seguiu em 200 — registrar não pune.
 
 ```bash
 curl -si -X POST http://localhost:3100/v1/accounts/<accountId>/moderation-events \
@@ -45,7 +53,7 @@ curl -si -X POST http://localhost:3100/v1/accounts/<accountId>/moderation-events
 
 ## MOD-02 — Escopo é exigido
 
-- [ ] **Não verificado**
+- [x] **Verificado em 2026-08-26** — 401 sem token e com token inválido; `sync` recebe 403 no histórico e ao banir; só `admin` recebe 200.
 
 Repetir MOD-01 sem `Authorization`, e depois com um token inválido.
 
@@ -57,7 +65,7 @@ Repetir MOD-01 sem `Authorization`, e depois com um token inválido.
 
 ## MOD-03 — Banir e ser recusado
 
-- [ ] **Não verificado**
+- [x] **Verificado em 2026-08-26** — 201 com `expiresAt: null` e `createdBy: admin`; login com a senha CERTA devolveu 403 `ACCOUNT_BANNED`, com motivo e `permanente`.
 
 ```bash
 curl -si -X POST http://localhost:3100/v1/accounts/<accountId>/bans \
@@ -76,7 +84,7 @@ trazendo o motivo e `"permanente"` como prazo.
 
 ## MOD-04 — O banimento não espera o token expirar ⭐ o mais importante
 
-- [ ] **Não verificado**
+- [x] **Verificado em 2026-08-26** — **Falhou primeiro** (200, renovação livre). Depois da correção: 403 `ACCOUNT_BANNED` em cenário limpo, e o token fica inutilizável na segunda tentativa (401).
 
 **Passo, na ordem:**
 1. Fazer login **antes** de banir e guardar o `accessToken`.
@@ -94,7 +102,7 @@ regressão de DP-mod-03, não comportamento aceitável.
 
 ## MOD-05 — Banimento com prazo expira sozinho
 
-- [ ] **Não verificado**
+- [x] **Verificado em 2026-08-26** — 403 durante o prazo, 200 depois dele, sem nenhum processo de limpeza — a expiração é decidida na leitura.
 
 Banir com `expiresAt` uns 60 segundos à frente:
 
@@ -113,7 +121,7 @@ decidida na leitura (DP-mod-02).
 
 ## MOD-06 — Levantar preserva o histórico
 
-- [ ] **Não verificado**
+- [x] **Verificado em 2026-08-26** — 204; login volta imediatamente; `DELETE` repetido devolve 404; a linha permanece com `liftedAt` e `liftedBy` preenchidos.
 
 ```bash
 curl -si -X DELETE http://localhost:3100/v1/bans/<banId> \
@@ -134,7 +142,7 @@ curl -si -X DELETE http://localhost:3100/v1/bans/<banId> \
 
 ## MOD-07 — Mais restritivo vence
 
-- [ ] **Não verificado**
+- [x] **Verificado em 2026-08-26** — Com um temporário já expirado e um permanente ativos, a conta seguiu banida e o motivo devolvido foi o do **permanente**.
 
 Criar **dois** banimentos ativos na mesma conta: um temporário de 60s e um
 permanente.
@@ -148,7 +156,7 @@ banimentos daquela conta, e não só o mais recente.
 
 ## MOD-08 — Nenhum log com PII
 
-- [ ] **Não verificado**
+- [x] **Verificado em 2026-08-26** — Log com 1 linha (a de boot). Zero ocorrências de e-mail, `argon2`, token ou uuid de conta.
 
 **Passo:** com o serviço em terminal visível, executar MOD-01 a MOD-07 e ler a
 saída.

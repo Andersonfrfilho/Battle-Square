@@ -509,6 +509,15 @@ find "$HOME/Library/Logs/Unreal Engine/BattleSquareEditor" Saved/Logs -newer <ma
 **Solução:** o schema valida **forma** (é string? cabe no teto?); as **regras** ficam na política. O `.max()` permaneceu no schema de propósito: é proteção contra Argon2id sobre entrada gigante, e precisa recusar antes de hashear.
 **Previne:** quando a mesma regra existe em duas camadas, a de fora decide e a de baixo vira código morto que continua verde. Vale perguntar, a cada validação nova, **qual camada é dona daquela regra** — e deixar só ela com a regra.
 
+### L-033: a regra estava certa, testada e chamada — em UM dos dois caminhos de entrada
+
+**Contexto:** `MOD-04` do roteiro de moderação, rodado contra Postgres real. Uma conta **banida** conseguia renovar a sessão e receber um `accessToken` novinho, com HTTP 200. E como a renovação emite um refresh novo a cada vez, ela renovaria para sempre: o banimento nunca chegaria a valer para quem já tinha entrado antes de ser banido.
+**Causa:** `resolveBanState` estava correta e tinha 10 testes puros. `authenticateAccount` (login) a chamava. **`refreshSession` não.** Existem dois caminhos que emitem sessão, e eu guardei um.
+**Solução:** a checagem entrou no `refreshSession` também, e o token é **revogado** ao ser recusado — recusar sem consumir deixaria o mesmo token disponível para tentar de novo.
+**O que isto tem de diferente de L-032:** lá eram duas camadas validando a mesma regra e a de fora escondendo a de baixo. Aqui é a mesma regra guardando **duas portas**, e só uma tendo fechadura. O sintoma é idêntico — teste unitário verde, comportamento errado em produção — e a causa raiz é a mesma família: **o teste prova que a função funciona, nunca que ela é chamada em todo lugar onde precisa ser.**
+**Previne:** para toda regra que **guarda acesso**, enumerar explicitamente os pontos de entrada antes de dar por pronta — aqui eram login e renovação; num sistema maior seriam também troca de senha, emissão de token de API, e qualquer rota que crie sessão. A pergunta que faltou: *"que outros caminhos emitem sessão?"*
+**E o mais importante:** este defeito só apareceu porque o roteiro tinha um item escrito para procurá-lo, com o motivo anotado de antemão (*"é o que separa banimento real de anotação"*). Roteiro manual escrito com hipótese de falha vale muito mais que roteiro que só descreve o caminho feliz.
+
 ---
 
 ## Ideias Adiadas

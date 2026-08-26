@@ -94,6 +94,14 @@ export async function handleRefreshSession(request: Request): Promise<Response> 
   }
 
   const result = await AccountUseCase.refreshSession({ ...parsed.data, now: new Date() });
+
+  if (!result.ok && 'banned' in result) {
+    return jsonError(403, 'ACCOUNT_BANNED', 'Esta conta está banida', [
+      { field: 'account', message: result.reason },
+      { field: 'expiresAt', message: result.expiresAt ? result.expiresAt.toISOString() : 'permanente' },
+    ]);
+  }
+
   if (!result.ok) {
     return jsonError(401, 'ACCOUNT_REFRESH_INVALID', 'Token de renovação inválido, expirado ou já usado');
   }

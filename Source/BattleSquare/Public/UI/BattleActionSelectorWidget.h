@@ -7,6 +7,9 @@
 #include "Battle/BattleActionQueueComponent.h"
 #include "BattleActionSelectorWidget.generated.h"
 
+class UButton;
+class UTextBlock;
+
 // T11 (tasks.md, PRES-01 a PRES-04): camada de exposição a Blueprint do
 // UBattleActionQueueComponent — toda decisão de "pode ou não pode"
 // continua no componente (T2–T4); este widget só encaminha chamadas e
@@ -53,7 +56,60 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Battle|ActionSelector")
 	bool bIsCommitted = false;
 
+	// --- Layout (DP-ui-03) ---
+	// BindWidgetOptional, não BindWidget: o widget é criado sem árvore nos
+	// testes headless, e exigir os botões ali quebraria a cobertura que
+	// DP-ui-05 conta como automatizável. Cada uso é guardado por null.
+	virtual void NativeConstruct() override;
+
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_Aguardar;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_Mover;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_Atacar;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_Magia;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_Defender;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_Esquivar;
+
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_CimaEsquerda;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_Cima;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_CimaDireita;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_Esquerda;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_Direita;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_BaixoEsquerda;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_Baixo;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_BaixoDireita;
+
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_Cancelar;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_Desfazer;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_Commit;
+
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> Text_Status;
+
 private:
+	void WireButtons();
+
+	/** Reflete o passo atual: tipos no passo 1, direções no passo 2. */
+	void RefreshLayoutFromState();
+
+	UFUNCTION() void OnClickAguardar();
+	UFUNCTION() void OnClickMover();
+	UFUNCTION() void OnClickAtacar();
+	UFUNCTION() void OnClickMagia();
+	UFUNCTION() void OnClickDefender();
+	UFUNCTION() void OnClickEsquivar();
+
+	UFUNCTION() void OnClickCimaEsquerda();
+	UFUNCTION() void OnClickCima();
+	UFUNCTION() void OnClickCimaDireita();
+	UFUNCTION() void OnClickEsquerda();
+	UFUNCTION() void OnClickDireita();
+	UFUNCTION() void OnClickBaixoEsquerda();
+	UFUNCTION() void OnClickBaixo();
+	UFUNCTION() void OnClickBaixoDireita();
+
+	UFUNCTION() void OnClickCancelar();
+	UFUNCTION() void OnClickDesfazer();
+	UFUNCTION() void OnClickCommit();
+
 	UPROPERTY()
 	TObjectPtr<UBattleActionQueueComponent> BoundQueue;
 

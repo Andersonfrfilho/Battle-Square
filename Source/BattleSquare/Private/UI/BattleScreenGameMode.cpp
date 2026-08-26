@@ -99,6 +99,11 @@ FString ABattleScreenGameMode::StartScreenBattle()
 		return TEXT("sem PlayerController para receber a interface");
 	}
 
+	// A visão precisa ir para a arena, senão a batalha acontece e o jogador
+	// olha para o cenário vazio — exatamente o que aconteceu na transição do
+	// mundo aberto, e que só apareceu ao rodar de verdade.
+	PlayerController->SetViewTarget(ScreenArena);
+
 	UClass* WidgetClass = ActionSelectorWidgetClassPath.TryLoadClass<UBattleActionSelectorWidget>();
 	if (!WidgetClass)
 	{

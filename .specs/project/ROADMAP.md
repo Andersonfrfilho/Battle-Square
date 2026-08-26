@@ -108,6 +108,15 @@
 
 ---
 
+## Fora de marco — Interface de Batalha ✅ CONCLUÍDO (2026-08-26)
+
+Paga a dívida de DP-08 (`apresentacao-combate`): o combate estava pronto e
+testado desde M1 e ninguém conseguia jogá-lo, porque o layout UMG tinha sido
+adiado para uma autoria visual que nunca aconteceu. Entrega a tela de ações e o
+nível `BattleScreen`, que abre uma batalha sem depender do mundo aberto.
+
+---
+
 ## M6 — Plataformas — ⚠️ INCOMPLETO (bloqueado por infraestrutura)
 
 **Objetivo:** sair do PC.

@@ -22,6 +22,10 @@ namespace
 			TEXT("-----END PUBLIC KEY-----\n");
 		// Slot dedicado: nunca poluir o slot de produção em teste.
 		GameMode->PetCollectionSlotName = TEXT("BattleScreenTestCollection");
+		// O teste controla a própria entrada: sem isto ele herdaria a classe de
+		// widget do DefaultGame.ini e passaria a medir a configuração do
+		// projeto em vez do comportamento do GameMode.
+		GameMode->ActionSelectorWidgetClassPath.Reset();
 		return GameMode;
 	}
 

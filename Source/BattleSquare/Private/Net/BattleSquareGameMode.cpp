@@ -57,7 +57,7 @@ void ABattleSquareGameMode::BeginPlay()
 
 namespace
 {
-	TArray<uint8> HexStringToBytes(const FString& Hex)
+	TArray<uint8> MirrorKeyHexToBytes(const FString& Hex)
 	{
 		TArray<uint8> Bytes;
 		Bytes.Reserve(Hex.Len() / 2);
@@ -146,7 +146,7 @@ FString ABattleSquareGameMode::SetUpWorldEncounterFlow()
 	int32 RejectedCount = 0;
 	const bool bLoaded = FPetDataLoader::LoadVerifiedPets(
 		ResolvedMirrorPath,
-		HexStringToBytes(WorldEncounterMirrorKeyHex),
+		MirrorKeyHexToBytes(WorldEncounterMirrorKeyHex),
 		WorldEncounterMirrorPublicKeyPem,
 		Pets,
 		RejectedCount);

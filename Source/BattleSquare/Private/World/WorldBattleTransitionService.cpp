@@ -6,6 +6,8 @@
 #include "Battle/BattleArena.h"
 #include "GameFramework/Actor.h"
 #include "Engine/World.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
 
 ABattleArena* UWorldBattleTransitionService::BeginTransition(AActor* WorldPawn,
 	UEncounterDetectionComponent* Detection,
@@ -42,6 +44,7 @@ ABattleArena* UWorldBattleTransitionService::BeginTransition(AActor* WorldPawn,
 
 	Detection->SetDetectionEnabled(false);
 	Arena->OnBattleFinished.AddUObject(this, &UWorldBattleTransitionService::HandleBattleFinished);
+	SetViewTarget(Arena);
 
 	return Arena;
 }
@@ -64,6 +67,9 @@ void UWorldBattleTransitionService::HandleBattleFinished()
 	if (TransitioningPawn)
 	{
 		TransitioningPawn->SetActorTransform(CapturedPawnTransform);
+		// A visão volta ANTES de a detecção religar: o jogador precisa estar
+		// de volta ao mundo quando o próximo encontro puder disparar.
+		SetViewTarget(TransitioningPawn);
 	}
 
 	// A ordem daqui para baixo é a regra, não detalhe: marcar resolvido ANTES
@@ -83,4 +89,20 @@ void UWorldBattleTransitionService::HandleBattleFinished()
 	TransitioningDetection = nullptr;
 	TransitioningEncounter = nullptr;
 	bIsTransitionActive = false;
+}
+
+void UWorldBattleTransitionService::SetViewTarget(AActor* NewViewTarget)
+{
+	const APawn* Pawn = Cast<APawn>(TransitioningPawn);
+	if (!Pawn || !NewViewTarget)
+	{
+		return;
+	}
+
+	// Sem controller (teste headless, ou pawn ainda não possuído) não há o que
+	// trocar — e isso não é erro, é um mundo sem jogador olhando.
+	if (APlayerController* PlayerController = Cast<APlayerController>(Pawn->GetController()))
+	{
+		PlayerController->SetViewTargetWithBlend(NewViewTarget, WorldBattleTransition::ViewBlendSeconds);
+	}
 }

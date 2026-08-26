@@ -118,9 +118,11 @@ bool FWorldExplorerCharacterSurvivesMissingInputAssetsTest::RunTest(const FStrin
 	// para queda.
 	AWorldExplorerCharacter* Explorer = World->SpawnActor<AWorldExplorerCharacter>();
 
-	// BeginPlay sem controller: o registro do mapping context precisa sair
-	// cedo em vez de assumir que há um jogador local.
+	// NotifyControllerChanged sem controller: é o gancho onde o mapping
+	// context se registra, e ele precisa sair cedo em vez de assumir que já
+	// existe um jogador local.
 	Explorer->DispatchBeginPlay();
+	Explorer->NotifyControllerChanged();
 
 	// Um UInputComponent real, mas com MoveAction/LookAction/Contexto nulos —
 	// que é o estado de quem ainda não autorou os assets no Editor.

@@ -12,6 +12,7 @@
 #include "EngineUtils.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
+#include "Misc/Paths.h"
 
 ABattleSquareGameMode::ABattleSquareGameMode()
 {
@@ -22,6 +23,29 @@ ABattleSquareGameMode::ABattleSquareGameMode()
 	// vez por segundo é preciso o bastante e barato mesmo com muitas
 	// salas ativas (TMap pequeno, sem I/O).
 	PrimaryActorTick.TickInterval = 1.0f;
+}
+
+void ABattleSquareGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)
+{
+	Super::InitGame(MapName, Options, ErrorMessage);
+
+	// Antes de qualquer pawn nascer: se o nível declara um pawn de exploração,
+	// é ele que o jogador controla. Sem isto, a engine spawna um DefaultPawn
+	// genérico, sem componente de encontro, e a corrente do mundo não sobe.
+	if (!WorldExplorerPawnClassPath.IsValid())
+	{
+		return;
+	}
+
+	if (UClass* ExplorerClass = WorldExplorerPawnClassPath.TryLoadClass<APawn>())
+	{
+		DefaultPawnClass = ExplorerClass;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ABattleSquareGameMode: WorldExplorerPawnClassPath não carregou (%s) — seguindo com o DefaultPawn da engine."),
+			*WorldExplorerPawnClassPath.ToString());
+	}
 }
 
 void ABattleSquareGameMode::BeginPlay()
@@ -91,17 +115,37 @@ FString ABattleSquareGameMode::SetUpWorldEncounterFlow()
 
 	if (!Detection)
 	{
+		// Transitório: o pawn pode chegar por streaming ou ser spawnado depois.
+		bWorldEncounterSetupIsTransient = true;
 		return TEXT("nenhum pawn com UEncounterDetectionComponent no nível");
 	}
+
+	bWorldEncounterSetupIsTransient = false;
+
 	if (WorldEncounterMirrorPath.IsEmpty())
 	{
 		return TEXT("WorldEncounterMirrorPath não configurado em DefaultGame.ini");
 	}
 
+	// Caminho relativo tem DOIS significados possíveis, e os dois aparecem de
+	// verdade: o do .ini é relativo ao PROJETO ("Saved/..."), e o que a própria
+	// engine devolve em FPaths::ProjectSavedDir() é relativo ao PROCESSO
+	// ("../../../Projeto/Saved/..."). Resolver só de um jeito quebra o outro —
+	// foi assim que o teste de bootstrap caiu. Tenta projeto, cai para processo.
+	FString ResolvedMirrorPath = WorldEncounterMirrorPath;
+	if (FPaths::IsRelative(ResolvedMirrorPath))
+	{
+		const FString ProjectRelative =
+			FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectDir(), WorldEncounterMirrorPath));
+		ResolvedMirrorPath = FPaths::FileExists(ProjectRelative)
+			? ProjectRelative
+			: FPaths::ConvertRelativePathToFull(WorldEncounterMirrorPath);
+	}
+
 	TArray<FLoadedPetRecord> Pets;
 	int32 RejectedCount = 0;
 	const bool bLoaded = FPetDataLoader::LoadVerifiedPets(
-		WorldEncounterMirrorPath,
+		ResolvedMirrorPath,
 		HexStringToBytes(WorldEncounterMirrorKeyHex),
 		WorldEncounterMirrorPublicKeyPem,
 		Pets,
@@ -109,7 +153,7 @@ FString ABattleSquareGameMode::SetUpWorldEncounterFlow()
 
 	if (!bLoaded || Pets.Num() == 0)
 	{
-		return TEXT("espelho de pets não carregou");
+		return FString::Printf(TEXT("espelho de pets não carregou em '%s'"), *ResolvedMirrorPath);
 	}
 
 	FEncounterMatchParams MatchParams;
@@ -158,18 +202,26 @@ void ABattleSquareGameMode::Tick(float DeltaSeconds)
 
 	// Encontros no mundo são opcionais: um nível sem pawn de exploração (ou
 	// sem espelho configurado) segue funcionando exatamente como antes.
-	if (!WorldEncounterFlow)
+	if (!WorldEncounterFlow && bWorldEncounterSetupIsTransient)
 	{
 		const FString Problem = SetUpWorldEncounterFlow();
 		if (Problem.IsEmpty())
 		{
 			UE_LOG(LogTemp, Display, TEXT("ABattleSquareGameMode: encontros de mundo ATIVOS."));
 		}
-		else if (!bHasLoggedWorldEncounterProblem)
+		else if (!bHasLoggedWorldEncounterProblem || !bWorldEncounterSetupIsTransient)
 		{
-			// Uma vez só: o Tick roda 1x/s e isto viraria enxurrada de log.
+			// Falha permanente é logada como Warning e encerra as tentativas;
+			// transitória é logada uma vez só, para o Tick 1x/s não inundar.
 			bHasLoggedWorldEncounterProblem = true;
-			UE_LOG(LogTemp, Log, TEXT("ABattleSquareGameMode: encontros de mundo ainda inativos — %s"), *Problem);
+			if (bWorldEncounterSetupIsTransient)
+			{
+				UE_LOG(LogTemp, Log, TEXT("ABattleSquareGameMode: encontros de mundo ainda inativos — %s"), *Problem);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("ABattleSquareGameMode: encontros de mundo DESISTIDOS — %s"), *Problem);
+			}
 		}
 	}
 }

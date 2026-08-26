@@ -21,6 +21,9 @@ namespace WorldBattleTransition
 	 * traria de volta a tela de loading que M5 gastou uma feature para tirar.
 	 */
 	inline constexpr double ArenaWorldOffsetUnits = 1000000.0;
+
+	/** Tempo de transição da câmera entre mundo e arena. */
+	inline constexpr float ViewBlendSeconds = 0.4f;
 }
 
 /**
@@ -51,6 +54,14 @@ public:
 
 private:
 	void HandleBattleFinished();
+
+	/**
+	 * Troca o que o jogador VÊ. Sem isto a batalha acontece de verdade — arena
+	 * spawnada, pets criados, BeginBattle chamado — a um milhão de unidades de
+	 * distância, com a câmera parada no mundo. Do assento do jogador, "nada
+	 * aconteceu". Foi exatamente o que se observou no primeiro teste em PIE.
+	 */
+	void SetViewTarget(AActor* NewViewTarget);
 
 	UPROPERTY()
 	TObjectPtr<AActor> TransitioningPawn;

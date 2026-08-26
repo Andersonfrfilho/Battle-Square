@@ -33,7 +33,13 @@ class BATTLESQUARE_API AWorldExplorerCharacter : public ACharacter
 public:
 	AWorldExplorerCharacter();
 
-	virtual void BeginPlay() override;
+	/**
+	 * É AQUI que o Enhanced Input se registra, não em BeginPlay: um pawn
+	 * SPAWNADO roda BeginPlay ANTES de ser possuído, então GetController()
+	 * ainda é nulo e o mapping context nunca entraria. Sintoma: o personagem
+	 * nasce e não responde a tecla nem a mouse.
+	 */
+	virtual void NotifyControllerChanged() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
 	USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
@@ -57,6 +63,13 @@ protected:
 	TObjectPtr<UInputAction> LookAction;
 
 	void HandleMove(const FInputActionValue& Value);
+
+	/**
+	 * Sonda de diagnóstico, por binding de tecla CRU (caminho legado), ao lado
+	 * do Enhanced Input. Ela separa duas perguntas que o silêncio confundia:
+	 * "a tecla chega ao jogo?" e "o Enhanced Input a roteia?".
+	 */
+	void LogRawKeyProbe();
 	void HandleLook(const FInputActionValue& Value);
 
 private:

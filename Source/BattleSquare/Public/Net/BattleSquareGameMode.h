@@ -30,6 +30,7 @@ class BATTLESQUARE_API ABattleSquareGameMode : public AGameModeBase
 public:
 	ABattleSquareGameMode();
 
+	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void Logout(AController* Exiting) override;
@@ -41,6 +42,17 @@ public:
 	// Ligam o UEncounterDetectionComponent do pawn ao UWorldBattleTransitionService,
 	// que é o que faz "andar → encontrar → batalhar → voltar" acontecer em jogo.
 	// Sem esta fiação as classes existem e são testadas, mas nada as instancia.
+
+	/**
+	 * Pawn que o jogador controla no mundo aberto. Ter isto aqui é o que
+	 * conserta o defeito de 2026-08-26: o bootstrap dependia de um pawn
+	 * COLOCADO no nível, e num mundo com World Partition um ator colocado
+	 * longe do PlayerStart simplesmente nunca é carregado. Spawnar o pawn
+	 * certo não depende de streaming — e é ele quem PUXA o streaming.
+	 * Vazio mantém o DefaultPawn da engine (comportamento de M1–M4 intacto).
+	 */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
+	FSoftClassPath WorldExplorerPawnClassPath;
 
 	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
 	FString WorldEncounterPlayerCatalogId;
@@ -65,6 +77,11 @@ private:
 	// BeginPlay do GameMode — tentar uma vez só encontra um mundo vazio.
 	// A tentativa se repete no Tick até pegar, e o motivo é logado uma vez.
 	bool bHasLoggedWorldEncounterProblem = false;
+
+	// Só a AUSÊNCIA DE PAWN é transitória (World Partition ainda vai trazê-lo).
+	// Espelho ausente ou config errada nunca se conserta sozinha em runtime —
+	// insistir a cada Tick só produz enxurrada de erro, como aconteceu.
+	bool bWorldEncounterSetupIsTransient = true;
 
 public:
 

@@ -11,6 +11,10 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "InputMappingContext.h"
+#include "InputAction.h"
+#include "InputModifiers.h"
+#include "InputCoreTypes.h"
 
 AWorldExplorerCharacter::AWorldExplorerCharacter()
 {
@@ -43,11 +47,17 @@ AWorldExplorerCharacter::AWorldExplorerCharacter()
 	EncounterDetection = CreateDefaultSubobject<UEncounterDetectionComponent>(TEXT("EncounterDetection"));
 }
 
-void AWorldExplorerCharacter::BeginPlay()
+void AWorldExplorerCharacter::NotifyControllerChanged()
 {
-	Super::BeginPlay();
+	Super::NotifyControllerChanged();
 
 	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	UE_LOG(LogTemp, Display, TEXT("[TRAVERSAL] NotifyControllerChanged: controller=%s IMC=%s Move=%s Look=%s"),
+		PlayerController ? TEXT("ok") : TEXT("NULO"),
+		TraversalMappingContext ? TEXT("ok") : TEXT("NULO"),
+		MoveAction ? TEXT("ok") : TEXT("NULO"),
+		LookAction ? TEXT("ok") : TEXT("NULO"));
+
 	if (!PlayerController)
 	{
 		return;
@@ -62,11 +72,44 @@ void AWorldExplorerCharacter::BeginPlay()
 		return;
 	}
 
-	if (UEnhancedInputLocalPlayerSubsystem* Subsystem =
-		ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+	UEnhancedInputLocalPlayerSubsystem* Subsystem =
+		ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
+	if (!Subsystem)
 	{
-		Subsystem->AddMappingContext(TraversalMappingContext, /*Priority=*/0);
+		UE_LOG(LogTemp, Warning, TEXT("[TRAVERSAL] subsistema de Enhanced Input NULO"));
+		return;
 	}
+
+	const int32 MappingsNoAsset = TraversalMappingContext->GetMappings().Num();
+	UE_LOG(LogTemp, Display, TEXT("[TRAVERSAL] mapeamentos no asset: %d"), MappingsNoAsset);
+
+	// Reserva: um asset sem mapeamento não move ninguém, e descobrir isso só
+	// pelo silêncio custou caro. Construir o contexto pela API da engine
+	// (MapKey) não depende de como a ferramenta de autoria escreveu o asset.
+	UInputMappingContext* ContextToApply = TraversalMappingContext;
+	if (MappingsNoAsset == 0 && MoveAction && LookAction)
+	{
+		UInputMappingContext* Fallback = NewObject<UInputMappingContext>(this);
+		Fallback->MapKey(MoveAction, EKeys::W);
+		Fallback->MapKey(MoveAction, EKeys::S).Modifiers.Add(NewObject<UInputModifierNegate>(Fallback));
+
+		FEnhancedActionKeyMapping& Right = Fallback->MapKey(MoveAction, EKeys::D);
+		Right.Modifiers.Add(NewObject<UInputModifierSwizzleAxis>(Fallback));
+
+		FEnhancedActionKeyMapping& Left = Fallback->MapKey(MoveAction, EKeys::A);
+		Left.Modifiers.Add(NewObject<UInputModifierSwizzleAxis>(Fallback));
+		Left.Modifiers.Add(NewObject<UInputModifierNegate>(Fallback));
+
+		Fallback->MapKey(LookAction, EKeys::Mouse2D);
+
+		ContextToApply = Fallback;
+		UE_LOG(LogTemp, Warning, TEXT("[TRAVERSAL] asset sem mapeamentos — usando contexto de RESERVA construído em C++ (%d)"),
+			Fallback->GetMappings().Num());
+	}
+
+	Subsystem->AddMappingContext(ContextToApply, /*Priority=*/0);
+	UE_LOG(LogTemp, Display, TEXT("[TRAVERSAL] mapping context REGISTRADO (%d mapeamentos)"),
+		ContextToApply->GetMappings().Num());
 }
 
 void AWorldExplorerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -74,10 +117,16 @@ void AWorldExplorerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerI
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
 	UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(PlayerInputComponent);
+	UE_LOG(LogTemp, Display, TEXT("[TRAVERSAL] SetupPlayerInputComponent: enhanced=%s Move=%s"),
+		EnhancedInput ? TEXT("ok") : TEXT("NULO"), MoveAction ? TEXT("ok") : TEXT("NULO"));
 	if (!EnhancedInput)
 	{
 		return;
 	}
+
+	// Sonda crua, no caminho legado: dispara se a tecla chegar ao jogo, mesmo
+	// que o Enhanced Input não roteie nada.
+	PlayerInputComponent->BindKey(EKeys::W, IE_Pressed, this, &AWorldExplorerCharacter::LogRawKeyProbe);
 
 	if (MoveAction)
 	{
@@ -103,6 +152,8 @@ void AWorldExplorerCharacter::HandleMove(const FInputActionValue& Value)
 	Params.CameraRotation = OwningController->GetControlRotation();
 
 	const FVector MoveDirection = FWorldTraversalMotion::ComputeMoveDirection(Params);
+	UE_LOG(LogTemp, Display, TEXT("[TRAVERSAL] HandleMove entrada=(%.2f,%.2f) direcao=(%.2f,%.2f,%.2f)"),
+		Params.MovementInput.X, Params.MovementInput.Y, MoveDirection.X, MoveDirection.Y, MoveDirection.Z);
 	if (MoveDirection.IsNearlyZero())
 	{
 		return;
@@ -116,4 +167,9 @@ void AWorldExplorerCharacter::HandleLook(const FInputActionValue& Value)
 	const FVector2D LookInput = Value.Get<FVector2D>();
 	AddControllerYawInput(LookInput.X);
 	AddControllerPitchInput(LookInput.Y);
+}
+
+void AWorldExplorerCharacter::LogRawKeyProbe()
+{
+	UE_LOG(LogTemp, Warning, TEXT("[TRAVERSAL] SONDA: a tecla W CHEGOU ao jogo (binding cru)."));
 }

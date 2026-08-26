@@ -3,6 +3,7 @@
 #include "Battle/BattlePhases.h"
 #include "Battle/BattleState.h"
 #include "Battle/BattleEvent.h"
+#include "Battle/BattleArenaConstants.h"
 
 namespace
 {
@@ -69,16 +70,36 @@ namespace
 		return FindLivingOpponentAtCell(State, Attacker.Side, TargetColumn, TargetRow);
 	}
 
+	bool IsOnBuffCell(const FPetState& Pet, const TArray<uint8>& CellLayout)
+	{
+		return CellLayout[CellLayoutIndex(Pet.Column, Pet.Row)] == static_cast<uint8>(ECellProperty::Buff);
+	}
+
 	// Fórmula de dano — só inteiros, multiplicador em percentual (design.md).
-	// DefesaEfetiva = Defesa * (Defendendo ? FatorDefesa : 100) / 100
-	// Dano          = Max(DanoMinimo, (Ataque * MultiplicadorAcao / 100) - DefesaEfetiva)
-	int32 ComputeDamage(const FPetState& Attacker, const FPetState& Target, int32 ActionMultiplierPercent)
+	// EfetivoAtaque = Ataque * (BuffAtacante ? CellBuffPercent : 100) / 100
+	// DefesaEfetiva = Defesa * FatorDefesa / 100, onde FatorDefesa combina
+	//   Defendendo e casa de buff (Arenas Variadas, design.md — buff é
+	//   contextual: fortalece quem ataca a partir dela E quem defende
+	//   nela, nunca persiste em FPetState).
+	// Dano          = Max(DanoMinimo, EfetivoAtaque - DefesaEfetiva)
+	int32 ComputeDamage(const FPetState& Attacker, const FPetState& Target, int32 ActionMultiplierPercent, const TArray<uint8>& CellLayout)
 	{
 		const bool bTargetDefending = HasPosture(Target, EBattlePostureFlags::Defending);
-		const int32 DefenseFactorPercent = bTargetDefending ? DefendingDefenseFactorPercent : 100;
+		const bool bAttackerBuffed = IsOnBuffCell(Attacker, CellLayout);
+		const bool bTargetBuffed = IsOnBuffCell(Target, CellLayout);
+
+		const int32 EffectiveAttack = bAttackerBuffed
+			? (Attacker.Attack * BattleArenaConstants::CellBuffPercent) / 100
+			: Attacker.Attack;
+
+		int32 DefenseFactorPercent = bTargetDefending ? DefendingDefenseFactorPercent : 100;
+		if (bTargetBuffed)
+		{
+			DefenseFactorPercent = (DefenseFactorPercent * BattleArenaConstants::CellBuffPercent) / 100;
+		}
 		const int32 EffectiveDefense = (Target.Defense * DefenseFactorPercent) / 100;
 
-		const int32 RawDamage = (Attacker.Attack * ActionMultiplierPercent) / 100 - EffectiveDefense;
+		const int32 RawDamage = (EffectiveAttack * ActionMultiplierPercent) / 100 - EffectiveDefense;
 		return FMath::Max(MinDamage, RawDamage);
 	}
 
@@ -152,7 +173,7 @@ namespace
 		}
 
 		const int32 Multiplier = bIsMagic ? MagicDamageMultiplierPercent : AttackDamageMultiplierPercent;
-		const int32 Damage = ComputeDamage(*Attacker, *Target, Multiplier);
+		const int32 Damage = ComputeDamage(*Attacker, *Target, Multiplier, State.CellLayout);
 
 		// Acumula — NÃO aplica. F5 (T8) aplica tudo de uma vez (BTL-07).
 		Target->PendingDamage += Damage;

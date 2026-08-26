@@ -46,6 +46,14 @@ uint64 FBattleState::ComputeHash() const
 		Hash = CombineBattleHash(Hash, Pet->PostureFlags);
 	}
 
+	// Arenas Variadas (design.md): layout entra no hash na ordem fixa do
+	// array — não precisa de sort, CellLayout não é um contêiner cuja
+	// ordem de iteração varia (é indexado por posição de casa, estável).
+	for (uint8 CellProperty : CellLayout)
+	{
+		Hash = CombineBattleHash(Hash, CellProperty);
+	}
+
 	Hash = CombineBattleHash(Hash, static_cast<uint64>(static_cast<int64>(TurnNumber)));
 	Hash = CombineBattleHash(Hash, bBattleEnded ? 1ULL : 0ULL);
 	Hash = CombineBattleHash(Hash, WinningSide);

@@ -142,10 +142,17 @@ void ABattleSquareGameMode::AssembleMatchForRoom(const FString& Code, const FBat
 		return;
 	}
 
+	if (!Arena->BeginBattle(InitialState, Presentations))
+	{
+		// T7 (arenas-variadas): montagem rejeitada (ex.: pet em casa
+		// bloqueada) — BeginBattle já logou o motivo. Nunca segue
+		// montando uma partida meio-inicializada.
+		Arena->Destroy();
+		return;
+	}
+
 	UBattleTurnCoordinator* Coordinator = NewObject<UBattleTurnCoordinator>(this);
 	Coordinator->BeginTurn(InitialState, World->GetTimeSeconds());
-
-	Arena->BeginBattle(InitialState, Presentations);
 	Arena->ConfigureNetworkedOpponent(Coordinator);
 
 	FActiveMatch Match;

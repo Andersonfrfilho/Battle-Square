@@ -105,8 +105,22 @@ bool ABattleArena::AreAllGridCellsInCameraFrustum() const
 	return true;
 }
 
-void ABattleArena::BeginBattle(const FBattleState& InitialState, const TArray<FPetPresentationInfo>& Presentations)
+bool ABattleArena::BeginBattle(const FBattleState& InitialState, const TArray<FPetPresentationInfo>& Presentations)
 {
+	// T7 (arenas-variadas, ARENA-02, edge case da spec): montagem que
+	// posicionaria um pet numa casa bloqueada falha explicitamente, alto
+	// e claro — nunca reposiciona silenciosamente.
+	for (const FPetState& Pet : InitialState.Pets)
+	{
+		if (InitialState.CellLayout.IsValidIndex(CellLayoutIndex(Pet.Column, Pet.Row))
+			&& InitialState.CellLayout[CellLayoutIndex(Pet.Column, Pet.Row)] == static_cast<uint8>(ECellProperty::Blocked))
+		{
+			UE_LOG(LogTemp, Error, TEXT("ABattleArena::BeginBattle: pet %d posicionado numa casa bloqueada (%d,%d) — montagem rejeitada"),
+				Pet.PetId, Pet.Column, Pet.Row);
+			return false;
+		}
+	}
+
 	CurrentState = InitialState;
 	SpawnPetViews(CurrentState, Presentations);
 
@@ -115,6 +129,8 @@ void ABattleArena::BeginBattle(const FBattleState& InitialState, const TArray<FP
 		TracePlayer = NewObject<UBattleTracePlayer>(this);
 		TracePlayer->OnEventApplied.AddUObject(this, &ABattleArena::DispatchEventToPetViews);
 	}
+
+	return true;
 }
 
 void ABattleArena::DispatchEventToPetViews(const FBattleEvent& Event)

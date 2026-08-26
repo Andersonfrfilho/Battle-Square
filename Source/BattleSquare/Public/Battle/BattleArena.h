@@ -63,7 +63,11 @@ public:
 	// receber seleções. Assim que o jogador commitar, a IA gera o commit
 	// dela, o resolvedor real roda, e o trace resultante anima as views.
 	// Não exposto ao Blueprint pelo mesmo motivo de SpawnPetViews.
-	void BeginBattle(const FBattleState& InitialState, const TArray<FPetPresentationInfo>& Presentations);
+	//
+	// T7 (arenas-variadas, ARENA-02): retorna false, sem montar nada, se
+	// algum pet estivesse posicionado numa casa Blocked — erro de
+	// configuração, nunca reposicionado silenciosamente.
+	bool BeginBattle(const FBattleState& InitialState, const TArray<FPetPresentationInfo>& Presentations);
 
 	const FBattleState& GetCurrentState() const { return CurrentState; }
 

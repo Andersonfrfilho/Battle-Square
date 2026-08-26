@@ -3,6 +3,7 @@
 #include "Battle/BattlePhases.h"
 #include "Battle/BattleState.h"
 #include "Battle/BattleEvent.h"
+#include "Battle/BattleArenaConstants.h"
 
 namespace
 {
@@ -39,7 +40,14 @@ namespace
 			Intent.Pet = &Pet;
 			Intent.DestColumn = DestColumn;
 			Intent.DestRow = DestRow;
-			Intent.bInsideGrid = IsInsideGrid(DestColumn, DestRow);
+			// Arenas Variadas (design.md): casa bloqueada é o MESMO
+			// caminho de "fora da grade" — bInsideGrid é, na prática,
+			// "destino válido", nome mantido para não mexer no resto do
+			// algoritmo (colisão entre aliados, EmitBlocked já existentes).
+			const bool bWithinBounds = IsInsideGrid(DestColumn, DestRow);
+			const bool bDestinationBlocked = bWithinBounds
+				&& State.CellLayout[CellLayoutIndex(DestColumn, DestRow)] == static_cast<uint8>(ECellProperty::Blocked);
+			Intent.bInsideGrid = bWithinBounds && !bDestinationBlocked;
 			OutIntents.Add(Intent);
 
 			// v1 é 1v1 — um único pet vivo por lado, então este laço
@@ -90,59 +98,81 @@ void BattlePhases::ApplyMovement(
 	CollectIntent(State, /*Side=*/0, LeftAction, Intents);
 	CollectIntent(State, /*Side=*/1, RightAction, Intents);
 
-	if (Intents.IsEmpty())
+	// Passos 2–3 (validade de destino, colisão entre aliados) só têm
+	// sentido se alguém tentou se mover — mas o Passo 4 (dano de casa)
+	// precisa rodar sempre, mesmo com Intents vazio (ex.: os dois lados
+	// dão Aguardar, parados numa casa de dano). Por isso nenhum
+	// early-return: os passos de movimento ficam dentro deste bloco.
+	if (!Intents.IsEmpty())
 	{
-		return;
-	}
-
-	// Passo 2: fora da grade é bloqueio individual, resolvido já aqui —
-	// não compete por destino com mais ninguém.
-	TArray<FMoveIntent> ValidIntents;
-	for (const FMoveIntent& Intent : Intents)
-	{
-		if (Intent.bInsideGrid)
+		// Passo 2: fora da grade é bloqueio individual, resolvido já aqui —
+		// não compete por destino com mais ninguém.
+		TArray<FMoveIntent> ValidIntents;
+		for (const FMoveIntent& Intent : Intents)
 		{
-			ValidIntents.Add(Intent);
-		}
-		else
-		{
-			EmitBlocked(OutTrace, SlotIndex, *Intent.Pet);
-		}
-	}
-
-	// Passo 3: colisão entre aliados. Dois+ pets do MESMO lado disputando
-	// a mesma casa de destino são todos anulados (BTL-05). Lados opostos
-	// coabitam livremente (DP-02) — não entram nesta contagem.
-	TMap<uint32, TArray<int32>> DestinationClaimsBySide; // (side<<16 | col<<8 | row) -> índices em ValidIntents
-	for (int32 Index = 0; Index < ValidIntents.Num(); ++Index)
-	{
-		const FMoveIntent& Intent = ValidIntents[Index];
-		const uint32 Key = (static_cast<uint32>(Intent.Pet->Side) << 16)
-			| (static_cast<uint32>(Intent.DestColumn) << 8)
-			| static_cast<uint32>(Intent.DestRow);
-		DestinationClaimsBySide.FindOrAdd(Key).Add(Index);
-	}
-
-	for (const auto& ClaimPair : DestinationClaimsBySide)
-	{
-		const TArray<int32>& ClaimantIndices = ClaimPair.Value;
-		const bool bCollides = ClaimantIndices.Num() > 1;
-
-		for (int32 Index : ClaimantIndices)
-		{
-			const FMoveIntent& Intent = ValidIntents[Index];
-			if (bCollides)
+			if (Intent.bInsideGrid)
 			{
-				EmitBlocked(OutTrace, SlotIndex, *Intent.Pet);
+				ValidIntents.Add(Intent);
 			}
 			else
 			{
-				const uint8 FromCell = PackCell(Intent.Pet->Column, Intent.Pet->Row);
-				Intent.Pet->Column = static_cast<uint8>(Intent.DestColumn);
-				Intent.Pet->Row = static_cast<uint8>(Intent.DestRow);
-				const uint8 ToCell = PackCell(Intent.Pet->Column, Intent.Pet->Row);
-				EmitMoved(OutTrace, SlotIndex, *Intent.Pet, FromCell, ToCell);
+				EmitBlocked(OutTrace, SlotIndex, *Intent.Pet);
 			}
+		}
+
+		// Passo 3: colisão entre aliados. Dois+ pets do MESMO lado disputando
+		// a mesma casa de destino são todos anulados (BTL-05). Lados opostos
+		// coabitam livremente (DP-02) — não entram nesta contagem.
+		TMap<uint32, TArray<int32>> DestinationClaimsBySide; // (side<<16 | col<<8 | row) -> índices em ValidIntents
+		for (int32 Index = 0; Index < ValidIntents.Num(); ++Index)
+		{
+			const FMoveIntent& Intent = ValidIntents[Index];
+			const uint32 Key = (static_cast<uint32>(Intent.Pet->Side) << 16)
+				| (static_cast<uint32>(Intent.DestColumn) << 8)
+				| static_cast<uint32>(Intent.DestRow);
+			DestinationClaimsBySide.FindOrAdd(Key).Add(Index);
+		}
+
+		for (const auto& ClaimPair : DestinationClaimsBySide)
+		{
+			const TArray<int32>& ClaimantIndices = ClaimPair.Value;
+			const bool bCollides = ClaimantIndices.Num() > 1;
+
+			for (int32 Index : ClaimantIndices)
+			{
+				const FMoveIntent& Intent = ValidIntents[Index];
+				if (bCollides)
+				{
+					EmitBlocked(OutTrace, SlotIndex, *Intent.Pet);
+				}
+				else
+				{
+					const uint8 FromCell = PackCell(Intent.Pet->Column, Intent.Pet->Row);
+					Intent.Pet->Column = static_cast<uint8>(Intent.DestColumn);
+					Intent.Pet->Row = static_cast<uint8>(Intent.DestRow);
+					const uint8 ToCell = PackCell(Intent.Pet->Column, Intent.Pet->Row);
+					EmitMoved(OutTrace, SlotIndex, *Intent.Pet, FromCell, ToCell);
+				}
+			}
+		}
+	}
+
+	// Passo 4 (Arenas Variadas, design.md — DP-arena-02): dano de casa,
+	// avaliado ao fim DESTE slot, pela posição atual de cada pet vivo —
+	// já depois do movimento acima ter sido aplicado (ou a mesma posição
+	// de antes, se ele não se moveu ou foi bloqueado). Soma em
+	// PendingDamage, mesmo acumulador do combate — NUNCA aplica aqui
+	// (BTL-07). Sem evento próprio: F5 (ApplyResolution) já emite
+	// DanoAplicado para qualquer PendingDamage > 0, não importa a origem.
+	for (FPetState& Pet : State.Pets)
+	{
+		if (!Pet.IsAlive())
+		{
+			continue;
+		}
+		if (State.CellLayout[CellLayoutIndex(Pet.Column, Pet.Row)] == static_cast<uint8>(ECellProperty::Damage))
+		{
+			Pet.PendingDamage += BattleArenaConstants::CellDamageAmount;
 		}
 	}
 }

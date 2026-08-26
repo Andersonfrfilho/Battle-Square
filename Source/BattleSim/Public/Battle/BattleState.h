@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Battle/BattleRandom.h"
+#include "Battle/BattleTypes.h"
 #include "BattleState.generated.h"
 
 // Postura assumida num slot — bitmask, zerada ao fim de F5 (BTL-12).
@@ -76,8 +77,23 @@ struct FBattleState
 {
 	GENERATED_BODY()
 
+	FBattleState()
+	{
+		// Arena neutra por padrão — toda casa None, comportamento
+		// idêntico ao de antes de Arenas Variadas (design.md, zero
+		// regressão). Índice = Row*3+Column (CellLayoutIndex).
+		CellLayout.Init(static_cast<uint8>(ECellProperty::None), BattleGridCellCount);
+	}
+
 	UPROPERTY()
 	TArray<FPetState> Pets;
+
+	// Arenas Variadas (design.md, DP-arena-01): propriedade de cada casa
+	// da grade, ECellProperty empacotado. Viaja DENTRO do estado — mesma
+	// razão de FBattleRandom estar aqui (AD-004): precisa sobreviver a
+	// serialização, replicação e reconexão junto com o resto.
+	UPROPERTY()
+	TArray<uint8> CellLayout;
 
 	// O gerador de aleatoriedade da batalha vive AQUI DENTRO — ver AD-004 e
 	// BattleRandom.h. É o que permite que reconexão e replay reproduzam a

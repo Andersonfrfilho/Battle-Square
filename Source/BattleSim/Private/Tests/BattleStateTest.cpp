@@ -107,3 +107,53 @@ bool FPetStateMaxHealthTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+// T1: FBattleState recém-construído tem CellLayout com 9 entradas, todas None.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FBattleStateDefaultCellLayoutTest,
+	"BattleSim.State.DefaultCellLayoutIsAllNone",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FBattleStateDefaultCellLayoutTest::RunTest(const FString& Parameters)
+{
+	FBattleState State;
+	TestEqual(TEXT("CellLayout tem 9 posições (grade 3x3)"), State.CellLayout.Num(), BattleGridCellCount);
+
+	bool bAllNone = true;
+	for (uint8 CellProperty : State.CellLayout)
+	{
+		if (CellProperty != static_cast<uint8>(ECellProperty::None))
+		{
+			bAllNone = false;
+		}
+	}
+	TestTrue(TEXT("Toda casa começa None (arena neutra por padrão)"), bAllNone);
+
+	return true;
+}
+
+// T2: hash muda quando o layout muda, mesmo com os mesmos pets; hash
+// permanece igual quando o layout permanece igual (zero regressão).
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FBattleStateComputeHashIncludesCellLayoutTest,
+	"BattleSim.State.ComputeHashIncludesCellLayout",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FBattleStateComputeHashIncludesCellLayoutTest::RunTest(const FString& Parameters)
+{
+	FBattleState StateNeutral;
+	StateNeutral.Pets.Add(MakeTestPet(1, 50));
+
+	FBattleState StateSameLayout;
+	StateSameLayout.Pets.Add(MakeTestPet(1, 50));
+
+	TestEqual(TEXT("Mesmo layout (neutro), mesmo hash"), StateNeutral.ComputeHash(), StateSameLayout.ComputeHash());
+
+	FBattleState StateWithBlocked;
+	StateWithBlocked.Pets.Add(MakeTestPet(1, 50));
+	StateWithBlocked.CellLayout[CellLayoutIndex(0, 0)] = static_cast<uint8>(ECellProperty::Blocked);
+
+	TestNotEqual(TEXT("Layout diferente (uma casa bloqueada) muda o hash"), StateNeutral.ComputeHash(), StateWithBlocked.ComputeHash());
+
+	return true;
+}

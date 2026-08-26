@@ -202,3 +202,59 @@ bool FBattleArenaNetworkedOpponentBypassesAITest::RunTest(const FString& Paramet
 	DestroyHeadlessTestWorld(World);
 	return true;
 }
+
+// T7 (arenas-variadas, ARENA-02): montagem que posicionaria um pet numa
+// casa bloqueada é rejeitada explicitamente, nunca reposicionada.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FBattleArenaRejectsInitialPositionOnBlockedCellTest,
+	"BattleSquare.BattleArena.RejectsInitialPositionOnBlockedCell",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FBattleArenaRejectsInitialPositionOnBlockedCellTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateHeadlessTestWorld();
+	if (!TestNotNull(TEXT("Mundo de teste criado"), World))
+	{
+		return false;
+	}
+
+	ABattleArena* Arena = World->SpawnActor<ABattleArena>();
+	if (!TestNotNull(TEXT("ABattleArena spawna sem crash"), Arena))
+	{
+		DestroyHeadlessTestWorld(World);
+		return false;
+	}
+
+	FBattleState BlockedState;
+	FPetState PlayerPet;
+	PlayerPet.PetId = 1; PlayerPet.Side = 0; PlayerPet.Column = 1; PlayerPet.Row = 1;
+	PlayerPet.Health = 50; PlayerPet.MaxHealth = 50;
+	FPetState OpponentPet;
+	OpponentPet.PetId = 2; OpponentPet.Side = 1; OpponentPet.Column = 2; OpponentPet.Row = 1;
+	OpponentPet.Health = 50; OpponentPet.MaxHealth = 50;
+	BlockedState.Pets.Add(PlayerPet);
+	BlockedState.Pets.Add(OpponentPet);
+	BlockedState.CellLayout[CellLayoutIndex(1, 1)] = static_cast<uint8>(ECellProperty::Blocked); // casa do próprio PlayerPet
+
+	TArray<FPetPresentationInfo> Presentations;
+	FPetPresentationInfo PlayerPresentation;
+	PlayerPresentation.PetId = PlayerPet.PetId;
+	FPetPresentationInfo OpponentPresentation;
+	OpponentPresentation.PetId = OpponentPet.PetId;
+	Presentations.Add(PlayerPresentation);
+	Presentations.Add(OpponentPresentation);
+
+	AddExpectedError(TEXT("posicionado numa casa bloqueada"), EAutomationExpectedErrorFlags::Contains, 1);
+	const bool bAccepted = Arena->BeginBattle(BlockedState, Presentations);
+	TestFalse(TEXT("Montagem com pet em casa bloqueada é rejeitada"), bAccepted);
+	TestEqual(TEXT("Nenhuma view spawnada — montagem nunca prosseguiu"), Arena->GetPetViews().Num(), 0);
+
+	// Confirma que uma montagem válida (mesmos pets, layout neutro) continua funcionando.
+	FBattleState ValidState = BlockedState;
+	ValidState.CellLayout[CellLayoutIndex(1, 1)] = static_cast<uint8>(ECellProperty::None);
+	const bool bValidAccepted = Arena->BeginBattle(ValidState, Presentations);
+	TestTrue(TEXT("Montagem sem casa bloqueada é aceita normalmente"), bValidAccepted);
+
+	DestroyHeadlessTestWorld(World);
+	return true;
+}

@@ -175,3 +175,99 @@ bool FBattlePhaseMovementSkipsDeadPetTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+// T3: casa bloqueada rejeita movimento — pet nunca sai da posição
+// original, repetidamente, mesmo caminho de "fora da grade".
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FBattlePhaseMovementBlockedCellRejectsMovementTest,
+	"BattleSim.Movement.BlockedCellRejectsMovement",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FBattlePhaseMovementBlockedCellRejectsMovementTest::RunTest(const FString& Parameters)
+{
+	FBattleState State;
+	State.Pets.Add(MakePet(1, 0, 1, 1));
+	State.Pets.Add(MakePet(2, 1, 0, 0)); // longe, não interfere
+	State.CellLayout[CellLayoutIndex(2, 1)] = static_cast<uint8>(ECellProperty::Blocked); // casa à direita do Pet 1
+
+	for (int32 Attempt = 0; Attempt < 5; ++Attempt)
+	{
+		TArray<FBattleEvent> Trace;
+		BattlePhases::ApplyMovement(State, MoveAction(EBattleDirection::Direita), WaitAction(), 0, Trace);
+
+		TestEqual(TEXT("Pet nunca sai da posição original (casa bloqueada)"), State.Pets[0].Column, static_cast<uint8>(1));
+		TestEqual(TEXT("Pet nunca sai da posição original (casa bloqueada)"), State.Pets[0].Row, static_cast<uint8>(1));
+
+		bool bFoundBlockedEvent = false;
+		for (const FBattleEvent& Event : Trace)
+		{
+			if (Event.Type == EBattleEventType::MovimentoBloqueado) { bFoundBlockedEvent = true; }
+			TestFalse(TEXT("Nenhum evento novo — só MovimentoBloqueado já existente"), Event.Type == EBattleEventType::Moveu);
+		}
+		TestTrue(TEXT("MovimentoBloqueado emitido, mesmo vocabulário de sempre"), bFoundBlockedEvent);
+	}
+
+	return true;
+}
+
+// T3: arena neutra (CellLayout todo None) produz resultado idêntico ao
+// comportamento de antes da feature — zero regressão.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FBattlePhaseMovementNeutralArenaNoRegressionTest,
+	"BattleSim.Movement.NeutralArenaProducesNoRegression",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FBattlePhaseMovementNeutralArenaNoRegressionTest::RunTest(const FString& Parameters)
+{
+	FBattleState State;
+	State.Pets.Add(MakePet(1, 0, 1, 1));
+	State.Pets.Add(MakePet(2, 1, 2, 2));
+
+	TArray<FBattleEvent> Trace;
+	BattlePhases::ApplyMovement(State, MoveAction(EBattleDirection::Direita), WaitAction(), 0, Trace);
+
+	TestEqual(TEXT("Pet se move normalmente em arena neutra"), State.Pets[0].Column, static_cast<uint8>(2));
+
+	return true;
+}
+
+// T4: pet parado numa casa de dano perde vida ao longo de vários
+// turnos, sem nenhum ataque do oponente.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FBattlePhaseMovementDamageCellAccumulatesPendingDamageTest,
+	"BattleSim.Movement.DamageCellAccumulatesPendingDamage",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FBattlePhaseMovementDamageCellAccumulatesPendingDamageTest::RunTest(const FString& Parameters)
+{
+	FBattleState State;
+	State.Pets.Add(MakePet(1, 0, 1, 1));
+	State.CellLayout[CellLayoutIndex(1, 1)] = static_cast<uint8>(ECellProperty::Damage);
+
+	TArray<FBattleEvent> Trace;
+	BattlePhases::ApplyMovement(State, WaitAction(), WaitAction(), 0, Trace);
+
+	TestTrue(TEXT("PendingDamage acumulado por permanecer na casa de dano"), State.Pets[0].PendingDamage > 0);
+	TestEqual(TEXT("Nenhum evento próprio de dano de casa — F5 é quem emite"), Trace.Num(), 0);
+
+	return true;
+}
+
+// T4: arena sem casa de dano não acumula PendingDamage — zero regressão.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FBattlePhaseMovementNoDamageCellNoPendingDamageTest,
+	"BattleSim.Movement.NoDamageCellProducesNoPendingDamage",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FBattlePhaseMovementNoDamageCellNoPendingDamageTest::RunTest(const FString& Parameters)
+{
+	FBattleState State;
+	State.Pets.Add(MakePet(1, 0, 1, 1));
+
+	TArray<FBattleEvent> Trace;
+	BattlePhases::ApplyMovement(State, WaitAction(), WaitAction(), 0, Trace);
+
+	TestEqual(TEXT("Sem casa de dano, PendingDamage continua zero"), State.Pets[0].PendingDamage, 0);
+
+	return true;
+}

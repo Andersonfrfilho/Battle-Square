@@ -98,3 +98,24 @@ FORCEINLINE bool IsInsideGrid(int32 Column, int32 Row, int32 GridSize = 3)
 {
 	return Column >= 0 && Column < GridSize && Row >= 0 && Row < GridSize;
 }
+
+// Arenas Variadas (design.md, DP-arena-01): propriedade de uma casa da
+// grade. None = comportamento neutro, idêntico ao de antes desta
+// feature — é o valor padrão de toda casa não configurada.
+UENUM()
+enum class ECellProperty : uint8
+{
+	None = 0,
+	Blocked,
+	Damage,
+	Buff
+};
+
+// Tamanho fixo da grade (3x3 = 9 casas) — ver spec.md, Out of Scope:
+// tamanho variável de arena é reformulação de UI/câmera, fora daqui.
+inline constexpr int32 BattleGridCellCount = 9;
+
+FORCEINLINE int32 CellLayoutIndex(int32 Column, int32 Row)
+{
+	return Row * 3 + Column;
+}

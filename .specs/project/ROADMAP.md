@@ -1,7 +1,7 @@
 # Roadmap
 
-**Marco atual:** M3 — Conteúdo e Balanceamento
-**Status:** M1 e M2 concluídos; M3 ainda não speced
+**Marco atual:** M4 — Progressão e Meta (ainda não speced)
+**Status:** M1, M2 e M3 concluídos
 **Objetivo de fechamento do roadmap inteiro (M3→M7):** `.specs/project/OBJECTIVE.md` — ordem, dependências entre marcos, gates (B-001, B-004) e critério de "pronto" do projeto completo.
 
 ---
@@ -54,7 +54,7 @@
 
 ---
 
-## M3 — Conteúdo e Balanceamento 🔄 EM ANDAMENTO
+## M3 — Conteúdo e Balanceamento ✅ CONCLUÍDO
 
 **Objetivo:** provar que o sistema aguenta escala de conteúdo sem código novo por pet.
 
@@ -65,8 +65,11 @@
 - Ferramenta de balanceamento e simulação em lote (`FBattleBalanceSimulator`, determinística por seed, headless)
 - **Achado relevante no processo:** `BatalhaEncerrada` nunca disparava em produção desde M1 (`BattleOutcome::EvaluateOutcome` nunca era chamada fora dos testes do próprio núcleo) — corrigido, ver L-019 em `STATE.md`
 
-**Arenas Variadas** — PLANNED
-- Casas com propriedades (bloqueio, dano, buff)
+**Arenas Variadas** — ✅ CONCLUÍDO (`.specs/features/arenas-variadas/`)
+- Casas com propriedades (bloqueio, dano, buff) — layout viaja dentro de `FBattleState`, entra no hash de dessincronia
+- **Achados relevantes no processo:** um bug de lógica próprio (dano de casa não aplicava quando nenhum lado tentava mover) e uma lição de processo (`Tools/probe_isolation.sh` deixa o binário quebrado até rebuildar de novo — ver L-020 em `STATE.md`)
+
+**M3 concluído — as duas features planejadas estão prontas.**
 
 ---
 

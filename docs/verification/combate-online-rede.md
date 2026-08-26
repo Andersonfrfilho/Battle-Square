@@ -51,6 +51,31 @@ Este documento cobre o que o `design.md` marca como ❌ na tabela "Limite de Fer
 
 ---
 
+## Item 4 — RPCs de sala atravessando conexão real (Sala e Pareamento Simples)
+
+- [ ] **Não verificado**
+
+**Risco que isto cobre:** `Server_CreateRoom`/`Server_JoinRoom`/`Server_ReconnectToRoom` (`ABattleSquarePlayerController`) só foram testados chamando a lógica diretamente (`UBattleRoomRegistry`, headless) — nunca atravessando uma `UNetConnection` de verdade.
+
+**Passo concreto:**
+1. Duas instâncias (`ListenServer` + cliente, mesma configuração dos Itens 1–3).
+2. No host, chamar `Server_CreateRoom` (via Blueprint/console) e anotar o código retornado.
+3. No cliente, chamar `Server_JoinRoom` com esse código.
+4. Confirmar no log do host que a sala foi de 1 para 2 ocupantes, e que `OnRoomReady` disparou — `ABattleArena`/`UBattleTurnCoordinator` reais foram instanciados (log de `AssembleMatchForRoom`, instrumentar temporariamente se preciso).
+
+## Item 5 — ciclo completo: criar sala → entrar → jogar → abandonar, dois processos
+
+- [ ] **Não verificado**
+
+**Passo concreto:**
+1. A partir do Item 4 (sala montada, partida real rodando).
+2. Resolver pelo menos 1 turno completo pelo caminho de sala (não chamando o coordenador direto).
+3. Fechar o processo do cliente sem reconectar.
+4. Aguardar `AbandonTimeoutSeconds` (120s) e confirmar no log do host que `DeclareAbandonment` disparou para o lado do host (`BatalhaEncerrada`, `Value` = lado do host).
+5. Confirmar que a sala é destruída depois — `ABattleSquareGameMode::Tick` chama `CheckAbandonment`/`CheckEmptyRooms` uma vez por segundo automaticamente; nenhuma ação manual extra é necessária.
+
+---
+
 ## O que NÃO precisa deste roteiro
 
 Estes itens já têm cobertura automatizada headless e não exigem rede real — não repetir aqui:

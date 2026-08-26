@@ -414,6 +414,13 @@ find "$HOME/Library/Logs/Unreal Engine/BattleSquareEditor" Saved/Logs -newer <ma
 **Solução:** matar e reabrir o Editor (tudo que já tinha sido salvo sobreviveu: nível, 225 atores externos, 25 materiais; o `HLODLayer` não-salvo simplesmente não existia), e refazer T5 **sem tocar nas propriedades opcionais** — os defaults do layer duplicado (Instancing, sempre carregado, 25600/51200) já serviam. O build seguiu limpo: 36 atores de HLOD.
 **Previne:** duas coisas. (1) **Salvar antes de cada passo de MCP que muda asset**, não só no fim do lote — foi o que tornou o kill barato aqui. (2) Preferir o default do asset a escrever propriedade que não é exigida pelo design; cada propriedade escrita é uma chance de `PostEditChange` abrir modal. E ao suspeitar de travamento, o diagnóstico é o **contador de frame do log do Editor**, não o uso de CPU: threads de fundo continuam ocupadas com o game thread parado.
 
+### L-025: `UnrealEditor.modules` pode apontar para um dylib mais velho que o recém-buildado — teste "passa" contra código que não existe mais
+
+**Contexto:** Encontros e Transição para Batalha (M5), T1/T2 — depois de escrever os testes e rodar `Build.sh` com `Result: Succeeded`, `Automation RunTests BattleSquare.World.EncounterDetector` respondeu **`No automation tests matched`**, e depois o suite inteiro devolveu 85 quando deveria devolver 88. Nenhum erro em lugar nenhum.
+**Causa:** `Binaries/Mac/` tinha acumulado dylibs numerados de hot-reload (`libUnrealEditor-BattleSquare-0002…0005.dylib`), sobra de builds feitos **com o Editor aberto** durante a feature anterior. `Binaries/Mac/UnrealEditor.modules` continuava apontando para `-0004` enquanto o build novo escrevia `-0005`. O `UnrealEditor-Cmd` carrega o que o manifesto manda — ou seja, o binário anterior. O build compila, o link tem sucesso, o teste roda, e nada indica que o código testado é de duas versões atrás.
+**Solução:** `rm -f Binaries/Mac/libUnrealEditor-{BattleSquare,BattleSim}-0*.dylib` e rebuildar — o manifesto passa a apontar para o dylib recém-escrito, e o suite foi de 85 para 88.
+**Previne:** este é o mesmo gênero de falha de L-020 (sonda deixa o `.dylib` quebrado) e merece a mesma disciplina: **teste novo que não aparece na contagem é problema de binário até prova em contrário, não de nome de teste.** O diagnóstico é uma linha — comparar o dylib citado em `Binaries/Mac/UnrealEditor.modules` com o mais recente em `ls -lt Binaries/Mac/`. E a raiz é evitável: buildar com o Editor aberto é o que gera os numerados; fechar o Editor antes de `Build.sh` mantém `Binaries/` limpo.
+
 ---
 
 ## Ideias Adiadas

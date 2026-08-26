@@ -3,6 +3,8 @@
 #include "Net/BattleSquareGameMode.h"
 #include "Net/BattleSquarePlayerController.h"
 #include "Data/PetDataLoader.h"
+#include "Meta/PetCollectionService.h"
+#include "Meta/PetProgressionService.h"
 
 ABattleSquareGameMode::ABattleSquareGameMode()
 {
@@ -97,6 +99,24 @@ void ABattleSquareGameMode::RegisterControllerForRoom(const FString& Code, uint8
 	}
 }
 
+void ABattleSquareGameMode::ApplyOwnedPetProgressionBonus(const FString& SlotName, FPetState& PetState, const FPetPresentationInfo& Presentation)
+{
+	if (Presentation.CatalogId.IsEmpty())
+	{
+		return;
+	}
+
+	const TArray<FOwnedPetInstance> Collection = FPetCollectionService::LoadCollection(SlotName);
+	const FOwnedPetInstance* OwnedInstance = Collection.FindByPredicate(
+		[&Presentation](const FOwnedPetInstance& Instance) { return Instance.CatalogId == Presentation.CatalogId; });
+	if (!OwnedInstance)
+	{
+		return;
+	}
+
+	FPetProgressionService::ApplyLevelBonus(PetState, FPetProgressionService::GetLevel(*OwnedInstance));
+}
+
 void ABattleSquareGameMode::HandleRoomReady(const FString& Code)
 {
 	TArray<FLoadedPetRecord> Pets;
@@ -116,6 +136,13 @@ void ABattleSquareGameMode::HandleRoomReady(const FString& Code)
 	FPetState Side1Pet;
 	FPetPresentationInfo Side1Presentation;
 	FBattleDataTranslator::TranslatePet(Pets[1], /*PetId=*/2, /*Side=*/1, /*Column=*/2, /*Row=*/1, Side1Pet, Side1Presentation);
+
+	// T5 (niveis-experiencia-evolucao): pet de catálogo já capturado
+	// entra na partida com o bônus de atributo do nível dele. Pet não
+	// capturado (ou nível 1) fica exatamente como o catálogo — zero
+	// regressão (NIVEL-09).
+	ApplyOwnedPetProgressionBonus(PetCollectionSlotName, Side0Pet, Side0Presentation);
+	ApplyOwnedPetProgressionBonus(PetCollectionSlotName, Side1Pet, Side1Presentation);
 
 	FBattleState InitialState;
 	InitialState.Pets.Add(Side0Pet);

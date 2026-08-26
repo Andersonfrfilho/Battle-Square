@@ -138,4 +138,10 @@ private:
 	// jogador local venceu, captura o pet do lado OPOSTO — nunca o
 	// próprio pet do jogador.
 	void CheckForCapture(const TArray<FBattleEvent>& Trace);
+
+	// T4 (niveis-experiencia-evolucao): credita XP ao pet do JOGADOR
+	// LOCAL (nunca o oponente) se o CatalogId dele já está na coleção —
+	// em qualquer resultado (vitória/derrota/empate), quantidades
+	// diferentes. Pet ainda não capturado não gera XP fantasma.
+	void GrantExperienceIfOwned(const TArray<FBattleEvent>& Trace);
 };

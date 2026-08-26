@@ -27,4 +27,9 @@ public:
 	// T3: só leitura — coleção vazia se o slot nunca foi usado ou está
 	// corrompido.
 	static TArray<FOwnedPetInstance> LoadCollection(const FString& SlotName);
+
+	// T4 (niveis-experiencia-evolucao): persiste uma coleção já
+	// modificada por inteiro (ex.: XP concedido a uma instância
+	// existente) — diferente de CaptureIfNew, que só adiciona.
+	static void SaveCollection(const FString& SlotName, const TArray<FOwnedPetInstance>& Collection);
 };

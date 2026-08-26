@@ -3,6 +3,7 @@
 #include "Battle/BattleArena.h"
 #include "Net/BattleTurnCoordinator.h"
 #include "Meta/PetCollectionService.h"
+#include "Meta/PetProgressionService.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/AutomationTest.h"
 #include "Engine/World.h"
@@ -346,6 +347,113 @@ bool FBattleArenaVictoryCapturesOpponentPetTest::RunTest(const FString& Paramete
 	if (Collection.Num() == 1)
 	{
 		TestEqual(TEXT("O pet capturado é o OPONENTE, não o próprio jogador"), Collection[0].CatalogId, FString(TEXT("catalog-oponente-capturado")));
+	}
+
+	if (UGameplayStatics::DoesSaveGameExist(TestSlotName, 0))
+	{
+		UGameplayStatics::DeleteGameInSlot(TestSlotName, 0);
+	}
+
+	DestroyHeadlessTestWorld(World);
+	return true;
+}
+
+// T4 (niveis-experiencia-evolucao): vitória credita XP ao pet do
+// JOGADOR LOCAL, se já capturado; derrota credita menos; pet não
+// capturado não gera XP fantasma.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FBattleArenaVictoryGrantsExperienceToOwnPetTest,
+	"BattleSquare.BattleArena.VictoryGrantsExperienceToOwnPet",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FBattleArenaVictoryGrantsExperienceToOwnPetTest::RunTest(const FString& Parameters)
+{
+	const FString TestSlotName = TEXT("PetCollectionTestSlot_XpGrant");
+	if (UGameplayStatics::DoesSaveGameExist(TestSlotName, 0))
+	{
+		UGameplayStatics::DeleteGameInSlot(TestSlotName, 0);
+	}
+
+	// Pré-captura o pet do JOGADOR na coleção — é a instância que deve
+	// receber XP.
+	FOwnedPetInstance PlayerInstance;
+	PlayerInstance.CatalogId = TEXT("catalog-jogador-ja-capturado");
+	PlayerInstance.Name = TEXT("MeuPet");
+	PlayerInstance.Type = TEXT("Normal");
+	FPetCollectionService::CaptureIfNew(TestSlotName, PlayerInstance);
+
+	UWorld* World = CreateHeadlessTestWorld();
+	if (!TestNotNull(TEXT("Mundo de teste criado"), World))
+	{
+		return false;
+	}
+
+	ABattleArena* Arena = World->SpawnActor<ABattleArena>();
+	if (!TestNotNull(TEXT("ABattleArena spawna sem crash"), Arena))
+	{
+		DestroyHeadlessTestWorld(World);
+		return false;
+	}
+	Arena->PetCollectionSlotName = TestSlotName;
+
+	FBattleState InitialState;
+	FPetState PlayerPet;
+	PlayerPet.PetId = 1; PlayerPet.Side = 0; PlayerPet.Column = 1; PlayerPet.Row = 1;
+	PlayerPet.Health = 50; PlayerPet.MaxHealth = 50; PlayerPet.Attack = 20; PlayerPet.Defense = 5;
+	FPetState OpponentPet;
+	OpponentPet.PetId = 2; OpponentPet.Side = 1; OpponentPet.Column = 2; OpponentPet.Row = 1;
+	OpponentPet.Health = 1; OpponentPet.MaxHealth = 1; OpponentPet.Attack = 1; OpponentPet.Defense = 1000;
+	InitialState.Pets.Add(PlayerPet);
+	InitialState.Pets.Add(OpponentPet);
+
+	TArray<FPetPresentationInfo> Presentations;
+	FPetPresentationInfo PlayerPresentation;
+	PlayerPresentation.PetId = PlayerPet.PetId;
+	PlayerPresentation.CatalogId = TEXT("catalog-jogador-ja-capturado");
+	FPetPresentationInfo OpponentPresentation;
+	OpponentPresentation.PetId = OpponentPet.PetId;
+	OpponentPresentation.CatalogId = TEXT("catalog-oponente-nao-capturado");
+	Presentations.Add(PlayerPresentation);
+	Presentations.Add(OpponentPresentation);
+
+	TestTrue(TEXT("Montagem aceita"), Arena->BeginBattle(InitialState, Presentations));
+
+	UBattleTurnCoordinator* Coordinator = NewObject<UBattleTurnCoordinator>();
+	Coordinator->BeginTurn(InitialState, 0.0);
+	Arena->ConfigureNetworkedOpponent(Coordinator);
+
+	Arena->PlayerActionQueue->BeginSelectingType(EActionType::Magia);
+	Arena->PlayerActionQueue->ConfirmDirection(EBattleDirection::Direita);
+	Arena->PlayerActionQueue->BeginSelectingType(EActionType::Aguardar);
+	Arena->PlayerActionQueue->BeginSelectingType(EActionType::Aguardar);
+	Arena->PlayerActionQueue->Commit();
+
+	FTurnCommit OpponentCommit;
+	OpponentCommit.Actions[0] = { EActionType::Aguardar, EBattleDirection::Nenhuma };
+	OpponentCommit.Actions[1] = { EActionType::Aguardar, EBattleDirection::Nenhuma };
+	OpponentCommit.Actions[2] = { EActionType::Aguardar, EBattleDirection::Nenhuma };
+	Coordinator->SubmitCommit(/*Side=*/1, OpponentCommit);
+
+	TestTrue(TEXT("Batalha terminou em vitória do jogador"), Arena->GetCurrentState().bBattleEnded && Arena->GetCurrentState().WinningSide == 0);
+
+	const TArray<FOwnedPetInstance> Collection = FPetCollectionService::LoadCollection(TestSlotName);
+	// Só o pet do jogador (já capturado antes da partida) — o oponente
+	// TAMBÉM foi capturado por CheckForCapture (T5, colecao-e-captura),
+	// então esperamos 2 instâncias: a original com XP, e a nova sem.
+	TestEqual(TEXT("Coleção tem as 2 instâncias (jogador + oponente recém-capturado)"), Collection.Num(), 2);
+
+	const FOwnedPetInstance* PlayerAfter = Collection.FindByPredicate(
+		[](const FOwnedPetInstance& Instance) { return Instance.CatalogId == TEXT("catalog-jogador-ja-capturado"); });
+	if (TestNotNull(TEXT("Instância do jogador ainda existe"), PlayerAfter))
+	{
+		TestEqual(TEXT("Instância do jogador recebeu XP de vitória"), PlayerAfter->Experience, BattlePetProgressionConstants::ExperienceForWin);
+	}
+
+	const FOwnedPetInstance* OpponentAfter = Collection.FindByPredicate(
+		[](const FOwnedPetInstance& Instance) { return Instance.CatalogId == TEXT("catalog-oponente-nao-capturado"); });
+	if (TestNotNull(TEXT("Instância do oponente (recém-capturada) existe"), OpponentAfter))
+	{
+		TestEqual(TEXT("Instância do oponente recém-capturada não recebeu XP — só existe pela captura"), OpponentAfter->Experience, 0);
 	}
 
 	if (UGameplayStatics::DoesSaveGameExist(TestSlotName, 0))

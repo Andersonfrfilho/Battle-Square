@@ -86,4 +86,4 @@ A partir de M4, a instrução foi **"terminar todas as tarefas sem parar"**, com
 
 ## Próximo passo concreto
 
-M4 — Progressão e Meta. Primeira feature: **Coleção e Captura** — captura disparada por vitória em batalha contra um pet de espécie ainda não coletada (decisão do usuário, 2026-08-26, dado que o Mundo Aberto de M5 ainda não existe para dar um mecanismo de encontro). Depois, **Níveis, Experiência e Evolução**, construída sobre a coleção.
+**M4 concluído** (Coleção e Captura + Níveis, Experiência e Evolução — ambas ✅, 127/127 testes, sondas limpas). Próximo: **gate B-001**, o go/no-go consciente para M5 (Mundo Aberto Contínuo) — por ser decisão de produto/infra, não técnica, este é o ponto em que a execução contínua PARA de verdade e o gate é apresentado ao usuário explicitamente, como já reafirmado na seção "Modo de execução" acima.

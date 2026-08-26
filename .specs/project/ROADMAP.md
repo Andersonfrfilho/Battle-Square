@@ -1,7 +1,7 @@
 # Roadmap
 
-**Marco atual:** M4 — Progressão e Meta (ainda não speced)
-**Status:** M1, M2 e M3 concluídos
+**Marco atual:** M5 — Mundo Aberto Contínuo (gate B-001 pendente de decisão do usuário)
+**Status:** M1, M2, M3 e M4 concluídos
 **Objetivo de fechamento do roadmap inteiro (M3→M7):** `.specs/project/OBJECTIVE.md` — ordem, dependências entre marcos, gates (B-001, B-004) e critério de "pronto" do projeto completo.
 
 ---
@@ -73,7 +73,7 @@
 
 ---
 
-## M4 — Progressão e Meta
+## M4 — Progressão e Meta ✅ CONCLUÍDO
 
 **Objetivo:** razão para voltar amanhã.
 
@@ -84,7 +84,13 @@
 - Coleção local (`USaveGame`), independente de conta (M7 ainda não existe)
 - **Achado relevante:** `Tools/audit_no_recalculation.sh` tinha escopo grande demais, sinalizava cálculo legítimo de montagem de partida como violação — corrigido, ver L-021 em `STATE.md`
 
-**Níveis, Experiência e Evolução** — PLANNED
+**Níveis, Experiência e Evolução** — ✅ CONCLUÍDO (`.specs/features/niveis-experiencia-evolucao/`)
+- XP concedida ao pet do jogador ao fim da batalha (vitória/derrota/empate com valores distintos), só se ele já estiver na coleção — funciona sem seleção de time
+- Nível sempre derivado de `Experience` (nunca campo próprio); bônus de atributo aplicado na montagem da partida, antes do `BattleSim` ver o pet
+- "Evolução" = crescimento de atributo por nível no mesmo `CatalogId`, não troca de forma (catálogo não tem cadeia evolutiva — fora de escopo)
+- **Achado relevante:** mesmo falso positivo de L-021 reapareceu em `Meta/` assim que ele passou a fazer montagem de partida — corrigido, ver L-022 em `STATE.md`
+
+**M4 concluído — as duas features planejadas estão prontas. Bateria final: 127/127 testes (75 BattleSquare + 52 BattleSim), três sondas de arquitetura limpas.**
 
 ---
 

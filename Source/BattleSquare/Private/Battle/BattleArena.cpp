@@ -6,6 +6,7 @@
 #include "Battle/BattleResolver.h"
 #include "Battle/BattleOutcome.h"
 #include "Meta/PetCollectionService.h"
+#include "Meta/PetProgressionService.h"
 
 ABattleArena::ABattleArena()
 {
@@ -167,6 +168,7 @@ void ABattleArena::HandleCoordinatorTurnResolved(const FBattleState& NextState, 
 {
 	CurrentState = NextState;
 	CheckForCapture(Trace);
+	GrantExperienceIfOwned(Trace);
 
 	if (TracePlayer)
 	{
@@ -215,6 +217,55 @@ void ABattleArena::CheckForCapture(const TArray<FBattleEvent>& Trace)
 	}
 }
 
+void ABattleArena::GrantExperienceIfOwned(const TArray<FBattleEvent>& Trace)
+{
+	for (const FBattleEvent& Event : Trace)
+	{
+		if (Event.Type != EBattleEventType::BatalhaEncerrada)
+		{
+			continue;
+		}
+
+		int32 ExperienceAmount = BattlePetProgressionConstants::ExperienceForLoss;
+		if (Event.Value == static_cast<int32>(LocalPlayerSide))
+		{
+			ExperienceAmount = BattlePetProgressionConstants::ExperienceForWin;
+		}
+		else if (Event.Value == 0xFF)
+		{
+			ExperienceAmount = BattlePetProgressionConstants::ExperienceForDraw;
+		}
+
+		// XP vai para o pet do JOGADOR LOCAL — nunca o oponente, mesmo
+		// que ele também esteja na coleção (edge case: os dois lados são
+		// pets que o jogador possui, via Standalone contra a própria IA).
+		const FPetState* OwnPet = CurrentState.Pets.FindByPredicate(
+			[this](const FPetState& Pet) { return Pet.Side == LocalPlayerSide; });
+		if (!OwnPet)
+		{
+			return;
+		}
+
+		const FPetPresentationInfo* Presentation = PresentationsByPetId.Find(OwnPet->PetId);
+		if (!Presentation || Presentation->CatalogId.IsEmpty())
+		{
+			return;
+		}
+
+		TArray<FOwnedPetInstance> Collection = FPetCollectionService::LoadCollection(PetCollectionSlotName);
+		FOwnedPetInstance* OwnedInstance = Collection.FindByPredicate(
+			[Presentation](const FOwnedPetInstance& Instance) { return Instance.CatalogId == Presentation->CatalogId; });
+		if (!OwnedInstance)
+		{
+			return; // pet do jogador ainda não capturado — nenhuma XP fantasma
+		}
+
+		FPetProgressionService::GrantExperience(*OwnedInstance, ExperienceAmount);
+		FPetCollectionService::SaveCollection(PetCollectionSlotName, Collection);
+		return;
+	}
+}
+
 void ABattleArena::HandlePlayerCommitted()
 {
 	const FTurnCommit PlayerCommit = PlayerActionQueue->BuildCommit();
@@ -243,6 +294,7 @@ void ABattleArena::HandlePlayerCommitted()
 	BattleOutcome::EvaluateOutcome(Result.NextState, Result.Trace);
 	CurrentState = Result.NextState;
 	CheckForCapture(Result.Trace);
+	GrantExperienceIfOwned(Result.Trace);
 
 	if (TracePlayer)
 	{

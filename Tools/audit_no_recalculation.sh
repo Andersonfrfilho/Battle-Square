@@ -50,7 +50,14 @@ while IFS= read -r -d '' FILE; do
     esac
     VIOLATIONS="${VIOLATIONS}${FILE}:${LINE_NUM}: ${LINE_CONTENT}"$'\n'
   done < <(grep -nE "$FORBIDDEN_PATTERN" "$FILE" || true)
-done < <(find "$PRESENTATION_DIR" \( -name "*.h" -o -name "*.cpp" \) -not -path "*/Tests/*" -not -path "*/Data/*" -not -path "*/Balance/*" -print0)
+# Data/ e Balance/: montagem de catálogo, roda antes da batalha existir
+# (TranslateMatchup, efetividade de tipo). Meta/ (L-022): mesma categoria —
+# FPetProgressionService::ApplyLevelBonus escala atributos por nível ao
+# montar a partida (BattleSquareGameMode::ApplyOwnedPetProgressionBonus),
+# também ANTES do BattleSim ver o pet. A sonda continua protegendo só
+# código de PRESENTATION (Battle/, UI/) contra recalcular o resultado de
+# um trace já resolvido.
+done < <(find "$PRESENTATION_DIR" \( -name "*.h" -o -name "*.cpp" \) -not -path "*/Tests/*" -not -path "*/Data/*" -not -path "*/Balance/*" -not -path "*/Meta/*" -print0)
 
 if [ -n "$VIOLATIONS" ]; then
   echo "AUDITORIA ANTI-RECÁLCULO FALHOU (BTL-22) — fórmula de dano/alcance reaparecendo fora de BattleSim:" >&2

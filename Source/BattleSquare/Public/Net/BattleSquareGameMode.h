@@ -42,6 +42,19 @@ public:
 	// toca no espelho de pets — quem chama já decidiu os pets.
 	void AssembleMatchForRoom(const FString& Code, const FBattleState& InitialState, const TArray<FPetPresentationInfo>& Presentations);
 
+	// T5 (niveis-experiencia-evolucao): mesmo padrão de
+	// ABattleArena::PetCollectionSlotName — configurável para que testes
+	// usem um slot dedicado, nunca o de produção.
+	UPROPERTY(EditDefaultsOnly, Category = "Coleção")
+	FString PetCollectionSlotName = TEXT("PetCollection");
+
+	// T5: extraído de HandleRoomReady para ser testável sem depender do
+	// espelho real de pets — se Presentation.CatalogId já está na
+	// coleção do slot dado, aplica o bônus do nível correspondente.
+	// Estático e público de propósito: não usa nenhum estado de
+	// instância além do slot recebido como parâmetro.
+	static void ApplyOwnedPetProgressionBonus(const FString& SlotName, FPetState& PetState, const FPetPresentationInfo& Presentation);
+
 	// Config do espelho local de pets — placeholder até existir seleção
 	// de time (SALA-08, design.md: "decisão pragmática, registrada
 	// honestamente"). Vazio por padrão: propaga o erro já existente de

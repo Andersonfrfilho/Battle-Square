@@ -2,6 +2,9 @@
 
 #include "Net/BattleSquareGameMode.h"
 #include "Net/BattleSquarePlayerController.h"
+#include "Meta/PetCollectionService.h"
+#include "Meta/PetProgressionService.h"
+#include "Kismet/GameplayStatics.h"
 #include "Misc/AutomationTest.h"
 #include "Engine/World.h"
 #include "Engine/Engine.h"
@@ -185,5 +188,55 @@ bool FBattleSquareGameModeAbandonmentReachesCorrectCoordinatorTest::RunTest(cons
 	TestFalse(TEXT("Coordenador da sala B NÃO foi tocado"), bRoomBAbandoned);
 
 	DestroyGameModeTestWorld(World);
+	return true;
+}
+
+// T5 (niveis-experiencia-evolucao): pet de catálogo já capturado e com
+// nível > 1 entra na partida com atributos maiores; pet não capturado
+// (ou nível 1) fica idêntico ao catálogo.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FBattleSquareGameModeLevelBonusAppliedAtAssemblyTest,
+	"BattleSquare.Net.GameMode.LevelBonusAppliedAtAssembly",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FBattleSquareGameModeLevelBonusAppliedAtAssemblyTest::RunTest(const FString& Parameters)
+{
+	const FString TestSlotName = TEXT("PetCollectionTestSlot_GameModeLevelBonus");
+	if (UGameplayStatics::DoesSaveGameExist(TestSlotName, 0))
+	{
+		UGameplayStatics::DeleteGameInSlot(TestSlotName, 0);
+	}
+
+	// Instância capturada, com XP suficiente para nível 5.
+	FOwnedPetInstance LeveledInstance;
+	LeveledInstance.CatalogId = TEXT("catalog-nivelado");
+	FPetCollectionService::CaptureIfNew(TestSlotName, LeveledInstance);
+	TArray<FOwnedPetInstance> Collection = FPetCollectionService::LoadCollection(TestSlotName);
+	FPetProgressionService::GrantExperience(Collection[0], BattlePetProgressionConstants::ExperiencePerLevel * 4); // nível 5
+	FPetCollectionService::SaveCollection(TestSlotName, Collection);
+
+	FPetState LeveledPetState;
+	LeveledPetState.Attack = 20; LeveledPetState.Defense = 10; LeveledPetState.Speed = 8; LeveledPetState.MaxHealth = 50; LeveledPetState.Health = 50;
+	FPetPresentationInfo LeveledPresentation;
+	LeveledPresentation.CatalogId = TEXT("catalog-nivelado");
+
+	ABattleSquareGameMode::ApplyOwnedPetProgressionBonus(TestSlotName, LeveledPetState, LeveledPresentation);
+	// Nível 5: BonusPercent = 100 + 4*5 = 120.
+	TestEqual(TEXT("Pet capturado, nível 5, ganha bônus de atributo"), LeveledPetState.Attack, 24);
+
+	// Pet não capturado — sem bônus, idêntico ao catálogo.
+	FPetState UncapturedPetState;
+	UncapturedPetState.Attack = 20; UncapturedPetState.Defense = 10; UncapturedPetState.Speed = 8; UncapturedPetState.MaxHealth = 50; UncapturedPetState.Health = 50;
+	FPetPresentationInfo UncapturedPresentation;
+	UncapturedPresentation.CatalogId = TEXT("catalog-nunca-capturado");
+
+	ABattleSquareGameMode::ApplyOwnedPetProgressionBonus(TestSlotName, UncapturedPetState, UncapturedPresentation);
+	TestEqual(TEXT("Pet não capturado permanece idêntico ao catálogo — zero regressão"), UncapturedPetState.Attack, 20);
+
+	if (UGameplayStatics::DoesSaveGameExist(TestSlotName, 0))
+	{
+		UGameplayStatics::DeleteGameInSlot(TestSlotName, 0);
+	}
+
 	return true;
 }

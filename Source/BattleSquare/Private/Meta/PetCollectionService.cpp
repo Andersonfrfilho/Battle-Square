@@ -45,6 +45,13 @@ bool FPetCollectionService::CaptureIfNew(const FString& SlotName, const FOwnedPe
 	return bCaptured;
 }
 
+void FPetCollectionService::SaveCollection(const FString& SlotName, const TArray<FOwnedPetInstance>& Collection)
+{
+	UPetCollectionSaveGame* SaveGame = Cast<UPetCollectionSaveGame>(UGameplayStatics::CreateSaveGameObject(UPetCollectionSaveGame::StaticClass()));
+	SaveGame->OwnedPets = Collection;
+	UGameplayStatics::SaveGameToSlot(SaveGame, SlotName, /*UserIndex=*/0);
+}
+
 TArray<FOwnedPetInstance> FPetCollectionService::LoadCollection(const FString& SlotName)
 {
 	if (!UGameplayStatics::DoesSaveGameExist(SlotName, /*UserIndex=*/0))

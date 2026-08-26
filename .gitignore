@@ -26,3 +26,6 @@ Build/
 
 # macOS
 .DS_Store
+
+# Configuração local do servidor MCP do Editor (endereço de loopback, por máquina)
+/.claude/

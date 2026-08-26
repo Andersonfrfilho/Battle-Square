@@ -13,7 +13,7 @@
 |---|---|
 | Memória de streaming (células carregadas simultaneamente) | 512 MB |
 | Frame time alvo | 16,6 ms (60 FPS) em PC de referência (desktop médio, sem GPU dedicada de ponta) |
-| Raio de streaming (distância de carregamento ao redor do jogador) | derivado em DP-streaming-02 |
+| Raio de streaming (distância de carregamento ao redor do jogador) | derivado em DP-streaming-02, emendado em DP-streaming-02a |
 
 **Razão:** 512 MB é generoso o bastante para provar streaming real (várias células, conteúdo de placeholder não-trivial) sem já comprometer o orçamento total de uma sessão de jogo em PC (tipicamente 4–8 GB disponíveis para o processo inteiro). 60 FPS é o piso aceitável para um jogo de ação/exploração — não é negociado nesta feature, é herdado como padrão geral do projeto.
 **Nota honesta:** este número é uma decisão de partida, não uma medição — não há hardware de referência formalmente definido ainda (Todo em `STATE.md`). Ele existe para DAR um número do qual derivar o resto (DP-streaming-02), evitando a armadilha de decidir tamanho de célula "no olho". Revisão esperada quando M6 (Mobile) definir o piso real de dispositivo.
@@ -22,6 +22,12 @@
 
 **Decisão:** célula de World Partition de 512x512 unidades Unreal (5,12m x 5,12m em escala 1uu=1cm), raio de streaming de 2 células (1024uu) ao redor do jogador — 5x5 células carregadas na grade quando o jogador está no centro de uma.
 **Razão:** célula pequena o bastante para que o teste de streaming (P1) demonstre carregar/descarregar dentro de uma rota curta, sem exigir um mundo artificialmente enorme só para provar o mecanismo.
+
+## DP-streaming-02a: Emenda — piso de 1600uu imposto pela engine
+
+**Decisão:** célula de 1600x1600uu, raio de streaming de 3200uu (2 células) — 5x5 células carregadas com o jogador no centro.
+**Razão:** os 512uu de DP-streaming-02 são inalcançáveis na UE 5.8. `URuntimePartitionLHGrid::PostEditChangeProperty` aplica `CellSize = FMath::Max<int32>(CellSize, 1600)` (`Engine/Source/Runtime/Engine/Private/WorldPartition/RuntimeHashSet/RuntimePartitionLHGrid.cpp:128`) — qualquer valor menor é silenciosamente elevado a 1600. Verificado na prática: `set_properties` com 512 retorna sucesso e a leitura seguinte devolve 1600.
+**O que se preserva:** a intenção de DP-streaming-02 (raio = 2 células, grade 5x5, rota curta o bastante para demonstrar carga/descarga) fica intacta — só a unidade absoluta muda. A área de referência de T3/T4 é dimensionada a partir de 1600uu, não de 512uu.
 
 ## DP-streaming-03: Conteúdo de placeholder
 

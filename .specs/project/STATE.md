@@ -221,6 +221,13 @@ find "$HOME/Library/Logs/Unreal Engine/BattleSquareEditor" Saved/Logs -newer <ma
 **Mitigação:** nenhuma ação de código necessária — `UBattleTurnCoordinator`/`UBattleNetCommitComponent` já são escritos e testados de forma agnóstica a qual `NetMode` os executa (via `HasAuthority()`), então não há dívida técnica represada. O blocker é puramente de ambiente de teste/deploy.
 **Resolução:** decisão de infraestrutura fora do escopo desta sessão — trocar a engine para build de fonte é uma decisão que envolve tempo de build (horas) e vínculo de conta GitHub↔Epic, então fica registrada para quando M2 for para produção de verdade, não bloqueando o trabalho de código já feito.
 
+### B-005: Coleção local (`USaveGame`) não distingue jogadores numa partida em rede — correta só para Standalone/host
+
+**Descoberto:** 2026-08-26, ao iniciar Níveis, Experiência e Evolução (M4), revisando a fiação de Coleção e Captura.
+**Impacto:** `ABattleArena::CheckForCapture` (Coleção e Captura) e o gancho equivalente de XP desta feature escrevem no `USaveGame` do **processo** onde `ABattleArena` roda — que é o processo do SERVIDOR em Sala e Pareamento Simples (`ABattleSquareGameMode::AssembleMatchForRoom` spawna a `ABattleArena` autoritativa ali). Isso está certo para Standalone (um único jogador local, `Arena` roda no processo dele) e para o HOST de um `ListenServer` (ele também está localmente naquele processo) — mas para os DOIS jogadores remotos de uma partida em Sala e Pareamento via `DedicatedServer`/`ListenServer` com um segundo jogador remoto, a captura/XP cairia no save LOCAL DO SERVIDOR, não no de nenhum dos dois jogadores de verdade. Sem conta de jogador (M7), o servidor não tem como saber "de quem" é a coleção que deveria atualizar.
+**Mitigação:** nenhuma mudança de código agora — Coleção e Captura e Níveis/Experiência/Evolução continuam corretas para o caso de uso atual e principal (Standalone, jogador único local, que é como o jogo é jogado hoje). O comportamento incorreto só se manifestaria com dois jogadores remotos de verdade numa sala — cenário que já esbarra em B-004 (verificação de `DedicatedServer` real bloqueada) antes mesmo de chegar aqui.
+**Resolução:** registrado como limitação conhecida, não corrigido agora — resolver de verdade precisa de identidade de jogador persistente (M7, Contas de Jogador) para o servidor saber de quem é cada coleção. Até lá, progressão de pet é uma feature de single-player/host, documentada como tal.
+
 ---
 
 ## Lições Aprendidas

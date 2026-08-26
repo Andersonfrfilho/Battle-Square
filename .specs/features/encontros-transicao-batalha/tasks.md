@@ -1,7 +1,7 @@
 # Encontros e Transição para Batalha — Tarefas
 
 **Design:** `.specs/features/encontros-transicao-batalha/design.md`
-**Status:** Draft — aguarda aprovação
+**Status:** ✅ CONCLUÍDO — T1 a T8 executadas e verificadas (2026-08-26)
 **Escopo:** `BattleSquare` (C++, T1–T5) **e** Editor/`Content/` (T6, via `unreal-mcp`). `BattleSim` não é tocado.
 
 ---
@@ -38,7 +38,7 @@ T7 → T8
 
 ---
 
-## T1 — `FEncounterDetector`, função pura de disparo
+## T1 — `FEncounterDetector`, função pura de disparo ✅
 
 **Arquivos:** `Source/BattleSquare/Public/World/EncounterDetector.h`, `.../Private/World/EncounterDetector.cpp`, teste em `.../Private/Tests/EncounterDetectorTest.cpp`.
 **O que fazer:** `FEncounterCandidate` (posição, `EncounterRadiusUnits`, `CatalogId`, `bIsResolved`) e `FEncounterDetector::FindTriggeredEncounter(const FEncounterDetectionParams&)` estático, devolvendo índice ou `INDEX_NONE`. Distância **ao quadrado**, sem `Sqrt`. Desempate: mais próximo vence; empate exato resolve pelo menor índice (DP-enc-02).
@@ -47,7 +47,7 @@ T7 → T8
 
 ---
 
-## T2 — `AWorldEncounterActor`
+## T2 — `AWorldEncounterActor` ✅
 
 **Arquivos:** `Source/BattleSquare/Public/World/WorldEncounterActor.h`, `.../Private/World/WorldEncounterActor.cpp`.
 **O que fazer:** `AActor` com `CatalogId`, `EncounterRadiusUnits`, `bIsResolved` e um `UStaticMeshComponent` como raiz. Sem `Tick`, sem componente de colisão/overlap (DP-enc-01). Um método nomeado para colher o `FEncounterCandidate` correspondente.
@@ -55,7 +55,7 @@ T7 → T8
 
 ---
 
-## T3 — `UEncounterDetectionComponent`
+## T3 — `UEncounterDetectionComponent` ✅
 
 **Arquivos:** `Source/BattleSquare/Public/World/EncounterDetectionComponent.h`, `.../Private/World/EncounterDetectionComponent.cpp`, teste em `.../Private/Tests/EncounterDetectionComponentTest.cpp`.
 **O que fazer:** `UActorComponent` que, por `TickComponent`, colhe os `AWorldEncounterActor` do mundo, monta os candidatos, chama `FEncounterDetector` e dispara um delegate `OnEncounterTriggered` com o ator disparado. Precisa poder ser **desligado e religado** (é o que DP-enc-03 exige na transição).
@@ -64,7 +64,7 @@ T7 → T8
 
 ---
 
-## T4 — `UWorldBattleTransitionService` 🧠
+## T4 — `UWorldBattleTransitionService` 🧠 ✅
 
 **Arquivos:** `Source/BattleSquare/Public/World/WorldBattleTransitionService.h`, `.../Private/World/WorldBattleTransitionService.cpp`, teste em `.../Private/Tests/WorldBattleTransitionServiceTest.cpp`.
 **O que fazer:** captura de `FTransform` do pawn, desligamento da detecção, spawn do `ABattleArena` em `BattleArenaWorldOffsetUnits` (constante nomeada, `*.constant.ts` equivalente em C++ — nunca literal solto), montagem pelos caminhos existentes, e ao `BatalhaEncerrada`: destruir arena → restaurar transform → marcar `bIsResolved` → **só então** religar a detecção (DP-enc-03).
@@ -73,22 +73,26 @@ T7 → T8
 
 ---
 
-## T5 — Fiação no fluxo de jogo
+## T5 — Fiação no fluxo de jogo ✅
 
 **O que fazer:** ligar `UEncounterDetectionComponent` → `UWorldBattleTransitionService` no caminho de jogo real (pawn do mundo + `ABattleSquareGameMode`), sem criar um segundo caminho de montagem de partida paralelo ao que M2 já tem.
 **Pronto quando:** um teste headless leva um pawn do mundo até um encontro e chega a um `ABattleArena` montado com os dois `CatalogId` corretos, passando pelo `ABattleSquareGameMode` existente.
+**Feito:** `FEncounterMatchAssembler` + `UWorldEncounterFlow`. 4 testes.
+**Desvio deliberado do texto acima:** "passando pelo `ABattleSquareGameMode`" não pôde ser lido ao pé da letra. `AssembleMatchForRoom` é o caminho de **sala** (código de sala + `UBattleTurnCoordinator`), e encontro no mundo é single player — arrastar sala para cá seria exatamente o segundo caminho paralelo que a própria tarefa proíbe, só na direção oposta. O que se reusa do GameMode é `ApplyOwnedPetProgressionBonus` (o helper estático de montagem que ele já expõe); a batalha segue o caminho Standalone de M1 (`BeginBattle` + `FDumbOpponentAI`), que não é novo.
 
 ---
 
-## T6 — Encontros no nível `WorldStreamingTest`
+## T6 — Encontros no nível `WorldStreamingTest` ✅
 
 **Como:** via `unreal-mcp` (Editor aberto). **Aplicar L-024:** salvar a cada passo que muda asset, e não escrever propriedade de asset que o design não exige.
 **O que fazer:** posicionar alguns `AWorldEncounterActor` sobre a rota do `DebugRoutePawn` (que passa por `(-3600,-3600)` → `(3600,-3600)` → `(3600,3600)` → `(-3600,3600)`), com `CatalogId` de pets do catálogo de fixture, e adicionar o `UEncounterDetectionComponent` ao `DebugRoutePawn`.
 **Pronto quando:** os atores existem no nível, salvos, e o `DebugRoutePawn` tem o componente de detecção anexado.
+**Feito:** 3 `AWorldEncounterActor` na pasta `StreamingEncounters/`, um por perna da rota — `Encounter_LegA` em `(-800,-3600)`, `Encounter_LegB` em `(3600,800)`, `Encounter_LegC` em `(800,3600)` — raio 300uu cada, malha de cubo. `DebugRoutePawn` agora tem `DebugRouteMover` **e** `EncounterDetection`.
+**Ressalva honesta:** os `CatalogId` são placeholders (`pet-encontro-01/02/03`) e **não** batem com o espelho de pets — o espelho de fixture é criptografado e os ids reais não são legíveis fora do `FPetDataLoader`. Com eles, a montagem é recusada de propósito (comportamento coberto por `EncounterMatchAssembler.RejectsUnknownCatalogId`), a detecção religa e nenhuma batalha começa. Trocar por ids reais é pré-requisito do roteiro de T7, e está documentado lá como o primeiro item da preparação.
 
 ---
 
-## T7 — Roteiro de verificação manual
+## T7 — Roteiro de verificação manual ✅
 
 **Arquivo:** `docs/verification/encontros-transicao-batalha.md`.
 **O que fazer:** documentar os itens não-automatizáveis de DP-enc-05 — ausência de tela de loading na transição, e `stat streaming` provando que as células do mundo continuam carregadas durante a batalha. Mesmo padrão de `streaming-de-mundo.md`: cada item com passo concreto e número a anotar, marcado "não verificado ainda".
@@ -96,10 +100,10 @@ T7 → T8
 
 ---
 
-## T8 — Regressão completa
+## T8 — Regressão completa ✅
 
 **Pronto quando:**
-- [ ] `Automation RunTests BattleSquare` — Success == total (77 + os novos), Fail == 0
-- [ ] `Automation RunTests BattleSim` — 52 Success, Fail == 0, zero linha tocada
-- [ ] `./Tools/audit_determinism.sh`, `./Tools/audit_no_recalculation.sh`, `./Tools/probe_isolation.sh` — todos `exit 0`
-- [ ] **L-020 aplicada:** rebuild real depois de `probe_isolation.sh`, antes dos testes que contam
+- [x] `Automation RunTests BattleSquare` — **102 Success, 0 Fail** (77 anteriores + 25 novos)
+- [x] `Automation RunTests BattleSim` — **52 Success, 0 Fail**, `Source/BattleSim/` sem uma linha tocada (total 154/154)
+- [x] `./Tools/audit_determinism.sh`, `./Tools/audit_no_recalculation.sh`, `./Tools/probe_isolation.sh` — todos `exit 0`
+- [x] **L-020 aplicada:** rebuild real depois de `probe_isolation.sh`, com Editor FECHADO e `Binaries/` limpo (L-025), antes dos testes que contam

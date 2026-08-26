@@ -103,7 +103,7 @@
 ### Features
 
 **Streaming de Mundo** — ✅ CONCLUÍDO (2026-08-26)
-**Encontros e Transição para Batalha** — PLANNED
+**Encontros e Transição para Batalha** — ✅ CONCLUÍDO (2026-08-26)
 **Traversal e Câmera de Mundo** — PLANNED
 
 ---

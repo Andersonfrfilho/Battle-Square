@@ -54,15 +54,16 @@
 
 ---
 
-## M3 — Conteúdo e Balanceamento
+## M3 — Conteúdo e Balanceamento 🔄 EM ANDAMENTO
 
 **Objetivo:** provar que o sistema aguenta escala de conteúdo sem código novo por pet.
 
 ### Features
 
-**Escala de Pets e Skills** — PLANNED
-- Tipos, fraquezas e resistências por dados
-- Ferramenta de balanceamento e simulação em lote (rodar N combates headless)
+**Escala de Pets e Skills** — ✅ CONCLUÍDO (`.specs/features/escala-pets-skills/`)
+- Tipos, fraquezas e resistências por dados (`Config/TypeEffectiveness.json`, sem recompilar para adicionar tipo novo)
+- Ferramenta de balanceamento e simulação em lote (`FBattleBalanceSimulator`, determinística por seed, headless)
+- **Achado relevante no processo:** `BatalhaEncerrada` nunca disparava em produção desde M1 (`BattleOutcome::EvaluateOutcome` nunca era chamada fora dos testes do próprio núcleo) — corrigido, ver L-019 em `STATE.md`
 
 **Arenas Variadas** — PLANNED
 - Casas com propriedades (bloqueio, dano, buff)

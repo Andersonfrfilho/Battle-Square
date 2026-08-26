@@ -109,3 +109,25 @@ bool FBattleDataTranslatorFeedsResolverTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+// T4 (colecao-e-captura): CatalogId e Type em texto puro são
+// preservados da tradução — é o que permite ABattleArena saber, quando
+// a batalha termina, qual registro de catálogo capturar.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FBattleDataTranslatorPreservesCatalogIdTest,
+	"BattleSquare.Data.TranslatePetPreservesCatalogId",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FBattleDataTranslatorPreservesCatalogIdTest::RunTest(const FString& Parameters)
+{
+	const FLoadedPetRecord Source = MakeSourcePet(TEXT("uuid-catalogo-123"), TEXT("Fluffy"), TEXT("Cat"), 20, 5, 8, 50);
+
+	FPetState BattleState;
+	FPetPresentationInfo Presentation;
+	FBattleDataTranslator::TranslatePet(Source, /*PetId=*/1, /*Side=*/0, /*Column=*/1, /*Row=*/1, BattleState, Presentation);
+
+	TestEqual(TEXT("CatalogId preservado do FLoadedPetRecord::Id"), Presentation.CatalogId, Source.Id);
+	TestEqual(TEXT("Type em texto puro preservado"), Presentation.Type, Source.Type);
+
+	return true;
+}

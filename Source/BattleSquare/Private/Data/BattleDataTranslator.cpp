@@ -28,6 +28,8 @@ void FBattleDataTranslator::TranslatePet(
 	OutPresentation = FPetPresentationInfo();
 	OutPresentation.PetId = PetId;
 	OutPresentation.Name = Source.Name;
+	OutPresentation.Type = Source.Type;
+	OutPresentation.CatalogId = Source.Id;
 
 	// "type" NUNCA entra em FPetState — vira FGameplayTag só aqui, na
 	// camada de apresentação (BattleSquare). ErrorIfNotFound=false: tags

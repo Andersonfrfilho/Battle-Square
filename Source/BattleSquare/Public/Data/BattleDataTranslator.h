@@ -30,6 +30,20 @@ struct FPetPresentationInfo
 
 	UPROPERTY()
 	FGameplayTag TypeTag;
+
+	// T4 (colecao-e-captura): tipo em texto puro — TypeTag já existe para
+	// GAS/apresentação (FGameplayTag), mas FOwnedPetInstance precisa de
+	// FString direto, sem reconstruir a partir do nome da tag.
+	UPROPERTY()
+	FString Type;
+
+	// T4 (colecao-e-captura, DP-colecao-03): id do registro de catálogo
+	// (FLoadedPetRecord::Id) preservado até aqui — é o que permite
+	// ABattleArena saber, quando a batalha termina, qual registro de
+	// catálogo capturar. Nunca atravessa para BattleSim (mesma regra do
+	// resto desta struct).
+	UPROPERTY()
+	FString CatalogId;
 };
 
 class BATTLESQUARE_API FBattleDataTranslator

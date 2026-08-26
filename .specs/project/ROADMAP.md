@@ -79,7 +79,11 @@
 
 ### Features
 
-**Coleção e Captura** — PLANNED
+**Coleção e Captura** — ✅ CONCLUÍDO (`.specs/features/colecao-e-captura/`)
+- Vitória em batalha contra pet de catálogo não possuído captura ele (decisão de produto, dado que M5/Mundo Aberto ainda não existe)
+- Coleção local (`USaveGame`), independente de conta (M7 ainda não existe)
+- **Achado relevante:** `Tools/audit_no_recalculation.sh` tinha escopo grande demais, sinalizava cálculo legítimo de montagem de partida como violação — corrigido, ver L-021 em `STATE.md`
+
 **Níveis, Experiência e Evolução** — PLANNED
 
 ---

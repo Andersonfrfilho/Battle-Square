@@ -5,6 +5,7 @@
 #include "Battle/DumbOpponentAI.h"
 #include "Battle/BattleResolver.h"
 #include "Battle/BattleOutcome.h"
+#include "Meta/PetCollectionService.h"
 
 ABattleArena::ABattleArena()
 {
@@ -124,6 +125,15 @@ bool ABattleArena::BeginBattle(const FBattleState& InitialState, const TArray<FP
 	CurrentState = InitialState;
 	SpawnPetViews(CurrentState, Presentations);
 
+	// T4 (colecao-e-captura): retido para CheckForCapture (T5) consultar
+	// CatalogId/Name/Type quando a batalha terminar — FPetState já não
+	// carrega isso (AD-012).
+	PresentationsByPetId.Reset();
+	for (const FPetPresentationInfo& Presentation : Presentations)
+	{
+		PresentationsByPetId.Add(Presentation.PetId, Presentation);
+	}
+
 	if (!TracePlayer)
 	{
 		TracePlayer = NewObject<UBattleTracePlayer>(this);
@@ -156,9 +166,52 @@ void ABattleArena::ConfigureNetworkedOpponent(UBattleTurnCoordinator* InCoordina
 void ABattleArena::HandleCoordinatorTurnResolved(const FBattleState& NextState, const TArray<FBattleEvent>& Trace)
 {
 	CurrentState = NextState;
+	CheckForCapture(Trace);
+
 	if (TracePlayer)
 	{
 		TracePlayer->PlayTrace(Trace);
+	}
+}
+
+void ABattleArena::CheckForCapture(const TArray<FBattleEvent>& Trace)
+{
+	for (const FBattleEvent& Event : Trace)
+	{
+		if (Event.Type != EBattleEventType::BatalhaEncerrada)
+		{
+			continue;
+		}
+
+		// Só vitória do jogador LOCAL captura — derrota, empate (Value ==
+		// 0xFF) e vitória do outro lado nunca capturam (COLECAO-04).
+		if (Event.Value != static_cast<int32>(LocalPlayerSide))
+		{
+			return;
+		}
+
+		// T5 🧠: o pet capturado é o do lado OPOSTO ao vencedor — nunca o
+		// próprio pet do jogador.
+		const uint8 OpponentSide = (LocalPlayerSide == 0) ? 1 : 0;
+		const FPetState* OpponentPet = CurrentState.Pets.FindByPredicate(
+			[OpponentSide](const FPetState& Pet) { return Pet.Side == OpponentSide; });
+		if (!OpponentPet)
+		{
+			return;
+		}
+
+		const FPetPresentationInfo* Presentation = PresentationsByPetId.Find(OpponentPet->PetId);
+		if (!Presentation || Presentation->CatalogId.IsEmpty())
+		{
+			return;
+		}
+
+		FOwnedPetInstance Instance;
+		Instance.CatalogId = Presentation->CatalogId;
+		Instance.Name = Presentation->Name;
+		Instance.Type = Presentation->Type;
+		FPetCollectionService::CaptureIfNew(PetCollectionSlotName, Instance);
+		return;
 	}
 }
 
@@ -189,6 +242,7 @@ void ABattleArena::HandlePlayerCommitted()
 	// chamavam isto, então BatalhaEncerrada nunca disparava em produção.
 	BattleOutcome::EvaluateOutcome(Result.NextState, Result.Trace);
 	CurrentState = Result.NextState;
+	CheckForCapture(Result.Trace);
 
 	if (TracePlayer)
 	{

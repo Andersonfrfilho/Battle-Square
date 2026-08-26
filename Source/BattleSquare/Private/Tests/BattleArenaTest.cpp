@@ -2,6 +2,8 @@
 
 #include "Battle/BattleArena.h"
 #include "Net/BattleTurnCoordinator.h"
+#include "Meta/PetCollectionService.h"
+#include "Kismet/GameplayStatics.h"
 #include "Misc/AutomationTest.h"
 #include "Engine/World.h"
 #include "Engine/Engine.h"
@@ -254,6 +256,102 @@ bool FBattleArenaRejectsInitialPositionOnBlockedCellTest::RunTest(const FString&
 	ValidState.CellLayout[CellLayoutIndex(1, 1)] = static_cast<uint8>(ECellProperty::None);
 	const bool bValidAccepted = Arena->BeginBattle(ValidState, Presentations);
 	TestTrue(TEXT("Montagem sem casa bloqueada é aceita normalmente"), bValidAccepted);
+
+	DestroyHeadlessTestWorld(World);
+	return true;
+}
+
+// T5 🧠 (colecao-e-captura): vitória do jogador local captura o pet do
+// OPONENTE — nunca o próprio pet do jogador. CatalogIds distintos
+// tornam a inversão fácil de detectar se acontecer.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FBattleArenaVictoryCapturesOpponentPetTest,
+	"BattleSquare.BattleArena.VictoryCapturesOpponentPet",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FBattleArenaVictoryCapturesOpponentPetTest::RunTest(const FString& Parameters)
+{
+	const FString TestSlotName = TEXT("PetCollectionTestSlot_ArenaVictory");
+	if (UGameplayStatics::DoesSaveGameExist(TestSlotName, 0))
+	{
+		UGameplayStatics::DeleteGameInSlot(TestSlotName, 0);
+	}
+
+	UWorld* World = CreateHeadlessTestWorld();
+	if (!TestNotNull(TEXT("Mundo de teste criado"), World))
+	{
+		return false;
+	}
+
+	ABattleArena* Arena = World->SpawnActor<ABattleArena>();
+	if (!TestNotNull(TEXT("ABattleArena spawna sem crash"), Arena))
+	{
+		DestroyHeadlessTestWorld(World);
+		return false;
+	}
+	Arena->PetCollectionSlotName = TestSlotName;
+
+	FBattleState InitialState;
+	FPetState PlayerPet;
+	PlayerPet.PetId = 1; PlayerPet.Side = 0; PlayerPet.Column = 1; PlayerPet.Row = 1;
+	PlayerPet.Health = 50; PlayerPet.MaxHealth = 50; PlayerPet.Attack = 20; PlayerPet.Defense = 5;
+	FPetState OpponentPet;
+	OpponentPet.PetId = 2; OpponentPet.Side = 1; OpponentPet.Column = 2; OpponentPet.Row = 1;
+	OpponentPet.Health = 1; OpponentPet.MaxHealth = 1; OpponentPet.Attack = 1; OpponentPet.Defense = 1000; // nunca causa dano de volta
+	InitialState.Pets.Add(PlayerPet);
+	InitialState.Pets.Add(OpponentPet);
+
+	TArray<FPetPresentationInfo> Presentations;
+	FPetPresentationInfo PlayerPresentation;
+	PlayerPresentation.PetId = PlayerPet.PetId;
+	PlayerPresentation.CatalogId = TEXT("catalog-player-nunca-capturado");
+	PlayerPresentation.Name = TEXT("MeuPet");
+	PlayerPresentation.Type = TEXT("Normal");
+	FPetPresentationInfo OpponentPresentation;
+	OpponentPresentation.PetId = OpponentPet.PetId;
+	OpponentPresentation.CatalogId = TEXT("catalog-oponente-capturado");
+	OpponentPresentation.Name = TEXT("PetInimigo");
+	OpponentPresentation.Type = TEXT("Fogo");
+	Presentations.Add(PlayerPresentation);
+	Presentations.Add(OpponentPresentation);
+
+	TestTrue(TEXT("Montagem aceita"), Arena->BeginBattle(InitialState, Presentations));
+
+	// Caminho de rede (não FDumbOpponentAI): os dois commits são
+	// deterministas, controlados pelo teste — elimina qualquer chance de
+	// o oponente esquivar (Esquiva anula ataque físico) ou se mover para
+	// fora do alcance, o que FDumbOpponentAI poderia escolher por sorte.
+	// Magia, além disso, ignora esquiva mesmo se houvesse alguma.
+	UBattleTurnCoordinator* Coordinator = NewObject<UBattleTurnCoordinator>();
+	Coordinator->BeginTurn(InitialState, 0.0);
+	Arena->ConfigureNetworkedOpponent(Coordinator);
+
+	Arena->PlayerActionQueue->BeginSelectingType(EActionType::Magia);
+	Arena->PlayerActionQueue->ConfirmDirection(EBattleDirection::Direita);
+	Arena->PlayerActionQueue->BeginSelectingType(EActionType::Aguardar);
+	Arena->PlayerActionQueue->BeginSelectingType(EActionType::Aguardar);
+	Arena->PlayerActionQueue->Commit(); // dispara HandlePlayerCommitted -> ServerCoordinator->SubmitCommit(0, ...)
+
+	FTurnCommit OpponentCommit; // 3x Aguardar — nunca esquiva, nunca sai do lugar
+	OpponentCommit.Actions[0] = { EActionType::Aguardar, EBattleDirection::Nenhuma };
+	OpponentCommit.Actions[1] = { EActionType::Aguardar, EBattleDirection::Nenhuma };
+	OpponentCommit.Actions[2] = { EActionType::Aguardar, EBattleDirection::Nenhuma };
+	Coordinator->SubmitCommit(/*Side=*/1, OpponentCommit); // dispara a resolução real
+
+	TestTrue(TEXT("Batalha terminou"), Arena->GetCurrentState().bBattleEnded);
+	TestEqual(TEXT("Jogador local (Side 0) venceu"), Arena->GetCurrentState().WinningSide, static_cast<uint8>(0));
+
+	const TArray<FOwnedPetInstance> Collection = FPetCollectionService::LoadCollection(TestSlotName);
+	TestEqual(TEXT("Exatamente 1 pet capturado"), Collection.Num(), 1);
+	if (Collection.Num() == 1)
+	{
+		TestEqual(TEXT("O pet capturado é o OPONENTE, não o próprio jogador"), Collection[0].CatalogId, FString(TEXT("catalog-oponente-capturado")));
+	}
+
+	if (UGameplayStatics::DoesSaveGameExist(TestSlotName, 0))
+	{
+		UGameplayStatics::DeleteGameInSlot(TestSlotName, 0);
+	}
 
 	DestroyHeadlessTestWorld(World);
 	return true;

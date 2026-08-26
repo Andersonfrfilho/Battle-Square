@@ -2,11 +2,23 @@
 # T13 (tasks.md, BTL-22) — auditoria anti-recálculo da apresentação.
 #
 # design.md: a apresentação (BattleSquare) NUNCA recalcula dano, alcance
-# ou resultado — ela só lê campos que o núcleo (BattleSim) já preencheu
-# no trace (FBattleEvent::Value). Se alguém escreve a fórmula de dano de
-# novo dentro de um widget ou ator de cena, o cliente e o servidor podem
-# divergir sem que nada acuse erro. Este script falha o build ANTES
-# disso, mesmo espírito de audit_determinism.sh e probe_isolation.sh.
+# ou resultado A PARTIR DO TRACE — ela só lê campos que o núcleo
+# (BattleSim) já preencheu em FBattleEvent::Value. Se alguém escreve a
+# fórmula de dano de novo dentro de um widget ou ator de cena que
+# consome o trace, o cliente e o servidor podem divergir sem que nada
+# acuse erro. Este script falha o build ANTES disso, mesmo espírito de
+# audit_determinism.sh e probe_isolation.sh.
+#
+# Escopo deliberadamente MENOR que "BattleSquare inteiro" (corrigido em
+# Coleção e Captura, depois de um falso positivo real): código de
+# MONTAGEM de partida (Data/, Balance/) tem permissão de computar
+# atributos derivados ANTES da batalha começar — é o caso de
+# FBattleDataTranslator::TranslateMatchup, que pré-multiplica Attack
+# pela efetividade de tipo (design.md de escala-pets-skills, DP-escala-01,
+# decisão arquitetural revisada, não um recálculo de trace). O que esta
+# sonda proíbe é recalcular DEPOIS que o núcleo já resolveu o turno —
+# por isso ela varre só quem CONSOME o trace (Battle/ e UI/), nunca
+# quem monta o estado inicial.
 #
 # Padrões vigiados (ver BattlePhaseCombat.cpp, a fonte real da fórmula):
 #   Attack * / * Attack   — multiplicador de ataque recalculado
@@ -38,7 +50,7 @@ while IFS= read -r -d '' FILE; do
     esac
     VIOLATIONS="${VIOLATIONS}${FILE}:${LINE_NUM}: ${LINE_CONTENT}"$'\n'
   done < <(grep -nE "$FORBIDDEN_PATTERN" "$FILE" || true)
-done < <(find "$PRESENTATION_DIR" \( -name "*.h" -o -name "*.cpp" \) -not -path "*/Tests/*" -print0)
+done < <(find "$PRESENTATION_DIR" \( -name "*.h" -o -name "*.cpp" \) -not -path "*/Tests/*" -not -path "*/Data/*" -not -path "*/Balance/*" -print0)
 
 if [ -n "$VIOLATIONS" ]; then
   echo "AUDITORIA ANTI-RECÁLCULO FALHOU (BTL-22) — fórmula de dano/alcance reaparecendo fora de BattleSim:" >&2

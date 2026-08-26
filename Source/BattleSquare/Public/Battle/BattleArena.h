@@ -82,6 +82,19 @@ public:
 	// o comportamento continua byte a byte o de antes (Standalone).
 	void ConfigureNetworkedOpponent(UBattleTurnCoordinator* InCoordinator);
 
+	// T4/T5 (colecao-e-captura): lado que representa o jogador local —
+	// mesma convenção já implícita em HandlePlayerCommitted/
+	// ConfigureNetworkedOpponent/UBattleResultWidget::ApplyBattleEndedEvent
+	// (Side 0 é sempre "eu"). Nomeia o que já era verdade, não muda nada.
+	UPROPERTY(EditDefaultsOnly, Category = "Coleção")
+	uint8 LocalPlayerSide = 0;
+
+	// T4 (colecao-e-captura): slot de save da coleção local — constante
+	// nomeada por padrão, mas exposta para testes usarem um slot dedicado
+	// (design.md, Riscos — nunca poluir o slot de produção em teste).
+	UPROPERTY(EditDefaultsOnly, Category = "Coleção")
+	FString PetCollectionSlotName = TEXT("PetCollection");
+
 protected:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USceneComponent> ArenaRoot;
@@ -105,6 +118,13 @@ private:
 	UPROPERTY()
 	TObjectPtr<UBattleTurnCoordinator> ServerCoordinator;
 
+	// T4 (colecao-e-captura): retido de BeginBattle — CheckForCapture (T5)
+	// precisa saber o CatalogId/Name/Type do pet oponente quando a
+	// batalha termina, e essa informação não existe mais em FPetState
+	// (fronteira do núcleo já a descartou, de propósito, AD-012).
+	UPROPERTY()
+	TMap<uint8, FPetPresentationInfo> PresentationsByPetId;
+
 	bool IsPointInCameraFrustum(const FVector& WorldPoint) const;
 
 	UFUNCTION()
@@ -113,4 +133,9 @@ private:
 	void HandleCoordinatorTurnResolved(const FBattleState& NextState, const TArray<FBattleEvent>& Trace);
 
 	void DispatchEventToPetViews(const FBattleEvent& Event);
+
+	// T5 (colecao-e-captura) 🧠: varre o trace por BatalhaEncerrada; se o
+	// jogador local venceu, captura o pet do lado OPOSTO — nunca o
+	// próprio pet do jogador.
+	void CheckForCapture(const TArray<FBattleEvent>& Trace);
 };

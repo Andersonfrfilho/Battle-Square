@@ -2,6 +2,7 @@
 
 **Marco atual:** M3 — Conteúdo e Balanceamento
 **Status:** M1 e M2 concluídos; M3 ainda não speced
+**Objetivo de fechamento do roadmap inteiro (M3→M7):** `.specs/project/OBJECTIVE.md` — ordem, dependências entre marcos, gates (B-001, B-004) e critério de "pronto" do projeto completo.
 
 ---
 

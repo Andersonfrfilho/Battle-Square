@@ -1,7 +1,7 @@
 # Traversal e Câmera de Mundo — Tarefas
 
 **Design:** `.specs/features/traversal-camera-mundo/design.md`
-**Status:** Draft — aguarda aprovação
+**Status:** ✅ CONCLUÍDO — T1 a T6 executadas e verificadas (2026-08-26)
 **Escopo:** `BattleSquare` (C++, T1–T3) e Editor/`Content/` (T4). `BattleSim` não é tocado.
 
 ---
@@ -31,7 +31,7 @@ T4 → T5 → T6
 
 ---
 
-## T1 — `FWorldTraversalMotion`
+## T1 — `FWorldTraversalMotion` ✅
 
 **Arquivos:** `Source/BattleSquare/Public/World/WorldTraversalMotion.h`, `.../Private/World/WorldTraversalMotion.cpp`, teste em `.../Private/Tests/WorldTraversalMotionTest.cpp`.
 **O que fazer:** `ComputeMoveDirection` puro — input 2D + `FRotator` da câmera → direção no mundo, normalizada, usando **só o yaw** (DP-trav-02).
@@ -40,7 +40,7 @@ T4 → T5 → T6
 
 ---
 
-## T2 — `AWorldExplorerCharacter` 🧠
+## T2 — `AWorldExplorerCharacter` 🧠 ✅
 
 **Arquivos:** `Source/BattleSquare/Public/World/WorldExplorerCharacter.h`, `.../Private/World/WorldExplorerCharacter.cpp`.
 **O que fazer:** `ACharacter` com `USpringArmComponent` + `UCameraComponent` (DP-trav-03), `bOrientRotationToMovement` e `bUseControllerRotationYaw` conforme DP-trav-04, um `UEncounterDetectionComponent` como subobjeto (DP-trav-05), e constantes nomeadas para comprimento do braço e limites de pitch.
@@ -48,22 +48,24 @@ T4 → T5 → T6
 
 ---
 
-## T3 — Input via Enhanced Input
+## T3 — Input via Enhanced Input ✅
 
 **O que fazer:** ponteiros `EditDefaultsOnly` para `UInputMappingContext` e dois `UInputAction` (mover, olhar), registro do contexto no `BeginPlay` e binds em `SetupPlayerInputComponent`, com os handlers usando `FWorldTraversalMotion` (T1). Asset ausente **nunca** vira crash (DP-trav-06).
 **Pronto quando:** compila; um teste headless confirma que montar o personagem **sem** nenhum asset de input atribuído não crasha nem no `BeginPlay` nem no setup de input.
 
 ---
 
-## T4 — Personagem no nível `WorldStreamingTest`
+## T4 — Personagem no nível `WorldStreamingTest` ✅
 
 **Como:** via `unreal-mcp`. **Aplicar L-024** (salvar a cada passo) e **L-025** (Editor fechado antes de qualquer build).
 **O que fazer:** posicionar um `AWorldExplorerCharacter` no nível e garantir chão sob ele; o `DebugRoutePawn` continua onde está, intocado.
 **Pronto quando:** o personagem existe no nível, salvo, e o `DebugRoutePawn` continua presente e sem alteração.
+**Feito:** `WorldExplorer` em `(-3400,-3400,120)`, com `CameraBoom`, `FollowCamera` e `EncounterDetection` confirmados. `DebugRoutePawn` intacto e ainda com `AutoPossessPlayer`.
+**Chão:** 25 pisos (`StreamingFloor/`), um por célula de 1600uu, topo em `z = 0`. Um piso por célula em vez de uma laje única de propósito: a laje seria um ator gigante atravessando todas as células e ficaria sempre carregada, confundindo a verificação de streaming que a primeira feature de M5 entregou.
 
 ---
 
-## T5 — Roteiro de verificação manual
+## T5 — Roteiro de verificação manual ✅
 
 **Arquivo:** `docs/verification/traversal-camera-mundo.md`.
 **O que fazer:** documentar os itens não-automatizáveis de DP-trav-07 — colisão e gravidade reais, câmera não entrando na parede, streaming acompanhando o personagem, e o julgamento humano de conforto.
@@ -71,10 +73,11 @@ T4 → T5 → T6
 
 ---
 
-## T6 — Regressão completa
+## T6 — Regressão completa ✅
 
 **Pronto quando:**
-- [ ] `Automation RunTests BattleSquare` — Success == total (102 + os novos), Fail == 0
-- [ ] `Automation RunTests BattleSim` — 52 Success, Fail == 0, zero linha tocada
-- [ ] As três sondas — todas `exit 0`
-- [ ] **L-020 + L-025 aplicadas:** Editor fechado, `Binaries/` limpo, rebuild real depois de `probe_isolation.sh`
+- [x] `Automation RunTests BattleSquare` — **112 Success, 0 Fail** (102 anteriores + 10 novos)
+- [x] `Automation RunTests BattleSim` — **52 Success, 0 Fail**, zero linha tocada (total 164/164)
+- [x] As três sondas — todas `exit 0`
+- [x] **L-020 + L-025 aplicadas:** Editor fechado, rebuild real depois de `probe_isolation.sh`, `Tools/sync_module_manifest.sh` rodado antes dos testes que contam
+- [x] `UDebugRouteMoverComponent` e o `DebugRoutePawn` sem uma linha tocada (P2)

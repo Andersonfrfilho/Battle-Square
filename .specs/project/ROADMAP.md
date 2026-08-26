@@ -1,6 +1,6 @@
 # Roadmap
 
-**Marco atual:** M5 — Mundo Aberto Contínuo (gate B-001 pendente de decisão do usuário)
+**Marco atual:** M6 — Plataformas. M5 concluído em 2026-08-26 (gate B-001 liberado pelo usuário); as três features de mundo aberto estão entregues.
 **Status:** M1, M2, M3 e M4 concluídos
 **Objetivo de fechamento do roadmap inteiro (M3→M7):** `.specs/project/OBJECTIVE.md` — ordem, dependências entre marcos, gates (B-001, B-004) e critério de "pronto" do projeto completo.
 
@@ -94,7 +94,7 @@
 
 ---
 
-## M5 — Mundo Aberto Contínuo
+## M5 — Mundo Aberto Contínuo — ✅ CONCLUÍDO (2026-08-26)
 
 **Objetivo:** o salto de escopo. Mundo contínuo com World Partition, exploração, encontros e batalhas instanciadas a partir do mundo.
 
@@ -104,7 +104,7 @@
 
 **Streaming de Mundo** — ✅ CONCLUÍDO (2026-08-26)
 **Encontros e Transição para Batalha** — ✅ CONCLUÍDO (2026-08-26)
-**Traversal e Câmera de Mundo** — PLANNED
+**Traversal e Câmera de Mundo** — ✅ CONCLUÍDO (2026-08-26)
 
 ---
 

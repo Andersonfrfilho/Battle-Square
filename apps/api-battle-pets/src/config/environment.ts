@@ -12,6 +12,7 @@ const environmentSchema = z.object({
   ADMIN_API_TOKEN: z.string().min(32, 'ADMIN_API_TOKEN precisa ter ao menos 32 caracteres'),
   SYNC_API_TOKEN: z.string().min(32, 'SYNC_API_TOKEN precisa ter ao menos 32 caracteres'),
   ED25519_PRIVATE_KEY_PEM: z.string().min(1, 'ED25519_PRIVATE_KEY_PEM é obrigatória para assinar exportações de pet'),
+  ACCESS_TOKEN_SECRET: z.string().min(32, 'ACCESS_TOKEN_SECRET precisa ter ao menos 32 caracteres'),
 });
 
 export const environment = environmentSchema.parse(process.env);

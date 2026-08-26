@@ -1,7 +1,7 @@
 # Conta de Jogador — Tarefas
 
 **Design:** `.specs/features/conta-de-jogador/design.md`
-**Status:** Draft — aguarda aprovação
+**Status:** ✅ CONCLUÍDO (T1–T7, 2026-08-26). Os 8 itens de `docs/verification/conta-de-jogador.md` seguem **não verificados** — exigem Postgres de pé.
 **Escopo:** `apps/api-battle-pets`. Unreal não é tocada.
 
 ---
@@ -16,7 +16,7 @@ T1 → T2 → T3 → T4 → T5 → T6 → T7
 
 ---
 
-## T1 — Puros de e-mail e senha
+## T1 — Puros de e-mail e senha ✅
 
 **Arquivos:** `src/account/account.email.ts`, `src/account/account.password.ts`, testes ao lado.
 **O que fazer:** `normalizeEmail` (minúsculo, trim), `maskEmail` (DP-conta-06), e `validatePasswordPolicy` devolvendo **todos** os motivos de uma vez.
@@ -25,7 +25,7 @@ T1 → T2 → T3 → T4 → T5 → T6 → T7
 
 ---
 
-## T2 — Token de acesso 🧠
+## T2 — Token de acesso 🧠 ✅
 
 **Arquivos:** `src/account/account.token.ts` + teste.
 **O que fazer:** `issueAccessToken` / `verifyAccessToken` conforme DP-conta-02 — HMAC-SHA256, `timingSafeEqual`, assinatura verificada ANTES do payload, segredo e instante injetados.
@@ -34,7 +34,7 @@ T1 → T2 → T3 → T4 → T5 → T6 → T7
 
 ---
 
-## T3 — Limitador de tentativas
+## T3 — Limitador de tentativas ✅
 
 **Arquivos:** `src/account/account.limiter.ts` + teste.
 **O que fazer:** janela e teto nomeados, chave por e-mail normalizado, tempo injetado (DP-conta-05).
@@ -43,7 +43,7 @@ T1 → T2 → T3 → T4 → T5 → T6 → T7
 
 ---
 
-## T4 — Schema e migration
+## T4 — Schema e migration ✅
 
 **Arquivos:** `src/account/account.schema.ts`, migration Drizzle.
 **O que fazer:** `player_accounts` e `refresh_tokens` conforme DP-conta-01 — unique no e-mail normalizado, `status` como varchar (nunca ENUM nativo), refresh guardado como hash.
@@ -51,7 +51,7 @@ T1 → T2 → T3 → T4 → T5 → T6 → T7
 
 ---
 
-## T5 — Use cases e rotas
+## T5 — Use cases e rotas ✅
 
 **Arquivos:** `src/account/account.validation.ts`, `account.use-case.ts`, `account.controller.ts`, e as rotas em `src/index.ts`.
 **O que fazer:** registrar, entrar, renovar e sair. `409 ACCOUNT_EMAIL_TAKEN`; `401 ACCOUNT_INVALID_CREDENTIALS` idêntico para os dois casos, com o gasto de tempo equivalente (DP-conta-04); `429` com `Retry-After`.
@@ -59,7 +59,7 @@ T1 → T2 → T3 → T4 → T5 → T6 → T7
 
 ---
 
-## T6 — Roteiro de verificação
+## T6 — Roteiro de verificação ✅
 
 **Arquivo:** `docs/verification/conta-de-jogador.md`.
 **O que fazer:** o que só Postgres de pé prova (DP-conta-07), com o `curl` exato de cada caso.
@@ -67,9 +67,10 @@ T1 → T2 → T3 → T4 → T5 → T6 → T7
 
 ---
 
-## T7 — Regressão
+## T7 — Regressão ✅
 
 **Pronto quando:**
-- [ ] `bun test` em `apps/api-battle-pets` — todos passam
-- [ ] `tsc --noEmit` limpo
-- [ ] Unreal intocada: `Automation RunTests BattleSquare` (118) e `BattleSim` (52) continuam limpos, e as três sondas `exit 0`
+- [x] `bun test` em `apps/api-battle-pets` — **15 pass, 0 fail** (os primeiros testes que este backend já teve)
+- [x] `bunx tsc --noEmit` — limpo
+- [x] Unreal intocada: `git status` em `Source/`, `Content/` e `Config/` vazio; `Automation RunTests BattleSquare` segue **118/0**; `audit_determinism.sh` e `audit_no_recalculation.sh` `exit 0`
+- [x] Migration `0001` puramente **aditiva** — nenhum `ALTER` na tabela `pets`

@@ -127,7 +127,7 @@
 
 ### Features
 
-**Conta de Jogador** — PLANNED
+**Conta de Jogador** — ✅ CONCLUÍDO (2026-08-26) — serviço e contrato entregues; cliente C++ e sincronização de coleção ficaram fora de escopo por decisão da spec.
 **Moderação e Banimento** — PLANNED (consome a trilha de auditoria do backend de dados de pet)
 
 ---

@@ -2,6 +2,12 @@
 
 import { environment } from './config/environment';
 import {
+  handleLogin,
+  handleLogout,
+  handleRefreshSession,
+  handleRegisterAccount,
+} from './account/account.controller';
+import {
   handleCreatePet,
   handleDeletePet,
   handleExportPets,
@@ -20,6 +26,19 @@ const server = Bun.serve({
 
     if (url.pathname === '/health') {
       return Response.json({ data: { status: 'ok' } });
+    }
+
+    if (url.pathname === '/v1/accounts') {
+      if (request.method === 'POST') return handleRegisterAccount(request);
+    }
+
+    if (url.pathname === '/v1/accounts/sessions') {
+      if (request.method === 'POST') return handleLogin(request);
+      if (request.method === 'DELETE') return handleLogout(request);
+    }
+
+    if (url.pathname === '/v1/accounts/sessions/refresh') {
+      if (request.method === 'POST') return handleRefreshSession(request);
     }
 
     if (url.pathname === '/v1/pets/export') {

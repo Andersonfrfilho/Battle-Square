@@ -1,52 +1,55 @@
 # Roadmap
 
-**Marco atual:** M1 — Fatia Vertical do Combate
-**Status:** Planning
+**Marco atual:** M3 — Conteúdo e Balanceamento
+**Status:** M1 e M2 concluídos; M3 ainda não speced
 
 ---
 
-## M1 — Fatia Vertical do Combate
+## M1 — Fatia Vertical do Combate ✅ CONCLUÍDO
 
 **Objetivo:** um combate 1v1 offline, jogável do início ao fim, com as três ações e a resolução simultânea funcionando. É o que prova que o jogo é divertido antes de qualquer investimento em rede, conteúdo ou mundo.
 
-**Critério de conclusão:** dá para jogar uma partida completa contra uma IA burra e sentir a tensão do commit às cegas.
+**Critério de conclusão:** dá para jogar uma partida completa contra uma IA burra e sentir a tensão do commit às cegas. ✅ Atingido — `ABattleArena` local (Standalone) resolve turnos completos contra `FDumbOpponentAI`.
 
 ### Features
 
-**Núcleo de Combate** — PLANNED
+**Núcleo de Combate** — ✅ CONCLUÍDO (`.specs/features/combate-nucleo/`)
 - Estado de batalha, grade 3x3, ocupação de casas
 - Fila de 3 ações por pet, commit e revelação
 - Resolução simultânea por slot, em fases
 - Movimento, ataque, magia, defesa, esquiva
 - Condição de vitória, derrota e empate
 
-**Apresentação do Combate** — PLANNED
+**Apresentação do Combate** — ✅ CONCLUÍDO (`.specs/features/apresentacao-combate/`)
 - Consumo do trace de eventos para animar o resultado
 - Câmera de arena, seleção de ações, indicação de limite (3/3)
 - Feedback de vida, dano e ação inválida
+- Layout visual final (UMG) e verificação estética ficam para autoria posterior — ver `docs/verification/apresentacao-combate-visual.md`
 
-**Backend de Dados de Pet** — PLANNED (spec escrita, `.specs/features/backend-dados-pet/`)
+**Backend de Dados de Pet** — ✅ CONCLUÍDO (`.specs/features/backend-dados-pet/`)
 - Backend próprio (Bun + PostgreSQL + Drizzle), API REST `/v1/pets`, CRUD
 - Espelho local sincronizado no servidor de combate — batalha nunca lê a rede diretamente (AD-014)
 - 6 a 10 pets de teste cadastrados via API
 
 ---
 
-## M2 — Combate Online
+## M2 — Combate Online ✅ CONCLUÍDO
 
 **Objetivo:** o mesmo combate, autoritativo no servidor, entre dois jogadores reais.
 
 ### Features
 
-**Servidor Autoritativo** — PLANNED
-- Simulação rodando no dedicated server
-- Cliente envia apenas o commit das 3 ações; servidor devolve o trace
-- Timeout de commit e preenchimento automático
-- Reconexão com replay do trace
+**Servidor Autoritativo** — ✅ CONCLUÍDO (`.specs/features/combate-online/`)
+- Simulação rodando atrás de `HasAuthority()` — mesmo código para `Standalone`/`ListenServer`/`DedicatedServer` (NetMode decide, não uma flag)
+- Cliente envia apenas o commit das 3 ações (`FNetTurnCommit`, tipo de fio dedicado); servidor devolve estado + trace
+- Timeout de commit e preenchimento automático (`UBattleTurnCoordinator`)
+- Reconexão por estado completo, sem replay de trace (DP-online-03)
+- **Ressalva registrada (B-004):** verificação com `DedicatedServer` real bloqueada — a engine instalada (Epic Games Launcher) não compila `TargetType.Server`. Não é dívida de código; é decisão de infraestrutura para quando M2 for a produção de verdade. `ListenServer` cobre desenvolvimento sem essa restrição.
 
-**Sala e Pareamento Simples** — PLANNED
-- Código de sala, lobby de dois jogadores
-- Tratamento de abandono
+**Sala e Pareamento Simples** — ✅ CONCLUÍDO (`.specs/features/sala-e-pareamento/`)
+- Código de sala (5 caracteres, sem `0`/`O`/`1`/`I`), lobby de dois jogadores
+- Tratamento de abandono (timeout injetável, vitória por `BatalhaEncerrada` já existente)
+- Reconexão por segredo de sessão (`FGuid`), sem conta de jogador
 
 ---
 

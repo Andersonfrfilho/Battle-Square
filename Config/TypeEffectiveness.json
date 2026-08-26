@@ -1,0 +1,11 @@
+{
+  "types": ["Fogo", "Agua", "Planta"],
+  "effectiveness": [
+    { "attacker": "Fogo", "defender": "Planta", "percent": 150 },
+    { "attacker": "Fogo", "defender": "Agua", "percent": 50 },
+    { "attacker": "Agua", "defender": "Fogo", "percent": 150 },
+    { "attacker": "Agua", "defender": "Planta", "percent": 50 },
+    { "attacker": "Planta", "defender": "Agua", "percent": 150 },
+    { "attacker": "Planta", "defender": "Fogo", "percent": 50 }
+  ]
+}

@@ -4,6 +4,7 @@
 #include "Camera/CameraComponent.h"
 #include "Battle/DumbOpponentAI.h"
 #include "Battle/BattleResolver.h"
+#include "Battle/BattleOutcome.h"
 
 ABattleArena::ABattleArena()
 {
@@ -165,7 +166,12 @@ void ABattleArena::HandlePlayerCommitted()
 	// anima as views. Nenhum cálculo de batalha aqui — só orquestração.
 	const FTurnCommit OpponentCommit = FDumbOpponentAI::GenerateRandomValidCommit(CurrentState, /*Side=*/1, CurrentState.Random);
 
-	const FBattleResolveResult Result = FBattleResolver::ResolveTurn(CurrentState, PlayerCommit, OpponentCommit);
+	FBattleResolveResult Result = FBattleResolver::ResolveTurn(CurrentState, PlayerCommit, OpponentCommit);
+	// ResolveTurn nunca decide vitória/derrota por design (BattleOutcome.h:
+	// "separação deliberada") — quem chama precisa avaliar depois. Achado
+	// real durante escala-pets-skills: nem aqui nem UBattleTurnCoordinator
+	// chamavam isto, então BatalhaEncerrada nunca disparava em produção.
+	BattleOutcome::EvaluateOutcome(Result.NextState, Result.Trace);
 	CurrentState = Result.NextState;
 
 	if (TracePlayer)

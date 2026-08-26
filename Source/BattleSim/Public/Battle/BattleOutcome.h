@@ -20,5 +20,5 @@ namespace BattleOutcome
 	// quando aplicável e emite exatamente um evento BatalhaEncerrada.
 	// Idempotente: se bBattleEnded já era true, não faz nada (BTL-14:
 	// "emite BatalhaEncerrada uma única vez").
-	void EvaluateOutcome(FBattleState& State, TArray<FBattleEvent>& OutTrace);
+	BATTLESIM_API void EvaluateOutcome(FBattleState& State, TArray<FBattleEvent>& OutTrace);
 }

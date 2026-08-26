@@ -3,6 +3,7 @@
 #include "Net/BattleTurnCoordinator.h"
 #include "Net/BattleNetConstants.h"
 #include "Battle/BattleResolver.h"
+#include "Battle/BattleOutcome.h"
 
 void UBattleTurnCoordinator::BeginTurn(const FBattleState& State, double StartTimeSeconds)
 {
@@ -92,7 +93,11 @@ void UBattleTurnCoordinator::TryResolveIfBothPresent()
 
 void UBattleTurnCoordinator::ResolveWithCommits(const FTurnCommit& CommitSide0, const FTurnCommit& CommitSide1)
 {
-	const FBattleResolveResult Result = FBattleResolver::ResolveTurn(CurrentState, CommitSide0, CommitSide1);
+	FBattleResolveResult Result = FBattleResolver::ResolveTurn(CurrentState, CommitSide0, CommitSide1);
+	// ResolveTurn não decide vitória/derrota por design — ver o mesmo
+	// comentário em ABattleArena::HandlePlayerCommitted. Achado real
+	// durante escala-pets-skills: faltava aqui também.
+	BattleOutcome::EvaluateOutcome(Result.NextState, Result.Trace);
 	bResolved = true;
 	OnTurnResolved.Broadcast(Result.NextState, Result.Trace);
 }

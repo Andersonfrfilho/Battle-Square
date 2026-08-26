@@ -6,6 +6,7 @@
 #include "GameplayTagContainer.h"
 #include "Battle/BattleState.h"
 #include "Data/PetDataLoader.h"
+#include "Balance/TypeEffectivenessTable.h"
 #include "BattleDataTranslator.generated.h"
 
 // T18 (tasks.md): traduz um pet carregado (FLoadedPetRecord — id uuid,
@@ -46,4 +47,23 @@ public:
 		uint8 Row,
 		FPetState& OutBattleState,
 		FPetPresentationInfo& OutPresentation);
+
+	// T3 (escala-pets-skills, design.md — DP-escala-01): traduz os DOIS
+	// lados de uma partida ao mesmo tempo, pré-multiplicando o Attack de
+	// cada lado pela efetividade do tipo dele contra o tipo do oponente.
+	// Chama a mesma lógica de TranslatePet internamente para os campos
+	// que não mudam (Defense/Speed/MaxHealth/Health nunca são alterados
+	// por tipo — só Attack). O núcleo (BattleSim) nunca sabe que tipo
+	// existe: o Attack que ele recebe já chega efetivo.
+	static void TranslateMatchup(
+		const FLoadedPetRecord& LeftSource,
+		const FLoadedPetRecord& RightSource,
+		const FTypeEffectivenessTable& EffectivenessTable,
+		uint8 LeftPetId,
+		uint8 RightPetId,
+		FPetState& OutLeftState,
+		FPetPresentationInfo& OutLeftPresentation,
+		FPetState& OutRightState,
+		FPetPresentationInfo& OutRightPresentation);
 };
+

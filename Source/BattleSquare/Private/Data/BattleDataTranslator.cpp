@@ -37,3 +37,29 @@ void FBattleDataTranslator::TranslatePet(
 	const FName TagName(*FString::Printf(TEXT("Pet.Type.%s"), *Source.Type));
 	OutPresentation.TypeTag = FGameplayTag::RequestGameplayTag(TagName, /*ErrorIfNotFound=*/false);
 }
+
+void FBattleDataTranslator::TranslateMatchup(
+	const FLoadedPetRecord& LeftSource,
+	const FLoadedPetRecord& RightSource,
+	const FTypeEffectivenessTable& EffectivenessTable,
+	uint8 LeftPetId,
+	uint8 RightPetId,
+	FPetState& OutLeftState,
+	FPetPresentationInfo& OutLeftPresentation,
+	FPetState& OutRightState,
+	FPetPresentationInfo& OutRightPresentation)
+{
+	// Posições padrão de duelo 1v1 — mesma convenção usada em todo o
+	// projeto (esquerda coluna 1, direita coluna 2, linha 1).
+	TranslatePet(LeftSource, LeftPetId, /*Side=*/0, /*Column=*/1, /*Row=*/1, OutLeftState, OutLeftPresentation);
+	TranslatePet(RightSource, RightPetId, /*Side=*/1, /*Column=*/2, /*Row=*/1, OutRightState, OutRightPresentation);
+
+	// Efetividade é sobre O ATAQUE do lado — o Attack do Left muda pela
+	// efetividade DO TIPO DO LEFT CONTRA O TIPO DO RIGHT, nunca o
+	// inverso (T3 é 🧠 justamente por essa inversão ser fácil de errar).
+	const int32 LeftEffectivenessPercent = EffectivenessTable.GetPercent(LeftSource.Type, RightSource.Type);
+	const int32 RightEffectivenessPercent = EffectivenessTable.GetPercent(RightSource.Type, LeftSource.Type);
+
+	OutLeftState.Attack = (OutLeftState.Attack * LeftEffectivenessPercent) / 100;
+	OutRightState.Attack = (OutRightState.Attack * RightEffectivenessPercent) / 100;
+}

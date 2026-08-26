@@ -26,7 +26,11 @@ public class BattleSquare : ModuleRules
 			// Ferramenta).
 			"UMG",
 			"Slate",
-			"SlateCore"
+			"SlateCore",
+			// T2 (escala-pets-skills): FTypeEffectivenessTable::LoadFromJson
+			// consome a tabela de efetividade de um arquivo JSON local.
+			"Json",
+			"JsonUtilities"
 		});
 
 		// AD-019: OpenSSL já vem empacotado na engine (1.1.1t) — cobre

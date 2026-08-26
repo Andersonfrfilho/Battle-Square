@@ -194,6 +194,27 @@ O caminho de leitura NÃO é o servidor de combate chamando o backend remoto a c
 
 ## Blockers Ativos
 
+### B-006 / B-006b / B-007: nenhuma plataforma móvel é compilável nesta máquina
+
+**Descoberto:** 2026-08-26, ao abrir M6.
+**Impacto:** **M6 (Plataformas) não é validável aqui.** Não é questão de esforço nem de teste — o toolchain não existe. Todo o roteiro de `docs/verification/mobile.md` está marcado BLOQUEADO, e o orçamento de mobile (`docs/performance/orcamento-mobile.md`) permanece com todos os números marcados **alvo**, nenhum medido.
+
+| Id | O quê | Evidência exata | Remédio, e de quem é |
+|---|---|---|---|
+| **B-006** | Componente **IOS** da engine não instalado | `Build.sh BattleSquare IOS Development` → `Missing files required to build IOS targets. Enable IOS as an optional download component in the Epic Games Launcher.` | **Usuário:** Epic Games Launcher → instalar o componente IOS do UE 5.8 |
+| **B-006b** | Sem identidade de assinatura, sem perfil de provisionamento | `security find-identity -v -p codesigning` → `0 valid identities found`; `~/Library/MobileDevice/Provisioning Profiles/` vazio | **Usuário:** conta Apple Developer + certificado + perfil |
+| **B-007** | SDK/NDK Android ausente | Validação de plataforma da engine → `Android INVALID r27c` | **Usuário:** `SetupAndroid` da engine, ou Android Studio + NDK r27c |
+
+**Nota:** a validação de plataforma da engine reporta `IOS VALID 26.1.1`, e isso **engana** — ela reporta o SDK do Xcode, não o componente iOS da própria Unreal. A prova real é tentar o build, e ele falha em menos de um segundo.
+**Basta resolver:** B-006 + B-006b (caminho iOS) **ou** B-007 (caminho Android). Não são necessários os dois.
+**Parentesco com B-004:** mesma categoria — a engine instalada pelo Launcher não traz tudo que o roadmap pede, e a descoberta só acontece quando se tenta.
+
+### B-008: Console exige licença e devkit
+
+**Descoberto:** 2026-08-26.
+**Impacto:** a segunda feature de M6 (Console) **não é iniciável**, nem em spec de implementação. Acesso ao SDK de qualquer console exige contrato de desenvolvedor registrado com o fabricante e hardware de desenvolvimento — nada disso é obtenível por código, e o próprio `ROADMAP.md` já previa isso ("exige licença de desenvolvedor e devkit").
+**Remédio, e de quem é:** **Usuário** — registro como desenvolvedor junto ao fabricante e aquisição de devkit. Até lá, a feature fica PLANNED e sem spec, de propósito: escrever spec de implementação para uma plataforma cujo SDK não se pode nem ler produziria ficção.
+
 ### B-001: Escopo de mundo aberto contínuo
 
 **Descoberto:** 2026-08-24
@@ -451,7 +472,7 @@ find "$HOME/Library/Logs/Unreal Engine/BattleSquareEditor" Saved/Logs -newer <ma
 ## Todos
 
 - [ ] Decidir as áreas cinzentas marcadas como PROPOSTA na spec do Combate Núcleo (ver seção "Decisões Pendentes")
-- [ ] Definir orçamento de performance de mobile antes de M5 — decisões de mundo tomadas sem ele são irreversíveis
+- [x] Definir orçamento de performance de mobile — **resolvido em 2026-08-26**: `docs/performance/orcamento-mobile.md` (aparelho de referência declarado, 1,5 GB de processo / 384 MB de streaming / 30 FPS / até 720p). Chegou TARDE: M5 inteiro foi decidido contra o número provisório de DP-streaming-01, exatamente o risco que este Todo alertava. Todos os números são **alvo**, nenhum medido — medir depende de B-006/B-007.
 - [x] Avaliar MCPs de controle do Unreal Editor — **resolvido em 2026-08-24**: existe plugin **oficial da Epic** (`EpicGames/unreal-engine-skills-for-claude-code-plugin`, v3.0.4, MIT, autor Thomas Mansencal/Epic), publicado no marketplace oficial da Anthropic. Descarta a necessidade de MCP comunitário. **Instalado e habilitado em 2026-08-24** (escopo de usuário, v3.0.4, 3 skills: `unreal-mcp`, `create-toolset`, `unreal-skill`; custo fixo ~1.3k tokens por sessão). Fica inerte até o editor subir.
       Exige Unreal Editor rodando com os plugins `ModelContextProtocol` e `AllToolsets`, e `ModelContextProtocol.StartServer` no console.
       **Cuidado registrado pelo próprio README da Epic:** `ProgrammaticToolset.execute_tool_script` executa Python arbitrário dentro do editor, com acesso total ao projeto em disco. Nunca usar com `--dangerously-skip-permissions`, e commitar antes de sessão longa dirigida por MCP.

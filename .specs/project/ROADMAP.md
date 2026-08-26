@@ -114,8 +114,8 @@
 
 ### Features
 
-**Mobile** — PLANNED (exige orçamento de performance definido desde M5)
-**Console** — PLANNED (exige licença de desenvolvedor e devkit)
+**Mobile** — ⚠️ PARCIAL (2026-08-26) — entregue tudo que não depende de aparelho (orçamento de performance, entrada de toque, escalabilidade). Compilar/empacotar/medir está BLOQUEADO por B-006/B-006b/B-007.
+**Console** — ⛔ BLOQUEADO (B-008) — exige licença de desenvolvedor e devkit; sem spec de propósito, escrever uma para um SDK que não se pode ler produziria ficção.
 
 ---
 

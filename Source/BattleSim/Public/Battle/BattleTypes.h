@@ -16,7 +16,12 @@ enum class EActionType : uint8
 	Atacar,
 	Magia,
 	Defender,
-	Esquivar
+	Esquivar,
+
+	// DP-ia-04: esconder-se é AÇÃO, não estado ligado por fora.
+	Camuflar,
+	Voar,
+	Submergir
 };
 
 // As 8 direções da grade. Defender e Aguardar ignoram a direção.

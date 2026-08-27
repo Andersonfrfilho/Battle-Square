@@ -83,7 +83,25 @@ void BattlePhases::ApplyResolution(
 	// estado (mantém o hash consistente com "nada pendente entre slots").
 	for (FPetState& Pet : State.Pets)
 	{
+		// DP-ia-04: esconder-se por completo custa a ação seguinte, senão
+		// camuflar todo slot seria dominante — quem nunca pode ser atingido
+		// não pode perder. A cobrança viaja no próprio PostureFlags: um campo
+		// novo entraria no hash do estado e invalidaria os snapshots de
+		// determinismo de cenários que nem usam estas ações.
+		const bool bEstavaCamuflado =
+			(Pet.PostureFlags & static_cast<uint8>(EBattlePostureFlags::Camouflaged)) != 0;
+		const bool bEstavaSubmerso =
+			(Pet.PostureFlags & static_cast<uint8>(EBattlePostureFlags::Underground)) != 0;
+
 		Pet.PostureFlags = 0;
+		if (bEstavaCamuflado)
+		{
+			Pet.PostureFlags = static_cast<uint8>(EBattlePostureFlags::Revealing);
+		}
+		else if (bEstavaSubmerso)
+		{
+			Pet.PostureFlags = static_cast<uint8>(EBattlePostureFlags::Emerging);
+		}
 	}
 
 	// Passo 4: SlotEncerrado por último, uma única vez.

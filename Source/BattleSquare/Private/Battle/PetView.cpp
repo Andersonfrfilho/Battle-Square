@@ -108,6 +108,34 @@ void APetView::LookAtCell(int32 TargetColumn, int32 TargetRow)
 	GazeMarker->SetWorldRotation(Towards.Rotation());
 }
 
+void APetView::LookUp()
+{
+	if (GazeMarker)
+	{
+		GazeMarker->SetRelativeLocation(
+			FVector(0.0f, 0.0f, SphereRadiusUnits * BodyScale * 2.0f));
+		GazeMarker->SetWorldRotation(FVector::UpVector.Rotation());
+	}
+}
+
+void APetView::LookDown()
+{
+	if (GazeMarker)
+	{
+		// Ainda acima do centro da esfera: enterrar a marca no tabuleiro a
+		// esconderia, e um olhar invisível não comunica nada.
+		GazeMarker->SetRelativeLocation(FVector(0.0f, 0.0f, SphereRadiusUnits * BodyScale * 0.2f));
+		GazeMarker->SetWorldRotation(FVector::DownVector.Rotation());
+	}
+}
+
+void APetView::LoseSightOfTarget()
+{
+	// Perder de vista é NÃO mexer: a marca fica na última casa conhecida, que
+	// é exatamente a informação errada que o pet tem. Girar para o lugar certo
+	// entregaria ao jogador o que a camuflagem deveria esconder.
+}
+
 void APetView::RefreshHealthBar()
 {
 	if (!HealthBarFill || !HealthBarBackground)

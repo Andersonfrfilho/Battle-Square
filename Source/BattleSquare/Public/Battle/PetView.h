@@ -97,6 +97,11 @@ public:
 	 *  precisa continuar de frente para a câmera para permanecer legível. */
 	void LookAtCell(int32 TargetColumn, int32 TargetRow);
 
+	/** DP-ia-04: o olhar segue o que o adversário FEZ, não só onde ele está. */
+	void LookUp();
+	void LookDown();
+	void LoseSightOfTarget();
+
 private:
 	void RefreshHealthBar();
 

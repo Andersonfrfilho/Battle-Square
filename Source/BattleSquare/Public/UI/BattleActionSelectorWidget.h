@@ -62,12 +62,32 @@ public:
 	// DP-ui-05 conta como automatizável. Cada uso é guardado por null.
 	virtual void NativeConstruct() override;
 
+	/**
+	 * Teclado como caminho paralelo aos botões.
+	 *
+	 * Não é atalho de conveniência: enquanto o WBP não ganhar os botões de
+	 * Camuflar/Voar/Submergir, é por aqui que o jogador alcança as ações que o
+	 * oponente já usa contra ele. Sofrer uma regra sem poder usá-la é o pior
+	 * estado possível para uma mecânica nova.
+	 *
+	 * Continua valendo DP-ui-01: a tecla ENCAMINHA ao componente, exatamente
+	 * como o botão. Nenhuma regra mora aqui.
+	 */
+	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
+
 	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_Aguardar;
 	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_Mover;
 	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_Atacar;
 	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_Magia;
 	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_Defender;
 	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_Esquivar;
+
+	// DP-ia-04. BindWidgetOptional segura a transição: enquanto o WBP não
+	// ganhar os botões, a tela segue funcionando sem eles em vez de recusar
+	// a criar o widget.
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_Camuflar;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_Voar;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_Submergir;
 
 	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_CimaEsquerda;
 	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> Button_Cima;
@@ -109,6 +129,9 @@ private:
 	UFUNCTION() void OnClickMagia();
 	UFUNCTION() void OnClickDefender();
 	UFUNCTION() void OnClickEsquivar();
+	UFUNCTION() void OnClickCamuflar();
+	UFUNCTION() void OnClickVoar();
+	UFUNCTION() void OnClickSubmergir();
 
 	UFUNCTION() void OnClickCimaEsquerda();
 	UFUNCTION() void OnClickCima();

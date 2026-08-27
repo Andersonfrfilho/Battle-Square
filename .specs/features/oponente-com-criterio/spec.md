@@ -65,3 +65,15 @@ Proposta, para confirmar antes de implementar:
 
 Cada linha acima é uma regra nova no `BattleSim`, com teste. Não é trabalho de
 apresentação, e por isso não entrou junto.
+
+---
+
+## Próxima decisão, já tomada pelo usuário (2026-08-27)
+
+**DP-02 deixa de estar em aberto: NÃO haverá coabitação.** Dois pets não podem
+ocupar a mesma casa. Se os dois se moverem para o mesmo ponto do campo, o
+encontro resolve em **ataque mútuo** — em vez de empilhar, eles se batem.
+
+Isso é regra do `BattleSim`, e mexe na fase de movimento (hoje
+`FindLivingOpponentAtCell` na própria casa é caminho VÁLIDO de alvo, e o
+resolvedor de ataque depende disso). Entra depois do DP-ia-04.

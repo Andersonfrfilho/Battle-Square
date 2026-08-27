@@ -181,6 +181,18 @@ void ABattleArena::DispatchEventToPetViews(const FBattleEvent& Event)
 	RefreshGazes();
 }
 
+uint8 ABattleArena::FindPostureFlagsForPet(uint8 PetId) const
+{
+	for (const FPetState& Pet : CurrentState.Pets)
+	{
+		if (Pet.PetId == PetId)
+		{
+			return Pet.PostureFlags;
+		}
+	}
+	return 0;
+}
+
 void ABattleArena::RefreshGazes()
 {
 	for (const TObjectPtr<APetView>& View : SpawnedPetViews)
@@ -192,11 +204,32 @@ void ABattleArena::RefreshGazes()
 
 		for (const TObjectPtr<APetView>& Other : SpawnedPetViews)
 		{
-			if (Other && Other != View && Other->GetSide() != View->GetSide() && !Other->IsDefeated())
+			if (!Other || Other == View || Other->GetSide() == View->GetSide() || Other->IsDefeated())
+			{
+				continue;
+			}
+
+			// DP-ia-04: o olhar segue o que o adversário FEZ. É a metade
+			// visível de uma regra que, sem isto, o jogador só sentiria pelo
+			// dano que não veio.
+			const uint8 Flags = FindPostureFlagsForPet(Other->GetPetId());
+			if ((Flags & static_cast<uint8>(EBattlePostureFlags::Camouflaged)) != 0)
+			{
+				View->LoseSightOfTarget();
+			}
+			else if ((Flags & static_cast<uint8>(EBattlePostureFlags::Flying)) != 0)
+			{
+				View->LookUp();
+			}
+			else if ((Flags & static_cast<uint8>(EBattlePostureFlags::Underground)) != 0)
+			{
+				View->LookDown();
+			}
+			else
 			{
 				View->LookAtCell(Other->GetColumn(), Other->GetRow());
-				break;
 			}
+			break;
 		}
 	}
 }

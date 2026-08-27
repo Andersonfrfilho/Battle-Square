@@ -11,9 +11,21 @@
 UENUM(meta = (Bitflags))
 enum class EBattlePostureFlags : uint8
 {
-	None      = 0,
-	Defending = 1 << 0,
-	Dodging   = 1 << 1,
+	None        = 0,
+	Defending   = 1 << 0,
+	Dodging     = 1 << 1,
+
+	// DP-ia-04. Três esconderijos com trocas DISTINTAS entre si — se as
+	// trocas coincidissem, seriam três nomes para "esquivar melhor".
+	Camouflaged = 1 << 2,  // imune a físico E magia; custa a ação seguinte
+	Flying      = 1 << 3,  // imune a físico e ao dano de casa; magia acerta MAIS
+	Underground = 1 << 4,  // imune a tudo; custa mover E atacar na ação seguinte
+
+	// Cobrança do slot seguinte. Vive em PostureFlags, e não num campo novo,
+	// porque campo novo entraria no hash do estado e invalidaria os snapshots
+	// de determinismo de cenários que nem usam estas ações.
+	Revealing   = 1 << 5,  // saindo da camuflagem
+	Emerging    = 1 << 6,  // saindo do subsolo
 };
 ENUM_CLASS_FLAGS(EBattlePostureFlags)
 

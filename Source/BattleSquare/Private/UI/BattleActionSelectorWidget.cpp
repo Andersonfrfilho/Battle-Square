@@ -75,6 +75,11 @@ void UBattleActionSelectorWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 	WireButtons();
+
+	// Sem foco o widget não recebe tecla, e o caminho de teclado das ações
+	// novas ficaria morto sem nada indicar o motivo.
+	SetIsFocusable(true);
+	SetKeyboardFocus();
 	RefreshLayoutFromState();
 }
 
@@ -88,6 +93,9 @@ void UBattleActionSelectorWidget::WireButtons()
 	if (Button_Magia) { Button_Magia->OnClicked.AddDynamic(this, &UBattleActionSelectorWidget::OnClickMagia); }
 	if (Button_Defender) { Button_Defender->OnClicked.AddDynamic(this, &UBattleActionSelectorWidget::OnClickDefender); }
 	if (Button_Esquivar) { Button_Esquivar->OnClicked.AddDynamic(this, &UBattleActionSelectorWidget::OnClickEsquivar); }
+	if (Button_Camuflar) { Button_Camuflar->OnClicked.AddDynamic(this, &UBattleActionSelectorWidget::OnClickCamuflar); }
+	if (Button_Voar) { Button_Voar->OnClicked.AddDynamic(this, &UBattleActionSelectorWidget::OnClickVoar); }
+	if (Button_Submergir) { Button_Submergir->OnClicked.AddDynamic(this, &UBattleActionSelectorWidget::OnClickSubmergir); }
 	if (Button_CimaEsquerda) { Button_CimaEsquerda->OnClicked.AddDynamic(this, &UBattleActionSelectorWidget::OnClickCimaEsquerda); }
 	if (Button_Cima) { Button_Cima->OnClicked.AddDynamic(this, &UBattleActionSelectorWidget::OnClickCima); }
 	if (Button_CimaDireita) { Button_CimaDireita->OnClicked.AddDynamic(this, &UBattleActionSelectorWidget::OnClickCimaDireita); }
@@ -108,7 +116,8 @@ void UBattleActionSelectorWidget::RefreshLayoutFromState()
 	// Mostrar os dois passos ao mesmo tempo convidaria a clicar no que não
 	// vale agora — e a recusa viria do componente, sem explicação na tela.
 	UButton* const TypeButtons[] = { Button_Aguardar, Button_Mover, Button_Atacar,
-		Button_Magia, Button_Defender, Button_Esquivar };
+		Button_Magia, Button_Defender, Button_Esquivar,
+		Button_Camuflar, Button_Voar, Button_Submergir };
 	for (UButton* Button : TypeButtons)
 	{
 		if (Button)
@@ -157,6 +166,9 @@ void UBattleActionSelectorWidget::OnClickAtacar()   { BeginSelectingType(EAction
 void UBattleActionSelectorWidget::OnClickMagia()    { BeginSelectingType(EActionType::Magia); }
 void UBattleActionSelectorWidget::OnClickDefender() { BeginSelectingType(EActionType::Defender); }
 void UBattleActionSelectorWidget::OnClickEsquivar() { BeginSelectingType(EActionType::Esquivar); }
+void UBattleActionSelectorWidget::OnClickCamuflar() { BeginSelectingType(EActionType::Camuflar); }
+void UBattleActionSelectorWidget::OnClickVoar() { BeginSelectingType(EActionType::Voar); }
+void UBattleActionSelectorWidget::OnClickSubmergir() { BeginSelectingType(EActionType::Submergir); }
 
 void UBattleActionSelectorWidget::OnClickCimaEsquerda()  { ConfirmDirection(EBattleDirection::CimaEsquerda); }
 void UBattleActionSelectorWidget::OnClickCima()          { ConfirmDirection(EBattleDirection::Cima); }
@@ -215,4 +227,27 @@ void UBattleActionSelectorWidget::RefreshDirectionAvailability()
 			&& FBattleGridNavigation::WouldLeaveGrid(ProjectedColumn, ProjectedRow, Entrada.Value);
 		Entrada.Key->SetIsEnabled(!bBloqueado);
 	}
+}
+
+FReply UBattleActionSelectorWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	const FKey Key = InKeyEvent.GetKey();
+
+	if (Key == EKeys::C)
+	{
+		OnClickCamuflar();
+		return FReply::Handled();
+	}
+	if (Key == EKeys::V)
+	{
+		OnClickVoar();
+		return FReply::Handled();
+	}
+	if (Key == EKeys::B)
+	{
+		OnClickSubmergir();
+		return FReply::Handled();
+	}
+
+	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
 }

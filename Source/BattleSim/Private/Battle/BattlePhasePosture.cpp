@@ -43,6 +43,18 @@ namespace
 		{
 			AssumedFlag = static_cast<uint8>(EBattlePostureFlags::Dodging);
 		}
+		else if (Action.Type == EActionType::Camuflar)
+		{
+			AssumedFlag = static_cast<uint8>(EBattlePostureFlags::Camouflaged);
+		}
+		else if (Action.Type == EActionType::Voar)
+		{
+			AssumedFlag = static_cast<uint8>(EBattlePostureFlags::Flying);
+		}
+		else if (Action.Type == EActionType::Submergir)
+		{
+			AssumedFlag = static_cast<uint8>(EBattlePostureFlags::Underground);
+		}
 		else
 		{
 			return; // Ação não é de postura — nada a fazer nesta fase.
@@ -56,6 +68,11 @@ namespace
 		Event.Phase = 2; // F2
 		Event.ActorId = Pet->PetId;
 		Event.TargetId = BattleEventNoActor;
+
+		// QUAL postura, e não só "assumiu alguma". Sem isto a tela diria
+		// "assumiu postura" para camuflar, voar e submergir igualmente — e o
+		// jogador não teria como aprender que magia fura camuflagem.
+		Event.Value = static_cast<int32>(AssumedFlag);
 		OutTrace.Add(Event);
 	}
 }

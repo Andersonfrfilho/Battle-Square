@@ -13,7 +13,15 @@ namespace
 	// sentido; o sorteio decide qual delas sai.
 	constexpr int32 MagicOverAttackPercent = 35;
 	constexpr int32 DefendWhenHurtPercent = 45;
-	constexpr int32 DodgeOverDefendPercent = 50;
+
+	// Entre as cinco proteções, a escolha é sorteada com pesos: a defesa que o
+	// jogador consegue prever é a defesa que ele fura. Camuflar e submergir
+	// pesam MENOS porque custam a ação seguinte — usá-las sempre entregaria os
+	// turnos de graça.
+	constexpr int32 DodgePercent = 30;
+	constexpr int32 DefendPercent = 30;
+	constexpr int32 FlyPercent = 20;
+	constexpr int32 CamouflagePercent = 12;
 
 	const FPetState* FindLivingPetOnSide(const FBattleState& State, uint8 Side)
 	{
@@ -54,6 +62,30 @@ namespace
 		Action.Type = Type;
 		Action.Direction = BattleActionRequiresDirection(Type) ? Direction : EBattleDirection::Nenhuma;
 		return Action;
+	}
+
+	/** Proteção sorteada com pesos — ver os percentuais acima. */
+	EActionType ChooseProtection(FBattleRandom& Random)
+	{
+		const int32 Roll = Random.NextRange(0, 99);
+
+		if (Roll < DodgePercent)
+		{
+			return EActionType::Esquivar;
+		}
+		if (Roll < DodgePercent + DefendPercent)
+		{
+			return EActionType::Defender;
+		}
+		if (Roll < DodgePercent + DefendPercent + FlyPercent)
+		{
+			return EActionType::Voar;
+		}
+		if (Roll < DodgePercent + DefendPercent + FlyPercent + CamouflagePercent)
+		{
+			return EActionType::Camuflar;
+		}
+		return EActionType::Submergir;
 	}
 
 	/** Passo em direção ao inimigo que NÃO sai da grade. */
@@ -147,12 +179,7 @@ FTurnCommit FTacticalOpponentAI::GenerateCommit(const FBattleState& State, uint8
 
 		if (bIsHurt && Random.NextRange(0, 99) < DefendWhenHurtPercent)
 		{
-			// Esquivar anula o físico inteiro mas é furado por magia;
-			// defender reduz os dois. Alternar impede que o jogador resolva o
-			// oponente ferido sempre com a mesma resposta.
-			const bool bDodge = Random.NextRange(0, 99) < DodgeOverDefendPercent;
-			Commit.Actions[Slot] = MakeAction(
-				bDodge ? EActionType::Esquivar : EActionType::Defender, EBattleDirection::Nenhuma);
+			Commit.Actions[Slot] = MakeAction(ChooseProtection(Random), EBattleDirection::Nenhuma);
 			continue;
 		}
 

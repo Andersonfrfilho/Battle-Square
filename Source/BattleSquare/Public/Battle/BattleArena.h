@@ -154,6 +154,8 @@ private:
 	/** Cada pet vivo passa a olhar para o adversário vivo. */
 	void RefreshGazes();
 
+	uint8 FindPostureFlagsForPet(uint8 PetId) const;
+
 	// T5 (colecao-e-captura) 🧠: varre o trace por BatalhaEncerrada; se o
 	// jogador local venceu, captura o pet do lado OPOSTO — nunca o
 	// próprio pet do jogador.

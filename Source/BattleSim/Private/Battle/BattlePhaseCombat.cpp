@@ -12,6 +12,9 @@ namespace
 	// Percentuais inteiros: 100 = 1.0x. Nenhum float em lugar nenhum (AD-004).
 	constexpr int32 MinDamage = 1;
 	constexpr int32 DefendingDefenseFactorPercent = 150; // +50% de defesa efetiva ao defender
+
+	// DP-ia-04: alvo no céu não tem para onde desviar da magia.
+	constexpr int32 ExposedInTheAirDamagePercent = 150;
 	constexpr int32 AttackDamageMultiplierPercent = 100;
 	constexpr int32 MagicDamageMultiplierPercent = 150;
 
@@ -155,6 +158,16 @@ namespace
 			return;
 		}
 
+		// DP-ia-04: o preço de ter ficado intocável no slot anterior. Sai como
+		// ataque que ERRA, e não como silêncio, para o jogador ver o custo da
+		// escolha dele em vez de achar que a ação sumiu.
+		if (HasPosture(*Attacker, EBattlePostureFlags::Revealing)
+			|| HasPosture(*Attacker, EBattlePostureFlags::Emerging))
+		{
+			EmitMiss(OutTrace, SlotIndex, *Attacker);
+			return;
+		}
+
 		FPetState* Target = ResolveTarget(State, *Attacker, Action.Direction);
 		if (!Target)
 		{
@@ -164,6 +177,24 @@ namespace
 
 		const bool bIsMagic = (Action.Type == EActionType::Magia);
 
+		// DP-ia-04. Camuflado e submerso não são ALCANÇÁVEIS — nem por magia.
+		// É isso que os separa de Esquivar, que barra só o físico: se
+		// barrassem o mesmo, seriam três nomes para a mesma ação.
+		if (HasPosture(*Target, EBattlePostureFlags::Camouflaged)
+			|| HasPosture(*Target, EBattlePostureFlags::Underground))
+		{
+			EmitMiss(OutTrace, SlotIndex, *Attacker);
+			return;
+		}
+
+		// Voar tira o pet do alcance do golpe FÍSICO, mas o expõe no céu — a
+		// magia acerta, e acerta mais forte. É troca, não escudo.
+		if (!bIsMagic && HasPosture(*Target, EBattlePostureFlags::Flying))
+		{
+			EmitMiss(OutTrace, SlotIndex, *Attacker);
+			return;
+		}
+
 		// Esquiva anula ataque FÍSICO. Magia ignora esquiva (BTL-10) —
 		// é o segundo lado do triângulo ataque/defesa/esquiva.
 		if (!bIsMagic && HasPosture(*Target, EBattlePostureFlags::Dodging))
@@ -172,7 +203,12 @@ namespace
 			return;
 		}
 
-		const int32 Multiplier = bIsMagic ? MagicDamageMultiplierPercent : AttackDamageMultiplierPercent;
+		int32 Multiplier = bIsMagic ? MagicDamageMultiplierPercent : AttackDamageMultiplierPercent;
+		if (bIsMagic && HasPosture(*Target, EBattlePostureFlags::Flying))
+		{
+			Multiplier = (Multiplier * ExposedInTheAirDamagePercent) / 100;
+		}
+
 		const int32 Damage = ComputeDamage(*Attacker, *Target, Multiplier, State.CellLayout);
 
 		// Acumula — NÃO aplica. F5 (T8) aplica tudo de uma vez (BTL-07).

@@ -29,6 +29,15 @@ namespace
 				continue;
 			}
 
+			// DP-ia-04: quem está emergindo do subsolo não anda neste slot.
+			// A intenção nem é coletada — sair daqui como intenção anulada
+			// emitiria MovimentoBloqueado, que o feed narra como "esbarrou no
+			// limite da arena", e a causa é outra.
+			if ((Pet.PostureFlags & static_cast<uint8>(EBattlePostureFlags::Emerging)) != 0)
+			{
+				continue;
+			}
+
 			int8 DeltaColumn = 0;
 			int8 DeltaRow = 0;
 			GetDirectionDelta(Action.Direction, DeltaColumn, DeltaRow);
@@ -170,7 +179,15 @@ void BattlePhases::ApplyMovement(
 		{
 			continue;
 		}
-		if (State.CellLayout[CellLayoutIndex(Pet.Column, Pet.Row)] == static_cast<uint8>(ECellProperty::Damage))
+		// DP-ia-04: voar e submergir tiram o pet do CHÃO, e a casa só alcança
+		// quem está pisando nela. Camuflar não conta — quem se esconde
+		// continua em pé no mesmo lugar.
+		const bool bFolgaDoChao =
+			(Pet.PostureFlags & static_cast<uint8>(EBattlePostureFlags::Flying)) != 0
+			|| (Pet.PostureFlags & static_cast<uint8>(EBattlePostureFlags::Underground)) != 0;
+
+		if (!bFolgaDoChao
+			&& State.CellLayout[CellLayoutIndex(Pet.Column, Pet.Row)] == static_cast<uint8>(ECellProperty::Damage))
 		{
 			Pet.PendingDamage += BattleArenaConstants::CellDamageAmount;
 		}

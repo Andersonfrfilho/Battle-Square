@@ -3,6 +3,7 @@
 #include "Battle/BattleNarration.h"
 
 #include "Battle/BattleEvent.h"
+#include "Battle/BattleState.h"
 
 #define LOCTEXT_NAMESPACE "BattleNarration"
 
@@ -53,7 +54,21 @@ FText FBattleNarration::Describe(const FBattleEvent& Event, const FString& Actor
 		return FText::Format(LOCTEXT("MovimentoBloqueado", "{Actor} tentou andar e esbarrou no limite da arena"), Args);
 
 	case EBattleEventType::PosturaAssumida:
-		return FText::Format(LOCTEXT("PosturaAssumida", "{Actor} assumiu postura"), Args);
+		switch (static_cast<EBattlePostureFlags>(Event.Value))
+		{
+		case EBattlePostureFlags::Defending:
+			return FText::Format(LOCTEXT("PosturaDefender", "{Actor} se defendeu"), Args);
+		case EBattlePostureFlags::Dodging:
+			return FText::Format(LOCTEXT("PosturaEsquivar", "{Actor} ficou evasivo"), Args);
+		case EBattlePostureFlags::Camouflaged:
+			return FText::Format(LOCTEXT("PosturaCamuflar", "{Actor} se camuflou e sumiu de vista"), Args);
+		case EBattlePostureFlags::Flying:
+			return FText::Format(LOCTEXT("PosturaVoar", "{Actor} alçou voo — fora do alcance físico, exposto à magia"), Args);
+		case EBattlePostureFlags::Underground:
+			return FText::Format(LOCTEXT("PosturaSubmergir", "{Actor} mergulhou no solo"), Args);
+		default:
+			return FText::Format(LOCTEXT("PosturaAssumida", "{Actor} assumiu postura"), Args);
+		}
 
 	case EBattleEventType::Moveu:
 		return FText::Format(LOCTEXT("Moveu", "{Actor} se moveu"), Args);

@@ -30,7 +30,11 @@ enum class EBattleEventType : uint8
 	// DP-02: dois pets chegaram ao mesmo ponto do campo. Acrescentado ao FIM
 	// do enum de propósito — os valores existentes entram no hash do traço, e
 	// inserir no meio invalidaria todo snapshot de determinismo já gravado.
-	EncontroNoMesmoPonto
+	EncontroNoMesmoPonto,
+
+	// Skill tentada onde o terreno não permite (submergir fora d'água).
+	// Também no fim, pelo mesmo motivo do anterior.
+	PosturaFalhou
 };
 
 // Sentinela para TargetId/ActorId quando não há alvo aplicável

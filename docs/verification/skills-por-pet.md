@@ -10,7 +10,7 @@ O que eles não decidem: **a diferença entre pets se SENTE jogando?**
 | Tipo | Skill própria |
 |---|---|
 | Fogo | voar |
-| Agua | submergir |
+| Agua | submergir — **exige casa de água** |
 | Planta | camuflar |
 
 Uma por tipo, de propósito: identidade só existe quando há diferença, e duas
@@ -41,3 +41,22 @@ por tipo já começam a diluir isso. Os seis tipos de ação universais
 - [ ] Enfrentar um pet Água (submerge) é **diferente** de enfrentar um Planta
       (camufla)? Se a sensação for a mesma, as trocas ainda estão indistintas.
 - [ ] Uma skill por tipo é pouco, ou é o suficiente para dar identidade?
+
+## SKILL-05 — Submergir exige água (2026-08-27)
+
+Submergir descreve estar DENTRO da água. Sem terreno, ela funcionava em
+qualquer casa — "mergulhar no chão seco" contradiz o que a skill é, e tornava o
+mapa irrelevante para a decisão.
+
+- [ ] Em casa seca, submergir **falha**, e o feed diz o motivo: *"tentou
+      mergulhar, mas não há água nesta casa"*. Não é silêncio nem "não
+      funcionou".
+- [ ] Numa casa de água, funciona e a imunidade vale.
+- [ ] As outras posturas (defender, esquivar, camuflar, voar) **não** dependem
+      de terreno.
+- [ ] Julgamento: procurar a água antes de submergir torna a arena parte da
+      decisão, ou vira só um passo a mais?
+
+**Consequência que apareceu sozinha:** uma casa é água OU é de dano, nunca as
+duas. Então quem submerge nunca escapa do dano de casa por submergir — só
+voando. Foi encontrada quando um teste antigo virou impossível de montar.

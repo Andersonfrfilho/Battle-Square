@@ -162,8 +162,23 @@ bool FLeavingTheGroundAvoidsCellDamageTest::RunTest(const FString& Parameters)
 
 	TestTrue(TEXT("No chão a casa fere"), RodarSobreCasaDeDano(EActionType::Aguardar) > 0);
 	TestEqual(TEXT("Voando a casa não alcança"), RodarSobreCasaDeDano(EActionType::Voar), 0);
-	TestEqual(TEXT("Submerso a casa não alcança"), RodarSobreCasaDeDano(EActionType::Submergir), 0);
 	TestTrue(TEXT("Camuflado continua pisando na casa"), RodarSobreCasaDeDano(EActionType::Camuflar) > 0);
+
+	// SUBMERGIR SAIU DESTE TESTE, e não por ter parado de funcionar.
+	//
+	// Desde 2026-08-27 submergir exige uma casa de ÁGUA — e uma casa é água OU
+	// é de dano, nunca as duas. A combinação que este teste media virou
+	// impossível de montar, e testá-la seria testar um estado que o jogo não
+	// produz. A imunidade ao chão continua valendo para quem submerge; ela é
+	// que não tem mais como ser exercida numa casa de dano.
+	{
+		FBattleState State = MakeAdjacentDuel();
+		State.CellLayout[CellLayoutIndex(2, 1)] = static_cast<uint8>(ECellProperty::Water);
+		TArray<FBattleEvent> Trace;
+		RunSlot(State, Act(EActionType::Aguardar), Act(EActionType::Submergir), Trace);
+		TestEqual(TEXT("E submergir na água não fere ninguém"), PetOnSide(State, 1).Health, 200);
+	}
+
 	return true;
 }
 
@@ -177,6 +192,11 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FUndergroundCostsMovementAndAttackTest::RunTest(const FString& Parameters)
 {
 	FBattleState State = MakeAdjacentDuel();
+
+	// Água na casa dele: desde 2026-08-27 submergir exige o terreno, e sem
+	// isso este teste mediria a FALHA da postura, não o custo dela.
+	State.CellLayout[CellLayoutIndex(2, 1)] = static_cast<uint8>(ECellProperty::Water);
+
 	TArray<FBattleEvent> Trace;
 
 	RunSlot(State, Act(EActionType::Magia, EBattleDirection::Direita), Act(EActionType::Submergir), Trace, 0);

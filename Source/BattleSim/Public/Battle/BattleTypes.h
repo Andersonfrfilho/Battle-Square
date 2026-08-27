@@ -148,7 +148,12 @@ enum class ECellProperty : uint8
 	None = 0,
 	Blocked,
 	Damage,
-	Buff
+	Buff,
+
+	// Submergir exige ÁGUA. Acrescentado ao FIM do enum de propósito: os
+	// valores existentes vão para o layout da arena e para o hash do estado, e
+	// inserir no meio reinterpretaria toda arena já escrita.
+	Water
 };
 
 // Tamanho fixo da grade (3x3 = 9 casas) — ver spec.md, Out of Scope:

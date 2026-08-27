@@ -48,6 +48,16 @@ FText FBattleNarration::Describe(const FBattleEvent& Event, const FString& Actor
 	case EBattleEventType::PetMorreu:
 		return FText::Format(LOCTEXT("PetMorreu", "{Target} foi derrotado"), Args);
 
+	case EBattleEventType::PosturaFalhou:
+		// Diz o MOTIVO. "Falhou" sozinho faria o jogador concluir que a skill
+		// está quebrada, quando o que faltava era a casa certa.
+		if (static_cast<EBattlePostureFlags>(Event.Value) == EBattlePostureFlags::Underground)
+		{
+			return FText::Format(LOCTEXT("SubmergirSemAgua",
+				"{Actor} tentou mergulhar, mas não há água nesta casa"), Args);
+		}
+		return FText::Format(LOCTEXT("PosturaFalhou", "{Actor} não conseguiu assumir a postura"), Args);
+
 	case EBattleEventType::EncontroNoMesmoPonto:
 		return FText::Format(LOCTEXT("EncontroNoMesmoPonto",
 			"{Actor} e {Target} foram para a mesma casa e trombaram"), Args);

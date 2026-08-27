@@ -60,6 +60,26 @@ namespace
 			return; // Ação não é de postura — nada a fazer nesta fase.
 		}
 
+		// Submergir exige ÁGUA. É a única postura condicionada a terreno:
+		// condicionar as demais mudaria o combate inteiro, e ninguém pediu
+		// isso — a skill é que descreve estar DENTRO da água.
+		if (Action.Type == EActionType::Submergir
+			&& State.CellLayout[CellLayoutIndex(Pet->Column, Pet->Row)] != static_cast<uint8>(ECellProperty::Water))
+		{
+			// Falha ALTA, com evento próprio. Silenciosamente virar Aguardar
+			// deixaria o jogador achando que a skill não funciona, quando o
+			// que faltava era ele estar na casa certa.
+			FBattleEvent Falha;
+			Falha.Type = EBattleEventType::PosturaFalhou;
+			Falha.SlotIndex = SlotIndex;
+			Falha.Phase = 2;
+			Falha.ActorId = Pet->PetId;
+			Falha.TargetId = BattleEventNoActor;
+			Falha.Value = static_cast<int32>(AssumedFlag);
+			OutTrace.Add(Falha);
+			return;
+		}
+
 		Pet->PostureFlags |= AssumedFlag;
 
 		FBattleEvent Event;

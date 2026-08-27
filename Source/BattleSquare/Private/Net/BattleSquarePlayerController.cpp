@@ -1,6 +1,8 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Net/BattleSquarePlayerController.h"
+#include "Debug/BattleDebugScreen.h"
+#include "Components/InputComponent.h"
 #include "Net/BattleSquareGameMode.h"
 
 ABattleSquarePlayerController::ABattleSquarePlayerController()
@@ -70,4 +72,30 @@ void ABattleSquarePlayerController::Server_ReconnectToRoom_Implementation(const 
 	CurrentSide = Side;
 	ReconnectSecret = Secret;
 	GameMode->RegisterControllerForRoom(Code, Side, this);
+}
+
+void ABattleSquarePlayerController::SetupInputComponent()
+{
+	Super::SetupInputComponent();
+
+	if (!InputComponent)
+	{
+		return;
+	}
+
+	// bConsumeInput=false: teclas de depuração não podem engolir input do jogo.
+	InputComponent->BindKey(EKeys::F9, IE_Pressed, this,
+		&ABattleSquarePlayerController::CopyBattleDebugPanel).bConsumeInput = false;
+	InputComponent->BindKey(EKeys::F10, IE_Pressed, this,
+		&ABattleSquarePlayerController::ClearBattleDebugPanel).bConsumeInput = false;
+}
+
+void ABattleSquarePlayerController::CopyBattleDebugPanel()
+{
+	FBattleDebugScreen::CopyToClipboard();
+}
+
+void ABattleSquarePlayerController::ClearBattleDebugPanel()
+{
+	FBattleDebugScreen::Clear();
 }

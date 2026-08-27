@@ -168,6 +168,14 @@ private:
 	/** Destrava a fila para a próxima rodada, se a batalha ainda não acabou. */
 	void OpenNextTurnIfBattleContinues();
 
+	/**
+	 * Desenha a grade 3x3 no mundo, com a coordenada de cada casa e quem está
+	 * nela. É o que torna posição e direção LEGÍVEIS — teria mostrado na hora
+	 * que "Baixo" andava para a direita, e mostra a coabitação sem precisar
+	 * de explicação. Só desenha com bs.ShowBattleDebug ligado.
+	 */
+	void DrawDebugGrid() const;
+
 	// A rodada seguinte só abre quando a reprodução do trace termina: abrir
 	// antes deixaria o jogador escolhendo o próximo turno enquanto o anterior
 	// ainda está acontecendo na tela.

@@ -37,17 +37,32 @@ de medição mais eficiente que este projeto tem; **facilite o trabalho dele.**
 - **Cor com significado**: um lado numa cor, o outro em outra.
 - Nunca custa em Shipping (compilado fora).
 
+### O que fica visível durante a batalha
+
+| Recurso | Para que serve |
+|---|---|
+| **Grade desenhada no mundo** | cada casa com `(coluna,linha)` e quem está nela; casa ocupada fica amarela. Torna posição e direção legíveis — teria mostrado na hora que "Baixo" andava para a direita, e mostra a coabitação sem explicação |
+| **Indicador de fase** | `reproduzindo fase 3 de 11`, que desfaz a impressão de "fez tudo de uma vez" |
+| **Painel de texto** | o que cada lado escolheu e onde cada pet terminou |
+
 ### O painel, e por que ele é copiável
 
 `ABattleDebugHUD` desenha as últimas 16 linhas numa caixa fixa no canto
 superior direito. É HUD, não UMG, de propósito: não depende de asset autorado,
 então funciona em qualquer nível assim que o GameMode o declara.
 
-| Console | O que faz |
+| Tecla / console | O que faz |
 |---|---|
-| `bs.CopyBattleDebug` | copia o painel para a área de transferência, pronto para colar |
+| **F9** | copia o painel para a área de transferência **e** grava `Saved/BattleDebug.txt` |
+| **F10** | esvazia o painel |
 | `bs.ShowBattleDebug 0` | esconde |
-| `bs.ClearBattleDebug` | esvazia |
+
+O painel é **desenhado**, não é campo de texto: o mouse nunca consegue
+selecioná-lo. Por isso a cópia é por tecla — e por isso ela também grava
+arquivo, que é o caminho que não depende da área de transferência funcionar.
+
+Altura **fixa**, teto de 12 linhas: painel que cresce a cada linha muda de
+tamanho o tempo todo e mesmo assim não rola. As mais antigas saem por cima.
 
 Mensagem que some obriga a ler depressa e a repetir a partida para reler; e
 transcrever da tela à mão perde justamente o detalhe que importa — foi assim
@@ -59,6 +74,27 @@ Por isso o painel **persiste** e **copia**.
 - Log de PII (`security.md` §1) — nem na tela, nem em arquivo.
 - Substituir teste por log. O log encontra o defeito; **o teste impede que ele
   volte**. Todo defeito achado na tela ganha teste antes de ser fechado.
+
+---
+
+## Depurar: teste primeiro, conserto depois
+
+**Diante de um defeito, a primeira ação é escrever um teste que o reproduza —
+não um conserto.** Em 26–27/08 consertei por hipótese três vezes seguidas; cada
+correção estava certa isoladamente, e nenhuma era comprovadamente *a* causa. Só
+parei de errar quando medi.
+
+Ordem de eficácia, do que mais resolveu para o que menos:
+
+1. **Teste headless que reproduz** — respondeu "o gerador avança e o inimigo se
+   move" em um ciclo de build, sem envolver o usuário, e ficou como proteção.
+2. **Inspecionar o estado vivo** (PIE + consulta ao mundo) — achou a batalha
+   acontecendo a um milhão de unidades da câmera.
+3. **Instrumentação dirigida no log** — decisiva quando a dúvida é sequência.
+4. **O usuário olhando a tela** — insubstituível para o que é visual.
+
+**Sempre abrir o Editor com `-log=BattleSquare.log`**, para haver um arquivo só
+a consultar em vez de caçar o mais recente.
 
 ---
 

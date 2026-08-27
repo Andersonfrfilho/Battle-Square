@@ -3,6 +3,7 @@
 #include "Battle/BattleArena.h"
 
 #include "Debug/BattleDebugScreen.h"
+#include "DrawDebugHelpers.h"
 
 DEFINE_LOG_CATEGORY(LogBattleArena);
 #include "Camera/CameraComponent.h"
@@ -378,6 +379,8 @@ void ABattleArena::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
+	DrawDebugGrid();
+
 	if (!bWaitingForPlaybackToOpenNextTurn || !TracePlayer)
 	{
 		return;
@@ -408,5 +411,43 @@ void ABattleArena::LogCommit(const TCHAR* Quem, const FTurnCommit& Commit) const
 		UE_LOG(LogBattleArena, Display, TEXT("[turno] %s"), *Linha);
 		FBattleDebugScreen::Show(Linha, 8.0f,
 			FCString::Strcmp(Quem, TEXT("oponente")) == 0 ? FColor::Orange : FColor::Cyan);
+	}
+}
+
+void ABattleArena::DrawDebugGrid() const
+{
+	if (!FBattleDebugScreen::IsEnabled() || !GetWorld())
+	{
+		return;
+	}
+
+	constexpr uint8 GridSize = 3;
+	const float HalfCell = CellSize * 0.5f;
+
+	for (uint8 Row = 0; Row < GridSize; ++Row)
+	{
+		for (uint8 Column = 0; Column < GridSize; ++Column)
+		{
+			const FVector Centro = GetCellWorldLocation(Column, Row);
+
+			// Quem está aqui? Coabitação (DP-02) faz DOIS pets caberem na
+			// mesma casa, e é justamente isso que precisa ficar visível.
+			FString Ocupantes;
+			for (const FPetState& Pet : CurrentState.Pets)
+			{
+				if (Pet.Column == Column && Pet.Row == Row)
+				{
+					Ocupantes += FString::Printf(TEXT(" [lado %d]"), static_cast<int32>(Pet.Side));
+				}
+			}
+
+			const FColor CorDaCasa = Ocupantes.IsEmpty() ? FColor(80, 80, 80) : FColor::Yellow;
+			DrawDebugBox(GetWorld(), Centro, FVector(HalfCell, HalfCell, 2.0f),
+				CorDaCasa, /*bPersistent=*/false, /*LifeTime=*/-1.0f, /*DepthPriority=*/0, /*Thickness=*/2.0f);
+
+			DrawDebugString(GetWorld(), Centro + FVector(0.0f, 0.0f, 10.0f),
+				FString::Printf(TEXT("(%d,%d)%s"), Column, Row, *Ocupantes),
+				nullptr, CorDaCasa, /*Duration=*/0.0f, /*bDrawShadow=*/true, /*FontScale=*/1.1f);
+		}
 	}
 }

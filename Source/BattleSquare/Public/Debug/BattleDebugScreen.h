@@ -57,5 +57,5 @@ public:
 	static const TArray<FLine>& GetLines();
 
 	/** Teto de linhas mantidas — além disso, a mais antiga sai. */
-	static constexpr int32 MaxLines = 16;
+	static constexpr int32 MaxLines = 12;
 };

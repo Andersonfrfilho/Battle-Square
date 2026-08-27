@@ -20,7 +20,10 @@ void ABattleDebugHUD::DrawHUD()
 		return;
 	}
 
-	const float PanelHeight = LineHeightUnits * (Lines.Num() + 1) + MarginUnits;
+	// Altura FIXA: painel que cresce a cada linha muda de tamanho o tempo todo
+	// e ainda assim não rola. Com teto de linhas e altura constante, as mais
+	// antigas saem por cima e a caixa fica parada.
+	const float PanelHeight = LineHeightUnits * (FBattleDebugScreen::MaxLines + 2) + MarginUnits;
 	const float PanelLeft = Canvas->SizeX - PanelWidthUnits - MarginUnits;
 	const float PanelTop = MarginUnits;
 
@@ -28,7 +31,7 @@ void ABattleDebugHUD::DrawHUD()
 	DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, 0.65f), PanelLeft, PanelTop, PanelWidthUnits, PanelHeight);
 
 	float CursorY = PanelTop + MarginUnits * 0.5f;
-	DrawText(TEXT("[bs.CopyBattleDebug copia | bs.ShowBattleDebug 0 esconde]"),
+	DrawText(TEXT("[F9 copia  |  F10 limpa  |  bs.ShowBattleDebug 0 esconde]"),
 		FLinearColor(0.6f, 0.6f, 0.6f), PanelLeft + 8.0f, CursorY);
 	CursorY += LineHeightUnits;
 

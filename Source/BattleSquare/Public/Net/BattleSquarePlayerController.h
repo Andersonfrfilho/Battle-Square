@@ -16,6 +16,20 @@ class BATTLESQUARE_API ABattleSquarePlayerController : public APlayerController
 	GENERATED_BODY()
 
 public:
+	/**
+	 * F9 copia o painel de depuração; F10 o esvazia.
+	 *
+	 * Por tecla e não só por console: o painel é DESENHADO, então o mouse
+	 * nunca consegue selecionar o texto dele, e abrir o console no meio de uma
+	 * partida é atrito suficiente para a informação não ser capturada.
+	 */
+	virtual void SetupInputComponent() override;
+
+private:
+	void CopyBattleDebugPanel();
+	void ClearBattleDebugPanel();
+
+public:
 	ABattleSquarePlayerController();
 
 	UFUNCTION(Server, Reliable)

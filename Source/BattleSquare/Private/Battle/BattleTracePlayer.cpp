@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Battle/BattleTracePlayer.h"
+#include "Debug/BattleDebugScreen.h"
 
 TArray<TArray<FBattleEvent>> GroupBattleEventsByPhase(const TArray<FBattleEvent>& Trace)
 {
@@ -67,6 +68,14 @@ bool UBattleTracePlayer::Advance(float DeltaSeconds)
 
 	while (PendingGroups.IsValidIndex(NextGroupIndex) && SecondsSinceLastGroup >= SecondsPerGroup)
 	{
+		// Mostrar QUAL fase está tocando é o que desfaz a impressão de que
+		// "fez tudo de uma vez": sem isso, três ações resolvidas em sequência
+		// parecem simultâneas.
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("reproduzindo fase %d de %d"),
+				NextGroupIndex + 1, PendingGroups.Num()),
+			2.0f, FColor::Silver, /*Key=*/900);
+
 		for (const FBattleEvent& Event : PendingGroups[NextGroupIndex])
 		{
 			OnEventApplied.Broadcast(Event);

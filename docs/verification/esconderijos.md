@@ -5,6 +5,15 @@
 Os testes provam as regras. O que eles não decidem: as três se **sentem**
 diferentes umas das outras, ou viraram três nomes para "esquivar melhor"?
 
+## Controlar os DOIS lados
+
+`bs.ControlOpponent 1` no console. O turno passa a pedir duas escolhas: a
+primeira pelo jogador, a segunda pelo oponente — o painel diz de quem é a vez,
+e as direções oferecidas seguem o pet de quem está escolhendo.
+
+Sem isso, quase todo item abaixo depende do oponente sortear exatamente a ação
+que você quer ver. `bs.ControlOpponent 0` devolve a decisão à IA.
+
 ## Como usar (enquanto o WBP não tem os botões)
 
 Teclado, durante a escolha de ação: **C** camufla, **V** voa, **B** submerge.

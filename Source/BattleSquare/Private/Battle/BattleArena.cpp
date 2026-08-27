@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Battle/BattleArena.h"
+#include "EngineUtils.h"
 #include "Battle/BattleNarration.h"
 
 #include "Debug/BattleDebugScreen.h"
@@ -383,16 +384,50 @@ void ABattleArena::HandlePlayerCommitted()
 		return;
 	}
 
+	// Modo de teste: a MESMA pessoa escolhe pelos dois lados. A primeira
+	// escolha fica guardada e a fila reabre; a segunda fecha o turno.
+	if (bControlsBothSides)
+	{
+		if (!bAwaitingOpponentChoice)
+		{
+			StoredLocalCommit = PlayerCommit;
+			bAwaitingOpponentChoice = true;
+
+			FBattleDebugScreen::Show(
+				TEXT("agora escolha pelo OPONENTE (bs.ControlOpponent 0 desliga)"),
+				8.0f, FColor::Orange, 800);
+
+			PlayerActionQueue->BeginNewTurn();
+			return;
+		}
+
+		bAwaitingOpponentChoice = false;
+		FBattleDebugScreen::Show(TEXT("escolhendo pelo JOGADOR"), 8.0f, FColor::Cyan, 800);
+		ResolveTurnWithCommits(StoredLocalCommit, PlayerCommit);
+		return;
+	}
+
 	// Sem oponente humano (Standalone): comportamento idêntico ao de
 	// antes desta feature — IA gera o commit dela (Side=1 por convenção),
 	// o resolvedor real roda com os dois commits, e o trace resultante
 	// anima as views. Nenhum cálculo de batalha aqui — só orquestração.
 	const FTurnCommit OpponentCommit = FTacticalOpponentAI::GenerateCommit(CurrentState, /*Side=*/1, CurrentState.Random);
+	ResolveTurnWithCommits(PlayerCommit, OpponentCommit);
+}
 
-	LogCommit(TEXT("jogador"), PlayerCommit);
+/**
+ * A resolução do turno, a partir dos dois commits já formados.
+ *
+ * Separada porque agora há DOIS caminhos até aqui — a IA gerando o commit do
+ * oponente, e a pessoa escolhendo pelos dois lados. Duplicar a orquestração
+ * faria os dois divergirem na primeira mudança.
+ */
+void ABattleArena::ResolveTurnWithCommits(const FTurnCommit& LocalCommit, const FTurnCommit& OpponentCommit)
+{
+	LogCommit(TEXT("jogador"), LocalCommit);
 	LogCommit(TEXT("oponente"), OpponentCommit);
 
-	FBattleResolveResult Result = FBattleResolver::ResolveTurn(CurrentState, PlayerCommit, OpponentCommit);
+	FBattleResolveResult Result = FBattleResolver::ResolveTurn(CurrentState, LocalCommit, OpponentCommit);
 	// ResolveTurn nunca decide vitória/derrota por design (BattleOutcome.h:
 	// "separação deliberada") — quem chama precisa avaliar depois. Achado
 	// real durante escala-pets-skills: nem aqui nem UBattleTurnCoordinator
@@ -542,4 +577,40 @@ void ABattleArena::NarrateEvent(const FBattleEvent& Event)
 	}
 
 	FBattleNarrationFeed::Push(Frase, Cor);
+}
+
+void ABattleArena::SetControllingBothSides(bool bEnabled)
+{
+	bControlsBothSides = bEnabled;
+
+	// Trocar de modo no meio de um turno deixaria uma escolha guardada sem
+	// nunca ser resolvida, e o turno seguinte usaria o commit de antes.
+	bAwaitingOpponentChoice = false;
+
+	FBattleDebugScreen::Show(
+		bEnabled
+			? TEXT("controlando OS DOIS lados: escolha pelo jogador, depois pelo oponente")
+			: TEXT("controle dos dois lados desligado — o oponente volta a decidir sozinho"),
+		8.0f, FColor::Orange, 800);
+}
+
+namespace
+{
+	FAutoConsoleCommandWithWorldAndArgs GControlOpponentCommand(
+		TEXT("bs.ControlOpponent"),
+		TEXT("1 para escolher as ações dos DOIS lados; 0 para o oponente voltar a decidir sozinho."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(
+			[](const TArray<FString>& Args, UWorld* World)
+			{
+				if (!World)
+				{
+					return;
+				}
+
+				const bool bEnable = Args.Num() == 0 || Args[0] != TEXT("0");
+				for (TActorIterator<ABattleArena> It(World); It; ++It)
+				{
+					It->SetControllingBothSides(bEnable);
+				}
+			}));
 }

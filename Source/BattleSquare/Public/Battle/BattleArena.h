@@ -154,6 +154,33 @@ private:
 	/** Cada pet vivo passa a olhar para o adversário vivo. */
 	void RefreshGazes();
 
+public:
+	/**
+	 * Modo de teste: o mesmo jogador escolhe pelos DOIS lados.
+	 *
+	 * Existe porque verificar trombada, esquiva na trombada ou camuflagem
+	 * depende de as duas escolhas serem deliberadas — esperar o sorteio do
+	 * oponente cair no caso desejado é medir a sorte, não a regra.
+	 *
+	 * Console: `bs.ControlOpponent 1`.
+	 */
+	void SetControllingBothSides(bool bEnabled);
+
+private:
+	void ResolveTurnWithCommits(const FTurnCommit& LocalCommit, const FTurnCommit& OpponentCommit);
+
+public:
+
+	/** 0 = escolhendo pelo jogador, 1 = pelo oponente. Sempre 0 com o modo desligado. */
+	uint8 GetSideBeingChosen() const { return bAwaitingOpponentChoice ? OpponentSideForChoice() : LocalPlayerSide; }
+
+private:
+	uint8 OpponentSideForChoice() const { return LocalPlayerSide == 0 ? 1 : 0; }
+
+	bool bControlsBothSides = false;
+	bool bAwaitingOpponentChoice = false;
+	FTurnCommit StoredLocalCommit;
+
 	uint8 FindPostureFlagsForPet(uint8 PetId) const;
 
 	// T5 (colecao-e-captura) 🧠: varre o trace por BatalhaEncerrada; se o

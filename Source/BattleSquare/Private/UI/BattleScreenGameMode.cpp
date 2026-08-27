@@ -160,9 +160,14 @@ void ABattleScreenGameMode::Tick(float DeltaSeconds)
 	// um movimento que sairia do tabuleiro. Informar só uma vez, na abertura
 	// da batalha, deixava a tela presa na casa inicial: quem andasse até um
 	// canto continuava vendo as oito direções habilitadas.
+	//
+	// Lado QUE ESTÁ ESCOLHENDO, não o do jogador: com bs.ControlOpponent a
+	// segunda escolha é pelo oponente, e oferecer as direções do pet errado
+	// deixaria escolher um movimento impossível.
+	const uint8 LadoEscolhendo = ScreenArena->GetSideBeingChosen();
 	for (const FPetState& Pet : ScreenArena->GetCurrentState().Pets)
 	{
-		if (Pet.Side == ScreenArena->LocalPlayerSide)
+		if (Pet.Side == LadoEscolhendo)
 		{
 			ActionSelector->SetOwningPetCell(Pet.Column, Pet.Row);
 			return;

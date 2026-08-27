@@ -49,6 +49,52 @@ namespace
 		Arena->PlayerActionQueue->BeginSelectingType(Type);
 	}
 
+	bool IsChoosingForPlayerTwo()
+	{
+		const ABattleArena* Arena = FindArena();
+		return Arena && Arena->IsControllingBothSides() && Arena->GetSideBeingChosen() == 1;
+	}
+
+	EVisibility PlayerTwoPadVisibility()
+	{
+		// Só aparece quando é a VEZ do jogador 2. Um painel sempre visível
+		// convidaria a clicar quando o clique iria para o pet errado.
+		return IsChoosingForPlayerTwo() ? EVisibility::Visible : EVisibility::Collapsed;
+	}
+
+	void ConfirmDirection(EBattleDirection Direction)
+	{
+		ABattleArena* Arena = FindArena();
+		if (!Arena || !Arena->PlayerActionQueue)
+		{
+			return;
+		}
+
+		FBattleDebugScreen::Show(TEXT("clique (jogador 2): direção"), 10.0f, FColor::White, -1);
+		Arena->PlayerActionQueue->ConfirmDirection(Direction);
+	}
+
+	void CommitTurn()
+	{
+		ABattleArena* Arena = FindArena();
+		if (!Arena || !Arena->PlayerActionQueue)
+		{
+			return;
+		}
+
+		FBattleDebugScreen::Show(TEXT("clique (jogador 2): CONFIRMAR turno"), 10.0f, FColor::White, -1);
+		Arena->PlayerActionQueue->Commit();
+	}
+
+	FText BothSidesLabel()
+	{
+		const ABattleArena* Arena = FindArena();
+		const bool bOn = Arena && Arena->IsControllingBothSides();
+		return bOn
+			? FText::FromString(TEXT("Controlando jogador 1 E jogador 2 (clique p/ desligar)"))
+			: FText::FromString(TEXT("Controlar também o jogador 2"));
+	}
+
 	FText ControlLabel()
 	{
 		const ABattleArena* Arena = FindArena();
@@ -99,8 +145,25 @@ void FBattleDebugToolbar::Show(UWorld* World)
 			[]() { FBattleDebugScreen::Clear(); })
 	];
 
-	// O rótulo é lido a cada quadro (Text_Lambda) para dizer o estado ATUAL.
-	// Um botão que não mostra se ligou deixa a pessoa clicando duas vezes.
+	// Os rótulos são lidos a cada quadro (Text_Lambda) para dizer o estado
+	// ATUAL. Botão que não mostra se ligou deixa a pessoa clicando duas vezes.
+	Coluna->AddSlot().AutoHeight().Padding(2.0f)
+	[
+		SNew(SButton)
+		.ContentPadding(FMargin(8.0f, 4.0f))
+		.OnClicked_Lambda([]()
+		{
+			if (ABattleArena* Arena = FindArena())
+			{
+				Arena->SetControllingBothSides(!Arena->IsControllingBothSides());
+			}
+			return FReply::Handled();
+		})
+		[
+			SNew(STextBlock).Text_Lambda([]() { return BothSidesLabel(); })
+		]
+	];
+
 	Coluna->AddSlot().AutoHeight().Padding(2.0f)
 	[
 		SNew(SButton)
@@ -118,9 +181,76 @@ void FBattleDebugToolbar::Show(UWorld* World)
 		]
 	];
 
-	// As três ações que o WBP ainda não tem. Ficam aqui até ganharem botão na
-	// tela de verdade — sofrer uma regra sem poder usá-la é o pior estado
-	// possível para uma mecânica nova.
+	// PAINEL DO JOGADOR 2 — aparece só quando é a vez dele.
+	TSharedRef<SVerticalBox> PadJogadorDois = SNew(SVerticalBox);
+
+	PadJogadorDois->AddSlot().AutoHeight().Padding(2.0f)
+	[
+		SNew(STextBlock)
+		.Text(FText::FromString(TEXT("── AÇÕES DO JOGADOR 2 ──")))
+		.ColorAndOpacity(FSlateColor(FLinearColor(1.0f, 0.6f, 0.1f)))
+	];
+
+	const TPair<const TCHAR*, EActionType> Tipos[] = {
+		{ TEXT("Aguardar"), EActionType::Aguardar },
+		{ TEXT("Mover"), EActionType::Mover },
+		{ TEXT("Atacar"), EActionType::Atacar },
+		{ TEXT("Magia"), EActionType::Magia },
+		{ TEXT("Defender"), EActionType::Defender },
+		{ TEXT("Esquivar"), EActionType::Esquivar },
+	};
+
+	TSharedRef<SHorizontalBox> LinhaTipos = SNew(SHorizontalBox);
+	for (const TPair<const TCHAR*, EActionType>& Tipo : Tipos)
+	{
+		const EActionType Valor = Tipo.Value;
+		LinhaTipos->AddSlot().AutoWidth().Padding(1.0f)
+		[
+			MakeButton(FText::FromString(Tipo.Key), [Valor]() { QueueAction(Valor); })
+		];
+	}
+	PadJogadorDois->AddSlot().AutoHeight()[ LinhaTipos ];
+
+	// Direções: mesma disposição da grade, para o botão de cima ser em cima.
+	const TPair<const TCHAR*, EBattleDirection> Direcoes[] = {
+		{ TEXT("↖"), EBattleDirection::CimaEsquerda },
+		{ TEXT("↑"), EBattleDirection::Cima },
+		{ TEXT("↗"), EBattleDirection::CimaDireita },
+		{ TEXT("←"), EBattleDirection::Esquerda },
+		{ TEXT("→"), EBattleDirection::Direita },
+		{ TEXT("↙"), EBattleDirection::BaixoEsquerda },
+		{ TEXT("↓"), EBattleDirection::Baixo },
+		{ TEXT("↘"), EBattleDirection::BaixoDireita },
+	};
+
+	TSharedRef<SHorizontalBox> LinhaDirecoes = SNew(SHorizontalBox);
+	for (const TPair<const TCHAR*, EBattleDirection>& Dir : Direcoes)
+	{
+		const EBattleDirection Valor = Dir.Value;
+		LinhaDirecoes->AddSlot().AutoWidth().Padding(1.0f)
+		[
+			MakeButton(FText::FromString(Dir.Key), [Valor]() { ConfirmDirection(Valor); })
+		];
+	}
+	PadJogadorDois->AddSlot().AutoHeight()[ LinhaDirecoes ];
+
+	PadJogadorDois->AddSlot().AutoHeight().Padding(2.0f)
+	[
+		MakeButton(FText::FromString(TEXT("CONFIRMAR turno do jogador 2")), []() { CommitTurn(); })
+	];
+
+	Coluna->AddSlot().AutoHeight().Padding(2.0f)
+	[
+		SNew(SBox)
+		.Visibility_Lambda([]() { return PlayerTwoPadVisibility(); })
+		[
+			PadJogadorDois
+		]
+	];
+
+	// As três ações que o WBP ainda não tem, para QUEM estiver escolhendo no
+	// momento. Ficam aqui até ganharem botão na tela de verdade — sofrer uma
+	// regra sem poder usá-la é o pior estado possível para uma mecânica nova.
 	TSharedRef<SHorizontalBox> Acoes = SNew(SHorizontalBox);
 	Acoes->AddSlot().AutoWidth().Padding(2.0f)
 	[

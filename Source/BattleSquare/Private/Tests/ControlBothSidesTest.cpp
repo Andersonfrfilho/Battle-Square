@@ -150,3 +150,35 @@ bool FControlledPlayerSwapClearsChoicesTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+// Os DOIS no mesmo turno: é o que a trombada exige, e é o que faz o painel de
+// ações do jogador 2 aparecer na barra. Sem os dois commits, forçar um caso
+// específico continuaria dependendo do sorteio da IA.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FBothSidesCollectsTwoCommitsTest,
+	"BattleSquare.BattleArena.BothSides.CollectsTwoCommits",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FBothSidesCollectsTwoCommitsTest::RunTest(const FString& Parameters)
+{
+	FScopedArena Cena(/*PlayerColumn=*/0, /*OpponentColumn=*/2);
+	Cena.Arena->SetControllingBothSides(true);
+
+	TestEqual(TEXT("Primeiro escolhe pelo jogador 1"),
+		Cena.Arena->GetSideBeingChosen(), static_cast<uint8>(0));
+
+	Cena.Commit(EActionType::Mover, EBattleDirection::Direita);
+
+	// É AQUI que o painel do jogador 2 aparece na barra: a vez virou dele.
+	TestEqual(TEXT("Depois escolhe pelo jogador 2"),
+		Cena.Arena->GetSideBeingChosen(), static_cast<uint8>(1));
+
+	Cena.Commit(EActionType::Mover, EBattleDirection::Esquerda);
+	Cena.PlayOutAnimation();
+
+	// Os dois mirando (1,1): trombam e nenhum entra (DP-02).
+	TestEqual(TEXT("Jogador 1 ficou onde estava"), Cena.ColumnOfSide(0), static_cast<uint8>(0));
+	TestEqual(TEXT("Jogador 2 ficou onde estava"), Cena.ColumnOfSide(1), static_cast<uint8>(2));
+
+	return true;
+}

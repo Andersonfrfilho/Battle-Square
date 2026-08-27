@@ -109,9 +109,16 @@ adivinhando o efeito; só o efeito, adivinhando onde ela está.
 Trocar zera as escolhas pendentes: elas eram para o outro pet, e aplicá-las ao
 novo produziria uma jogada que ninguém pediu.
 
-**Limite:** a troca comanda UM lado por turno. Para forçar os dois no mesmo
-turno (o caso da trombada, em que os dois precisam mirar a mesma casa), existe
-`bStartControllingBothSides=True` em `Config/DefaultGame.ini`.
+**Para os DOIS no mesmo turno** — o caso da trombada, em que ambos precisam
+mirar a mesma casa — o botão **"Controlar também o jogador 2"**. Aí o turno pede
+duas escolhas, e quando chega a vez do jogador 2 **aparece na barra um painel
+com as ações dele**: tipos, direções e "CONFIRMAR turno do jogador 2".
+
+O painel só existe enquanto é a vez dele. Sempre visível, ele convidaria a
+clicar quando o clique iria para o pet errado.
+
+(`bStartControllingBothSides=True` em `Config/DefaultGame.ini` já abre a batalha
+nesse modo.)
 
 O painel é **desenhado**, não é campo de texto: o mouse nunca consegue
 selecioná-lo. Por isso a cópia é por tecla — e por isso ela também grava

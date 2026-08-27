@@ -10,9 +10,9 @@ diferentes umas das outras, ou viraram três nomes para "esquivar melhor"?
 Botão **"Controlando jogador N — clique para o jogador M"** na barra do canto
 inferior esquerdo. O bot joga pelo outro.
 
-Para os itens que exigem os DOIS agindo no mesmo turno (a trombada), ligue
-`bStartControllingBothSides=True` em `Config/DefaultGame.ini`: aí o turno pede
-as duas escolhas. O turno passa a pedir duas escolhas: primeiro
+Para os itens que exigem os DOIS agindo no mesmo turno (a trombada), clique em
+**"Controlar também o jogador 2"**. O turno passa a pedir duas escolhas, e na
+vez do jogador 2 aparece o painel de ações dele na barra. O turno passa a pedir duas escolhas: primeiro
 pelo **jogador 1**, depois pelo **jogador 2** — a tela diz por qual você está
 escolhendo, e as direções oferecidas seguem o pet dele.
 

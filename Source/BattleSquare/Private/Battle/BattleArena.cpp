@@ -579,6 +579,12 @@ void ABattleArena::NarrateEvent(const FBattleEvent& Event)
 	FBattleNarrationFeed::Push(Frase, Cor);
 }
 
+FString ABattleArena::GetPresentationNameForPet(uint8 PetId) const
+{
+	const FPetPresentationInfo* Presentation = PresentationsByPetId.Find(PetId);
+	return Presentation ? Presentation->Name : FString();
+}
+
 void ABattleArena::SetControllingBothSides(bool bEnabled)
 {
 	bControlsBothSides = bEnabled;

@@ -4,8 +4,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Game\n"
-"POT-Creation-Date: 2026-08-27 13:23\n"
-"PO-Revision-Date: 2026-08-27 13:23\n"
+"POT-Creation-Date: 2026-08-27 14:31\n"
+"PO-Revision-Date: 2026-08-27 14:31\n"
 "Language-Team: \n"
 "Language: pt-BR\n"
 "MIME-Version: 1.0\n"
@@ -259,23 +259,30 @@ msgid "{Actor} se moveu"
 msgstr "{Actor} se moveu"
 
 #. Key:	Committed
-#. SourceLocation:	Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(154)
-#: Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(154)
+#. SourceLocation:	Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(155)
+#: Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(155)
 msgctxt "BattleUI,Committed"
 msgid "Turno fechado — aguardando o oponente"
 msgstr "Turno fechado — aguardando o oponente"
 
 #. Key:	ChooseDirection
-#. SourceLocation:	Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(156)
-#: Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(156)
+#. SourceLocation:	Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(157)
+#: Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(157)
 msgctxt "BattleUI,ChooseDirection"
 msgid "Escolha a direção"
 msgstr "Escolha a direção"
 
 #. Key:	ChooseType
-#. SourceLocation:	Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(157)
-#: Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(157)
+#. SourceLocation:	Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(158)
+#: Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(158)
 msgctxt "BattleUI,ChooseType"
 msgid "Ações: {0} de 3 — escolha o tipo"
 msgstr "Ações: {0} de 3 — escolha o tipo"
+
+#. Key:	StatusComLado
+#. SourceLocation:	Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(166)
+#: Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(166)
+msgctxt "BattleUI,StatusComLado"
+msgid "{0}\n{1}"
+msgstr "{0}\n{1}"
 

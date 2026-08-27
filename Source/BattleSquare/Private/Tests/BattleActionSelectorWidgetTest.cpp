@@ -200,3 +200,28 @@ bool FSelectorNewTurnReopensQueueTest::RunTest(const FString& Parameters)
 	Destroy(Fixture);
 	return true;
 }
+
+// Quem está sendo controlado tem que aparecer ANTES da escolha, não depois de
+// confirmar. No modo de escolher pelos dois lados, jogar pelo pet errado é um
+// turno perdido — e a tela era a única coisa que podia avisar.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FBattleActionSelectorShowsWhoIsBeingControlledTest,
+	"BattleSquare.UI.BattleActionSelector.ShowsWhoIsBeingControlled",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FBattleActionSelectorShowsWhoIsBeingControlledTest::RunTest(const FString& Parameters)
+{
+	UBattleActionSelectorWidget* Widget = NewObject<UBattleActionSelectorWidget>();
+
+	// Sem rótulo, nada é acrescentado — o modo desligado não pode poluir a
+	// tela com um aviso que só faz sentido ligado.
+	Widget->SetChoosingForLabel(FText::GetEmpty());
+
+	const FText Rotulo = FText::FromString(TEXT("escolhendo pelo OPONENTE: Brisa"));
+	Widget->SetChoosingForLabel(Rotulo);
+
+	TestEqual(TEXT("O rótulo fica guardado para compor o status"),
+		Widget->GetChoosingForLabel().ToString(), Rotulo.ToString());
+
+	return true;
+}

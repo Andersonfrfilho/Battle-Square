@@ -168,6 +168,9 @@ public:
 
 	bool IsControllingBothSides() const { return bControlsBothSides; }
 
+	/** Nome de apresentação do pet, ou vazio se ele não tem um. */
+	FString GetPresentationNameForPet(uint8 PetId) const;
+
 private:
 	void ResolveTurnWithCommits(const FTurnCommit& LocalCommit, const FTurnCommit& OpponentCommit);
 

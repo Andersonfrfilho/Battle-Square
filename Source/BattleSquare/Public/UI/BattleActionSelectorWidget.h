@@ -104,6 +104,23 @@ public:
 
 	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> Text_Status;
 
+public:
+	/**
+	 * De QUEM são as ações que estão sendo escolhidas agora.
+	 *
+	 * Vai para o Text_Status, e não para um campo novo: o WBP já tem esse
+	 * campo, e um `BindWidgetOptional` novo nasceria invisível — informação
+	 * que não aparece é o mesmo que informação que não existe.
+	 */
+	void SetChoosingForLabel(const FText& Label);
+
+	const FText& GetChoosingForLabel() const { return ChoosingForLabel; }
+
+private:
+	FText ChoosingForLabel;
+
+public:
+
 	/**
 	 * Casa do pet do jogador no início do turno. Quem sabe disso é a arena;
 	 * a tela só usa para não OFERECER um movimento que sairia do tabuleiro.

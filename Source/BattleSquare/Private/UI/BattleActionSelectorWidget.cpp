@@ -151,12 +151,20 @@ void UBattleActionSelectorWidget::RefreshLayoutFromState()
 
 	if (Text_Status)
 	{
-		const FText Status = bIsCommitted
+		const FText Base = bIsCommitted
 			? NSLOCTEXT("BattleUI", "Committed", "Turno fechado — aguardando o oponente")
 			: (bChoosingDirection
 				? NSLOCTEXT("BattleUI", "ChooseDirection", "Escolha a direção")
 				: FText::Format(NSLOCTEXT("BattleUI", "ChooseType", "Ações: {0} de 3 — escolha o tipo"),
 					FText::AsNumber(ConfirmedActionCount)));
+
+		// O nome de quem está sendo controlado vem PRIMEIRO: no modo de
+		// escolher pelos dois lados, saber por quem se está jogando decide a
+		// jogada inteira, e descobrir isso depois de confirmar é tarde.
+		const FText Status = ChoosingForLabel.IsEmpty()
+			? Base
+			: FText::Format(NSLOCTEXT("BattleUI", "StatusComLado", "{0}\n{1}"), ChoosingForLabel, Base);
+
 		Text_Status->SetText(Status);
 	}
 }
@@ -259,4 +267,15 @@ FReply UBattleActionSelectorWidget::NativeOnKeyDown(const FGeometry& InGeometry,
 	}
 
 	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
+}
+
+void UBattleActionSelectorWidget::SetChoosingForLabel(const FText& Label)
+{
+	if (ChoosingForLabel.EqualTo(Label))
+	{
+		return;
+	}
+
+	ChoosingForLabel = Label;
+	RefreshLayoutFromState();
 }

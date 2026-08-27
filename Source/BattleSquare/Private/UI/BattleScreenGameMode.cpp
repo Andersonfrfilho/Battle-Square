@@ -186,6 +186,34 @@ void ABattleScreenGameMode::Tick(float DeltaSeconds)
 	// segunda escolha é pelo oponente, e oferecer as direções do pet errado
 	// deixaria escolher um movimento impossível.
 	const uint8 LadoEscolhendo = ScreenArena->GetSideBeingChosen();
+	const bool bEhOponente = (LadoEscolhendo != ScreenArena->LocalPlayerSide);
+
+	// O NOME do pet, não "lado 1": quem joga reconhece o bicho, não o índice.
+	FString NomeDoPet;
+	for (const FPetState& Pet : ScreenArena->GetCurrentState().Pets)
+	{
+		if (Pet.Side == LadoEscolhendo)
+		{
+			NomeDoPet = ScreenArena->GetPresentationNameForPet(Pet.PetId);
+			break;
+		}
+	}
+	if (NomeDoPet.IsEmpty())
+	{
+		NomeDoPet = bEhOponente ? TEXT("oponente") : TEXT("seu pet");
+	}
+
+	ActionSelector->SetChoosingForLabel(FText::FromString(
+		bEhOponente
+			? FString::Printf(TEXT("▶ escolhendo pelo OPONENTE: %s"), *NomeDoPet)
+			: FString::Printf(TEXT("▶ escolhendo por VOCÊ: %s"), *NomeDoPet)));
+
+	// Também no painel, com Key fixa: a linha se atualiza no lugar em vez de
+	// empilhar, e sobrevive a olhar para outro canto da tela.
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("controlando: %s (%s)"),
+			*NomeDoPet, bEhOponente ? TEXT("OPONENTE") : TEXT("você")),
+		0.0f, bEhOponente ? FColor::Orange : FColor::Cyan, /*Key=*/13);
 	for (const FPetState& Pet : ScreenArena->GetCurrentState().Pets)
 	{
 		if (Pet.Side == LadoEscolhendo)

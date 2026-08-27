@@ -221,6 +221,9 @@ private:
 
 	TArray<FBattleAction> PlayerTwoManualActions;
 
+	// Traço do turno que ENCERROU a batalha, guardado até a reprodução acabar.
+	TArray<FBattleEvent> PendingEndOfBattleTrace;
+
 	uint8 FindPostureFlagsForPet(uint8 PetId) const;
 
 	// T5 (colecao-e-captura) 🧠: varre o trace por BatalhaEncerrada; se o
@@ -241,6 +244,9 @@ private:
 	void LogCommit(const TCHAR* Quem, const FTurnCommit& Commit) const;
 
 	/** Destrava a fila para a próxima rodada, se a batalha ainda não acabou. */
+	/** Fim de batalha e abertura do turno seguinte, depois da reprodução. */
+	void FinishPlaybackAndSettleTurn();
+
 	void OpenNextTurnIfBattleContinues();
 
 	/**

@@ -281,3 +281,37 @@ bool FLocalBattleAnnouncesItsEndTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("O fim da batalha foi anunciado UMA vez"), Anuncios, 1);
 	return true;
 }
+
+// O fim só é anunciado DEPOIS que a reprodução termina.
+//
+// Anunciando na hora em que o turno resolve, a transição arranca o jogador da
+// arena antes de o golpe final aparecer — e junto vai a mensagem de quem
+// venceu. O usuário descreveu isso como "apenas saiu da tela".
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FBattleEndWaitsForPlaybackTest,
+	"BattleSquare.BattleArena.LocalBattle.EndWaitsForPlayback",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FBattleEndWaitsForPlaybackTest::RunTest(const FString& Parameters)
+{
+	FScopedArena Cena;
+
+	int32 Anuncios = 0;
+	Cena.Arena->OnBattleFinished.AddLambda([&Anuncios]() { ++Anuncios; });
+
+	for (FPetState& Pet : Cena.Arena->GetMutableCurrentState().Pets)
+	{
+		if (Pet.Side == 1) { Pet.Health = 1; } else { Pet.Attack = 500; }
+	}
+
+	Cena.Commit(EActionType::Atacar, EBattleDirection::Direita);
+
+	// Turno resolvido, reprodução ainda rodando: o jogador ainda está vendo o
+	// golpe acontecer, e arrancá-lo daqui é o defeito.
+	TestEqual(TEXT("Ainda não anunciou — a reprodução não acabou"), Anuncios, 0);
+
+	Cena.PlayOutAnimation();
+
+	TestEqual(TEXT("Anunciou ao fim da reprodução"), Anuncios, 1);
+	return true;
+}

@@ -363,16 +363,25 @@ void ABattleArena::GrantExperienceIfOwned(const TArray<FBattleEvent>& Trace)
 		// XP vai para o pet do JOGADOR LOCAL — nunca o oponente, mesmo
 		// que ele também esteja na coleção (edge case: os dois lados são
 		// pets que o jogador possui, via Standalone contra a própria IA).
+		// Cada desistência abaixo DIZ o motivo na tela.
+		//
+		// Elas eram silenciosas, e o usuário terminou uma batalha sem receber
+		// XP nenhuma sem ter como saber por quê. Recusa sem motivo visível é
+		// indistinguível de defeito — e neste caso a recusa até era correta.
 		const FPetState* OwnPet = CurrentState.Pets.FindByPredicate(
 			[this](const FPetState& Pet) { return Pet.Side == LocalPlayerSide; });
 		if (!OwnPet)
 		{
+			FBattleDebugScreen::Show(TEXT("sem XP: nenhum pet do seu lado no estado final"),
+				0.0f, FColor::Orange, /*Key=*/951);
 			return;
 		}
 
 		const FPetPresentationInfo* Presentation = PresentationsByPetId.Find(OwnPet->PetId);
 		if (!Presentation || Presentation->CatalogId.IsEmpty())
 		{
+			FBattleDebugScreen::Show(TEXT("sem XP: seu pet não tem id de catálogo"),
+				0.0f, FColor::Orange, /*Key=*/951);
 			return;
 		}
 
@@ -381,11 +390,26 @@ void ABattleArena::GrantExperienceIfOwned(const TArray<FBattleEvent>& Trace)
 			[Presentation](const FOwnedPetInstance& Instance) { return Instance.CatalogId == Presentation->CatalogId; });
 		if (!OwnedInstance)
 		{
-			return; // pet do jogador ainda não capturado — nenhuma XP fantasma
+			// Recusa CORRETA: XP para um pet que não está na coleção seria XP
+			// fantasma, gravada em nada. O que faltava era dizer isso.
+			FBattleDebugScreen::Show(
+				FString::Printf(TEXT("sem XP: '%s' ainda não está na sua coleção"), *Presentation->Name),
+				0.0f, FColor::Orange, /*Key=*/951);
+			return;
 		}
 
 		FPetProgressionService::GrantExperience(*OwnedInstance, ExperienceAmount);
 		FPetCollectionService::SaveCollection(PetCollectionSlotName, Collection);
+
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("+%d de experiência para %s (total %d)"),
+				ExperienceAmount, *Presentation->Name, OwnedInstance->Experience),
+			0.0f, FColor::Green, /*Key=*/951);
+
+		FBattleNarrationFeed::Push(
+			FText::FromString(FString::Printf(TEXT("%s ganhou %d de experiência."),
+				*Presentation->Name, ExperienceAmount)),
+			FColor::Green);
 		return;
 	}
 }
@@ -498,7 +522,12 @@ void ABattleArena::ResolveTurnWithCommits(const FTurnCommit& LocalCommit, const 
 	// nunca tinha chegado até aqui.
 	CheckForCapture(Result.Trace);
 	GrantExperienceIfOwned(Result.Trace);
-	AnnounceBattleFinishedIfEnded(Result.Trace);
+
+	// O anúncio do fim ESPERA a reprodução. Anunciando aqui, a transição
+	// arranca o jogador da arena antes de o golpe final aparecer — e a
+	// mensagem de quem venceu vai junto. Foi descrito como "apenas saiu da
+	// tela".
+	PendingEndOfBattleTrace = Result.Trace;
 
 	for (const FPetState& Pet : CurrentState.Pets)
 	{
@@ -522,8 +551,22 @@ void ABattleArena::ResolveTurnWithCommits(const FTurnCommit& LocalCommit, const 
 	}
 	else
 	{
-		OpenNextTurnIfBattleContinues();
+		FinishPlaybackAndSettleTurn();
 	}
+}
+
+void ABattleArena::FinishPlaybackAndSettleTurn()
+{
+	// Ordem: primeiro o fim da batalha, depois a abertura do turno seguinte.
+	// Invertida, a fila reabriria por um instante numa partida já decidida.
+	if (PendingEndOfBattleTrace.Num() > 0)
+	{
+		const TArray<FBattleEvent> Trace = MoveTemp(PendingEndOfBattleTrace);
+		PendingEndOfBattleTrace.Reset();
+		AnnounceBattleFinishedIfEnded(Trace);
+	}
+
+	OpenNextTurnIfBattleContinues();
 }
 
 void ABattleArena::OpenNextTurnIfBattleContinues()
@@ -563,7 +606,7 @@ void ABattleArena::Tick(float DeltaSeconds)
 	if (!TracePlayer->Advance(DeltaSeconds))
 	{
 		bWaitingForPlaybackToOpenNextTurn = false;
-		OpenNextTurnIfBattleContinues();
+		FinishPlaybackAndSettleTurn();
 	}
 }
 

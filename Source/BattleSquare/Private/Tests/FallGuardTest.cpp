@@ -4,6 +4,8 @@
 #include "Engine/World.h"
 #include "Misc/AutomationTest.h"
 #include "World/WorldExplorerCharacter.h"
+#include "Engine/StaticMesh.h"
+#include "Components/StaticMeshComponent.h"
 
 namespace
 {
@@ -79,6 +81,34 @@ bool FFallGuardLeavesNormalHeightsAloneTest::RunTest(const FString& Parameters)
 
 	TestEqual(TEXT("Descer um degrau não é resgatado"),
 		Explorador->GetActorLocation().Z, Descendo.Z);
+
+	return true;
+}
+
+// O JOGADOR precisa ter corpo, pelo mesmo motivo dos inimigos.
+//
+// ACharacter traz uma malha esqueletal sem asset atribuído: em terceira pessoa
+// isso é dirigir um corpo invisível. Terceira ocorrência do mesmo padrão neste
+// projeto (APetView, inimigos do mundo, e agora o explorador) — e nenhum teste
+// de lógica jamais o acusou.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FWorldExplorerHasAVisibleBodyTest,
+	"BattleSquare.World.Explorer.HasAVisibleBody",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FWorldExplorerHasAVisibleBodyTest::RunTest(const FString& Parameters)
+{
+	const AWorldExplorerCharacter* Padrao = GetDefault<AWorldExplorerCharacter>();
+
+	TestTrue(TEXT("Tem componente de corpo"), Padrao->BodyMesh != nullptr);
+	TestTrue(TEXT("E a malha está ATRIBUÍDA — sem isto ele é invisível"),
+		Padrao->BodyMesh->GetStaticMesh() != nullptr);
+
+	// A esfera é simétrica: sem marca à frente não dá para saber para onde ele
+	// está virado, e direção decide tudo num mundo onde encostar inicia luta.
+	TestTrue(TEXT("Tem marca de direção"), Padrao->FacingMarker != nullptr);
+	TestTrue(TEXT("A marca fica À FRENTE do corpo"),
+		Padrao->FacingMarker->GetRelativeLocation().X > 1.0f);
 
 	return true;
 }

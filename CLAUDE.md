@@ -19,6 +19,12 @@ apareceram — e sete só foram encontrados porque um humano olhou a tela**:
 |---|---|
 | Pets invisíveis (`APetView` sem componente visual) | O ator existia e a lógica passava |
 | **Inimigos do mundo invisíveis** (malha nunca atribuída) | Mesmo padrão, um mês depois: andavam e disparavam batalha |
+| **O próprio jogador invisível** (`ACharacter` traz malha esqueletal sem asset) | Terceira ocorrência do mesmo padrão, achada auditando em vez de esperando |
+
+**O padrão vale mais que os três casos:** ator que nasce com componente visual
+mas SEM asset atribuído passa em todo teste de lógica e não existe na tela.
+Componente criado não é componente visível. Ao criar ator novo, atribuir malha
+e cor no construtor, e escrever o teste que verifica a ATRIBUIÇÃO.
 | Câmera apontada para longe da arena | A batalha rodava, só que fora de campo |
 | Pet afundando meio corpo no tabuleiro | Posição correta, offset visual errado |
 | "Baixo" andava para a direita | Eixos da grade contra os da câmera |

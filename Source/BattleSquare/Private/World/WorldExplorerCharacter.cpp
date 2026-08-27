@@ -1,6 +1,9 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "World/WorldExplorerCharacter.h"
+#include "UObject/ConstructorHelpers.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Components/StaticMeshComponent.h"
 #include "Debug/BattleDebugScreen.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "World/WorldTraversalMotion.h"
@@ -22,6 +25,46 @@ AWorldExplorerCharacter::AWorldExplorerCharacter()
 {
 	// Sem isto o guarda-queda nunca roda, e a queda infinita continua.
 	PrimaryActorTick.bCanEverTick = true;
+
+	// CORPO VISÍVEL. ACharacter traz malha esqueletal sem asset: o jogador
+	// dirigiria um corpo invisível em terceira pessoa, e nenhum teste acusa.
+	BodyMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BodyMesh"));
+	BodyMesh->SetupAttachment(RootComponent);
+	// Sem colisão: quem colide é a cápsula do Character. Uma segunda forma
+	// colidindo brigaria com ela e produziria empurrões inexplicáveis.
+	BodyMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	FacingMarker = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FacingMarker"));
+	FacingMarker->SetupAttachment(RootComponent);
+	FacingMarker->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CorpoMesh(
+		TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+	if (CorpoMesh.Succeeded())
+	{
+		BodyMesh->SetStaticMesh(CorpoMesh.Object);
+		BodyMesh->SetRelativeScale3D(FVector(BodyScale));
+	}
+
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> MarcaMesh(
+		TEXT("/Engine/BasicShapes/Cube.Cube"));
+	if (MarcaMesh.Succeeded())
+	{
+		// A esfera é simétrica: sem uma marca à frente, não dá para saber para
+		// onde o personagem está virado — e direção é o que mais importa num
+		// mundo onde encostar em alguém inicia uma batalha.
+		FacingMarker->SetStaticMesh(MarcaMesh.Object);
+		FacingMarker->SetRelativeScale3D(FVector(0.25f, 0.25f, 0.25f));
+		FacingMarker->SetRelativeLocation(FVector(FacingMarkerForwardUnits, 0.0f, 0.0f));
+	}
+
+	static ConstructorHelpers::FObjectFinder<UMaterialInterface> CorpoMaterial(
+		TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+	if (CorpoMaterial.Succeeded())
+	{
+		BodyMesh->SetMaterial(0, CorpoMaterial.Object);
+		FacingMarker->SetMaterial(0, CorpoMaterial.Object);
+	}
 
 	// DP-trav-04: a câmera orbita livre e o corpo vira para onde anda. Sem
 	// isto o personagem fica travado apontando para a câmera e "anda de
@@ -177,6 +220,28 @@ void AWorldExplorerCharacter::HandleLook(const FInputActionValue& Value)
 void AWorldExplorerCharacter::LogRawKeyProbe()
 {
 	UE_LOG(LogTemp, Warning, TEXT("[TRAVERSAL] SONDA: a tecla W CHEGOU ao jogo (binding cru)."));
+}
+
+void AWorldExplorerCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// Azul, contra o laranja dos inimigos: a cor é o que separa você deles a
+	// distância, antes de qualquer detalhe de forma.
+	if (BodyMesh)
+	{
+		if (UMaterialInstanceDynamic* Material = BodyMesh->CreateDynamicMaterialInstance(0))
+		{
+			Material->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.1f, 0.45f, 0.95f));
+		}
+	}
+	if (FacingMarker)
+	{
+		if (UMaterialInstanceDynamic* Material = FacingMarker->CreateDynamicMaterialInstance(0))
+		{
+			Material->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.95f, 0.95f, 0.95f));
+		}
+	}
 }
 
 void AWorldExplorerCharacter::RememberSafeGround()

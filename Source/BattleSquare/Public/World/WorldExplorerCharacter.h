@@ -8,6 +8,7 @@
 
 class UCameraComponent;
 class USpringArmComponent;
+class UStaticMeshComponent;
 class UEncounterDetectionComponent;
 class UInputAction;
 class UInputMappingContext;
@@ -39,6 +40,7 @@ public:
 	 * ainda é nulo e o mapping context nunca entraria. Sintoma: o personagem
 	 * nasce e não responde a tecla nem a mouse.
 	 */
+	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void NotifyControllerChanged() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
@@ -92,6 +94,9 @@ protected:
 private:
 	// Bem abaixo de qualquer relevo jogável: acionar cedo demais impediria
 	// pular de um degrau alto.
+	static constexpr float BodyScale = 0.9f;
+	static constexpr float FacingMarkerForwardUnits = 55.0f;
+
 	static constexpr float FallGuardZLimit = -2000.0f;
 
 	// Um pouco acima da marca, para ele não renascer dentro do piso.
@@ -100,6 +105,23 @@ private:
 	FVector LastSafeGround = FVector::ZeroVector;
 	bool bHasSafeGround = false;
 
+public:
+	/**
+	 * Corpo visível do explorador.
+	 *
+	 * ACharacter traz um componente de malha ESQUELETAL, mas sem asset — e
+	 * sem asset o jogador dirige um corpo invisível em terceira pessoa. É o
+	 * mesmo defeito de APetView e dos inimigos do mundo, e nenhum teste de
+	 * lógica o acusa. Malha estática da engine resolve sem depender de
+	 * autoria; o modelo 3D substitui isto quando chegar.
+	 */
+	UPROPERTY(VisibleAnywhere, Category = "Apresentação")
+	TObjectPtr<UStaticMeshComponent> BodyMesh;
+
+	UPROPERTY(VisibleAnywhere, Category = "Apresentação")
+	TObjectPtr<UStaticMeshComponent> FacingMarker;
+
+private:
 	UPROPERTY(VisibleAnywhere, Category = "Câmera")
 	TObjectPtr<USpringArmComponent> CameraBoom;
 

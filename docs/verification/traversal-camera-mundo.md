@@ -130,3 +130,16 @@ concretas, cada uma com resposta escrita:
 
 Cada "não" aqui vira um número a ajustar nas constantes de
 `WorldExplorerCharacter.h` — que é a razão de elas serem constantes nomeadas.
+
+---
+
+## TRAV-10 — Você tem corpo (2026-08-27)
+
+`ACharacter` traz uma malha esqueletal **sem asset atribuído**: em terceira
+pessoa, isso é dirigir um corpo invisível. Terceira ocorrência do mesmo padrão
+neste projeto.
+
+- [ ] Você **VÊ** o personagem (esfera azul) na câmera de terceira pessoa.
+- [ ] A marca branca à frente mostra para onde ele está virado.
+- [ ] Azul do jogador contra laranja dos inimigos: dá para separar de longe.
+- [ ] Ele não está meio enterrado no chão.

@@ -324,6 +324,20 @@ void ABattleArena::HandlePlayerCommitted()
 	// chamavam isto, então BatalhaEncerrada nunca disparava em produção.
 	BattleOutcome::EvaluateOutcome(Result.NextState, Result.Trace);
 	CurrentState = Result.NextState;
+
+	// Diagnóstico: o oponente escolhe de verdade? Os pets mudam de casa?
+	for (int32 Slot = 0; Slot < FTurnCommit::ActionsPerTurn; ++Slot)
+	{
+		UE_LOG(LogTemp, Display, TEXT("[TURNO] oponente slot %d: tipo=%d direcao=%d"),
+			Slot, static_cast<int32>(OpponentCommit.Actions[Slot].Type),
+			static_cast<int32>(OpponentCommit.Actions[Slot].Direction));
+	}
+	for (const FPetState& Pet : CurrentState.Pets)
+	{
+		UE_LOG(LogTemp, Display, TEXT("[TURNO] pet lado=%d casa=(%d,%d) vida=%d/%d"),
+			static_cast<int32>(Pet.Side), static_cast<int32>(Pet.Column),
+			static_cast<int32>(Pet.Row), Pet.Health, Pet.MaxHealth);
+	}
 	CheckForCapture(Result.Trace);
 	GrantExperienceIfOwned(Result.Trace);
 	AnnounceBattleFinishedIfEnded(Result.Trace);

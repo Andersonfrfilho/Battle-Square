@@ -117,6 +117,18 @@ FString ABattleScreenGameMode::StartScreenBattle()
 	}
 
 	ActionSelector->BindToQueue(ScreenArena->PlayerActionQueue);
+
+	// A tela precisa saber onde o pet do jogador está para não oferecer um
+	// movimento que sairia do tabuleiro. Quem sabe isso é a arena.
+	for (const FPetState& Pet : ScreenArena->GetCurrentState().Pets)
+	{
+		if (Pet.Side == ScreenArena->LocalPlayerSide)
+		{
+			ActionSelector->SetOwningPetCell(Pet.Column, Pet.Row);
+			break;
+		}
+	}
+
 	ActionSelector->AddToViewport();
 
 	// A tela é o jogo agora: o mouse precisa clicar nos botões.

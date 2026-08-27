@@ -9,6 +9,7 @@
 #include "Data/BattleDataTranslator.h"
 #include "PetView.generated.h"
 
+class USceneComponent;
 class UStaticMeshComponent;
 class UMaterialInstanceDynamic;
 
@@ -56,6 +57,15 @@ public:
 	 * na origem (AActor sem raiz ignora SetActorLocation em silêncio, o mesmo
 	 * modo de falha de L-018). A batalha acontecia com o tabuleiro vazio.
 	 */
+	/**
+	 * Raiz separada da malha DE PROPÓSITO. Quando o BodyMesh era a própria
+	 * raiz, o deslocamento vertical que o tira de dentro do piso era a
+	 * transformação do ator — e o primeiro SetActorLocation o apagava, com o
+	 * pet afundando meio corpo a partir do primeiro movimento.
+	 */
+	UPROPERTY(VisibleAnywhere, Category = "Apresentação")
+	TObjectPtr<USceneComponent> BodyRoot;
+
 	UPROPERTY(VisibleAnywhere, Category = "Apresentação")
 	TObjectPtr<UStaticMeshComponent> BodyMesh;
 

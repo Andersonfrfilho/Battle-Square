@@ -84,11 +84,24 @@ public:
 
 	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> Text_Status;
 
+	/**
+	 * Casa do pet do jogador no início do turno. Quem sabe disso é a arena;
+	 * a tela só usa para não OFERECER um movimento que sairia do tabuleiro.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Battle|ActionSelector")
+	void SetOwningPetCell(uint8 Column, uint8 Row);
+
 private:
 	void WireButtons();
 
 	/** Reflete o passo atual: tipos no passo 1, direções no passo 2. */
 	void RefreshLayoutFromState();
+
+	/** Desabilita as direções que tirariam o pet da grade (só ao Mover). */
+	void RefreshDirectionAvailability();
+
+	uint8 OwningPetColumn = 1;
+	uint8 OwningPetRow = 1;
 
 	UFUNCTION() void OnClickAguardar();
 	UFUNCTION() void OnClickMover();

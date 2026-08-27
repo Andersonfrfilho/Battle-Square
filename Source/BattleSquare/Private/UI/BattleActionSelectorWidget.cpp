@@ -3,6 +3,7 @@
 #include "UI/BattleActionSelectorWidget.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
+#include "Battle/BattleGridNavigation.h"
 
 void UBattleActionSelectorWidget::BindToQueue(UBattleActionQueueComponent* Queue)
 {
@@ -136,6 +137,8 @@ void UBattleActionSelectorWidget::RefreshLayoutFromState()
 		Button_Desfazer->SetIsEnabled(!bIsCommitted && ConfirmedActionCount > 0 && !bChoosingDirection);
 	}
 
+	RefreshDirectionAvailability();
+
 	if (Text_Status)
 	{
 		const FText Status = bIsCommitted
@@ -167,3 +170,49 @@ void UBattleActionSelectorWidget::OnClickBaixoDireita()  { ConfirmDirection(EBat
 void UBattleActionSelectorWidget::OnClickCancelar() { CancelPendingSelection(); }
 void UBattleActionSelectorWidget::OnClickDesfazer() { RemoveLastAction(); }
 void UBattleActionSelectorWidget::OnClickCommit()   { Commit(); }
+
+void UBattleActionSelectorWidget::SetOwningPetCell(uint8 Column, uint8 Row)
+{
+	OwningPetColumn = Column;
+	OwningPetRow = Row;
+	RefreshDirectionAvailability();
+}
+
+void UBattleActionSelectorWidget::RefreshDirectionAvailability()
+{
+	// Só MOVER sai do tabuleiro. Atacar ou lançar magia para fora é decisão
+	// do núcleo (erra, não sai) — desabilitar aqui inventaria uma regra.
+	const bool bIsMoving = BoundQueue
+		&& CurrentStep == EBattleActionSelectionStep::ChoosingDirection
+		&& BoundQueue->GetPendingType() == EActionType::Mover;
+
+	uint8 ProjectedColumn = OwningPetColumn;
+	uint8 ProjectedRow = OwningPetRow;
+	if (BoundQueue)
+	{
+		FBattleGridNavigation::ProjectCell(OwningPetColumn, OwningPetRow,
+			BoundQueue->GetConfirmedActions(), ProjectedColumn, ProjectedRow);
+	}
+
+	const TPair<UButton*, EBattleDirection> Direcoes[] = {
+		{ Button_CimaEsquerda,  EBattleDirection::CimaEsquerda },
+		{ Button_Cima,          EBattleDirection::Cima },
+		{ Button_CimaDireita,   EBattleDirection::CimaDireita },
+		{ Button_Esquerda,      EBattleDirection::Esquerda },
+		{ Button_Direita,       EBattleDirection::Direita },
+		{ Button_BaixoEsquerda, EBattleDirection::BaixoEsquerda },
+		{ Button_Baixo,         EBattleDirection::Baixo },
+		{ Button_BaixoDireita,  EBattleDirection::BaixoDireita },
+	};
+
+	for (const TPair<UButton*, EBattleDirection>& Entrada : Direcoes)
+	{
+		if (!Entrada.Key)
+		{
+			continue;
+		}
+		const bool bBloqueado = bIsMoving
+			&& FBattleGridNavigation::WouldLeaveGrid(ProjectedColumn, ProjectedRow, Entrada.Value);
+		Entrada.Key->SetIsEnabled(!bBloqueado);
+	}
+}

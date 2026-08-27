@@ -2,6 +2,7 @@
 
 #include "Battle/PetView.h"
 #include "Battle/BattleTypes.h"
+#include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
@@ -10,8 +11,11 @@ APetView::APetView()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
+	BodyRoot = CreateDefaultSubobject<USceneComponent>(TEXT("BodyRoot"));
+	SetRootComponent(BodyRoot);
+
 	BodyMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BodyMesh"));
-	SetRootComponent(BodyMesh);
+	BodyMesh->SetupAttachment(BodyRoot);
 	// Sem colisão: o pet é apresentação, e o núcleo é quem decide onde ele
 	// está. Um corpo que empurra outro seria uma segunda fonte de verdade.
 	BodyMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);

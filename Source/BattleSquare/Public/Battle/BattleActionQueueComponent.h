@@ -76,6 +76,12 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Battle|ActionQueue")
 	EBattleActionSelectionStep GetCurrentStep() const { return Pending.Step; }
 
+	/** Tipo escolhido no passo 1, válido enquanto o passo 2 estiver aberto. */
+	EActionType GetPendingType() const { return Pending.SelectedType; }
+
+	/** Leitura, para a interface projetar onde o pet vai parar. */
+	const TArray<FBattleAction>& GetConfirmedActions() const { return ConfirmedActions; }
+
 	UPROPERTY(BlueprintAssignable, Category = "Battle|ActionQueue")
 	FBattleActionQueueChangedSignature OnQueueChanged;
 

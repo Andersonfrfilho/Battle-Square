@@ -56,7 +56,7 @@ então funciona em qualquer nível assim que o GameMode o declara.
 | **F9** | copia o painel para a área de transferência **e** grava `Saved/BattleDebug.txt` |
 | **F10** | esvazia o painel |
 | `bs.ShowBattleDebug 0` | esconde |
-| **F8** | alterna o controle dos **dois lados** — primeiro escolhe pelo jogador, depois pelo oponente |
+| **F7** | alterna o controle dos **dois lados** — primeiro escolhe pelo jogador, depois pelo oponente |
 | `bs.ControlOpponent 1` | o mesmo, por console |
 
 `bs.ControlOpponent` existe porque verificar trombada, esquiva na trombada ou
@@ -66,6 +66,19 @@ oponente cair no caso desejado é medir a sorte, não a regra.
 É ferramenta de **desenvolvimento**: compilada fora do Shipping por `#if`, não
 por disciplina. Um jogo publicado onde qualquer um joga pelos dois lados não é
 o mesmo jogo.
+
+**F7, e não F8: F8 é a tecla de Eject do PIE**, consumida pelo editor antes de
+chegar ao jogo.
+
+As teclas são escutadas por um **ouvinte de pré-input do Slate**, não amarradas
+no `InputComponent`. Amarrar no controlador depende de foco e de modo de input,
+e foi assim que elas simplesmente não chegaram: o widget de ações tem o foco, o
+modo é `GameAndUI`, e a tecla morria calada. O ouvinte vê a tecla antes de
+qualquer camada poder engoli-la — e é **caminho único**, porque tratar nos dois
+lugares faria F7 alternar duas vezes por toque.
+
+Se uma tecla parecer morta: `bs.LogKeys 1` mostra no painel toda tecla que
+chega e por qual camada. Medir antes de consertar.
 
 O painel é **desenhado**, não é campo de texto: o mouse nunca consegue
 selecioná-lo. Por isso a cópia é por tecla — e por isso ela também grava

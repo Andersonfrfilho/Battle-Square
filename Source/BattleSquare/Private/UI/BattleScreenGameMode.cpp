@@ -147,12 +147,15 @@ FString ABattleScreenGameMode::StartScreenBattle()
 
 	ActionSelector->AddToViewport();
 
+	// DEPOIS de entrar na viewport, senão não há Slate widget para focar.
+	ActionSelector->SetKeyboardFocus();
+
 	// Tecla que ninguém sabe que existe não existe. Isto fica FIXO no painel
 	// (Key própria, sem empilhar) porque o usuário apertou F9 sem retorno e
 	// procurou por botões de controlar o oponente que, por desenho, não
 	// existem — no modo dos dois lados usam-se os MESMOS botões.
 	FBattleDebugScreen::Show(
-		TEXT("F8 escolhe pelos DOIS lados (mesmos botões, sua vez e a dele)"),
+		TEXT("F7 escolhe pelos DOIS lados (mesmos botões, sua vez e a dele)"),
 		0.0f, FColor::Orange, /*Key=*/10);
 	FBattleDebugScreen::Show(
 		TEXT("C camufla | V voa | B submerge  (sem botão no widget ainda)"),

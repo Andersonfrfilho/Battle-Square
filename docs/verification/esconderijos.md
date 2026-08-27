@@ -7,12 +7,12 @@ diferentes umas das outras, ou viraram três nomes para "esquivar melhor"?
 
 ## Controlar os DOIS lados
 
-**F8** durante a partida (ou `bs.ControlOpponent 1` no console). O turno passa a pedir duas escolhas: a
+**F7** durante a partida (ou `bs.ControlOpponent 1` no console). O turno passa a pedir duas escolhas: a
 primeira pelo jogador, a segunda pelo oponente — o painel diz de quem é a vez,
 e as direções oferecidas seguem o pet de quem está escolhendo.
 
 Sem isso, quase todo item abaixo depende do oponente sortear exatamente a ação
-que você quer ver. F8 de novo devolve a decisão à IA.
+que você quer ver. F7 de novo devolve a decisão à IA.
 
 ## Como usar (enquanto o WBP não tem os botões)
 

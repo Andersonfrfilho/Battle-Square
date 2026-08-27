@@ -77,10 +77,11 @@ void UBattleActionSelectorWidget::NativeConstruct()
 	Super::NativeConstruct();
 	WireButtons();
 
-	// Sem foco o widget não recebe tecla, e o caminho de teclado das ações
-	// novas ficaria morto sem nada indicar o motivo.
+	// Focável, sim; FOCADO, não aqui. NativeConstruct roda na CRIAÇÃO do
+	// widget, antes de AddToViewport — e widget fora da viewport não tem o
+	// que focar, então o pedido virava no-op e NativeOnKeyDown nunca
+	// disparava. Quem pede o foco é o GameMode, depois de adicionar.
 	SetIsFocusable(true);
-	SetKeyboardFocus();
 	RefreshLayoutFromState();
 }
 
@@ -241,14 +242,12 @@ void UBattleActionSelectorWidget::RefreshDirectionAvailability()
 FReply UBattleActionSelectorWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
 {
 	const FKey Key = InKeyEvent.GetKey();
+	FBattleDebugKeys::Observe(Key, TEXT("widget"));
 
-	// O widget tem o foco, então ele vê as teclas de depuração PRIMEIRO. Sem
-	// isto, F8/F9/F10 dependeriam de o Slate deixá-las passar até o
-	// PlayerController — e quando não deixa, a tecla morre calada.
-	if (FBattleDebugKeys::Handle(Key, GetWorld()))
-	{
-		return FReply::Handled();
-	}
+	// As teclas de depuração NÃO são tratadas aqui: quem as trata é o ouvinte
+	// de pré-input do Slate, que já as viu antes desta chamada. Tratar nos
+	// dois lugares faria F7 alternar duas vezes por toque — "não funciona" de
+	// novo, por motivo oposto.
 
 	if (Key == EKeys::C)
 	{

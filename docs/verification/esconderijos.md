@@ -5,11 +5,14 @@
 Os testes provam as regras. O que eles não decidem: as três se **sentem**
 diferentes umas das outras, ou viraram três nomes para "esquivar melhor"?
 
-## Controlar jogador 1 e jogador 2
+## Trocar de jogador controlado
 
-Botão **"Controlar jogador 1 e jogador 2"** na barra do canto inferior
-esquerdo. (F7 e `bs.ControlOpponent 1` fazem o mesmo, mas o botão é o caminho
-confiável — as teclas falharam em PIE.) O turno passa a pedir duas escolhas: primeiro
+Botão **"Controlando jogador N — clique para o jogador M"** na barra do canto
+inferior esquerdo. O bot joga pelo outro.
+
+Para os itens que exigem os DOIS agindo no mesmo turno (a trombada), ligue
+`bStartControllingBothSides=True` em `Config/DefaultGame.ini`: aí o turno pede
+as duas escolhas. O turno passa a pedir duas escolhas: primeiro
 pelo **jogador 1**, depois pelo **jogador 2** — a tela diz por qual você está
 escolhendo, e as direções oferecidas seguem o pet dele.
 

@@ -79,76 +79,74 @@ namespace
 	};
 }
 
-// Com o modo ligado, o turno pede DUAS escolhas antes de resolver. Sem isso,
-// verificar a trombada ou a esquiva na trombada depende do sorteio do oponente
-// cair no caso que se quer ver — e não cai quando se precisa.
+// TROCAR de jogador controlado: aperta uma vez e você comanda o jogador 2, o
+// bot assume o 1; aperta de novo e volta. É o que permite experimentar ações
+// diferentes de cada lado sem depender do sorteio.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FControlBothSidesAsksForTwoCommitsTest,
-	"BattleSquare.BattleArena.ControlBothSides.AsksForTwoCommits",
+	FControlledPlayerSwapsSidesTest,
+	"BattleSquare.BattleArena.ControlledPlayer.SwapsSides",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FControlBothSidesAsksForTwoCommitsTest::RunTest(const FString& Parameters)
+bool FControlledPlayerSwapsSidesTest::RunTest(const FString& Parameters)
 {
 	FScopedArena Cena;
-	Cena.Arena->SetControllingBothSides(true);
 
-	TestEqual(TEXT("Começa escolhendo pelo jogador"),
+	TestEqual(TEXT("Começa controlando o jogador 1"),
 		Cena.Arena->GetSideBeingChosen(), static_cast<uint8>(0));
 
-	Cena.Commit(EActionType::Aguardar);
-
-	// Nada foi resolvido ainda: a fila reabriu para o outro lado.
-	TestEqual(TEXT("Agora escolhe pelo oponente"),
+	Cena.Arena->SwapControlledPlayer();
+	TestEqual(TEXT("Uma troca leva ao jogador 2"),
 		Cena.Arena->GetSideBeingChosen(), static_cast<uint8>(1));
-	TestFalse(TEXT("A fila reabriu para a segunda escolha"),
-		Cena.Arena->PlayerActionQueue->IsCommitted());
+
+	Cena.Arena->SwapControlledPlayer();
+	TestEqual(TEXT("Outra troca volta ao jogador 1"),
+		Cena.Arena->GetSideBeingChosen(), static_cast<uint8>(0));
 
 	return true;
 }
 
-// A prova de que o modo serve para o que foi pedido: mandar os dois para a
-// mesma casa e ver a trombada acontecer, por escolha, não por sorte.
+// A prova de que a troca serve: controlando o jogador 2, a ação escolhida tem
+// que sair NO PET DELE. Se ela continuasse indo para o jogador 1, a troca seria
+// só um rótulo diferente na tela.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FControlBothSidesCanForceAnEncounterTest,
-	"BattleSquare.BattleArena.ControlBothSides.CanForceAnEncounter",
+	FControlledPlayerActionLandsTest,
+	"BattleSquare.BattleArena.ControlledPlayer.ActionLandsOnControlledPet",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FControlBothSidesCanForceAnEncounterTest::RunTest(const FString& Parameters)
+bool FControlledPlayerActionLandsTest::RunTest(const FString& Parameters)
 {
-	// Casas 0 e 2: ADJACENTES trocariam de lugar em vez de disputar a mesma
-	// casa, e o teste mediria outra coisa. Foi o erro que escrevi primeiro.
 	FScopedArena Cena(/*PlayerColumn=*/0, /*OpponentColumn=*/2);
-	Cena.Arena->SetControllingBothSides(true);
+	Cena.Arena->SwapControlledPlayer();
 
-	// Os dois mirando (1,1) — sem controlar os dois lados, isto seria esperar
-	// o acaso do oponente escolher exatamente esse movimento.
-	Cena.Commit(EActionType::Mover, EBattleDirection::Direita);
+	// Jogador 2 está em (2,1); mandar para a ESQUERDA o leva a (1,1).
 	Cena.Commit(EActionType::Mover, EBattleDirection::Esquerda);
 	Cena.PlayOutAnimation();
 
-	TestEqual(TEXT("Jogador ficou onde estava"), Cena.ColumnOfSide(0), static_cast<uint8>(0));
-	TestEqual(TEXT("Oponente ficou onde estava"), Cena.ColumnOfSide(1), static_cast<uint8>(2));
+	TestEqual(TEXT("O pet do jogador 2 obedeceu"), Cena.ColumnOfSide(1), static_cast<uint8>(1));
 
 	return true;
 }
 
-// Desligado, nada muda: o turno resolve com uma escolha só, como sempre.
-// Um modo de depuração que altera o jogo com ele desligado é pior que não ter.
+// Trocar no meio de uma escolha não pode manter as ações já confirmadas: elas
+// foram pensadas para o OUTRO pet, e aplicá-las ao novo faria a troca produzir
+// uma jogada que ninguém pediu.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FControlBothSidesOffKeepsSingleCommitTest,
-	"BattleSquare.BattleArena.ControlBothSides.OffKeepsSingleCommit",
+	FControlledPlayerSwapClearsChoicesTest,
+	"BattleSquare.BattleArena.ControlledPlayer.SwapClearsPendingChoices",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FControlBothSidesOffKeepsSingleCommitTest::RunTest(const FString& Parameters)
+bool FControlledPlayerSwapClearsChoicesTest::RunTest(const FString& Parameters)
 {
 	FScopedArena Cena;
 
-	TestEqual(TEXT("Desligado, sempre se escolhe pelo jogador"),
-		Cena.Arena->GetSideBeingChosen(), static_cast<uint8>(0));
+	Cena.Arena->PlayerActionQueue->BeginSelectingType(EActionType::Defender);
+	TestEqual(TEXT("Uma ação foi confirmada"),
+		Cena.Arena->PlayerActionQueue->GetConfirmedActionCount(), 1);
 
-	Cena.Commit(EActionType::Aguardar);
-	TestTrue(TEXT("Uma escolha só já fecha o turno"),
-		Cena.Arena->PlayerActionQueue->IsCommitted());
+	Cena.Arena->SwapControlledPlayer();
+
+	TestEqual(TEXT("A troca zera o que estava escolhido"),
+		Cena.Arena->PlayerActionQueue->GetConfirmedActionCount(), 0);
 
 	return true;
 }

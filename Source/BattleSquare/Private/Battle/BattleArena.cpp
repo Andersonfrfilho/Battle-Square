@@ -411,8 +411,12 @@ void ABattleArena::HandlePlayerCommitted()
 	// antes desta feature — IA gera o commit dela (Side=1 por convenção),
 	// o resolvedor real roda com os dois commits, e o trace resultante
 	// anima as views. Nenhum cálculo de batalha aqui — só orquestração.
-	const FTurnCommit OpponentCommit = FTacticalOpponentAI::GenerateCommit(CurrentState, /*Side=*/1, CurrentState.Random);
-	ResolveTurnWithCommits(PlayerCommit, OpponentCommit);
+	// A IA joga pelo lado que o jogador NÃO está controlando. Fixar Side=1
+	// aqui faria a troca de jogador produzir dois commits para o mesmo pet.
+	const uint8 BotSide = (LocalPlayerSide == 0) ? 1 : 0;
+	const FTurnCommit BotCommit = FTacticalOpponentAI::GenerateCommit(CurrentState, BotSide, CurrentState.Random);
+
+	ResolveTurnWithCommits(PlayerCommit, BotCommit);
 }
 
 /**
@@ -424,10 +428,18 @@ void ABattleArena::HandlePlayerCommitted()
  */
 void ABattleArena::ResolveTurnWithCommits(const FTurnCommit& LocalCommit, const FTurnCommit& OpponentCommit)
 {
-	LogCommit(TEXT("jogador"), LocalCommit);
-	LogCommit(TEXT("oponente"), OpponentCommit);
+	LogCommit(*FString::Printf(TEXT("jogador %d"), static_cast<int32>(GetControlledPlayerNumber())), LocalCommit);
+	LogCommit(TEXT("bot"), OpponentCommit);
 
-	FBattleResolveResult Result = FBattleResolver::ResolveTurn(CurrentState, LocalCommit, OpponentCommit);
+	// ResolveTurn recebe por LADO (esquerdo = 0, direito = 1), não por "quem
+	// escolheu". Com o jogador controlando o lado 1, passar na ordem de quem
+	// escolheu trocaria as ações entre os pets — e o turno inteiro sairia
+	// espelhado, de um jeito plausível o bastante para não parecer defeito.
+	const bool bPlayerIsLeft = (LocalPlayerSide == 0);
+	const FTurnCommit& LeftCommit = bPlayerIsLeft ? LocalCommit : OpponentCommit;
+	const FTurnCommit& RightCommit = bPlayerIsLeft ? OpponentCommit : LocalCommit;
+
+	FBattleResolveResult Result = FBattleResolver::ResolveTurn(CurrentState, LeftCommit, RightCommit);
 	// ResolveTurn nunca decide vitória/derrota por design (BattleOutcome.h:
 	// "separação deliberada") — quem chama precisa avaliar depois. Achado
 	// real durante escala-pets-skills: nem aqui nem UBattleTurnCoordinator
@@ -583,6 +595,24 @@ FString ABattleArena::GetPresentationNameForPet(uint8 PetId) const
 {
 	const FPetPresentationInfo* Presentation = PresentationsByPetId.Find(PetId);
 	return Presentation ? Presentation->Name : FString();
+}
+
+void ABattleArena::SwapControlledPlayer()
+{
+	LocalPlayerSide = (LocalPlayerSide == 0) ? 1 : 0;
+
+	// As ações já escolhidas eram para o outro pet. Mantê-las faria a troca
+	// produzir uma jogada que ninguém pediu — e o pior tipo de defeito é o que
+	// executa algo plausível.
+	if (PlayerActionQueue)
+	{
+		PlayerActionQueue->BeginNewTurn();
+	}
+
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("controlando o JOGADOR %d — o bot joga pelo outro"),
+			static_cast<int32>(GetControlledPlayerNumber())),
+		8.0f, LocalPlayerSide == 0 ? FColor::Cyan : FColor::Orange, /*Key=*/800);
 }
 
 void ABattleArena::SetControllingBothSides(bool bEnabled)

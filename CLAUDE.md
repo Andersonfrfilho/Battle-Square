@@ -56,7 +56,7 @@ então funciona em qualquer nível assim que o GameMode o declara.
 | **F9** | copia o painel para a área de transferência **e** grava `Saved/BattleDebug.txt` |
 | **F10** | esvazia o painel |
 | `bs.ShowBattleDebug 0` | esconde |
-| **F7** | alterna o controle de **jogador 1 e jogador 2** — escolhe pelo 1, depois pelo 2 |
+| **F7** | **troca** qual jogador você controla — o bot assume o outro |
 | `bs.ControlOpponent 1` | o mesmo, por console |
 
 `bs.ControlOpponent` existe porque verificar trombada, esquiva na trombada ou
@@ -89,7 +89,7 @@ Se uma tecla parecer morta: `bs.LogKeys 1` mostra no painel toda tecla que
 chega e por qual camada. Medir antes de consertar.
 
 **Há uma BARRA DE BOTÕES na tela** (canto inferior esquerdo, `FBattleDebugToolbar`):
-copiar painel, limpar, controlar jogador 1 e jogador 2, e Camuflar/Voar/Submergir.
+copiar painel, limpar, **trocar de jogador controlado**, e Camuflar/Voar/Submergir.
 Montada em **Slate por código**, sem asset autorado — o `WBP` não pôde ganhar
 botões, e capacidade que espera edição de asset é capacidade que não existe
 hoje. Clique é o caminho que comprovadamente funciona aqui; as teclas são
@@ -99,11 +99,18 @@ conveniência e falharam três vezes em PIE.
 aparece e a ação não muda nada, o defeito está depois do clique; se nem o
 clique aparece, o widget não está recebendo. Uma rodada, duas respostas.
 
-O rótulo diz **por qual jogador** você está escolhendo agora — "jogador 1" e
-"jogador 2", não "seu lado" e "o oponente": com o controle duplo ligado, os
-dois são seus, e "oponente" deixa de nomear alguém.
+O botão **troca quem você comanda**: `Controlando jogador 1 — clique para o
+jogador 2`. O bot joga pelo outro. É o que permite experimentar **ações
+diferentes de cada lado** sem depender de o sorteio da IA cair no caso desejado.
 
-Para controlar os dois sem depender de input nenhum:
+O rótulo diz o estado ATUAL e o que o clique faz. Só o estado deixaria a pessoa
+adivinhando o efeito; só o efeito, adivinhando onde ela está.
+
+Trocar zera as escolhas pendentes: elas eram para o outro pet, e aplicá-las ao
+novo produziria uma jogada que ninguém pediu.
+
+**Limite:** a troca comanda UM lado por turno. Para forçar os dois no mesmo
+turno (o caso da trombada, em que os dois precisam mirar a mesma casa), existe
 `bStartControllingBothSides=True` em `Config/DefaultGame.ini`.
 
 O painel é **desenhado**, não é campo de texto: o mouse nunca consegue

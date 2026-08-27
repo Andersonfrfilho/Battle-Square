@@ -165,7 +165,7 @@ FString ABattleScreenGameMode::StartScreenBattle()
 	// procurou por botões de controlar o oponente que, por desenho, não
 	// existem — no modo dos dois lados usam-se os MESMOS botões.
 	FBattleDebugScreen::Show(
-		TEXT("controle duplo: escolha pelo jogador 1, depois pelo jogador 2"),
+		TEXT("botão da barra troca entre controlar o jogador 1 e o jogador 2"),
 		0.0f, FColor::Orange, /*Key=*/10);
 	FBattleDebugScreen::Show(
 		TEXT("C camufla | V voa | B submerge  (sem botão no widget ainda)"),

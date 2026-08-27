@@ -168,6 +168,18 @@ public:
 
 	bool IsControllingBothSides() const { return bControlsBothSides; }
 
+	/**
+	 * Troca QUAL jogador você comanda. O outro passa a ser jogado pelo bot.
+	 *
+	 * É o que permite experimentar ações diferentes de cada lado: joga-se um
+	 * turno pelo jogador 1, troca, e joga-se pelo 2 — sem depender de o
+	 * sorteio da IA cair no caso que se quer ver.
+	 *
+	 * Zera as escolhas pendentes: elas foram pensadas para o OUTRO pet, e
+	 * aplicá-las ao novo produziria uma jogada que ninguém pediu.
+	 */
+	void SwapControlledPlayer();
+
 	/** Nome de apresentação do pet, ou vazio se ele não tem um. */
 	FString GetPresentationNameForPet(uint8 PetId) const;
 
@@ -178,6 +190,8 @@ public:
 
 	/** 0 = escolhendo pelo jogador, 1 = pelo oponente. Sempre 0 com o modo desligado. */
 	uint8 GetSideBeingChosen() const { return bAwaitingOpponentChoice ? OpponentSideForChoice() : LocalPlayerSide; }
+
+	uint8 GetControlledPlayerNumber() const { return LocalPlayerSide + 1; }
 
 private:
 	uint8 OpponentSideForChoice() const { return LocalPlayerSide == 0 ? 1 : 0; }

@@ -66,7 +66,7 @@ bool FBattleDebugKeys::Handle(const FKey& Key, UWorld* World)
 
 		for (TActorIterator<ABattleArena> It(World); It; ++It)
 		{
-			It->SetControllingBothSides(!It->IsControllingBothSides());
+			It->SwapControlledPlayer();
 		}
 		return true;
 	}

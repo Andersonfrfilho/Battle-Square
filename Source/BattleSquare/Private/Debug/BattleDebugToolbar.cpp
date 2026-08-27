@@ -52,13 +52,13 @@ namespace
 	FText ControlLabel()
 	{
 		const ABattleArena* Arena = FindArena();
-		const bool bOn = Arena && Arena->IsControllingBothSides();
-		// "jogador 1 e jogador 2", e não "os dois lados": na hora de escolher,
-		// o que se precisa saber é POR QUEM se está jogando, e "lado" não
-		// nomeia ninguém.
-		return bOn
-			? FText::FromString(TEXT("Controlando jogador 1 e jogador 2 (clique p/ desligar)"))
-			: FText::FromString(TEXT("Controlar jogador 1 e jogador 2"));
+		const int32 Atual = Arena ? static_cast<int32>(Arena->GetControlledPlayerNumber()) : 1;
+		const int32 Proximo = (Atual == 1) ? 2 : 1;
+
+		// Diz o estado ATUAL e o que o clique faz. Só o estado deixaria a
+		// pessoa adivinhando o efeito; só o efeito, adivinhando onde está.
+		return FText::FromString(FString::Printf(
+			TEXT("Controlando jogador %d  —  clique para o jogador %d"), Atual, Proximo));
 	}
 
 	TSharedRef<SWidget> MakeButton(const FText& Label, TFunction<void()> OnClick)
@@ -109,7 +109,7 @@ void FBattleDebugToolbar::Show(UWorld* World)
 		{
 			if (ABattleArena* Arena = FindArena())
 			{
-				Arena->SetControllingBothSides(!Arena->IsControllingBothSides());
+				Arena->SwapControlledPlayer();
 			}
 			return FReply::Handled();
 		})

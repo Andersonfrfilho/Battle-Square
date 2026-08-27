@@ -206,10 +206,18 @@ bool FBattlePhaseCombatMinimumDamageTest::RunTest(const FString& Parameters)
 	return true;
 }
 
-// T7/DP-04: oponente coabitando a própria casa é alvo válido, independente da direção.
+// DP-02 INVERTIDA em 2026-08-27: não há mais coabitação, e o atalho que
+// tratava o coabitante como alvo válido saiu de ResolveTarget.
+//
+// Este teste afirmava aquele atalho. Convertido no lugar, e não apagado: quem
+// ler o histórico precisa achar a regra nova onde a antiga morava. Ele agora
+// guarda a REMOÇÃO — se alguém reintroduzir o caso especial, isto reprova.
+//
+// O estado abaixo é construído à mão porque F3 não o produz mais; é justamente
+// esse o ponto.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FBattlePhaseCombatCoabitingOpponentIsValidTargetTest,
-	"BattleSim.Phase.Combat.CoabitingOpponentIsValidTarget",
+	"BattleSim.Phase.Combat.CoabitingOpponentIsNoLongerASpecialCase",
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
 
 bool FBattlePhaseCombatCoabitingOpponentIsValidTargetTest::RunTest(const FString& Parameters)
@@ -219,11 +227,13 @@ bool FBattlePhaseCombatCoabitingOpponentIsValidTargetTest::RunTest(const FString
 	State.Pets.Add(MakeCombatant(2, 1, 1, 1, 10, 5)); // MESMA célula — coabitando
 
 	TArray<FBattleEvent> Trace;
-	// Direção apontada não importa — o oponente já está em cima.
+	// A direção volta a ser o que decide: ninguém está "em cima" de ninguém.
 	BattlePhases::ApplyCombat(State, Attack(EBattleDirection::Cima), Wait(), 0, Trace);
 
-	TestTrue(TEXT("Acerta mesmo com direção 'errada', por coabitação"), Trace[0].Type == EBattleEventType::AtaqueAcertou);
-	TestEqual(TEXT("Dano acumulado no coabitante"), State.Pets[1].PendingDamage, 15);
+	TestTrue(TEXT("Sem alvo na direção apontada, o ataque erra"),
+		Trace[0].Type == EBattleEventType::AtaqueErrou);
+	TestEqual(TEXT("Nenhum dano de graça por estar na mesma casa"),
+		State.Pets[1].PendingDamage, 0);
 
 	return true;
 }

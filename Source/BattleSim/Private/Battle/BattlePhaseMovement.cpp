@@ -80,6 +80,20 @@ namespace
 		OutTrace.Add(Event);
 	}
 
+	void EmitEncounter(TArray<FBattleEvent>& OutTrace, uint8 SlotIndex,
+		const FPetState& First, const FPetState& Second)
+	{
+		FBattleEvent Event;
+		Event.Type = EBattleEventType::EncontroNoMesmoPonto;
+		Event.SlotIndex = SlotIndex;
+		Event.Phase = 3; // F3
+		Event.ActorId = First.PetId;
+		Event.TargetId = Second.PetId;
+		Event.FromCell = PackCell(First.Column, First.Row);
+		Event.ToCell = PackCell(Second.Column, Second.Row);
+		OutTrace.Add(Event);
+	}
+
 	void EmitBlocked(TArray<FBattleEvent>& OutTrace, uint8 SlotIndex, const FPetState& Pet)
 	{
 		FBattleEvent Event;
@@ -129,40 +143,108 @@ void BattlePhases::ApplyMovement(
 			}
 		}
 
-		// Passo 3: colisão entre aliados. Dois+ pets do MESMO lado disputando
-		// a mesma casa de destino são todos anulados (BTL-05). Lados opostos
-		// coabitam livremente (DP-02) — não entram nesta contagem.
-		TMap<uint32, TArray<int32>> DestinationClaimsBySide; // (side<<16 | col<<8 | row) -> índices em ValidIntents
+		// Passo 3: disputa de destino, decidida por POSIÇÃO FINAL.
+		//
+		// DP-02 foi INVERTIDO em 2026-08-27: dois pets não ocupam a mesma
+		// casa. Decidir por posição final, e não conferindo a casa de destino
+		// contra o estado vivo, é o que mantém a TROCA de casas permitida —
+		// na troca ninguém termina no mesmo ponto, mas durante a aplicação
+		// cada um ainda está na casa que o outro quer. Checar contra o estado
+		// vivo bloquearia a troca, e o resultado dependeria da ordem em que os
+		// pets fossem processados.
+		TMap<uint8, int32> IntentByPetId;
 		for (int32 Index = 0; Index < ValidIntents.Num(); ++Index)
 		{
-			const FMoveIntent& Intent = ValidIntents[Index];
-			const uint32 Key = (static_cast<uint32>(Intent.Pet->Side) << 16)
-				| (static_cast<uint32>(Intent.DestColumn) << 8)
-				| static_cast<uint32>(Intent.DestRow);
-			DestinationClaimsBySide.FindOrAdd(Key).Add(Index);
+			IntentByPetId.Add(ValidIntents[Index].Pet->PetId, Index);
 		}
 
-		for (const auto& ClaimPair : DestinationClaimsBySide)
+		struct FFinalPlace
 		{
-			const TArray<int32>& ClaimantIndices = ClaimPair.Value;
-			const bool bCollides = ClaimantIndices.Num() > 1;
+			FPetState* Pet = nullptr;
+			int32 Column = 0;
+			int32 Row = 0;
+			int32 IntentIndex = INDEX_NONE;
+		};
 
-			for (int32 Index : ClaimantIndices)
+		TArray<FFinalPlace> FinalPlaces;
+		for (FPetState& Pet : State.Pets)
+		{
+			if (!Pet.IsAlive())
 			{
-				const FMoveIntent& Intent = ValidIntents[Index];
-				if (bCollides)
+				continue;
+			}
+
+			FFinalPlace Place;
+			Place.Pet = &Pet;
+			Place.Column = static_cast<int32>(Pet.Column);
+			Place.Row = static_cast<int32>(Pet.Row);
+
+			if (const int32* Index = IntentByPetId.Find(Pet.PetId))
+			{
+				Place.IntentIndex = *Index;
+				Place.Column = ValidIntents[*Index].DestColumn;
+				Place.Row = ValidIntents[*Index].DestRow;
+			}
+			FinalPlaces.Add(Place);
+		}
+
+		TMap<uint32, TArray<int32>> ClaimsByCell;
+		for (int32 Index = 0; Index < FinalPlaces.Num(); ++Index)
+		{
+			const uint32 Key = (static_cast<uint32>(FinalPlaces[Index].Column) << 8)
+				| static_cast<uint32>(FinalPlaces[Index].Row);
+			ClaimsByCell.FindOrAdd(Key).Add(Index);
+		}
+
+		TSet<uint8> PetsBarrados;
+		for (const auto& ClaimPair : ClaimsByCell)
+		{
+			const TArray<int32>& Claimants = ClaimPair.Value;
+			if (Claimants.Num() < 2)
+			{
+				continue;
+			}
+
+			for (int32 First = 0; First < Claimants.Num(); ++First)
+			{
+				for (int32 Second = First + 1; Second < Claimants.Num(); ++Second)
 				{
-					EmitBlocked(OutTrace, SlotIndex, *Intent.Pet);
-				}
-				else
-				{
-					const uint8 FromCell = PackCell(Intent.Pet->Column, Intent.Pet->Row);
-					Intent.Pet->Column = static_cast<uint8>(Intent.DestColumn);
-					Intent.Pet->Row = static_cast<uint8>(Intent.DestRow);
-					const uint8 ToCell = PackCell(Intent.Pet->Column, Intent.Pet->Row);
-					EmitMoved(OutTrace, SlotIndex, *Intent.Pet, FromCell, ToCell);
+					const FFinalPlace& Um = FinalPlaces[Claimants[First]];
+					const FFinalPlace& Outro = FinalPlaces[Claimants[Second]];
+
+					// Encontro só existe entre lados OPOSTOS. Dois aliados na
+					// mesma casa é BTL-05: bloqueio simples, ninguém se fere.
+					if (Um.Pet->Side != Outro.Pet->Side)
+					{
+						EmitEncounter(OutTrace, SlotIndex, *Um.Pet, *Outro.Pet);
+					}
 				}
 			}
+
+			// Quem tentou andar e esbarrou fica onde estava. Quem já estava
+			// parado ali não recebe bloqueio: ele não tentou nada.
+			for (int32 Index : Claimants)
+			{
+				if (FinalPlaces[Index].IntentIndex != INDEX_NONE)
+				{
+					PetsBarrados.Add(FinalPlaces[Index].Pet->PetId);
+					EmitBlocked(OutTrace, SlotIndex, *FinalPlaces[Index].Pet);
+				}
+			}
+		}
+
+		for (const FMoveIntent& Intent : ValidIntents)
+		{
+			if (PetsBarrados.Contains(Intent.Pet->PetId))
+			{
+				continue;
+			}
+
+			const uint8 FromCell = PackCell(Intent.Pet->Column, Intent.Pet->Row);
+			Intent.Pet->Column = static_cast<uint8>(Intent.DestColumn);
+			Intent.Pet->Row = static_cast<uint8>(Intent.DestRow);
+			const uint8 ToCell = PackCell(Intent.Pet->Column, Intent.Pet->Row);
+			EmitMoved(OutTrace, SlotIndex, *Intent.Pet, FromCell, ToCell);
 		}
 	}
 

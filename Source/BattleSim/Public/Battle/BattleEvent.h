@@ -25,7 +25,12 @@ enum class EBattleEventType : uint8
 	PetMorreu,
 	SlotEncerrado,
 	TurnoEncerrado,
-	BatalhaEncerrada
+	BatalhaEncerrada,
+
+	// DP-02: dois pets chegaram ao mesmo ponto do campo. Acrescentado ao FIM
+	// do enum de propósito — os valores existentes entram no hash do traço, e
+	// inserir no meio invalidaria todo snapshot de determinismo já gravado.
+	EncontroNoMesmoPonto
 };
 
 // Sentinela para TargetId/ActorId quando não há alvo aplicável

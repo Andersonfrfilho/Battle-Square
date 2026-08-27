@@ -1,6 +1,6 @@
 # Combate Núcleo — Especificação
 
-**Status:** Draft — DP-01 decidida; DP-02 a DP-05 seguem abertas (nenhuma bloqueia o Design)
+**Status:** Draft — DP-01 e DP-02 decididas; DP-03 a DP-05 seguem abertas (nenhuma bloqueia o Design)
 **Neutra de motor:** esta spec descreve regras e contratos, não Unreal. A implementação é C++ sem dependência de `UWorld`, `AActor` ou tick.
 
 ---
@@ -214,7 +214,17 @@ Isso entrega replay, espectador e reconexão sem trabalho adicional.
 **Resolvida:** ação é o par `(Tipo, Direção)`. Ver **AD-009** em STATE.md.
 A alternativa de 12 ações planas foi descartada porque tornaria o ataque omnidirecional e a posição sem valor tático numa grade 3x3.
 
-### DP-02: Coabitação de pets na mesma casa
+### DP-02: Coabitação de pets na mesma casa — ✅ DECIDIDA (2026-08-27): NÃO HÁ
+
+> **Dois pets não ocupam a mesma casa.** Os dois indo para o mesmo ponto ficam
+> onde estavam, e o encontro resolve em **golpe mútuo**, pelo mesmo caminho de
+> dano do ataque — é isso que faz as posturas já registradas valerem (defendeu
+> amortece, esquivou escapa) sem ninguém reescrever a escada de posturas.
+> Trocar de casas continua permitido: ninguém TERMINA no mesmo ponto, e é a
+> posição final que a regra governa. A busca por oponente coabitando saiu de
+> `ResolveTarget` junto — mantê-la seria uma segunda verdade sobre coabitação.
+
+**Registro original da decisão em aberto:**
 
 - **Proposta:** permitida entre lados opostos, proibida entre aliados. É a leitura do README ("mesma posição gera ataque mútuo") e evita empilhar aliados numa casa.
 - **Alternativa:** casa exclusiva, com bloqueio de entrada. Torna a posição mais tática, mas exige regra de desempate para quem entra primeiro.

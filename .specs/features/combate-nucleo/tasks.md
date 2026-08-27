@@ -162,7 +162,7 @@ T10 ──┬→ T11 [P]
 **Pronto quando:**
 - [ ] Movimento para fora da grade é anulado e emite `MovimentoBloqueado`
 - [ ] Dois aliados para a mesma casa: **ambos** anulados
-- [ ] Lados opostos coabitam (DP-02, comportamento padrão)
+- [x] Lados opostos NÃO coabitam — DP-02 decidida e invertida em 2026-08-27: encontro no mesmo ponto vira golpe mútuo
 - [ ] Troca de casas entre dois pets é permitida, sem colisão
 - [ ] Nenhuma intenção é resolvida antes de todas serem lidas
 

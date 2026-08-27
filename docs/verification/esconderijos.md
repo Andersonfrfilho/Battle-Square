@@ -41,3 +41,15 @@ o C++ já os espera por `BindWidgetOptional`, então basta criá-los com os nome
 - [ ] Camuflar/submergir todo slot é forte demais, mesmo custando a ação
       seguinte?
 - [ ] Voar compensa, dado que magia dói 50% a mais?
+
+---
+
+## ESC-05 — Encontro no mesmo ponto (DP-02, invertido)
+
+- [ ] Os dois indo para a mesma casa: **nenhum** entra, e os dois se ferem.
+- [ ] Andar para cima de quem está parado: mesma coisa.
+- [ ] **Trocar de casas continua funcionando** — ninguém termina no mesmo ponto.
+- [ ] Quem esquivou não se fere na trombada; quem defendeu se fere menos.
+- [ ] O feed diz que trombaram, e não um "movimento bloqueado" genérico.
+- [ ] Julgamento: a trombada dói o suficiente para desencorajar, sem virar a
+      forma mais barata de causar dano?

@@ -54,10 +54,11 @@ namespace
 	// você, não faz sentido a direção decidir se ele é alvo ou não.
 	FPetState* ResolveTarget(FBattleState& State, const FPetState& Attacker, EBattleDirection Direction)
 	{
-		if (FPetState* CoabitingOpponent = FindLivingOpponentAtCell(State, Attacker.Side, Attacker.Column, Attacker.Row))
-		{
-			return CoabitingOpponent;
-		}
+		// A busca por oponente COABITANDO a própria casa vivia aqui e foi
+		// removida com a inversão do DP-02 (2026-08-27): F3 agora impede que
+		// dois pets terminem no mesmo ponto, então o caso não acontece mais.
+		// Mantê-la seria uma segunda verdade sobre coabitação, e cópias
+		// concordam até a primeira edição.
 
 		int8 DeltaColumn = 0;
 		int8 DeltaRow = 0;
@@ -140,6 +141,22 @@ namespace
 		OutTrace.Add(Event);
 	}
 
+	// Declarada antes porque ResolveAttackForSide a chama e ela vem depois.
+	void ApplyHitAgainst(FBattleState& State, FPetState& Attacker, FPetState& Target,
+		bool bIsMagic, uint8 SlotIndex, TArray<FBattleEvent>& OutTrace);
+
+	FPetState* FindPetById(FBattleState& State, uint8 PetId)
+	{
+		for (FPetState& Pet : State.Pets)
+		{
+			if (Pet.PetId == PetId && Pet.IsAlive())
+			{
+				return &Pet;
+			}
+		}
+		return nullptr;
+	}
+
 	void ResolveAttackForSide(
 		FBattleState& State,
 		uint8 AttackerSide,
@@ -176,45 +193,67 @@ namespace
 		}
 
 		const bool bIsMagic = (Action.Type == EActionType::Magia);
+		ApplyHitAgainst(State, *Attacker, *Target, bIsMagic, SlotIndex, OutTrace);
+	}
+
+	/**
+	 * O golpe em si, a partir de atacante e alvo JÁ resolvidos.
+	 *
+	 * Existe separado porque o encontro no mesmo ponto (DP-02) precisa passar
+	 * exatamente por aqui: é o que faz "defendeu, sofre menos; esquivou, não
+	 * sofre" valer na trombada sem ninguém reescrever as posturas. Duas
+	 * escadas de postura em lugares diferentes concordariam até a primeira
+	 * edição.
+	 */
+	void ApplyHitAgainst(
+		FBattleState& State,
+		FPetState& Attacker,
+		FPetState& Target,
+		bool bIsMagic,
+		uint8 SlotIndex,
+		TArray<FBattleEvent>& OutTrace)
+	{
+		FPetState* TargetPtr = &Target;
+		FPetState* AttackerPtr = &Attacker;
 
 		// DP-ia-04. Camuflado e submerso não são ALCANÇÁVEIS — nem por magia.
 		// É isso que os separa de Esquivar, que barra só o físico: se
 		// barrassem o mesmo, seriam três nomes para a mesma ação.
-		if (HasPosture(*Target, EBattlePostureFlags::Camouflaged)
-			|| HasPosture(*Target, EBattlePostureFlags::Underground))
+		if (HasPosture(*TargetPtr, EBattlePostureFlags::Camouflaged)
+			|| HasPosture(*TargetPtr, EBattlePostureFlags::Underground))
 		{
-			EmitMiss(OutTrace, SlotIndex, *Attacker);
+			EmitMiss(OutTrace, SlotIndex, *AttackerPtr);
 			return;
 		}
 
 		// Voar tira o pet do alcance do golpe FÍSICO, mas o expõe no céu — a
 		// magia acerta, e acerta mais forte. É troca, não escudo.
-		if (!bIsMagic && HasPosture(*Target, EBattlePostureFlags::Flying))
+		if (!bIsMagic && HasPosture(*TargetPtr, EBattlePostureFlags::Flying))
 		{
-			EmitMiss(OutTrace, SlotIndex, *Attacker);
+			EmitMiss(OutTrace, SlotIndex, *AttackerPtr);
 			return;
 		}
 
 		// Esquiva anula ataque FÍSICO. Magia ignora esquiva (BTL-10) —
 		// é o segundo lado do triângulo ataque/defesa/esquiva.
-		if (!bIsMagic && HasPosture(*Target, EBattlePostureFlags::Dodging))
+		if (!bIsMagic && HasPosture(*TargetPtr, EBattlePostureFlags::Dodging))
 		{
-			EmitDodged(OutTrace, SlotIndex, *Attacker, *Target);
+			EmitDodged(OutTrace, SlotIndex, *AttackerPtr, *TargetPtr);
 			return;
 		}
 
 		int32 Multiplier = bIsMagic ? MagicDamageMultiplierPercent : AttackDamageMultiplierPercent;
-		if (bIsMagic && HasPosture(*Target, EBattlePostureFlags::Flying))
+		if (bIsMagic && HasPosture(*TargetPtr, EBattlePostureFlags::Flying))
 		{
 			Multiplier = (Multiplier * ExposedInTheAirDamagePercent) / 100;
 		}
 
-		const int32 Damage = ComputeDamage(*Attacker, *Target, Multiplier, State.CellLayout);
+		const int32 Damage = ComputeDamage(*AttackerPtr, *TargetPtr, Multiplier, State.CellLayout);
 
 		// Acumula — NÃO aplica. F5 (T8) aplica tudo de uma vez (BTL-07).
-		Target->PendingDamage += Damage;
+		TargetPtr->PendingDamage += Damage;
 
-		EmitHit(OutTrace, SlotIndex, *Attacker, *Target, Damage);
+		EmitHit(OutTrace, SlotIndex, *AttackerPtr, *TargetPtr, Damage);
 	}
 }
 
@@ -227,4 +266,36 @@ void BattlePhases::ApplyCombat(
 {
 	ResolveAttackForSide(State, /*AttackerSide=*/0, LeftAction, SlotIndex, OutTrace);
 	ResolveAttackForSide(State, /*AttackerSide=*/1, RightAction, SlotIndex, OutTrace);
+
+	// DP-02: o encontro no mesmo ponto vira golpe MÚTUO, resolvido pelo mesmo
+	// caminho do ataque. F3 registrou o encontro no traço; ler dali evita um
+	// campo novo em FBattleState, que entraria no hash e invalidaria os
+	// snapshots de determinismo de cenários que nem se trombam.
+	//
+	// O laço percorre uma cópia dos índices porque ApplyHitAgainst ACRESCENTA
+	// eventos ao traço enquanto ele é lido.
+	TArray<int32> Encontros;
+	for (int32 Index = 0; Index < OutTrace.Num(); ++Index)
+	{
+		if (OutTrace[Index].Type == EBattleEventType::EncontroNoMesmoPonto
+			&& OutTrace[Index].SlotIndex == SlotIndex)
+		{
+			Encontros.Add(Index);
+		}
+	}
+
+	for (int32 Index : Encontros)
+	{
+		FPetState* Um = FindPetById(State, OutTrace[Index].ActorId);
+		FPetState* Outro = FindPetById(State, OutTrace[Index].TargetId);
+		if (!Um || !Outro)
+		{
+			continue;
+		}
+
+		// Trombada é FÍSICA nos dois sentidos: quem esquivou escapa, quem
+		// defendeu amortece — exatamente as ações que já estavam registradas.
+		ApplyHitAgainst(State, *Um, *Outro, /*bIsMagic=*/false, SlotIndex, OutTrace);
+		ApplyHitAgainst(State, *Outro, *Um, /*bIsMagic=*/false, SlotIndex, OutTrace);
+	}
 }

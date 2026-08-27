@@ -102,10 +102,15 @@ bool FBattlePhaseMovementAllyCollisionIsUnreachableInV1Test::RunTest(const FStri
 	return true;
 }
 
-// T6/BTL-06: lados opostos podem coabitar a mesma casa.
+// DP-02 INVERTIDO em 2026-08-27: lados opostos NÃO coabitam mais.
+//
+// Este teste afirmava a coabitação. Ele não estava errado — ficou obsoleto por
+// decisão de produto, e foi CONVERTIDO em vez de apagado: quem ler o histórico
+// precisa achar a regra nova onde a antiga morava, senão a inversão vira uma
+// ausência silenciosa.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FBattlePhaseMovementOpposingSidesCoexistTest,
-	"BattleSim.Phase.Movement.OpposingSidesCanCoexist",
+	"BattleSim.Phase.Movement.OpposingSidesCannotCoexist",
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
 
 bool FBattlePhaseMovementOpposingSidesCoexistTest::RunTest(const FString& Parameters)
@@ -117,16 +122,18 @@ bool FBattlePhaseMovementOpposingSidesCoexistTest::RunTest(const FString& Parame
 	TArray<FBattleEvent> Trace;
 	BattlePhases::ApplyMovement(State, MoveAction(EBattleDirection::Direita), MoveAction(EBattleDirection::Esquerda), 0, Trace);
 
-	TestEqual(TEXT("Left chegou em (1,1)"), State.Pets[0].Column, static_cast<uint8>(1));
-	TestEqual(TEXT("Right chegou em (1,1)"), State.Pets[1].Column, static_cast<uint8>(1));
-	TestEqual(TEXT("Mesma linha para os dois"), State.Pets[0].Row, State.Pets[1].Row);
+	TestEqual(TEXT("Left continua em (0,1)"), State.Pets[0].Column, static_cast<uint8>(0));
+	TestEqual(TEXT("Right continua em (2,1)"), State.Pets[1].Column, static_cast<uint8>(2));
 
 	int32 MovedCount = 0;
+	int32 EncounterCount = 0;
 	for (const FBattleEvent& Event : Trace)
 	{
 		if (Event.Type == EBattleEventType::Moveu) { ++MovedCount; }
+		if (Event.Type == EBattleEventType::EncontroNoMesmoPonto) { ++EncounterCount; }
 	}
-	TestEqual(TEXT("Ambos os movimentos foram bem-sucedidos"), MovedCount, 2);
+	TestEqual(TEXT("Nenhum dos dois entrou na casa disputada"), MovedCount, 0);
+	TestEqual(TEXT("O encontro foi registrado uma vez"), EncounterCount, 1);
 
 	return true;
 }

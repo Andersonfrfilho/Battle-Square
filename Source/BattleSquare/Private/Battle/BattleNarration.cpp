@@ -48,6 +48,10 @@ FText FBattleNarration::Describe(const FBattleEvent& Event, const FString& Actor
 	case EBattleEventType::PetMorreu:
 		return FText::Format(LOCTEXT("PetMorreu", "{Target} foi derrotado"), Args);
 
+	case EBattleEventType::EncontroNoMesmoPonto:
+		return FText::Format(LOCTEXT("EncontroNoMesmoPonto",
+			"{Actor} e {Target} foram para a mesma casa e trombaram"), Args);
+
 	case EBattleEventType::MovimentoBloqueado:
 		// Dizer só "bloqueado" deixa o jogador achando que foi bug. A borda é
 		// a explicação, e é ela que ensina a não repetir a escolha.

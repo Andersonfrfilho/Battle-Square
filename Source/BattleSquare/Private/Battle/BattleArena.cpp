@@ -2,6 +2,8 @@
 
 #include "Battle/BattleArena.h"
 
+#include "Debug/BattleDebugScreen.h"
+
 DEFINE_LOG_CATEGORY(LogBattleArena);
 #include "Camera/CameraComponent.h"
 #include "Battle/DumbOpponentAI.h"
@@ -339,6 +341,14 @@ void ABattleArena::HandlePlayerCommitted()
 		UE_LOG(LogBattleArena, Display, TEXT("  lado %d terminou em (%d,%d) com %d/%d de vida"),
 			static_cast<int32>(Pet.Side), static_cast<int32>(Pet.Column),
 			static_cast<int32>(Pet.Row), Pet.Health, Pet.MaxHealth);
+
+		// Chave por lado: a linha de cada pet se ATUALIZA no lugar, em vez de
+		// empilhar uma nova a cada turno.
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("lado %d: casa (%d,%d)  vida %d/%d"),
+				static_cast<int32>(Pet.Side), static_cast<int32>(Pet.Column),
+				static_cast<int32>(Pet.Row), Pet.Health, Pet.MaxHealth),
+			30.0f, FColor::Green, /*Key=*/100 + Pet.Side);
 	}
 
 	if (TracePlayer)
@@ -388,9 +398,13 @@ void ABattleArena::LogCommit(const TCHAR* Quem, const FTurnCommit& Commit) const
 	for (int32 Slot = 0; Slot < FTurnCommit::ActionsPerTurn; ++Slot)
 	{
 		const FBattleAction& Action = Commit.Actions[Slot];
-		UE_LOG(LogBattleArena, Display, TEXT("[turno] %s, ação %d: %s %s"),
+		const FString Linha = FString::Printf(TEXT("%s %d: %s %s"),
 			Quem, Slot + 1,
 			*StaticEnum<EActionType>()->GetNameStringByValue(static_cast<int64>(Action.Type)),
 			*StaticEnum<EBattleDirection>()->GetNameStringByValue(static_cast<int64>(Action.Direction)));
+
+		UE_LOG(LogBattleArena, Display, TEXT("[turno] %s"), *Linha);
+		FBattleDebugScreen::Show(Linha, 8.0f,
+			FCString::Strcmp(Quem, TEXT("oponente")) == 0 ? FColor::Orange : FColor::Cyan);
 	}
 }

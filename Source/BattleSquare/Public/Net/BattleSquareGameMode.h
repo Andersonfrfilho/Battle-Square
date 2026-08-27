@@ -18,6 +18,8 @@ class ABattleSquarePlayerController;
 // reage aos delegates dele e monta o que o Combate Online já construiu
 // (ABattleArena, UBattleTurnCoordinator, UBattleNetCommitComponent).
 class UWorldEncounterFlow;
+class UBattleActionSelectorWidget;
+class ABattleArena;
 
 // config=Game: as credenciais do espelho de pets e o pet do jogador vêm de
 // DefaultGame.ini, não de um Blueprint. O projeto não tem Blueprint algum, e
@@ -71,6 +73,26 @@ public:
 
 	/** Devolve o motivo quando não conseguiu ligar — nunca falha em silêncio. */
 	FString SetUpWorldEncounterFlow();
+
+	/**
+	 * Monta a interface de ações quando a batalha do mundo começa, e a
+	 * desmonta quando ela acaba.
+	 *
+	 * Sem isto o jogador caminhava, encontrava um oponente, a câmera ia para a
+	 * arena — e ele ficava olhando uma luta que não podia jogar.
+	 */
+	void HandleWorldBattleStarted(ABattleArena* Arena);
+
+	void HandleWorldBattleFinished();
+
+	void TearDownBattleUi();
+
+	/** Mesmo widget da tela de batalha: uma tela de ações, não duas. */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
+	FSoftClassPath BattleActionSelectorWidgetClassPath;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UBattleActionSelectorWidget> WorldBattleActionSelector;
 
 	/**
 	 * Carrega os pets do espelho configurado em DefaultGame.ini. Extraído para

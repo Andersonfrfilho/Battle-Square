@@ -55,5 +55,7 @@ ABattleArena* UWorldEncounterFlow::HandleEncounterTriggered(AWorldEncounterActor
 	}
 
 	Arena->BeginBattle(InitialState, Presentations);
+
+	OnWorldBattleStarted.Broadcast(Arena);
 	return Arena;
 }

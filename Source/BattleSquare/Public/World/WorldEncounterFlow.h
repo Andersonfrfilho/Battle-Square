@@ -32,6 +32,16 @@ public:
 
 	ABattleArena* HandleEncounterTriggered(AWorldEncounterActor* Encounter);
 
+	/**
+	 * Avisa que uma batalha COMEÇOU no mundo, com a arena já montada.
+	 *
+	 * O fluxo não cria interface: quem sabe qual widget usar é o GameMode.
+	 * Sem este aviso a batalha do mundo abria SEM botões de ação — o jogador
+	 * caía na luta e não tinha como jogar, que é pior que não ter a transição.
+	 */
+	DECLARE_MULTICAST_DELEGATE_OneParam(FWorldBattleStartedSignature, ABattleArena*);
+	FWorldBattleStartedSignature OnWorldBattleStarted;
+
 	UWorldBattleTransitionService* GetTransitionService() const { return TransitionService; }
 
 private:

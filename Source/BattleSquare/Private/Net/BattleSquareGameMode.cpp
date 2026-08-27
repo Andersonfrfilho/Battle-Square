@@ -1,6 +1,11 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Net/BattleSquareGameMode.h"
+#include "Blueprint/UserWidget.h"
+#include "Debug/BattleDebugToolbar.h"
+#include "Debug/BattleDebugScreen.h"
+#include "Battle/BattleActionQueueComponent.h"
+#include "UI/BattleActionSelectorWidget.h"
 #include "Net/BattleSquarePlayerController.h"
 #include "Debug/BattleDebugHUD.h"
 #include "Data/PetDataLoader.h"
@@ -177,6 +182,11 @@ FString ABattleSquareGameMode::SetUpWorldEncounterFlow()
 
 	WorldEncounterFlow = NewObject<UWorldEncounterFlow>(this);
 	WorldEncounterFlow->Initialize(DetectingPawn, Detection, ABattleArena::StaticClass(), MatchParams);
+
+	// A tela de ações se monta quando a batalha começa, não agora: montá-la
+	// aqui deixaria botões por cima do mundo aberto o tempo todo.
+	WorldEncounterFlow->OnWorldBattleStarted.AddUObject(
+		this, &ABattleSquareGameMode::HandleWorldBattleStarted);
 	return FString();
 }
 
@@ -401,4 +411,71 @@ void ABattleSquareGameMode::ConnectControllersToCoordinator(const FString& Code,
 			}
 		}
 	}
+}
+
+void ABattleSquareGameMode::HandleWorldBattleStarted(ABattleArena* Arena)
+{
+	if (!Arena || !Arena->PlayerActionQueue)
+	{
+		return;
+	}
+
+	// Já existe uma? Desmonta antes: dois seletores ligados a filas
+	// diferentes fariam metade dos cliques irem para a batalha anterior.
+	TearDownBattleUi();
+
+	UClass* WidgetClass = BattleActionSelectorWidgetClassPath.TryLoadClass<UBattleActionSelectorWidget>();
+	APlayerController* PlayerController = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
+	if (!WidgetClass || !PlayerController)
+	{
+		// Sem tela de ações a batalha seria injogável. Melhor dizer isso alto
+		// do que deixar o jogador achando que o jogo travou.
+		FBattleDebugScreen::Show(
+			TEXT("batalha do mundo SEM tela de ações — confira WorldBattleActionSelectorWidgetClassPath"),
+			0.0f, FColor::Red, /*Key=*/710);
+		return;
+	}
+
+	WorldBattleActionSelector = CreateWidget<UBattleActionSelectorWidget>(PlayerController, WidgetClass);
+	if (!WorldBattleActionSelector)
+	{
+		return;
+	}
+
+	WorldBattleActionSelector->BindToQueue(Arena->PlayerActionQueue);
+	WorldBattleActionSelector->AddToViewport();
+	WorldBattleActionSelector->SetKeyboardFocus();
+
+	FBattleDebugToolbar::Show(GetWorld());
+
+	// A batalha é o jogo agora: o mouse precisa clicar nos botões.
+	PlayerController->bShowMouseCursor = true;
+	PlayerController->SetInputMode(
+		FInputModeGameAndUI().SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock));
+
+	Arena->OnBattleFinished.AddUObject(this, &ABattleSquareGameMode::HandleWorldBattleFinished);
+}
+
+void ABattleSquareGameMode::HandleWorldBattleFinished()
+{
+	TearDownBattleUi();
+
+	// De volta ao mundo: cursor escondido e input de jogo, senão o explorador
+	// nasce sem responder e parece que a transição quebrou.
+	if (APlayerController* PlayerController = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr)
+	{
+		PlayerController->bShowMouseCursor = false;
+		PlayerController->SetInputMode(FInputModeGameOnly());
+	}
+}
+
+void ABattleSquareGameMode::TearDownBattleUi()
+{
+	if (WorldBattleActionSelector)
+	{
+		WorldBattleActionSelector->RemoveFromParent();
+		WorldBattleActionSelector = nullptr;
+	}
+
+	FBattleDebugToolbar::Hide();
 }

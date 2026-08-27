@@ -109,3 +109,26 @@ novo.
 extra. Isto não é código novo desta feature — é `FPetCollectionService` e
 `FPetProgressionService` rodando por dentro de `ABattleArena` (DP-enc-04). O
 que este item verifica é que a transição não os atropelou ao destruir a arena.
+
+---
+
+## Ponta ligada em 2026-08-27: a batalha do mundo tem interface
+
+Até aqui a transição levava o jogador à arena e o deixava **sem botões de
+ação** — ele caminhava, encontrava o oponente, a câmera ia para a arena, e ele
+ficava olhando uma luta que não podia jogar. Isso é pior que não ter transição:
+parece defeito do jogo, não recurso faltando.
+
+Agora o fluxo avisa quando a batalha começa, e o GameMode do mundo monta a
+**mesma** tela de ações da tela de batalha — uma tela, não duas.
+
+### ENC-10 — Caminhar até a batalha e voltar
+
+- [ ] Caminhar até um encontro leva à arena **com os botões de ação na tela**.
+- [ ] Dá para jogar o turno inteiro: escolher, confirmar, ver a reprodução.
+- [ ] A barra de depuração aparece (ações do jogador 2, copiar painel).
+- [ ] Ao fim da batalha, a tela de ações **some** e o controle volta ao mundo.
+- [ ] O explorador volta respondendo ao teclado — cursor escondido, input de
+      jogo. Se ele nascer parado, a transição de volta não completou.
+- [ ] Se o caminho do widget estiver errado no `.ini`, o painel diz isso em
+      vermelho em vez de abrir uma batalha injogável em silêncio.

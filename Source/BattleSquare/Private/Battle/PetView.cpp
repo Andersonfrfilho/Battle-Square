@@ -51,12 +51,17 @@ APetView::APetView()
 
 		// A câmera olha ao longo de +X, então a barra é FINA em X, larga em Y
 		// e baixa em Z. Escala em cima do cubo de 100uu da engine.
-		HealthBarBackground->SetRelativeScale3D(FVector(0.04f, BarWidthScale, BarHeightScale));
+		HealthBarBackground->SetRelativeScale3D(FVector(BarDepthScale, BarWidthScale, BarHeightScale));
 		HealthBarBackground->SetRelativeLocation(FVector(0.0f, 0.0f, BarHeightUnits));
 
-		// Levemente à frente do fundo, senão as duas faces brigam pelo mesmo
-		// plano e o preenchimento pisca conforme a câmera se move (z-fighting).
-		HealthBarFill->SetRelativeLocation(FVector(-1.0f, 0.0f, BarHeightUnits));
+		// O preenchimento fica INTEIRAMENTE à frente do fundo, e mais baixo.
+		//
+		// Deslocar só 1uu não bastava: com 4uu de espessura nos dois cubos, as
+		// faces continuavam no mesmo plano e a GPU não tinha como escolher qual
+		// desenhar — é o piscar. Com a separação maior que a espessura, nenhuma
+		// face coincide. Sendo mais baixo, o fundo ainda vira moldura, e a
+		// borda de cima (onde o piscar aparecia) deixa de ser compartilhada.
+		HealthBarFill->SetRelativeLocation(FVector(-BarFrontOffsetUnits, 0.0f, BarHeightUnits));
 	}
 
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> BasicMaterial(TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
@@ -85,14 +90,14 @@ void APetView::RefreshHealthBar()
 	}
 
 	const float Ratio = FMath::Clamp(HealthRatio, 0.0f, 1.0f);
-	HealthBarFill->SetRelativeScale3D(FVector(0.04f, BarWidthScale * Ratio, BarHeightScale));
+	HealthBarFill->SetRelativeScale3D(FVector(BarDepthScale, BarWidthScale * Ratio, BarFillHeightScale));
 
 	// O cubo tem origem no CENTRO: encolher a escala sozinha faria a barra
 	// sumir pelos DOIS lados. Deslocar metade do que se perdeu ancora ela à
 	// esquerda, que é como uma barra de vida se lê.
 	const float FullWidthUnits = BarWidthScale * CubeSizeUnits;
 	HealthBarFill->SetRelativeLocation(
-		FVector(-1.0f, -(FullWidthUnits * (1.0f - Ratio)) * 0.5f, BarHeightUnits));
+		FVector(-BarFrontOffsetUnits, -(FullWidthUnits * (1.0f - Ratio)) * 0.5f, BarHeightUnits));
 
 	if (HealthBarFillMaterial)
 	{

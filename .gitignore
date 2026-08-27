@@ -29,3 +29,8 @@ Build/
 
 # Configuração local do servidor MCP do Editor (endereço de loopback, por máquina)
 /.claude/
+
+# Artefatos binários da localização: gerados por Tools/gather_text.sh a partir
+# do manifesto e dos .po, que SÃO versionados.
+Content/Localization/*/*/*.locres
+Content/Localization/*/*.locmeta

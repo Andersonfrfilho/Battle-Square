@@ -101,7 +101,9 @@ a consultar em vez de caçar o mais recente.
 ## Verificação: rode antes de dar qualquer coisa por pronta
 
 ```bash
-./Tools/audit_determinism.sh && ./Tools/audit_no_recalculation.sh && ./Tools/probe_isolation.sh
+./Tools/audit_determinism.sh && ./Tools/audit_no_recalculation.sh
+./Tools/audit_localizable_text.sh   # texto do jogador precisa ser coletável
+./Tools/probe_isolation.sh
 ./Tools/sync_module_manifest.sh   # L-025: manifesto defasado faz teste novo sumir da contagem
 ```
 
@@ -111,6 +113,25 @@ Depois de `probe_isolation.sh`, **recompile** (L-020) — ela deixa o `.dylib` d
 **Feche o Editor antes de compilar** e reabra com `open -a` (não por shell em
 segundo plano): editor lançado em background não recebe teclado no PIE, o que
 custou várias rodadas de investigação inútil.
+
+---
+
+## Texto na tela é FText, nunca FString
+
+Todo texto que o **jogador lê** usa `LOCTEXT`/`NSLOCTEXT` com argumentos
+**nomeados** (`{Actor}`, não `{0}` — em alemão o objeto vem antes do verbo, e
+posicional obriga o tradutor a reordenar o que não é dele).
+
+A coleta lê o **código-fonte** procurando as macros. Por isso não existe teste
+de runtime que separe `FText::Format` de `FString::Printf` — tentei escrever um
+e ele afirmava uma diferença que a engine não expõe. Quem verifica é
+`Tools/audit_localizable_text.sh`.
+
+O modo de falhar é silencioso: alguém troca por `Printf` "porque é mais
+simples", nada quebra, o português continua certo, e o idioma novo nasce
+faltando linha. Depois de mexer em texto, rodar `./Tools/gather_text.sh`.
+
+Culturas empacotadas: `pt-BR` (nativa), `en`, `es`.
 
 ---
 

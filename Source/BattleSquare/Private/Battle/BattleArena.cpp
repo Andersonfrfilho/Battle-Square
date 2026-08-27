@@ -461,7 +461,7 @@ void ABattleArena::NarrateEvent(const FBattleEvent& Event)
 	const FPetPresentationInfo* Actor = PresentationsByPetId.Find(Event.ActorId);
 	const FPetPresentationInfo* Target = PresentationsByPetId.Find(Event.TargetId);
 
-	const FString Frase = FBattleNarration::Describe(Event,
+	const FText Frase = FBattleNarration::Describe(Event,
 		Actor ? Actor->Name : FString(),
 		Target ? Target->Name : FString());
 

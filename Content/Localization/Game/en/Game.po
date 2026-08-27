@@ -1,0 +1,239 @@
+﻿# Game English translation.
+# Fill out your copyright notice in the Description page of Project Settings.
+# 
+msgid ""
+msgstr ""
+"Project-Id-Version: Game\n"
+"POT-Creation-Date: 2026-08-27 11:56\n"
+"PO-Revision-Date: 2026-08-27 11:56\n"
+"Language-Team: \n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. Key:	B10706529142AAA06CE798BE26C87AE9
+#. SourceLocation:	/Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Aguardar_Label.Text
+#: /Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Aguardar_Label.Text
+msgctxt ",B10706529142AAA06CE798BE26C87AE9"
+msgid "Aguardar"
+msgstr ""
+
+#. Key:	4608AB541645A9D059D09A8B832C04E6
+#. SourceLocation:	/Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Atacar_Label.Text
+#: /Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Atacar_Label.Text
+msgctxt ",4608AB541645A9D059D09A8B832C04E6"
+msgid "Atacar"
+msgstr ""
+
+#. Key:	92D1E8892147A1DBC2483D9F378522B7
+#. SourceLocation:	/Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Baixo_Label.Text
+#: /Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Baixo_Label.Text
+msgctxt ",92D1E8892147A1DBC2483D9F378522B7"
+msgid "↓"
+msgstr ""
+
+#. Key:	D8AE0824CE4E21F7822070864218AB0A
+#. SourceLocation:	/Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_BaixoDireita_Label.Text
+#: /Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_BaixoDireita_Label.Text
+msgctxt ",D8AE0824CE4E21F7822070864218AB0A"
+msgid "↘"
+msgstr ""
+
+#. Key:	548B418CBD4374ABD93D27B61FFC5BE4
+#. SourceLocation:	/Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_BaixoEsquerda_Label.Text
+#: /Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_BaixoEsquerda_Label.Text
+msgctxt ",548B418CBD4374ABD93D27B61FFC5BE4"
+msgid "↙"
+msgstr ""
+
+#. Key:	998650104C4E853312D66DAD41AC5C29
+#. SourceLocation:	/Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Cancelar_Label.Text
+#: /Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Cancelar_Label.Text
+msgctxt ",998650104C4E853312D66DAD41AC5C29"
+msgid "Cancelar"
+msgstr ""
+
+#. Key:	343E3D72A34B5A3B125A7F8180390A92
+#. SourceLocation:	/Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Cima_Label.Text
+#: /Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Cima_Label.Text
+msgctxt ",343E3D72A34B5A3B125A7F8180390A92"
+msgid "↑"
+msgstr ""
+
+#. Key:	76009D5A5D40C6C820C99CA6CB858912
+#. SourceLocation:	/Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_CimaDireita_Label.Text
+#: /Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_CimaDireita_Label.Text
+msgctxt ",76009D5A5D40C6C820C99CA6CB858912"
+msgid "↗"
+msgstr ""
+
+#. Key:	9634BB2AEB4DD3EEC858E2BA372983BA
+#. SourceLocation:	/Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_CimaEsquerda_Label.Text
+#: /Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_CimaEsquerda_Label.Text
+msgctxt ",9634BB2AEB4DD3EEC858E2BA372983BA"
+msgid "↖"
+msgstr ""
+
+#. Key:	F0ACE92D52486DF21DAF58884DD0B9BC
+#. SourceLocation:	/Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Commit_Label.Text
+#: /Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Commit_Label.Text
+msgctxt ",F0ACE92D52486DF21DAF58884DD0B9BC"
+msgid "Confirmar turno"
+msgstr ""
+
+#. Key:	E3C80347AC46B688C96A868A81F8F69C
+#. SourceLocation:	/Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Defender_Label.Text
+#: /Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Defender_Label.Text
+msgctxt ",E3C80347AC46B688C96A868A81F8F69C"
+msgid "Defender"
+msgstr ""
+
+#. Key:	379DE706B04BCCBEF5571689781CA388
+#. SourceLocation:	/Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Desfazer_Label.Text
+#: /Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Desfazer_Label.Text
+msgctxt ",379DE706B04BCCBEF5571689781CA388"
+msgid "Desfazer"
+msgstr ""
+
+#. Key:	2533BDCDFF4F52396770C8BA091FD112
+#. SourceLocation:	/Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Direita_Label.Text
+#: /Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Direita_Label.Text
+msgctxt ",2533BDCDFF4F52396770C8BA091FD112"
+msgid "→"
+msgstr ""
+
+#. Key:	380BA17CD645A7638A1ED0BF4F19AD44
+#. SourceLocation:	/Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Esquerda_Label.Text
+#: /Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Esquerda_Label.Text
+msgctxt ",380BA17CD645A7638A1ED0BF4F19AD44"
+msgid "←"
+msgstr ""
+
+#. Key:	4C4E881F074D972D50C9CAB7E45E0F20
+#. SourceLocation:	/Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Esquivar_Label.Text
+#: /Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Esquivar_Label.Text
+msgctxt ",4C4E881F074D972D50C9CAB7E45E0F20"
+msgid "Esquivar"
+msgstr ""
+
+#. Key:	D4D28C4D9449A55983B6C6A2C05F3810
+#. SourceLocation:	/Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Magia_Label.Text
+#: /Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Magia_Label.Text
+msgctxt ",D4D28C4D9449A55983B6C6A2C05F3810"
+msgid "Magia"
+msgstr ""
+
+#. Key:	248771E4F74877BF68284DB4D803BAD5
+#. SourceLocation:	/Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Mover_Label.Text
+#: /Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Mover_Label.Text
+msgctxt ",248771E4F74877BF68284DB4D803BAD5"
+msgid "Mover"
+msgstr ""
+
+#. Key:	4F03AD8C7C4EC3933D6517B4C8B9430F
+#. SourceLocation:	/Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Text_Status.Text
+#: /Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Text_Status.Text
+msgctxt ",4F03AD8C7C4EC3933D6517B4C8B9430F"
+msgid "Ações: 0 de 3 — escolha o tipo"
+msgstr ""
+
+#. Key:	PetSemNome
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(26)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(26)
+msgctxt "BattleNarration,PetSemNome"
+msgid "O pet"
+msgstr ""
+
+#. Key:	AdversarioSemNome
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(27)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(27)
+msgctxt "BattleNarration,AdversarioSemNome"
+msgid "o adversário"
+msgstr ""
+
+#. Key:	AtaqueAcertou
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(33)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(33)
+msgctxt "BattleNarration,AtaqueAcertou"
+msgid "{Actor} atacou {Target} e acertou"
+msgstr ""
+
+#. Key:	AtaqueErrou
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(36)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(36)
+msgctxt "BattleNarration,AtaqueErrou"
+msgid "{Actor} atacou {Target} e errou"
+msgstr ""
+
+#. Key:	Esquivou
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(39)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(39)
+msgctxt "BattleNarration,Esquivou"
+msgid "{Actor} esquivou"
+msgstr ""
+
+#. Key:	Defendeu
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(42)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(42)
+msgctxt "BattleNarration,Defendeu"
+msgid "{Actor} defendeu o golpe"
+msgstr ""
+
+#. Key:	DanoAplicado
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(45)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(45)
+msgctxt "BattleNarration,DanoAplicado"
+msgid "{Target} perdeu {Value} de vida"
+msgstr ""
+
+#. Key:	PetMorreu
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(48)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(48)
+msgctxt "BattleNarration,PetMorreu"
+msgid "{Target} foi derrotado"
+msgstr ""
+
+#. Key:	MovimentoBloqueado
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(53)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(53)
+msgctxt "BattleNarration,MovimentoBloqueado"
+msgid "{Actor} tentou andar e esbarrou no limite da arena"
+msgstr ""
+
+#. Key:	PosturaAssumida
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(56)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(56)
+msgctxt "BattleNarration,PosturaAssumida"
+msgid "{Actor} assumiu postura"
+msgstr ""
+
+#. Key:	Moveu
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(59)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(59)
+msgctxt "BattleNarration,Moveu"
+msgid "{Actor} se moveu"
+msgstr ""
+
+#. Key:	Committed
+#. SourceLocation:	Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(145)
+#: Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(145)
+msgctxt "BattleUI,Committed"
+msgid "Turno fechado — aguardando o oponente"
+msgstr ""
+
+#. Key:	ChooseDirection
+#. SourceLocation:	Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(147)
+#: Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(147)
+msgctxt "BattleUI,ChooseDirection"
+msgid "Escolha a direção"
+msgstr ""
+
+#. Key:	ChooseType
+#. SourceLocation:	Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(148)
+#: Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(148)
+msgctxt "BattleUI,ChooseType"
+msgid "Ações: {0} de 3 — escolha o tipo"
+msgstr ""
+

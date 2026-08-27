@@ -4,6 +4,7 @@
 #include "Battle/BattleEvent.h"
 #include "Battle/BattleTypes.h"
 #include "Misc/AutomationTest.h"
+#include "Internationalization/Text.h"
 
 namespace
 {
@@ -19,7 +20,7 @@ namespace
 
 	FString Describe(const FBattleEvent& Event)
 	{
-		return FBattleNarration::Describe(Event, TEXT("Faísca"), TEXT("Brisa"));
+		return FBattleNarration::Describe(Event, TEXT("Faísca"), TEXT("Brisa")).ToString();
 	}
 }
 
@@ -72,7 +73,7 @@ bool FBattleNarrationStaysSilentOnBookkeepingTest::RunTest(const FString& Parame
 	// Nome ausente não pode produzir frase quebrada nem crash: o feed é a
 	// última coisa que pode derrubar uma partida.
 	const FString SemNome = FBattleNarration::Describe(
-		MakeEvent(EBattleEventType::AtaqueAcertou), FString(), FString());
+		MakeEvent(EBattleEventType::AtaqueAcertou), FString(), FString()).ToString();
 	TestFalse(TEXT("Sem nome ainda produz frase"), SemNome.IsEmpty());
 
 	return true;
@@ -92,20 +93,27 @@ bool FBattleNarrationFeedKeepsRecentLinesTest::RunTest(const FString& Parameters
 
 	// Linha vazia é recusada: é assim que o silêncio da contabilidade não vira
 	// linha em branco empurrando a frase útil para fora.
-	FBattleNarrationFeed::Push(FString(), FColor::White);
+	FBattleNarrationFeed::Push(FText::GetEmpty(), FColor::White);
 	TestTrue(TEXT("Linha vazia não entra"), FBattleNarrationFeed::GetLines().IsEmpty());
 
 	const int32 Excesso = FBattleNarrationFeed::MaxLines + 3;
 	for (int32 Index = 0; Index < Excesso; ++Index)
 	{
-		FBattleNarrationFeed::Push(FString::Printf(TEXT("linha %d"), Index), FColor::White);
+		FBattleNarrationFeed::Push(
+			FText::FromString(FString::Printf(TEXT("linha %d"), Index)), FColor::White);
 	}
 
 	const TArray<FBattleNarrationFeed::FLine>& Lines = FBattleNarrationFeed::GetLines();
 	TestEqual(TEXT("Respeita o teto"), Lines.Num(), FBattleNarrationFeed::MaxLines);
 	TestEqual(TEXT("A última é a mais recente"),
-		Lines.Last().Text, FString::Printf(TEXT("linha %d"), Excesso - 1));
+		Lines.Last().Text.ToString(), FString::Printf(TEXT("linha %d"), Excesso - 1));
 
 	FBattleNarrationFeed::Clear();
 	return true;
 }
+
+// A garantia de que a frase é COLETÁVEL não cabe aqui: a coleta lê o
+// código-fonte, não o processo. Quem verifica isso é
+// Tools/audit_localizable_text.sh — em runtime não existe propriedade que
+// separe FText::Format de FString::Printf, e um teste que finge separar é
+// pior que nenhum.

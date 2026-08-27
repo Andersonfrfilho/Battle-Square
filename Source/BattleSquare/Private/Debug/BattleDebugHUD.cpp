@@ -75,7 +75,7 @@ void ABattleDebugHUD::DrawNarrationFeed()
 
 	for (const FBattleNarrationFeed::FLine& Line : Lines)
 	{
-		DrawText(Line.Text, FLinearColor(Line.Color), FeedLeft + 12.0f, CursorY, nullptr, FeedTextScale);
+		DrawText(Line.Text.ToString(), FLinearColor(Line.Color), FeedLeft + 12.0f, CursorY, nullptr, FeedTextScale);
 		CursorY += FeedLineHeightUnits;
 	}
 }

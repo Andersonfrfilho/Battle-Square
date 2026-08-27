@@ -21,10 +21,14 @@ public:
 	 * DP-leg-01: função pura — sem estado, sem arena, sem efeito. É o que a
 	 * torna testável sem abrir o editor.
 	 *
-	 * Devolve string VAZIA para evento de contabilidade (início/fim de slot):
+	 * Devolve texto VAZIO para evento de contabilidade (início/fim de slot):
 	 * feed que narra tudo não narra nada, porque a frase útil some no meio.
+	 *
+	 * FText e não FString: é o que a ferramenta de localização consegue
+	 * coletar. String cravada não é traduzível por definição — não há de onde
+	 * a coleta tirar a chave.
 	 */
-	static FString Describe(const FBattleEvent& Event, const FString& ActorName, const FString& TargetName);
+	static FText Describe(const FBattleEvent& Event, const FString& ActorName, const FString& TargetName);
 };
 
 /**
@@ -39,14 +43,14 @@ class BATTLESQUARE_API FBattleNarrationFeed
 public:
 	struct FLine
 	{
-		FString Text;
+		FText Text;
 		FColor Color = FColor::White;
 	};
 
 	/** Teto fixo pelo mesmo motivo do painel: o que cresce sem limite não cabe. */
 	static constexpr int32 MaxLines = 5;
 
-	static void Push(const FString& Text, const FColor& Color);
+	static void Push(const FText& Text, const FColor& Color);
 	static void Clear();
 	static const TArray<FLine>& GetLines();
 };

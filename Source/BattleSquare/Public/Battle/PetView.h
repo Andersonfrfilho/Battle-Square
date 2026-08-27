@@ -95,6 +95,14 @@ private:
 	static constexpr float BarWidthScale = 0.9f;
 	static constexpr float BarHeightScale = 0.09f;
 	static constexpr float BarHeightUnits = 105.0f;
+	static constexpr float BarDepthScale = 0.04f;
+
+	// Menor que o fundo, para ele virar moldura e as bordas NÃO coincidirem.
+	static constexpr float BarFillHeightScale = 0.06f;
+
+	// Maior que a espessura do cubo (BarDepthScale * CubeSizeUnits = 4uu):
+	// separação menor que isso deixa faces no mesmo plano, e é o que piscava.
+	static constexpr float BarFrontOffsetUnits = 6.0f;
 
 public:
 

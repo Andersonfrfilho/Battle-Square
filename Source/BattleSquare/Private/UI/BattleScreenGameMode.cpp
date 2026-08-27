@@ -150,6 +150,11 @@ FString ABattleScreenGameMode::StartScreenBattle()
 	// DEPOIS de entrar na viewport, senão não há Slate widget para focar.
 	ActionSelector->SetKeyboardFocus();
 
+	if (bStartControllingBothSides)
+	{
+		ScreenArena->SetControllingBothSides(true);
+	}
+
 	// Tecla que ninguém sabe que existe não existe. Isto fica FIXO no painel
 	// (Key própria, sem empilhar) porque o usuário apertou F9 sem retorno e
 	// procurou por botões de controlar o oponente que, por desenho, não

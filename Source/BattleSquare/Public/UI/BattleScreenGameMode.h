@@ -39,6 +39,16 @@ public:
 	UPROPERTY(config, EditDefaultsOnly, Category = "Tela de Batalha")
 	FSoftClassPath ActionSelectorWidgetClassPath;
 
+	/**
+	 * Começar a batalha já escolhendo pelos DOIS lados.
+	 *
+	 * Existe porque a tecla falhou três vezes e o console é atrito: com isto
+	 * em DefaultGame.ini a capacidade fica disponível sem depender de input
+	 * nenhum. Ambiente de desenvolvimento, batalha local contra bot.
+	 */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Depuração")
+	bool bStartControllingBothSides = false;
+
 	UPROPERTY()
 	TObjectPtr<ABattleArena> ScreenArena;
 

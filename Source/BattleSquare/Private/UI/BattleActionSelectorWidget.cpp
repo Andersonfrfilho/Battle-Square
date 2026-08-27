@@ -2,6 +2,7 @@
 
 #include "UI/BattleActionSelectorWidget.h"
 #include "Debug/BattleDebugKeys.h"
+#include "Debug/BattleDebugScreen.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
 #include "Battle/BattleGridNavigation.h"
@@ -170,15 +171,26 @@ void UBattleActionSelectorWidget::RefreshLayoutFromState()
 	}
 }
 
-void UBattleActionSelectorWidget::OnClickAguardar() { BeginSelectingType(EActionType::Aguardar); }
-void UBattleActionSelectorWidget::OnClickMover()    { BeginSelectingType(EActionType::Mover); }
-void UBattleActionSelectorWidget::OnClickAtacar()   { BeginSelectingType(EActionType::Atacar); }
-void UBattleActionSelectorWidget::OnClickMagia()    { BeginSelectingType(EActionType::Magia); }
-void UBattleActionSelectorWidget::OnClickDefender() { BeginSelectingType(EActionType::Defender); }
-void UBattleActionSelectorWidget::OnClickEsquivar() { BeginSelectingType(EActionType::Esquivar); }
-void UBattleActionSelectorWidget::OnClickCamuflar() { BeginSelectingType(EActionType::Camuflar); }
-void UBattleActionSelectorWidget::OnClickVoar() { BeginSelectingType(EActionType::Voar); }
-void UBattleActionSelectorWidget::OnClickSubmergir() { BeginSelectingType(EActionType::Submergir); }
+void UBattleActionSelectorWidget::LogClick(const TCHAR* Rotulo)
+{
+	// Pedido do usuário, e a intuição dele já tinha resolvido um problema de
+	// input antes: o clique é o único evento que se SABE que acontece, porque
+	// a pessoa viu o botão reagir. Se o clique aparece no painel e a ação não
+	// muda nada, o defeito está depois do clique; se nem o clique aparece, o
+	// widget nem está recebendo. Uma rodada, duas respostas.
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("clique: %s"), Rotulo), 10.0f, FColor::White, /*Key=*/-1);
+}
+
+void UBattleActionSelectorWidget::OnClickAguardar() { LogClick(TEXT("Aguardar")); BeginSelectingType(EActionType::Aguardar); }
+void UBattleActionSelectorWidget::OnClickMover()    { LogClick(TEXT("Mover")); BeginSelectingType(EActionType::Mover); }
+void UBattleActionSelectorWidget::OnClickAtacar()   { LogClick(TEXT("Atacar")); BeginSelectingType(EActionType::Atacar); }
+void UBattleActionSelectorWidget::OnClickMagia()    { LogClick(TEXT("Magia")); BeginSelectingType(EActionType::Magia); }
+void UBattleActionSelectorWidget::OnClickDefender() { LogClick(TEXT("Defender")); BeginSelectingType(EActionType::Defender); }
+void UBattleActionSelectorWidget::OnClickEsquivar() { LogClick(TEXT("Esquivar")); BeginSelectingType(EActionType::Esquivar); }
+void UBattleActionSelectorWidget::OnClickCamuflar() { LogClick(TEXT("Camuflar")); BeginSelectingType(EActionType::Camuflar); }
+void UBattleActionSelectorWidget::OnClickVoar() { LogClick(TEXT("Voar")); BeginSelectingType(EActionType::Voar); }
+void UBattleActionSelectorWidget::OnClickSubmergir() { LogClick(TEXT("Submergir")); BeginSelectingType(EActionType::Submergir); }
 
 void UBattleActionSelectorWidget::OnClickCimaEsquerda()  { ConfirmDirection(EBattleDirection::CimaEsquerda); }
 void UBattleActionSelectorWidget::OnClickCima()          { ConfirmDirection(EBattleDirection::Cima); }

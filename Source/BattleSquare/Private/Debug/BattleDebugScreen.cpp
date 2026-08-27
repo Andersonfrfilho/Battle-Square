@@ -74,6 +74,7 @@ void FBattleDebugScreen::Show(const FString& Message, float /*Seconds*/, const F
 			{
 				Existing.Text = Message;
 				Existing.Color = Color;
+				SaveToFile();
 				return;
 			}
 		}
@@ -85,6 +86,29 @@ void FBattleDebugScreen::Show(const FString& Message, float /*Seconds*/, const F
 	{
 		Lines.RemoveAt(0);
 	}
+
+	// GRAVA SOZINHO, a cada mudança.
+	//
+	// A tecla de copiar falhou três vezes seguidas, e cada tentativa custou
+	// uma rodada do usuário. O arquivo não depende de tecla, de foco, de modo
+	// de input nem da área de transferência — ele simplesmente está lá, e
+	// quem estiver ajudando lê direto. F9 vira conveniência, não requisito.
+	SaveToFile();
+}
+
+void FBattleDebugScreen::SaveToFile()
+{
+	const TArray<FLine>& Lines = MutableLines();
+
+	FString Texto;
+	for (const FLine& Line : Lines)
+	{
+		Texto += Line.Text;
+		Texto += LINE_TERMINATOR;
+	}
+
+	FFileHelper::SaveStringToFile(Texto,
+		*FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("BattleDebug.txt")));
 }
 
 void FBattleDebugScreen::CopyToClipboard()

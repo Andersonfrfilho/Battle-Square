@@ -51,6 +51,9 @@ public:
 	 */
 	static void CopyToClipboard();
 
+	/** Grava o painel em Saved/BattleDebug.txt. Chamado a cada mudança. */
+	static void SaveToFile();
+
 	static bool IsEnabled();
 
 	/** Linhas atuais, da mais antiga para a mais recente. */

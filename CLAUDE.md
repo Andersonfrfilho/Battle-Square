@@ -77,8 +77,23 @@ modo é `GameAndUI`, e a tecla morria calada. O ouvinte vê a tecla antes de
 qualquer camada poder engoli-la — e é **caminho único**, porque tratar nos dois
 lugares faria F7 alternar duas vezes por toque.
 
+**O painel se grava sozinho** em `Saved/BattleDebug.txt` a cada mudança. F9
+virou conveniência, não requisito: o arquivo não depende de tecla, de foco, de
+modo de input nem da área de transferência. Quem estiver ajudando lê direto.
+
+Isso veio de a tecla de copiar falhar TRÊS vezes seguidas, cada tentativa
+custando uma rodada do usuário. Quando um caminho falha três vezes, o defeito
+é a dependência, não o detalhe.
+
 Se uma tecla parecer morta: `bs.LogKeys 1` mostra no painel toda tecla que
 chega e por qual camada. Medir antes de consertar.
+
+**Todo clique de botão aparece no painel** (`clique: Atacar`). Se o clique
+aparece e a ação não muda nada, o defeito está depois do clique; se nem o
+clique aparece, o widget não está recebendo. Uma rodada, duas respostas.
+
+Para controlar os dois lados sem depender de input nenhum:
+`bStartControllingBothSides=True` em `Config/DefaultGame.ini`.
 
 O painel é **desenhado**, não é campo de texto: o mouse nunca consegue
 selecioná-lo. Por isso a cópia é por tecla — e por isso ela também grava

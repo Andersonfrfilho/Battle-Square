@@ -140,6 +140,8 @@ private:
 	uint8 OwningPetColumn = 1;
 	uint8 OwningPetRow = 1;
 
+	void LogClick(const TCHAR* Rotulo);
+
 	UFUNCTION() void OnClickAguardar();
 	UFUNCTION() void OnClickMover();
 	UFUNCTION() void OnClickAtacar();

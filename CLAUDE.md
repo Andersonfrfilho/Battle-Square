@@ -18,6 +18,7 @@ apareceram — e sete só foram encontrados porque um humano olhou a tela**:
 | Defeito | Por que nenhum teste pegou |
 |---|---|
 | Pets invisíveis (`APetView` sem componente visual) | O ator existia e a lógica passava |
+| **Inimigos do mundo invisíveis** (malha nunca atribuída) | Mesmo padrão, um mês depois: andavam e disparavam batalha |
 | Câmera apontada para longe da arena | A batalha rodava, só que fora de campo |
 | Pet afundando meio corpo no tabuleiro | Posição correta, offset visual errado |
 | "Baixo" andava para a direita | Eixos da grade contra os da câmera |

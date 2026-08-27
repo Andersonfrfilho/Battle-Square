@@ -5,6 +5,8 @@
 #include "Misc/AutomationTest.h"
 #include "World/EncounterRoamingComponent.h"
 #include "World/WorldEncounterActor.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
 
 namespace
 {
@@ -120,6 +122,32 @@ bool FEncounterRoamingIsSeededTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("Semente diferente leva a outro lugar"),
 			FVector::Dist(Cena.Encontro->GetActorLocation(), Primeiro) > 1.0f);
 	}
+
+	return true;
+}
+
+// O inimigo do mundo precisa TER CORPO.
+//
+// Ele nasceu sem malha atribuída: existia, andava, disparava batalha — e era
+// invisível. É o mesmo defeito de APetView, e ele passa em qualquer teste de
+// lógica justamente porque nenhum deles olha a tela. Este olha.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FWorldEncounterHasAVisibleBodyTest,
+	"BattleSquare.World.EncounterActor.HasAVisibleBody",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FWorldEncounterHasAVisibleBodyTest::RunTest(const FString& Parameters)
+{
+	const AWorldEncounterActor* Padrao = GetDefault<AWorldEncounterActor>();
+
+	TestTrue(TEXT("Tem componente de malha"), Padrao->EncounterMesh != nullptr);
+	TestTrue(TEXT("E a malha está ATRIBUÍDA — sem isto ele é invisível"),
+		Padrao->EncounterMesh->GetStaticMesh() != nullptr);
+
+	// Levantado pelo raio: origem no centro faria ele nascer meio enterrado,
+	// que já aconteceu na arena.
+	TestTrue(TEXT("Levantado do chão"),
+		Padrao->EncounterMesh->GetRelativeLocation().Z > 1.0f);
 
 	return true;
 }

@@ -25,6 +25,8 @@ class BATTLESQUARE_API AWorldEncounterActor : public AActor
 public:
 	AWorldEncounterActor();
 
+	virtual void BeginPlay() override;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Encontro")
 	FName CatalogId = NAME_None;
 
@@ -40,4 +42,8 @@ public:
 	FEncounterCandidate MakeEncounterCandidate() const;
 
 	void MarkResolved() { bIsResolved = true; }
+
+private:
+	static constexpr float BodyScale = 0.9f;
+	static constexpr float SphereRadiusUnits = 50.0f;
 };

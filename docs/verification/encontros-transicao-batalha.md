@@ -140,7 +140,10 @@ tivesse colocado à mão no nível. Caminhar pelo mundo nunca disparava batalha,
 nada acusava — o recurso inteiro ficava inalcançável em silêncio.
 
 - [ ] Ao entrar no mundo, o painel diz `N encontros povoaram o mundo, e eles ANDAM`.
+- [ ] Você **VÊ** os inimigos (esferas laranja) — eles nasceram sem malha
+      atribuída, invisíveis, e nenhum teste de lógica acusava.
 - [ ] Os inimigos **se movem** e viram para onde andam.
+- [ ] Eles não estão meio enterrados no chão.
 - [ ] Eles não somem no horizonte: o passeio é ao redor de onde nasceram.
 - [ ] Nenhum nasce em cima do jogador — dá para andar antes do primeiro encontro.
 - [ ] Encostar em um leva à batalha, **com botões** (ENC-10).

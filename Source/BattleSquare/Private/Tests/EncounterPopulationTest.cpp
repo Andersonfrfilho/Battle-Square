@@ -22,11 +22,11 @@ namespace
 		return Total;
 	}
 
-	struct FScopedWorld
+	struct FScopedPopulationWorld
 	{
 		UWorld* World = nullptr;
 
-		FScopedWorld()
+		FScopedPopulationWorld()
 		{
 			World = UWorld::CreateWorld(EWorldType::Game, false);
 			FWorldContext& Context = GEngine->CreateNewWorldContext(EWorldType::Game);
@@ -34,7 +34,7 @@ namespace
 			World->InitializeActorsForPlay(FURL());
 		}
 
-		~FScopedWorld()
+		~FScopedPopulationWorld()
 		{
 			GEngine->DestroyWorldContext(World);
 			World->DestroyWorld(false);
@@ -51,7 +51,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FEncounterPopulationRefillsTest::RunTest(const FString& Parameters)
 {
-	FScopedWorld Cena;
+	FScopedPopulationWorld Cena;
 
 	ABattleSquareGameMode* GameMode = Cena.World->SpawnActor<ABattleSquareGameMode>();
 	GameMode->WorldEncounterCount = 3;
@@ -85,7 +85,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FEncounterPopulationDoesNotOverfillTest::RunTest(const FString& Parameters)
 {
-	FScopedWorld Cena;
+	FScopedPopulationWorld Cena;
 
 	ABattleSquareGameMode* GameMode = Cena.World->SpawnActor<ABattleSquareGameMode>();
 	GameMode->WorldEncounterCount = 4;

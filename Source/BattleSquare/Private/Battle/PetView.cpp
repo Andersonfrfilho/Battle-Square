@@ -2,10 +2,61 @@
 
 #include "Battle/PetView.h"
 #include "Battle/BattleTypes.h"
+#include "Components/StaticMeshComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "UObject/ConstructorHelpers.h"
 
 APetView::APetView()
 {
 	PrimaryActorTick.bCanEverTick = false;
+
+	BodyMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BodyMesh"));
+	SetRootComponent(BodyMesh);
+	// Sem colisão: o pet é apresentação, e o núcleo é quem decide onde ele
+	// está. Um corpo que empurra outro seria uma segunda fonte de verdade.
+	BodyMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	// Conteúdo da engine, não vendorizado — mesmo princípio de AD-019.
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereMesh(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+	if (SphereMesh.Succeeded())
+	{
+		BodyMesh->SetStaticMesh(SphereMesh.Object);
+
+		// A esfera da engine tem 100uu de diâmetro e origem no CENTRO. A casa
+		// da grade fica no nível do chão, então sem levantar pelo raio o pet
+		// nasce metade enterrado no tabuleiro.
+		constexpr float BodyScale = 0.7f;
+		constexpr float SphereRadiusUnits = 50.0f;
+		BodyMesh->SetRelativeScale3D(FVector(BodyScale));
+		BodyMesh->SetRelativeLocation(FVector(0.0f, 0.0f, SphereRadiusUnits * BodyScale));
+	}
+
+	static ConstructorHelpers::FObjectFinder<UMaterialInterface> BasicMaterial(TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+	if (BasicMaterial.Succeeded())
+	{
+		BodyMesh->SetMaterial(0, BasicMaterial.Object);
+	}
+}
+
+void APetView::RefreshBodyAppearance()
+{
+	if (!BodyMesh)
+	{
+		return;
+	}
+
+	if (!BodyMaterial)
+	{
+		BodyMaterial = BodyMesh->CreateDynamicMaterialInstance(0);
+	}
+	if (BodyMaterial)
+	{
+		BodyMaterial->SetVectorParameterValue(TEXT("Color"),
+			Side == 0 ? LocalSideColor : OpponentSideColor);
+	}
+
+	// Derrotado some do tabuleiro — o núcleo já o tirou da partida.
+	BodyMesh->SetVisibility(!bDefeated);
 }
 
 void APetView::SetInitialState(const FPetState& InitialState, const FPetPresentationInfo& Presentation)
@@ -14,8 +65,11 @@ void APetView::SetInitialState(const FPetState& InitialState, const FPetPresenta
 	Column = InitialState.Column;
 	Row = InitialState.Row;
 	MaxHealth = InitialState.MaxHealth;
+	Side = InitialState.Side;
 	HealthRatio = MaxHealth > 0 ? 1.0f : 0.0f;
 	bDefeated = false;
+
+	RefreshBodyAppearance();
 }
 
 void APetView::ApplyEvent(const FBattleEvent& Event)

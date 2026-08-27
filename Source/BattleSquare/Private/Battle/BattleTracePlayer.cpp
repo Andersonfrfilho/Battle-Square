@@ -50,3 +50,30 @@ void UBattleTracePlayer::SkipToEnd(const TArray<FBattleEvent>& Trace)
 		OnEventApplied.Broadcast(Event);
 	}
 }
+
+void UBattleTracePlayer::StartPlayback(const TArray<FBattleEvent>& Trace)
+{
+	PendingGroups = GroupBattleEventsByPhase(Trace);
+	NextGroupIndex = 0;
+	// O primeiro grupo sai NA HORA: esperar um intervalo antes de qualquer
+	// coisa acontecer faria o commit parecer que não registrou.
+	SecondsSinceLastGroup = SecondsPerGroup;
+	Advance(0.0f);
+}
+
+bool UBattleTracePlayer::Advance(float DeltaSeconds)
+{
+	SecondsSinceLastGroup += DeltaSeconds;
+
+	while (PendingGroups.IsValidIndex(NextGroupIndex) && SecondsSinceLastGroup >= SecondsPerGroup)
+	{
+		for (const FBattleEvent& Event : PendingGroups[NextGroupIndex])
+		{
+			OnEventApplied.Broadcast(Event);
+		}
+		++NextGroupIndex;
+		SecondsSinceLastGroup -= SecondsPerGroup;
+	}
+
+	return IsPlaying();
+}

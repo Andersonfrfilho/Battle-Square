@@ -32,6 +32,8 @@ class BATTLESQUARE_API ABattleArena : public AActor
 public:
 	ABattleArena();
 
+	virtual void Tick(float DeltaSeconds) override;
+
 	// Tamanho de uma casa da grade, em unidades do mundo — a única fonte
 	// de verdade para o espaçamento; nunca um número mágico espalhado.
 	UPROPERTY(EditDefaultsOnly, Category = "Grade")
@@ -160,6 +162,11 @@ private:
 
 	/** Destrava a fila para a próxima rodada, se a batalha ainda não acabou. */
 	void OpenNextTurnIfBattleContinues();
+
+	// A rodada seguinte só abre quando a reprodução do trace termina: abrir
+	// antes deixaria o jogador escolhendo o próximo turno enquanto o anterior
+	// ainda está acontecendo na tela.
+	bool bWaitingForPlaybackToOpenNextTurn = false;
 
 	bool bHasAnnouncedBattleFinished = false;
 };

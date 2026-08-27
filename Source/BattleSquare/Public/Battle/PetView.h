@@ -9,6 +9,9 @@
 #include "Data/BattleDataTranslator.h"
 #include "PetView.generated.h"
 
+class UStaticMeshComponent;
+class UMaterialInstanceDynamic;
+
 // T8 (tasks.md, PRES-11/12/13): lado lógico do pet na apresentação — reage
 // a eventos do trace (via UBattleTracePlayer, T7), nunca calcula dano ou
 // alcance. O que a visão sabe é só o que o evento já trouxe pronto —
@@ -47,9 +50,36 @@ public:
 	UFUNCTION(BlueprintPure)
 	uint8 GetPetId() const { return PetId; }
 
+	/**
+	 * Corpo de placeholder. Até 2026-08-26 este ator não tinha componente
+	 * visual NENHUM — nem RootComponent — e por isso era invisível e ficava
+	 * na origem (AActor sem raiz ignora SetActorLocation em silêncio, o mesmo
+	 * modo de falha de L-018). A batalha acontecia com o tabuleiro vazio.
+	 */
+	UPROPERTY(VisibleAnywhere, Category = "Apresentação")
+	TObjectPtr<UStaticMeshComponent> BodyMesh;
+
+	/** Cor por lado: quem é meu, quem é do outro. */
+	UPROPERTY(EditDefaultsOnly, Category = "Apresentação")
+	FLinearColor LocalSideColor = FLinearColor(0.15f, 0.45f, 0.95f);
+
+	UPROPERTY(EditDefaultsOnly, Category = "Apresentação")
+	FLinearColor OpponentSideColor = FLinearColor(0.95f, 0.25f, 0.20f);
+
+	/** Aplica a cor do lado e o estado de derrota ao corpo. */
+	void RefreshBodyAppearance();
+
+	uint8 GetSide() const { return Side; }
+
 private:
 	UPROPERTY()
 	uint8 PetId = 0;
+
+	UPROPERTY()
+	uint8 Side = 0;
+
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> BodyMaterial;
 
 	UPROPERTY()
 	uint8 Column = 0;

@@ -10,7 +10,7 @@
 
 ABattleArena::ABattleArena()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
 	ArenaRoot = CreateDefaultSubobject<USceneComponent>(TEXT("ArenaRoot"));
 	SetRootComponent(ArenaRoot);
@@ -151,6 +151,13 @@ void ABattleArena::DispatchEventToPetViews(const FBattleEvent& Event)
 		if (View && (View->GetPetId() == Event.ActorId || View->GetPetId() == Event.TargetId))
 		{
 			View->ApplyEvent(Event);
+
+			// A conversão casa -> mundo é da ARENA, não da view: é ela que
+			// conhece CellSize e a origem da grade. A view só sabe em que
+			// casa está. Sem isto o pet muda de casa no estado e não sai do
+			// lugar na tela.
+			View->SetActorLocation(GetCellWorldLocation(View->GetColumn(), View->GetRow()));
+			View->RefreshBodyAppearance();
 		}
 	}
 }
@@ -170,11 +177,15 @@ void ABattleArena::HandleCoordinatorTurnResolved(const FBattleState& NextState, 
 	CheckForCapture(Trace);
 	GrantExperienceIfOwned(Trace);
 	AnnounceBattleFinishedIfEnded(Trace);
-	OpenNextTurnIfBattleContinues();
 
 	if (TracePlayer)
 	{
-		TracePlayer->PlayTrace(Trace);
+		TracePlayer->StartPlayback(Trace);
+		bWaitingForPlaybackToOpenNextTurn = true;
+	}
+	else
+	{
+		OpenNextTurnIfBattleContinues();
 	}
 }
 
@@ -316,11 +327,15 @@ void ABattleArena::HandlePlayerCommitted()
 	CheckForCapture(Result.Trace);
 	GrantExperienceIfOwned(Result.Trace);
 	AnnounceBattleFinishedIfEnded(Result.Trace);
-	OpenNextTurnIfBattleContinues();
 
 	if (TracePlayer)
 	{
-		TracePlayer->PlayTrace(Result.Trace);
+		TracePlayer->StartPlayback(Result.Trace);
+		bWaitingForPlaybackToOpenNextTurn = true;
+	}
+	else
+	{
+		OpenNextTurnIfBattleContinues();
 	}
 }
 
@@ -334,4 +349,20 @@ void ABattleArena::OpenNextTurnIfBattleContinues()
 	}
 
 	PlayerActionQueue->BeginNewTurn();
+}
+
+void ABattleArena::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (!bWaitingForPlaybackToOpenNextTurn || !TracePlayer)
+	{
+		return;
+	}
+
+	if (!TracePlayer->Advance(DeltaSeconds))
+	{
+		bWaitingForPlaybackToOpenNextTurn = false;
+		OpenNextTurnIfBattleContinues();
+	}
 }

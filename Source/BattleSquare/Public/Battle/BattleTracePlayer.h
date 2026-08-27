@@ -44,4 +44,31 @@ public:
 	// Aplica o trace inteiro imediatamente — usado quando o jogador pula
 	// a animação. Não exige que grupos anteriores já tenham "tocado".
 	void SkipToEnd(const TArray<FBattleEvent>& Trace);
+
+	/**
+	 * Reprodução COM TEMPO: um grupo de fase por intervalo.
+	 *
+	 * PlayTrace transmite o trace inteiro num frame só — e por isso as três
+	 * ações do turno aconteciam instantaneamente, sem o jogador conseguir ver
+	 * o que houve. Isto separa "aplicar o trace" de "mostrar o trace".
+	 *
+	 * O tempo é INJETADO em Advance, nunca lido de um relógio interno: é o
+	 * que torna a reprodução testável sem esperar de verdade (mesmo padrão de
+	 * UBattleTurnCoordinator, M2).
+	 */
+	void StartPlayback(const TArray<FBattleEvent>& Trace);
+
+	/** Devolve true enquanto ainda houver grupo por mostrar. */
+	bool Advance(float DeltaSeconds);
+
+	bool IsPlaying() const { return PendingGroups.IsValidIndex(NextGroupIndex); }
+
+	/** Segundos entre um grupo de fase e o seguinte. */
+	UPROPERTY(EditDefaultsOnly, Category = "Apresentação")
+	float SecondsPerGroup = 0.45f;
+
+private:
+	TArray<TArray<FBattleEvent>> PendingGroups;
+	int32 NextGroupIndex = 0;
+	float SecondsSinceLastGroup = 0.0f;
 };

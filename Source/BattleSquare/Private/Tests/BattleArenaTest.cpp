@@ -133,7 +133,19 @@ bool FBattleArenaFullTurnEndToEndTest::RunTest(const FString& Parameters)
 	// O commit resolve o turno e, se a batalha continua, a fila reabre para a
 	// rodada seguinte. O travamento em si segue coberto, isolado, em
 	// BattleSquare.UI.BattleActionSelector.LockedAfterCommit.
-	TestFalse(TEXT("Turno seguinte reaberto: a fila destrava depois da resolução"),
+	// A rodada resolve na hora, mas a REPRODUÇÃO leva tempo: as três ações
+	// aparecem uma fase por vez. Abrir o turno seguinte antes disso deixaria
+	// o jogador escolhendo o próximo turno com o anterior ainda na tela.
+	TestTrue(TEXT("Enquanto o trace toca, a fila segue travada"),
+		Arena->PlayerActionQueue->IsCommitted());
+
+	// Tempo injetado: dirige a reprodução até o fim sem esperar de verdade.
+	for (int32 Frame = 0; Frame < 60 && Arena->PlayerActionQueue->IsCommitted(); ++Frame)
+	{
+		Arena->Tick(0.5f);
+	}
+
+	TestFalse(TEXT("Terminada a reprodução, a fila destrava para a rodada seguinte"),
 		Arena->PlayerActionQueue->IsCommitted());
 	TestEqual(TEXT("E começa vazia, sem vazar as ações da rodada anterior"),
 		Arena->PlayerActionQueue->GetConfirmedActionCount(), 0);

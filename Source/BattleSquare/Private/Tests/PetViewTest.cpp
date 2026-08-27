@@ -81,3 +81,31 @@ bool FPetViewAppliesEventsFromRealTraceTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPetViewHasVisibleBodyTest,
+	"BattleSquare.PetView.HasVisibleBodyAndFollowsItsCell",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FPetViewHasVisibleBodyTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
+	FWorldContext& WorldContext = GEngine->CreateNewWorldContext(EWorldType::Game);
+	WorldContext.SetCurrentWorld(World);
+	World->InitializeActorsForPlay(FURL());
+
+	APetView* View = World->SpawnActor<APetView>();
+
+	// Até 2026-08-26 esta classe não tinha componente visual nenhum: era
+	// invisível E ficava presa na origem, porque AActor sem RootComponent
+	// ignora SetActorLocation em silêncio (mesmo modo de falha de L-018).
+	TestNotNull(TEXT("o pet tem corpo"), View->BodyMesh.Get());
+	TestNotNull(TEXT("e o corpo é a raiz — sem isso o ator não se move"), View->GetRootComponent());
+
+	View->SetActorLocation(FVector(300.0, -150.0, 20.0));
+	TestEqual(TEXT("agora ele obedece a SetActorLocation"),
+		View->GetActorLocation(), FVector(300.0, -150.0, 20.0));
+
+	GEngine->DestroyWorldContext(World);
+	World->DestroyWorld(false);
+	return true;
+}

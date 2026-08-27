@@ -511,35 +511,109 @@ void ABattleSquareGameMode::SpawnRoamingEncounters()
 
 	for (int32 Indice = 0; Indice < WorldEncounterCount; ++Indice)
 	{
-		// Longe o bastante para não disparar batalha no primeiro passo: nascer
-		// dentro do raio de encontro tiraria o jogador do mundo antes de ele
-		// andar.
-		const float Angulo = Sorteio.FRandRange(0.0f, 2.0f * PI);
-		const float Distancia = FMath::Lerp(WorldEncounterSpawnRadiusUnits * 0.25f,
-			WorldEncounterSpawnRadiusUnits, Sorteio.FRand());
-
-		const FVector Posicao = Centro
-			+ FVector(FMath::Cos(Angulo) * Distancia, FMath::Sin(Angulo) * Distancia, 0.0f);
-
-		AWorldEncounterActor* Encontro = World->SpawnActor<AWorldEncounterActor>(
-			AWorldEncounterActor::StaticClass(), Posicao, FRotator::ZeroRotator);
-		if (!Encontro)
-		{
-			continue;
-		}
-
-		const int32 CatalogoIndice = Sorteio.RandRange(0, WorldEncounterCatalogIds.Num() - 1);
-		Encontro->CatalogId = FName(*WorldEncounterCatalogIds[CatalogoIndice]);
-
-		UEncounterRoamingComponent* Passeio = NewObject<UEncounterRoamingComponent>(Encontro);
-		Passeio->RegisterComponent();
-
-		// Semente derivada do índice: dois encontros criados no mesmo quadro
-		// precisam andar diferente, senão passeiam colados.
-		Passeio->ConfigureRoaming(Posicao, WorldEncounterSeed + Indice * 7919);
+		SpawnOneEncounter(Centro, Sorteio, WorldEncounterSeed + Indice * 7919);
 	}
 
 	FBattleDebugScreen::Show(
 		FString::Printf(TEXT("%d encontros povoaram o mundo, e eles ANDAM"), WorldEncounterCount),
 		0.0f, FColor::Green, /*Key=*/720);
+
+	// A reposição confere de tempos em tempos, e não a cada quadro: a
+	// população muda por batalha, não por frame.
+	if (EncounterPopulationCheckSeconds > 0.0f)
+	{
+		World->GetTimerManager().SetTimer(EncounterPopulationTimer, this,
+			&ABattleSquareGameMode::MaintainEncounterPopulation,
+			EncounterPopulationCheckSeconds, /*bLoop=*/true);
+	}
+}
+
+void ABattleSquareGameMode::SpawnOneEncounter(const FVector& Centro, FRandomStream& Sorteio, int32 SementeDoPasseio)
+{
+	UWorld* World = GetWorld();
+	if (!World || WorldEncounterCatalogIds.IsEmpty())
+	{
+		return;
+	}
+
+	// Longe o bastante para não disparar batalha no primeiro passo: nascer
+	// dentro do raio de encontro tiraria o jogador do mundo antes de ele andar
+	// — e, na reposição, o tiraria de volta assim que ele voltasse da batalha.
+	const float Angulo = Sorteio.FRandRange(0.0f, 2.0f * PI);
+	const float Distancia = FMath::Lerp(WorldEncounterSpawnRadiusUnits * 0.25f,
+		WorldEncounterSpawnRadiusUnits, Sorteio.FRand());
+
+	const FVector Posicao = Centro
+		+ FVector(FMath::Cos(Angulo) * Distancia, FMath::Sin(Angulo) * Distancia, 0.0f);
+
+	AWorldEncounterActor* Encontro = World->SpawnActor<AWorldEncounterActor>(
+		AWorldEncounterActor::StaticClass(), Posicao, FRotator::ZeroRotator);
+	if (!Encontro)
+	{
+		return;
+	}
+
+	const int32 CatalogoIndice = Sorteio.RandRange(0, WorldEncounterCatalogIds.Num() - 1);
+	Encontro->CatalogId = FName(*WorldEncounterCatalogIds[CatalogoIndice]);
+
+	UEncounterRoamingComponent* Passeio = NewObject<UEncounterRoamingComponent>(Encontro);
+	Passeio->RegisterComponent();
+
+	// Semente própria: dois encontros criados no mesmo quadro precisam andar
+	// diferente, senão passeiam colados.
+	Passeio->ConfigureRoaming(Posicao, SementeDoPasseio);
+}
+
+void ABattleSquareGameMode::MaintainEncounterPopulation()
+{
+	UWorld* World = GetWorld();
+	if (!World || WorldEncounterCount <= 0 || WorldEncounterCatalogIds.IsEmpty())
+	{
+		return;
+	}
+
+	// Tira de cena os derrotados. Deixá-los passeando como fantasma é pior que
+	// sumir: dá a entender que a batalha não valeu de nada.
+	TArray<AWorldEncounterActor*> Derrotados;
+	int32 Vivos = 0;
+
+	for (TActorIterator<AWorldEncounterActor> It(World); It; ++It)
+	{
+		if (It->bIsResolved)
+		{
+			Derrotados.Add(*It);
+		}
+		else
+		{
+			++Vivos;
+		}
+	}
+
+	for (AWorldEncounterActor* Derrotado : Derrotados)
+	{
+		Derrotado->Destroy();
+	}
+
+	const int32 Faltam = WorldEncounterCount - Vivos;
+	if (Faltam <= 0)
+	{
+		return;
+	}
+
+	APawn* Jogador = World->GetFirstPlayerController()
+		? World->GetFirstPlayerController()->GetPawn() : nullptr;
+	const FVector Centro = Jogador ? Jogador->GetActorLocation() : FVector::ZeroVector;
+
+	// Semente avança a cada reposição: repor sempre com a mesma faria os
+	// substitutos nascerem no mesmo lugar, e o mundo viraria um carrossel.
+	for (int32 Indice = 0; Indice < Faltam; ++Indice)
+	{
+		++EncounterRefillCounter;
+		FRandomStream Sorteio(WorldEncounterSeed + EncounterRefillCounter * 104729);
+		SpawnOneEncounter(Centro, Sorteio, WorldEncounterSeed + EncounterRefillCounter * 7919);
+	}
+
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("%d encontro(s) reposto(s) — o mundo não acaba"), Faltam),
+		8.0f, FColor::Green, /*Key=*/721);
 }

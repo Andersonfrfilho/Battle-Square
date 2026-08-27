@@ -146,3 +146,15 @@ nada acusava — o recurso inteiro ficava inalcançável em silêncio.
 - [ ] Encostar em um leva à batalha, **com botões** (ENC-10).
 - [ ] Se o nível já tiver encontros colocados à mão, o painel avisa e nenhum é
       criado por cima.
+
+### ENC-12 — O mundo não acaba
+
+Com um número fixo de encontros, seis batalhas esvaziavam o mapa e sobrava
+caminhar por um lugar onde nada mais acontece. Pior: o pet derrotado continuava
+passeando como fantasma, dando a entender que a batalha não valeu.
+
+- [ ] Depois de vencer, o pet derrotado **some** do mundo.
+- [ ] Em poucos segundos o painel diz `N encontro(s) reposto(s)`.
+- [ ] O substituto nasce **longe**, não em cima de você ao voltar da batalha.
+- [ ] Vencendo várias vezes seguidas, sempre há inimigos — o mundo não esvazia.
+- [ ] E não vira multidão: a população fica no alvo, não acumula.

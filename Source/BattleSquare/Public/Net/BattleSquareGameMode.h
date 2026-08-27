@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Math/RandomStream.h"
+#include "Engine/TimerHandle.h"
 #include "GameFramework/GameModeBase.h"
 #include "Net/BattleRoomRegistry.h"
 #include "Net/BattleTurnCoordinator.h"
@@ -93,9 +95,31 @@ public:
 	 */
 	void SpawnRoamingEncounters();
 
+	/**
+	 * Repõe a população: tira de cena os derrotados e cria novos até o alvo.
+	 *
+	 * Sem isto o mundo ACABA — com um número fixo, seis batalhas esvaziavam o
+	 * mapa e sobrava caminhar por um lugar onde nada mais acontece. E o pet
+	 * derrotado continuava passeando como fantasma, o que é pior que sumir:
+	 * dá a entender que a batalha não valeu.
+	 */
+	void MaintainEncounterPopulation();
+
+private:
+	void SpawnOneEncounter(const FVector& Centro, FRandomStream& Sorteio, int32 SementeDoPasseio);
+
+	FTimerHandle EncounterPopulationTimer;
+	int32 EncounterRefillCounter = 0;
+
+public:
+
 	/** Quantos encontros povoam o mundo. Zero desliga. */
 	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
 	int32 WorldEncounterCount = 6;
+
+	/** De quantos em quantos segundos a população é conferida. */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
+	float EncounterPopulationCheckSeconds = 5.0f;
 
 	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
 	float WorldEncounterSpawnRadiusUnits = 4000.0f;

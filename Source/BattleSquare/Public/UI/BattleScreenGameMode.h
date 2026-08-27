@@ -26,6 +26,7 @@ public:
 	ABattleScreenGameMode();
 
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 
 	/** Vazio = o primeiro pet do espelho. */
 	UPROPERTY(config, EditDefaultsOnly, Category = "Tela de Batalha")

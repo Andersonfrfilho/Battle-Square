@@ -15,6 +15,9 @@ ABattleScreenGameMode::ABattleScreenGameMode()
 	// A tela de batalha não tem mundo para percorrer: nenhum pawn de
 	// exploração precisa nascer aqui.
 	PrimaryActorTick.bCanEverTick = true;
+	// O pai tica 1x/s (checagem de sala). Aqui a casa do pet precisa
+	// acompanhar o turno, e um segundo de atraso já aparece na tela.
+	PrimaryActorTick.TickInterval = 0.0f;
 }
 
 void ABattleScreenGameMode::BeginPlay()
@@ -136,4 +139,27 @@ FString ABattleScreenGameMode::StartScreenBattle()
 	PlayerController->SetInputMode(FInputModeGameAndUI().SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock));
 
 	return FString();
+}
+
+void ABattleScreenGameMode::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (!ActionSelector || !ScreenArena)
+	{
+		return;
+	}
+
+	// A casa do pet muda a cada turno, e a tela usa isso para não oferecer
+	// um movimento que sairia do tabuleiro. Informar só uma vez, na abertura
+	// da batalha, deixava a tela presa na casa inicial: quem andasse até um
+	// canto continuava vendo as oito direções habilitadas.
+	for (const FPetState& Pet : ScreenArena->GetCurrentState().Pets)
+	{
+		if (Pet.Side == ScreenArena->LocalPlayerSide)
+		{
+			ActionSelector->SetOwningPetCell(Pet.Column, Pet.Row);
+			return;
+		}
+	}
 }

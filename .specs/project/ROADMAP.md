@@ -117,6 +117,14 @@ nível `BattleScreen`, que abre uma batalha sem depender do mundo aberto.
 
 ---
 
+## Fora de marco — dívida de M1 paga em 2026-08-27
+
+**Interface de Batalha** — ✅ CONCLUÍDO. O combate existia e era testado desde
+M1, mas era INJOGÁVEL: DP-08 adiou o layout para uma autoria visual que nunca
+veio. Agora se joga por tela, sem depender do mundo aberto.
+
+---
+
 ## M6 — Plataformas — ⚠️ INCOMPLETO (bloqueado por infraestrutura)
 
 **Objetivo:** sair do PC.

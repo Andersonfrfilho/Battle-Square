@@ -4,6 +4,8 @@
 #include "Engine/Engine.h"
 #include "HAL/IConsoleManager.h"
 #include "HAL/PlatformApplicationMisc.h"
+#include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
 
 namespace
 {
@@ -98,7 +100,16 @@ void FBattleDebugScreen::CopyToClipboard()
 
 	FPlatformApplicationMisc::ClipboardCopy(*Texto);
 
+	// Caminho que NÃO depende da área de transferência: em PIE ela nem sempre
+	// funciona, e sem alternativa a informação simplesmente não chega a
+	// ninguém. O arquivo pode ser lido direto por quem estiver ajudando.
+	const FString Caminho = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("BattleDebug.txt"));
+	const bool bGravou = FFileHelper::SaveStringToFile(Texto, *Caminho);
+
+	UE_LOG(LogTemp, Display, TEXT("[painel] %d linhas -> area de transferencia e %s"),
+		Lines.Num(), bGravou ? *Caminho : TEXT("(falha ao gravar arquivo)"));
+
 	// Confirmação no próprio painel: sem ela não há como saber se copiou.
-	Show(FString::Printf(TEXT(">> %d linhas copiadas para a area de transferencia"), Lines.Num()),
+	Show(FString::Printf(TEXT(">> %d linhas copiadas (e salvas em Saved/BattleDebug.txt)"), Lines.Num()),
 		8.0f, FColor::Yellow, /*Key=*/999);
 }

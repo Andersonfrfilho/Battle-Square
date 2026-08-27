@@ -398,7 +398,9 @@ void ABattleArena::LogCommit(const TCHAR* Quem, const FTurnCommit& Commit) const
 	for (int32 Slot = 0; Slot < FTurnCommit::ActionsPerTurn; ++Slot)
 	{
 		const FBattleAction& Action = Commit.Actions[Slot];
-		const FString Linha = FString::Printf(TEXT("%s %d: %s %s"),
+		// "jogador 2" lia-se como um SEGUNDO jogador; é a ação 2 do mesmo
+		// pet. O rótulo agora diz isso.
+		const FString Linha = FString::Printf(TEXT("%s - acao %d/3: %s %s"),
 			Quem, Slot + 1,
 			*StaticEnum<EActionType>()->GetNameStringByValue(static_cast<int64>(Action.Type)),
 			*StaticEnum<EBattleDirection>()->GetNameStringByValue(static_cast<int64>(Action.Direction)));

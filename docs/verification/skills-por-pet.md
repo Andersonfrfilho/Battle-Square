@@ -20,6 +20,9 @@ por tipo já começam a diluir isso. Os seis tipos de ação universais
 ## SKILL-01 — O pet mostra o que ele é
 
 - [ ] O painel diz, ao começar: `<pet> (tipo X) tem N skill(s) própria(s)`.
+- [ ] A barra mostra `SUAS SKILLS — <nomes>`, com botão só para o que o seu
+      pet tem. Pet sem skill diz isso por extenso, em vez de ficar em branco:
+      vazio e catálogo quebrado seriam idênticos na tela.
 - [ ] Na barra do jogador 2, **só aparecem** as skills daquele pet.
 - [ ] Um pet de tipo diferente oferece skill diferente.
 

@@ -4,6 +4,7 @@
 
 #include "Battle/BattleActionQueueComponent.h"
 #include "Battle/BattleArena.h"
+#include "Balance/PetSkillCatalog.h"
 #include "Debug/BattleDebugScreen.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
@@ -95,6 +96,60 @@ namespace
 		AddPlayerTwo(GPendingType, Direction);
 	}
 
+	/** Skills do SEU pet: encaminha à fila do jogador 1, como um botão da tela. */
+	void ChoosePlayerOneSkill(EActionType Tipo)
+	{
+		ABattleArena* Arena = FindArena();
+		if (!Arena || !Arena->PlayerActionQueue)
+		{
+			return;
+		}
+
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("clique (você): %s"),
+				*UEnum::GetDisplayValueAsText(Tipo).ToString()), 10.0f, FColor::Cyan, -1);
+
+		// DP-ui-01: encaminha, não decide. Se o pet não tiver a skill, quem
+		// recusa é a fila — e o botão nem estará visível.
+		Arena->PlayerActionQueue->BeginSelectingType(Tipo);
+	}
+
+	bool SkillIsAvailableToPlayerOne(EActionType Tipo)
+	{
+		const ABattleArena* Arena = FindArena();
+		if (!Arena)
+		{
+			return false;
+		}
+
+		return Arena->GetAvailableActionsForSide(Arena->GetSideBeingChosen()).Contains(Tipo);
+	}
+
+	FText PlayerOneSkillsHeader()
+	{
+		const ABattleArena* Arena = FindArena();
+		if (!Arena)
+		{
+			return FText::GetEmpty();
+		}
+
+		const TArray<EActionType> Universais = FPetSkillCatalog::GetUniversalActions();
+		TArray<FString> Nomes;
+		for (EActionType Tipo : Arena->GetAvailableActionsForSide(Arena->GetSideBeingChosen()))
+		{
+			if (!Universais.Contains(Tipo))
+			{
+				Nomes.Add(UEnum::GetDisplayValueAsText(Tipo).ToString());
+			}
+		}
+
+		// Dizer que NÃO tem skill é informação, não vazio: sem esta linha, um
+		// pet sem skill e um catálogo quebrado ficariam idênticos na tela.
+		return FText::FromString(Nomes.IsEmpty()
+			? FString(TEXT("SUAS SKILLS — este pet não tem skill própria"))
+			: FString::Printf(TEXT("SUAS SKILLS — %s"), *FString::Join(Nomes, TEXT(", "))));
+	}
+
 	bool SkillIsAvailableToPlayerTwo(EActionType Tipo)
 	{
 		const ABattleArena* Arena = FindArena();
@@ -148,6 +203,43 @@ void FBattleDebugToolbar::Show(UWorld* World)
 	GToolbarWorld = World;
 
 	TSharedRef<SVerticalBox> Coluna = SNew(SVerticalBox);
+
+	// SUAS SKILLS — só as que o SEU pet tem.
+	//
+	// Sem esta linha, o jogador não via a identidade do próprio pet em lugar
+	// nenhum: as skills existiam na regra e só no teclado. Skill que não
+	// aparece é skill que não é característica de ninguém.
+	Coluna->AddSlot().AutoHeight().Padding(2.0f)
+	[
+		SNew(STextBlock)
+		.Text_Lambda([]() { return PlayerOneSkillsHeader(); })
+		.ColorAndOpacity(FSlateColor(FLinearColor(0.35f, 0.75f, 1.0f)))
+	];
+
+	const TPair<const TCHAR*, EActionType> Skills[] = {
+		{ TEXT("Camuflar"), EActionType::Camuflar },
+		{ TEXT("Voar"), EActionType::Voar },
+		{ TEXT("Submergir"), EActionType::Submergir },
+	};
+
+	TSharedRef<SHorizontalBox> LinhaSkills = SNew(SHorizontalBox);
+	for (const TPair<const TCHAR*, EActionType>& Skill : Skills)
+	{
+		const EActionType Valor = Skill.Value;
+		LinhaSkills->AddSlot().AutoWidth().Padding(1.0f)
+		[
+			SNew(SBox)
+			.Visibility_Lambda([Valor]()
+			{
+				return SkillIsAvailableToPlayerOne(Valor)
+					? EVisibility::Visible : EVisibility::Collapsed;
+			})
+			[
+				MakeButton(FText::FromString(Skill.Key), [Valor]() { ChoosePlayerOneSkill(Valor); })
+			]
+		];
+	}
+	Coluna->AddSlot().AutoHeight().Padding(2.0f, 0.0f, 2.0f, 8.0f)[ LinhaSkills ];
 
 	// PAINEL DO JOGADOR 2 — sempre visível, sem modo para ligar e sem fase.
 	//

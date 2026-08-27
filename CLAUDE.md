@@ -52,6 +52,7 @@ de medição mais eficiente que este projeto tem; **facilite o trabalho dele.**
 | **Movimento deslizando** | o pet ANDA até a casa nova, e o olhar acompanha durante o percurso. Teleporte não conta a história: quem vê só o antes e o depois não sabe se ele andou, se foi empurrado, nem em que ordem |
 | **Indicador de fase** | `reproduzindo fase 3 de 11`, que desfaz a impressão de "fez tudo de uma vez" |
 | **Painel de texto** | o que cada lado escolheu e onde cada pet terminou |
+| **Skills do pet** | `SUAS SKILLS — Voar`, com botão só para o que ele tem. Skill que não aparece na tela não é característica de ninguém |
 
 ### O painel, e por que ele é copiável
 

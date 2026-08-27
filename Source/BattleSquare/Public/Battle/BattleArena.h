@@ -180,6 +180,18 @@ public:
 	 */
 	void SwapControlledPlayer();
 
+	/**
+	 * Ações do jogador 2, escolhidas à mão na barra da tela.
+	 *
+	 * Enquanto houver alguma aqui, ela SUBSTITUI o commit do bot. O turno
+	 * continua fechando pelo botão normal de confirmar do jogador 1 — não há
+	 * segunda fase, nem troca de lado: quem escolhe pelos dois escolhe os dois
+	 * e confirma uma vez.
+	 */
+	void AddPlayerTwoAction(const FBattleAction& Action);
+	void ClearPlayerTwoActions();
+	const TArray<FBattleAction>& GetPlayerTwoActions() const { return PlayerTwoManualActions; }
+
 	/** Nome de apresentação do pet, ou vazio se ele não tem um. */
 	FString GetPresentationNameForPet(uint8 PetId) const;
 
@@ -203,6 +215,8 @@ private:
 	// Rascunho POR JOGADOR: trocar de jogador controlado não pode apagar o que
 	// o outro já tinha escolhido. Indexado por lado (0 e 1).
 	TArray<FBattleAction> DraftsBySide[2];
+
+	TArray<FBattleAction> PlayerTwoManualActions;
 
 	uint8 FindPostureFlagsForPet(uint8 PetId) const;
 

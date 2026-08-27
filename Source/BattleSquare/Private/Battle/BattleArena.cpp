@@ -416,9 +416,25 @@ void ABattleArena::HandlePlayerCommitted()
 	// A IA joga pelo lado que o jogador NÃO está controlando. Fixar Side=1
 	// aqui faria a troca de jogador produzir dois commits para o mesmo pet.
 	const uint8 BotSide = (LocalPlayerSide == 0) ? 1 : 0;
-	const FTurnCommit BotCommit = FTacticalOpponentAI::GenerateCommit(CurrentState, BotSide, CurrentState.Random);
 
-	ResolveTurnWithCommits(PlayerCommit, BotCommit);
+	FTurnCommit OtherCommit;
+	if (PlayerTwoManualActions.Num() > 0)
+	{
+		// Escolhas à mão do jogador 2 substituem o bot. Faltando ações, o
+		// núcleo completa com Aguardar — mesma regra do commit normal.
+		for (int32 Slot = 0; Slot < FTurnCommit::ActionsPerTurn; ++Slot)
+		{
+			OtherCommit.Actions[Slot] = PlayerTwoManualActions.IsValidIndex(Slot)
+				? PlayerTwoManualActions[Slot]
+				: FBattleAction{ EActionType::Aguardar, EBattleDirection::Nenhuma };
+		}
+	}
+	else
+	{
+		OtherCommit = FTacticalOpponentAI::GenerateCommit(CurrentState, BotSide, CurrentState.Random);
+	}
+
+	ResolveTurnWithCommits(PlayerCommit, OtherCommit);
 }
 
 /**
@@ -430,10 +446,11 @@ void ABattleArena::HandlePlayerCommitted()
  */
 void ABattleArena::ResolveTurnWithCommits(const FTurnCommit& LocalCommit, const FTurnCommit& OpponentCommit)
 {
-	// Rascunho é de UM turno. Sobreviver ao turno faria o seguinte começar com
-	// as escolhas do anterior já marcadas.
+	// Escolhas são de UM turno. Sobreviver faria o seguinte começar com as do
+	// anterior já marcadas.
 	DraftsBySide[0].Reset();
 	DraftsBySide[1].Reset();
+	ClearPlayerTwoActions();
 
 	LogCommit(*FString::Printf(TEXT("jogador %d"), static_cast<int32>(GetControlledPlayerNumber())), LocalCommit);
 	LogCommit(TEXT("bot"), OpponentCommit);
@@ -613,6 +630,27 @@ FString ABattleArena::GetPresentationNameForPet(uint8 PetId) const
 {
 	const FPetPresentationInfo* Presentation = PresentationsByPetId.Find(PetId);
 	return Presentation ? Presentation->Name : FString();
+}
+
+void ABattleArena::AddPlayerTwoAction(const FBattleAction& Action)
+{
+	if (PlayerTwoManualActions.Num() >= FTurnCommit::ActionsPerTurn)
+	{
+		FBattleDebugScreen::Show(TEXT("jogador 2 já tem 3 ações"), 6.0f, FColor::Orange, 801);
+		return;
+	}
+
+	PlayerTwoManualActions.Add(Action);
+
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("jogador 2: %d/3 ações escolhidas"), PlayerTwoManualActions.Num()),
+		0.0f, FColor::Orange, /*Key=*/801);
+}
+
+void ABattleArena::ClearPlayerTwoActions()
+{
+	PlayerTwoManualActions.Reset();
+	FBattleDebugScreen::Show(TEXT("jogador 2: 0/3 ações escolhidas"), 0.0f, FColor::Orange, 801);
 }
 
 void ABattleArena::SwapControlledPlayer()

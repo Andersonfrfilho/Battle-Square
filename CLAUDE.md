@@ -100,6 +100,17 @@ conveniência e falharam três vezes em PIE.
 aparece e a ação não muda nada, o defeito está depois do clique; se nem o
 clique aparece, o widget não está recebendo. Uma rodada, duas respostas.
 
+**Ações do jogador 2 na barra, sempre visíveis.** Escolhe-se ali (tipo, depois
+direção quando o tipo pedir) e o turno fecha pelo **botão normal de confirmar
+do jogador 1**. Sem ação escolhida, o bot decide por ele, como sempre.
+
+Sem modo para ligar e sem segunda fase: cada etapa a mais era uma chance de o
+caminho parecer destrutivo, e foi o que travou o uso três vezes seguidas.
+
+**Todo clique de botão aparece no painel** (`clique: Atacar`). Se o clique
+aparece e a ação não muda nada, o defeito está depois do clique; se nem o
+clique aparece, o widget não está recebendo. Uma rodada, duas respostas.
+
 O botão **troca quem você comanda**: `Controlando jogador 1 — clique para o
 jogador 2`. O bot joga pelo outro. É o que permite experimentar **ações
 diferentes de cada lado** sem depender de o sorteio da IA cair no caso desejado.

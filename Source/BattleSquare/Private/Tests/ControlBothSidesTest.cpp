@@ -200,3 +200,38 @@ bool FBothSidesCollectsTwoCommitsTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+// O caminho simples: escolhe-se as ações do jogador 2 na barra, e o turno fecha
+// pelo botão NORMAL de confirmar do jogador 1. Sem modo para ligar, sem
+// segunda fase — cada etapa a mais era uma chance de o caminho parecer
+// destrutivo, e foi o que travou o usuário três vezes.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FPlayerTwoManualActionsReplaceBotTest,
+	"BattleSquare.BattleArena.PlayerTwo.ManualActionsReplaceBot",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FPlayerTwoManualActionsReplaceBotTest::RunTest(const FString& Parameters)
+{
+	FScopedArena Cena(/*PlayerColumn=*/0, /*OpponentColumn=*/2);
+
+	// Jogador 2 vai para a esquerda, escolhido à mão.
+	FBattleAction Passo;
+	Passo.Type = EActionType::Mover;
+	Passo.Direction = EBattleDirection::Esquerda;
+	Cena.Arena->AddPlayerTwoAction(Passo);
+
+	TestEqual(TEXT("A ação ficou registrada"),
+		Cena.Arena->GetPlayerTwoActions().Num(), 1);
+
+	// Jogador 1 confirma pelo caminho de sempre — e isso já resolve o turno.
+	Cena.Commit(EActionType::Aguardar);
+	Cena.PlayOutAnimation();
+
+	TestEqual(TEXT("O jogador 2 obedeceu à ação escolhida, não ao bot"),
+		Cena.ColumnOfSide(1), static_cast<uint8>(1));
+
+	TestEqual(TEXT("As ações não sobrevivem ao turno"),
+		Cena.Arena->GetPlayerTwoActions().Num(), 0);
+
+	return true;
+}

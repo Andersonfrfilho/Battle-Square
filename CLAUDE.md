@@ -88,6 +88,13 @@ custando uma rodada do usuário. Quando um caminho falha três vezes, o defeito
 Se uma tecla parecer morta: `bs.LogKeys 1` mostra no painel toda tecla que
 chega e por qual camada. Medir antes de consertar.
 
+**Há uma BARRA DE BOTÕES na tela** (canto inferior esquerdo, `FBattleDebugToolbar`):
+copiar painel, limpar, controlar os dois lados, e Camuflar/Voar/Submergir.
+Montada em **Slate por código**, sem asset autorado — o `WBP` não pôde ganhar
+botões, e capacidade que espera edição de asset é capacidade que não existe
+hoje. Clique é o caminho que comprovadamente funciona aqui; as teclas são
+conveniência e falharam três vezes em PIE.
+
 **Todo clique de botão aparece no painel** (`clique: Atacar`). Se o clique
 aparece e a ação não muda nada, o defeito está depois do clique; se nem o
 clique aparece, o widget não está recebendo. Uma rodada, duas respostas.

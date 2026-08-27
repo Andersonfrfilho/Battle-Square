@@ -75,14 +75,37 @@ void ABattleSquarePlayerController::Server_ReconnectToRoom_Implementation(const 
 	GameMode->RegisterControllerForRoom(Code, Side, this);
 }
 
-void ABattleSquarePlayerController::BeginPlay()
+void ABattleSquarePlayerController::SetupInputComponent()
 {
-	Super::BeginPlay();
-	FBattleDebugKeys::Install(GetWorld());
+	Super::SetupInputComponent();
+
+	if (!InputComponent)
+	{
+		return;
+	}
+
+	// bConsumeInput=false: tecla de depuração não pode engolir input do jogo.
+	InputComponent->BindKey(EKeys::F7, IE_Pressed, this,
+		&ABattleSquarePlayerController::ToggleControllingBothSides).bConsumeInput = false;
+	InputComponent->BindKey(EKeys::F9, IE_Pressed, this,
+		&ABattleSquarePlayerController::CopyBattleDebugPanel).bConsumeInput = false;
+	InputComponent->BindKey(EKeys::F10, IE_Pressed, this,
+		&ABattleSquarePlayerController::ClearBattleDebugPanel).bConsumeInput = false;
 }
 
-void ABattleSquarePlayerController::EndPlay(const EEndPlayReason::Type Reason)
+void ABattleSquarePlayerController::ToggleControllingBothSides()
 {
-	FBattleDebugKeys::Uninstall();
-	Super::EndPlay(Reason);
+	FBattleDebugKeys::Observe(EKeys::F7, TEXT("controlador"));
+	FBattleDebugKeys::Handle(EKeys::F7, GetWorld());
+}
+
+void ABattleSquarePlayerController::CopyBattleDebugPanel()
+{
+	FBattleDebugKeys::Observe(EKeys::F9, TEXT("controlador"));
+	FBattleDebugKeys::Handle(EKeys::F9, GetWorld());
+}
+
+void ABattleSquarePlayerController::ClearBattleDebugPanel()
+{
+	FBattleDebugKeys::Handle(EKeys::F10, GetWorld());
 }

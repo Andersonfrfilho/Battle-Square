@@ -5,12 +5,9 @@
 #include "Battle/BattleArena.h"
 #include "Debug/BattleDebugScreen.h"
 #include "EngineUtils.h"
-#include "Framework/Application/SlateApplication.h"
 #include "HAL/IConsoleManager.h"
 
 bool GbLogEveryKey = false;
-FDelegateHandle GPreInputHandle;
-TWeakObjectPtr<UWorld> GListeningWorld;
 
 namespace
 {
@@ -80,34 +77,17 @@ bool FBattleDebugKeys::Handle(const FKey& Key, UWorld* World)
 
 void FBattleDebugKeys::Install(UWorld* World)
 {
-	if (!FSlateApplication::IsInitialized() || GPreInputHandle.IsValid())
-	{
-		return;
-	}
-
-	GListeningWorld = World;
-	GPreInputHandle = FSlateApplication::Get().OnApplicationPreInputKeyDownListener().AddStatic(
-		[](const FKeyEvent& KeyEvent)
-		{
-			// Repetição de tecla segurada não pode alternar o modo dezenas de
-			// vezes por segundo.
-			if (KeyEvent.IsRepeat())
-			{
-				return;
-			}
-
-			FBattleDebugKeys::Observe(KeyEvent.GetKey(), TEXT("pré-input do Slate"));
-			FBattleDebugKeys::Handle(KeyEvent.GetKey(), GListeningWorld.Get());
-		});
+	// Aqui havia um ouvinte de pré-input do Slate. Ele foi REMOVIDO ao
+	// descobrir, compilando o alvo Shipping, que
+	// OnApplicationPreInputKeyDownListener não existe fora do editor: a
+	// solução nunca funcionaria em jogo empacotado, e eu não tinha verificado.
+	//
+	// O caminho confiável para estas ações passou a ser a BARRA DE BOTÕES
+	// (FBattleDebugToolbar) — clique é o que comprovadamente funciona aqui.
+	// As teclas continuam amarradas no PlayerController como conveniência.
+	(void)World;
 }
 
 void FBattleDebugKeys::Uninstall()
 {
-	if (FSlateApplication::IsInitialized() && GPreInputHandle.IsValid())
-	{
-		FSlateApplication::Get().OnApplicationPreInputKeyDownListener().Remove(GPreInputHandle);
-	}
-
-	GPreInputHandle.Reset();
-	GListeningWorld.Reset();
 }

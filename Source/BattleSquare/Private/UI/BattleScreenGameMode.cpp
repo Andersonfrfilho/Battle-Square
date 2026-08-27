@@ -4,6 +4,7 @@
 #include "Net/BattleSquarePlayerController.h"
 #include "Debug/BattleDebugHUD.h"
 #include "Debug/BattleDebugScreen.h"
+#include "Debug/BattleDebugToolbar.h"
 #include "UI/BattleActionSelectorWidget.h"
 #include "Battle/BattleArena.h"
 #include "Battle/BattleActionQueueComponent.h"
@@ -149,6 +150,10 @@ FString ABattleScreenGameMode::StartScreenBattle()
 
 	// DEPOIS de entrar na viewport, senão não há Slate widget para focar.
 	ActionSelector->SetKeyboardFocus();
+
+	// Botões de depuração em C++: o clique é o caminho que comprovadamente
+	// funciona — a pessoa já usa os botões de ação sem problema.
+	FBattleDebugToolbar::Show(GetWorld());
 
 	if (bStartControllingBothSides)
 	{

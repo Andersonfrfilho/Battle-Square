@@ -72,6 +72,11 @@ public:
 	// Barra de vida: fundo escuro sempre inteiro + preenchimento que encolhe.
 	// Sem o fundo não se sabe quanto FALTA, só quanto sobrou — e é a diferença
 	// entre "estou mal" e "estou quase morto".
+	// A esfera não tem frente: girá-la não se vê. Sem uma marca, "olhar para o
+	// outro" não existe na tela, por mais correta que a rotação esteja.
+	UPROPERTY(VisibleAnywhere, Category = "Apresentação")
+	TObjectPtr<UStaticMeshComponent> GazeMarker;
+
 	UPROPERTY(VisibleAnywhere, Category = "Apresentação")
 	TObjectPtr<UStaticMeshComponent> HealthBarBackground;
 
@@ -88,6 +93,10 @@ public:
 	/** Aplica a cor do lado e o estado de derrota ao corpo. */
 	void RefreshBodyAppearance();
 
+	/** Vira o pet para uma casa da grade. A barra de vida NÃO acompanha: ela
+	 *  precisa continuar de frente para a câmera para permanecer legível. */
+	void LookAtCell(int32 TargetColumn, int32 TargetRow);
+
 private:
 	void RefreshHealthBar();
 
@@ -103,6 +112,9 @@ private:
 	// Maior que a espessura do cubo (BarDepthScale * CubeSizeUnits = 4uu):
 	// separação menor que isso deixa faces no mesmo plano, e é o que piscava.
 	static constexpr float BarFrontOffsetUnits = 6.0f;
+	static constexpr float GazeMarkerScale = 0.18f;
+	static constexpr float BodyScale = 0.7f;
+	static constexpr float SphereRadiusUnits = 50.0f;
 
 public:
 

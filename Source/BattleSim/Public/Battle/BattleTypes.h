@@ -94,6 +94,41 @@ FORCEINLINE void GetDirectionDelta(EBattleDirection Direction, int8& OutDeltaCol
 	}
 }
 
+// Inverso de GetDirectionDelta: o passo que aproxima de um alvo.
+//
+// Mora AQUI, coladinho na tabela que inverte, e não na IA que precisa dele:
+// uma segunda cópia da relação direção<->deslocamento já produziu um defeito
+// neste projeto, e cópias concordam até a primeira edição. Só o SINAL importa
+// — a grade é 3x3 e todo passo é de uma casa.
+FORCEINLINE EBattleDirection GetDirectionTowards(int32 DeltaColumn, int32 DeltaRow)
+{
+	const int32 StepColumn = FMath::Clamp(DeltaColumn, -1, 1);
+	const int32 StepRow = FMath::Clamp(DeltaRow, -1, 1);
+
+	if (StepColumn == 0 && StepRow == 0)
+	{
+		return EBattleDirection::Nenhuma;
+	}
+
+	// Nenhuma (0) fica de fora de propósito: ela é ausência de direção, e já
+	// foi devolvida acima quando o alvo está na própria casa.
+	for (uint8 Index = static_cast<uint8>(EBattleDirection::Cima);
+		Index <= static_cast<uint8>(EBattleDirection::BaixoDireita); ++Index)
+	{
+		const EBattleDirection Candidate = static_cast<EBattleDirection>(Index);
+		int8 CandidateColumn = 0;
+		int8 CandidateRow = 0;
+		GetDirectionDelta(Candidate, CandidateColumn, CandidateRow);
+
+		if (CandidateColumn == StepColumn && CandidateRow == StepRow)
+		{
+			return Candidate;
+		}
+	}
+
+	return EBattleDirection::Nenhuma;
+}
+
 FORCEINLINE bool IsInsideGrid(int32 Column, int32 Row, int32 GridSize = 3)
 {
 	return Column >= 0 && Column < GridSize && Row >= 0 && Row < GridSize;

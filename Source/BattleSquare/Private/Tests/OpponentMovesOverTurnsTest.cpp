@@ -46,7 +46,13 @@ bool FOpponentActuallyMovesOverTurnsTest::RunTest(const FString& Parameters)
 		if (Pet.Side == 1) { CasaInicialColuna = Pet.Column; CasaInicialLinha = Pet.Row; }
 	}
 
-	bool bInimigoSaiuDoLugar = false;
+	int32 VidaInicialDoJogador = 0;
+	for (const FPetState& Pet : Arena->GetCurrentState().Pets)
+	{
+		if (Pet.Side == 0) { VidaInicialDoJogador = Pet.Health; }
+	}
+
+	bool bInimigoAgiu = false;
 	TSet<uint64> EstadosDoGerador;
 
 	for (int32 Turno = 0; Turno < 10; ++Turno)
@@ -66,9 +72,16 @@ bool FOpponentActuallyMovesOverTurnsTest::RunTest(const FString& Parameters)
 
 		for (const FPetState& Pet : Arena->GetCurrentState().Pets)
 		{
+			// Sair do lugar OU ferir o jogador. Os dois contam como agir: com
+			// o oponente tático e os pets começando adjacentes, andar seria
+			// jogar PIOR — ele está ao alcance, então bate.
 			if (Pet.Side == 1 && (Pet.Column != CasaInicialColuna || Pet.Row != CasaInicialLinha))
 			{
-				bInimigoSaiuDoLugar = true;
+				bInimigoAgiu = true;
+			}
+			if (Pet.Side == 0 && Pet.Health < VidaInicialDoJogador)
+			{
+				bInimigoAgiu = true;
 			}
 		}
 	}
@@ -76,7 +89,12 @@ bool FOpponentActuallyMovesOverTurnsTest::RunTest(const FString& Parameters)
 	AddInfo(FString::Printf(TEXT("estados distintos do gerador em 10 turnos: %d"), EstadosDoGerador.Num()));
 
 	TestTrue(TEXT("o gerador avança entre turnos (não repete o mesmo estado)"), EstadosDoGerador.Num() > 5);
-	TestTrue(TEXT("em dez turnos o inimigo sai do lugar ao menos uma vez"), bInimigoSaiuDoLugar);
+	// A pergunta original deste teste era "o inimigo está INERTE?", nascida do
+	// defeito da semente que fazia toda partida repetir a mesma sequência.
+	// Ele media isso por movimento porque a IA de então sorteava. Com uma IA
+	// que decide, exigir movimento mediria a coisa errada — e passaria a
+	// reprovar justamente o comportamento correto.
+	TestTrue(TEXT("em dez turnos o inimigo age ao menos uma vez"), bInimigoAgiu);
 
 	GEngine->DestroyWorldContext(World);
 	World->DestroyWorld(false);

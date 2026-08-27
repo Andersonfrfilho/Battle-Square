@@ -91,7 +91,7 @@ public:
 	// T8 (tasks.md, Combate Online, NET-09/NET-10): registra que o
 	// oponente é um jogador humano real, servido por InCoordinator — a
 	// partir daqui, HandlePlayerCommitted delega ao coordenador em vez de
-	// chamar FDumbOpponentAI. Presença de oponente real decide o caminho,
+	// chamar FTacticalOpponentAI. Presença de oponente real decide o caminho,
 	// nunca uma flag de "modo online/offline" separada. Sem esta chamada,
 	// o comportamento continua byte a byte o de antes (Standalone).
 	void ConfigureNetworkedOpponent(UBattleTurnCoordinator* InCoordinator);
@@ -126,7 +126,7 @@ private:
 	UPROPERTY()
 	FBattleState CurrentState;
 
-	// Presença, não flag: null quando o oponente é FDumbOpponentAI
+	// Presença, não flag: null quando o oponente é FTacticalOpponentAI
 	// (Standalone/sem oponente humano); setado por ConfigureNetworkedOpponent
 	// quando um jogador real está do outro lado.
 	UPROPERTY()
@@ -150,6 +150,9 @@ private:
 
 	/** Traduz o evento para o feed de produto (DP-leg-02: traduz, não decide). */
 	void NarrateEvent(const FBattleEvent& Event);
+
+	/** Cada pet vivo passa a olhar para o adversário vivo. */
+	void RefreshGazes();
 
 	// T5 (colecao-e-captura) 🧠: varre o trace por BatalhaEncerrada; se o
 	// jogador local venceu, captura o pet do lado OPOSTO — nunca o

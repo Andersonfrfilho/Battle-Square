@@ -8,7 +8,7 @@
 
 DEFINE_LOG_CATEGORY(LogBattleArena);
 #include "Camera/CameraComponent.h"
-#include "Battle/DumbOpponentAI.h"
+#include "Battle/TacticalOpponentAI.h"
 #include "Battle/BattleResolver.h"
 #include "Battle/BattleOutcome.h"
 #include "Meta/PetCollectionService.h"
@@ -74,6 +74,8 @@ void ABattleArena::SpawnPetViews(const FBattleState& InitialState, const TArray<
 		View->SetInitialState(Pet, *Presentation);
 		SpawnedPetViews.Add(View);
 	}
+	// Os pets já nascem olhando um para o outro.
+	RefreshGazes();
 }
 
 bool ABattleArena::IsPointInCameraFrustum(const FVector& WorldPoint) const
@@ -171,6 +173,30 @@ void ABattleArena::DispatchEventToPetViews(const FBattleEvent& Event)
 			// lugar na tela.
 			View->SetActorLocation(GetCellWorldLocation(View->GetColumn(), View->GetRow()));
 			View->RefreshBodyAppearance();
+		}
+	}
+
+	// Depois de QUALQUER reposicionamento: quem andou passa a olhar de outro
+	// ângulo, e quem ficou parado também, porque o alvo mudou de casa.
+	RefreshGazes();
+}
+
+void ABattleArena::RefreshGazes()
+{
+	for (const TObjectPtr<APetView>& View : SpawnedPetViews)
+	{
+		if (!View || View->IsDefeated())
+		{
+			continue;
+		}
+
+		for (const TObjectPtr<APetView>& Other : SpawnedPetViews)
+		{
+			if (Other && Other != View && Other->GetSide() != View->GetSide() && !Other->IsDefeated())
+			{
+				View->LookAtCell(Other->GetColumn(), Other->GetRow());
+				break;
+			}
 		}
 	}
 }
@@ -317,7 +343,7 @@ void ABattleArena::HandlePlayerCommitted()
 	// T8 (tasks.md, Combate Online, NET-09/NET-10): oponente real presente
 	// (ServerCoordinator setado por ConfigureNetworkedOpponent) — o
 	// resultado chega via HandleCoordinatorTurnResolved, não aqui.
-	// FDumbOpponentAI nunca é chamado neste caminho.
+	// A IA local nunca é chamada neste caminho.
 	if (ServerCoordinator)
 	{
 		ServerCoordinator->SubmitCommit(/*Side=*/0, PlayerCommit);
@@ -328,7 +354,7 @@ void ABattleArena::HandlePlayerCommitted()
 	// antes desta feature — IA gera o commit dela (Side=1 por convenção),
 	// o resolvedor real roda com os dois commits, e o trace resultante
 	// anima as views. Nenhum cálculo de batalha aqui — só orquestração.
-	const FTurnCommit OpponentCommit = FDumbOpponentAI::GenerateRandomValidCommit(CurrentState, /*Side=*/1, CurrentState.Random);
+	const FTurnCommit OpponentCommit = FTacticalOpponentAI::GenerateCommit(CurrentState, /*Side=*/1, CurrentState.Random);
 
 	LogCommit(TEXT("jogador"), PlayerCommit);
 	LogCommit(TEXT("oponente"), OpponentCommit);

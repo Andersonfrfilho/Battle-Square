@@ -24,6 +24,9 @@ class UMaterialInterface;
 // configurável (nunca cor hardcoded).
 DECLARE_MULTICAST_DELEGATE(FBattleFinishedSignature);
 
+/** Categoria própria para o que aconteceu no turno — silenciável sozinha. */
+DECLARE_LOG_CATEGORY_EXTERN(LogBattleArena, Display, All);
+
 UCLASS()
 class BATTLESQUARE_API ABattleArena : public AActor
 {
@@ -159,6 +162,8 @@ private:
 	// Dispara OnBattleFinished se o trace contiver BatalhaEncerrada, no
 	// máximo uma vez por arena.
 	void AnnounceBattleFinishedIfEnded(const TArray<FBattleEvent>& Trace);
+
+	void LogCommit(const TCHAR* Quem, const FTurnCommit& Commit) const;
 
 	/** Destrava a fila para a próxima rodada, se a batalha ainda não acabou. */
 	void OpenNextTurnIfBattleContinues();

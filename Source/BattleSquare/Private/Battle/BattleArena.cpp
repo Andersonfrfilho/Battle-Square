@@ -1,6 +1,8 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Battle/BattleArena.h"
+
+DEFINE_LOG_CATEGORY(LogBattleArena);
 #include "Camera/CameraComponent.h"
 #include "Battle/DumbOpponentAI.h"
 #include "Battle/BattleResolver.h"
@@ -321,6 +323,9 @@ void ABattleArena::HandlePlayerCommitted()
 	// anima as views. Nenhum cálculo de batalha aqui — só orquestração.
 	const FTurnCommit OpponentCommit = FDumbOpponentAI::GenerateRandomValidCommit(CurrentState, /*Side=*/1, CurrentState.Random);
 
+	LogCommit(TEXT("jogador"), PlayerCommit);
+	LogCommit(TEXT("oponente"), OpponentCommit);
+
 	FBattleResolveResult Result = FBattleResolver::ResolveTurn(CurrentState, PlayerCommit, OpponentCommit);
 	// ResolveTurn nunca decide vitória/derrota por design (BattleOutcome.h:
 	// "separação deliberada") — quem chama precisa avaliar depois. Achado
@@ -328,6 +333,13 @@ void ABattleArena::HandlePlayerCommitted()
 	// chamavam isto, então BatalhaEncerrada nunca disparava em produção.
 	BattleOutcome::EvaluateOutcome(Result.NextState, Result.Trace);
 	CurrentState = Result.NextState;
+
+	for (const FPetState& Pet : CurrentState.Pets)
+	{
+		UE_LOG(LogBattleArena, Display, TEXT("  lado %d terminou em (%d,%d) com %d/%d de vida"),
+			static_cast<int32>(Pet.Side), static_cast<int32>(Pet.Column),
+			static_cast<int32>(Pet.Row), Pet.Health, Pet.MaxHealth);
+	}
 
 	if (TracePlayer)
 	{
@@ -365,5 +377,20 @@ void ABattleArena::Tick(float DeltaSeconds)
 	{
 		bWaitingForPlaybackToOpenNextTurn = false;
 		OpenNextTurnIfBattleContinues();
+	}
+}
+
+void ABattleArena::LogCommit(const TCHAR* Quem, const FTurnCommit& Commit) const
+{
+	// Permanente, e em categoria própria: "o inimigo não fez nada" foi a
+	// pergunta mais cara desta feature, e responder exigia justamente isto.
+	// Filtrar com: Log LogBattleArena Off
+	for (int32 Slot = 0; Slot < FTurnCommit::ActionsPerTurn; ++Slot)
+	{
+		const FBattleAction& Action = Commit.Actions[Slot];
+		UE_LOG(LogBattleArena, Display, TEXT("[turno] %s, ação %d: %s %s"),
+			Quem, Slot + 1,
+			*StaticEnum<EActionType>()->GetNameStringByValue(static_cast<int64>(Action.Type)),
+			*StaticEnum<EBattleDirection>()->GetNameStringByValue(static_cast<int64>(Action.Direction)));
 	}
 }

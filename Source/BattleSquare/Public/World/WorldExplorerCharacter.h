@@ -39,8 +39,25 @@ public:
 	 * ainda é nulo e o mapping context nunca entraria. Sintoma: o personagem
 	 * nasce e não responde a tecla nem a mouse.
 	 */
+	virtual void Tick(float DeltaSeconds) override;
 	virtual void NotifyControllerChanged() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+
+	/**
+	 * Guarda-queda: abaixo do limite, devolve o explorador à última terra
+	 * firme conhecida.
+	 *
+	 * O usuário atravessou os blocos e caiu ETERNAMENTE. Sem chão infinito e
+	 * sem um piso autorado perfeito, cair é sempre possível — o que não pode
+	 * existir é a queda que não termina, porque ela não devolve o jogo a
+	 * ninguém e a única saída vira fechar o programa.
+	 *
+	 * Isto NÃO substitui consertar o piso; ele é a rede embaixo do trapézio.
+	 */
+	void CheckFallGuard();
+
+	/** Registra a posição atual como terra firme, se ele estiver no chão. */
+	void RememberSafeGround();
 
 	USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	UCameraComponent* GetFollowCamera() const { return FollowCamera; }
@@ -73,6 +90,16 @@ protected:
 	void HandleLook(const FInputActionValue& Value);
 
 private:
+	// Bem abaixo de qualquer relevo jogável: acionar cedo demais impediria
+	// pular de um degrau alto.
+	static constexpr float FallGuardZLimit = -2000.0f;
+
+	// Um pouco acima da marca, para ele não renascer dentro do piso.
+	static constexpr float RespawnLiftUnits = 100.0f;
+
+	FVector LastSafeGround = FVector::ZeroVector;
+	bool bHasSafeGround = false;
+
 	UPROPERTY(VisibleAnywhere, Category = "Câmera")
 	TObjectPtr<USpringArmComponent> CameraBoom;
 

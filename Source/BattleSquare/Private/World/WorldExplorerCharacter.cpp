@@ -1,6 +1,8 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "World/WorldExplorerCharacter.h"
+#include "Debug/BattleDebugScreen.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "World/WorldTraversalMotion.h"
 #include "World/EncounterDetectionComponent.h"
 #include "Camera/CameraComponent.h"
@@ -18,6 +20,9 @@
 
 AWorldExplorerCharacter::AWorldExplorerCharacter()
 {
+	// Sem isto o guarda-queda nunca roda, e a queda infinita continua.
+	PrimaryActorTick.bCanEverTick = true;
+
 	// DP-trav-04: a câmera orbita livre e o corpo vira para onde anda. Sem
 	// isto o personagem fica travado apontando para a câmera e "anda de
 	// lado", que é comportamento de shooter, não de explorador.
@@ -172,4 +177,54 @@ void AWorldExplorerCharacter::HandleLook(const FInputActionValue& Value)
 void AWorldExplorerCharacter::LogRawKeyProbe()
 {
 	UE_LOG(LogTemp, Warning, TEXT("[TRAVERSAL] SONDA: a tecla W CHEGOU ao jogo (binding cru)."));
+}
+
+void AWorldExplorerCharacter::RememberSafeGround()
+{
+	LastSafeGround = GetActorLocation();
+	bHasSafeGround = true;
+}
+
+void AWorldExplorerCharacter::CheckFallGuard()
+{
+	if (GetActorLocation().Z > FallGuardZLimit)
+	{
+		return;
+	}
+
+	// Sem marca conhecida, o ponto de partida é o melhor palpite disponível —
+	// e é infinitamente melhor que continuar caindo.
+	const FVector Destino = bHasSafeGround
+		? LastSafeGround + FVector(0.0f, 0.0f, RespawnLiftUnits)
+		: FVector(0.0f, 0.0f, RespawnLiftUnits);
+
+	SetActorLocation(Destino);
+
+	// Zerar a velocidade: sem isso ele reaparece já caindo na mesma
+	// velocidade acumulada e atravessa o piso de novo no quadro seguinte.
+	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+	{
+		Movement->StopMovementImmediately();
+	}
+
+	FBattleDebugScreen::Show(
+		TEXT("caiu para fora do mundo — devolvido à última terra firme"),
+		6.0f, FColor::Orange, /*Key=*/700);
+}
+
+void AWorldExplorerCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	// Terra firme só conta quando ele está DE FATO no chão: gravar durante a
+	// queda registraria o próprio buraco como lugar seguro.
+	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+	{
+		if (Movement->IsMovingOnGround())
+		{
+			RememberSafeGround();
+		}
+	}
+
+	CheckFallGuard();
 }

@@ -21,6 +21,14 @@ class BATTLESQUARE_API ABattleDebugHUD : public AHUD
 public:
 	virtual void DrawHUD() override;
 
+private:
+	/** Feed de PRODUTO — fora do gate de depuração, compila em Shipping. */
+	void DrawNarrationFeed();
+
+	static constexpr float FeedWidthUnits = 640.0f;
+	static constexpr float FeedLineHeightUnits = 22.0f;
+	static constexpr float FeedTextScale = 1.15f;
+
 	/** Canto superior direito, para não brigar com os botões de ação. */
 	UPROPERTY(EditDefaultsOnly, Category = "Depuração")
 	float MarginUnits = 16.0f;

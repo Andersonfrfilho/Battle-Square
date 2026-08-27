@@ -35,11 +35,79 @@ APetView::APetView()
 		BodyMesh->SetRelativeLocation(FVector(0.0f, 0.0f, SphereRadiusUnits * BodyScale));
 	}
 
+	HealthBarBackground = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HealthBarBackground"));
+	HealthBarBackground->SetupAttachment(BodyRoot);
+	HealthBarBackground->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	HealthBarFill = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HealthBarFill"));
+	HealthBarFill->SetupAttachment(BodyRoot);
+	HealthBarFill->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("/Engine/BasicShapes/Cube.Cube"));
+	if (CubeMesh.Succeeded())
+	{
+		HealthBarBackground->SetStaticMesh(CubeMesh.Object);
+		HealthBarFill->SetStaticMesh(CubeMesh.Object);
+
+		// A câmera olha ao longo de +X, então a barra é FINA em X, larga em Y
+		// e baixa em Z. Escala em cima do cubo de 100uu da engine.
+		HealthBarBackground->SetRelativeScale3D(FVector(0.04f, BarWidthScale, BarHeightScale));
+		HealthBarBackground->SetRelativeLocation(FVector(0.0f, 0.0f, BarHeightUnits));
+
+		// Levemente à frente do fundo, senão as duas faces brigam pelo mesmo
+		// plano e o preenchimento pisca conforme a câmera se move (z-fighting).
+		HealthBarFill->SetRelativeLocation(FVector(-1.0f, 0.0f, BarHeightUnits));
+	}
+
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> BasicMaterial(TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
 	if (BasicMaterial.Succeeded())
 	{
 		BodyMesh->SetMaterial(0, BasicMaterial.Object);
+		HealthBarBackground->SetMaterial(0, BasicMaterial.Object);
+		HealthBarFill->SetMaterial(0, BasicMaterial.Object);
 	}
+}
+
+void APetView::RefreshHealthBar()
+{
+	if (!HealthBarFill || !HealthBarBackground)
+	{
+		return;
+	}
+
+	if (!HealthBarFillMaterial)
+	{
+		HealthBarFillMaterial = HealthBarFill->CreateDynamicMaterialInstance(0);
+	}
+	if (!HealthBarBackgroundMaterial)
+	{
+		HealthBarBackgroundMaterial = HealthBarBackground->CreateDynamicMaterialInstance(0);
+	}
+
+	const float Ratio = FMath::Clamp(HealthRatio, 0.0f, 1.0f);
+	HealthBarFill->SetRelativeScale3D(FVector(0.04f, BarWidthScale * Ratio, BarHeightScale));
+
+	// O cubo tem origem no CENTRO: encolher a escala sozinha faria a barra
+	// sumir pelos DOIS lados. Deslocar metade do que se perdeu ancora ela à
+	// esquerda, que é como uma barra de vida se lê.
+	const float FullWidthUnits = BarWidthScale * CubeSizeUnits;
+	HealthBarFill->SetRelativeLocation(
+		FVector(-1.0f, -(FullWidthUnits * (1.0f - Ratio)) * 0.5f, BarHeightUnits));
+
+	if (HealthBarFillMaterial)
+	{
+		// Verde -> vermelho conforme cai: a cor avisa antes do tamanho, e a
+		// diferença entre 30% e 15% de largura é difícil de ver de longe.
+		HealthBarFillMaterial->SetVectorParameterValue(TEXT("Color"),
+			FLinearColor::LerpUsingHSV(FLinearColor::Red, FLinearColor::Green, Ratio));
+	}
+	if (HealthBarBackgroundMaterial)
+	{
+		HealthBarBackgroundMaterial->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.05f, 0.05f, 0.05f));
+	}
+
+	HealthBarBackground->SetVisibility(!bDefeated);
+	HealthBarFill->SetVisibility(!bDefeated && Ratio > 0.0f);
 }
 
 void APetView::RefreshBodyAppearance()
@@ -61,6 +129,8 @@ void APetView::RefreshBodyAppearance()
 
 	// Derrotado some do tabuleiro — o núcleo já o tirou da partida.
 	BodyMesh->SetVisibility(!bDefeated);
+
+	RefreshHealthBar();
 }
 
 void APetView::SetInitialState(const FPetState& InitialState, const FPetPresentationInfo& Presentation)

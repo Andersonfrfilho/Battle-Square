@@ -69,6 +69,15 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Apresentação")
 	TObjectPtr<UStaticMeshComponent> BodyMesh;
 
+	// Barra de vida: fundo escuro sempre inteiro + preenchimento que encolhe.
+	// Sem o fundo não se sabe quanto FALTA, só quanto sobrou — e é a diferença
+	// entre "estou mal" e "estou quase morto".
+	UPROPERTY(VisibleAnywhere, Category = "Apresentação")
+	TObjectPtr<UStaticMeshComponent> HealthBarBackground;
+
+	UPROPERTY(VisibleAnywhere, Category = "Apresentação")
+	TObjectPtr<UStaticMeshComponent> HealthBarFill;
+
 	/** Cor por lado: quem é meu, quem é do outro. */
 	UPROPERTY(EditDefaultsOnly, Category = "Apresentação")
 	FLinearColor LocalSideColor = FLinearColor(0.15f, 0.45f, 0.95f);
@@ -78,6 +87,16 @@ public:
 
 	/** Aplica a cor do lado e o estado de derrota ao corpo. */
 	void RefreshBodyAppearance();
+
+private:
+	void RefreshHealthBar();
+
+	static constexpr float CubeSizeUnits = 100.0f;
+	static constexpr float BarWidthScale = 0.9f;
+	static constexpr float BarHeightScale = 0.09f;
+	static constexpr float BarHeightUnits = 105.0f;
+
+public:
 
 	uint8 GetSide() const { return Side; }
 
@@ -90,6 +109,12 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UMaterialInstanceDynamic> BodyMaterial;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> HealthBarFillMaterial;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> HealthBarBackgroundMaterial;
 
 	UPROPERTY()
 	uint8 Column = 0;

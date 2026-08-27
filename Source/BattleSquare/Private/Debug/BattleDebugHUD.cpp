@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Debug/BattleDebugHUD.h"
+#include "Battle/BattleNarration.h"
 #include "Debug/BattleDebugScreen.h"
 #include "Engine/Canvas.h"
 #include "Engine/Engine.h"
@@ -9,7 +10,17 @@ void ABattleDebugHUD::DrawHUD()
 {
 	Super::DrawHUD();
 
-	if (!FBattleDebugScreen::IsEnabled() || !Canvas)
+	if (!Canvas)
+	{
+		return;
+	}
+
+	// O feed vem ANTES e fora do gate: ele é produto. Esconder a depuração
+	// com bs.ShowBattleDebug 0 não pode deixar o jogador sem saber o que
+	// aconteceu na partida.
+	DrawNarrationFeed();
+
+	if (!FBattleDebugScreen::IsEnabled())
 	{
 		return;
 	}
@@ -39,5 +50,32 @@ void ABattleDebugHUD::DrawHUD()
 	{
 		DrawText(Line.Text, FLinearColor(Line.Color), PanelLeft + 8.0f, CursorY);
 		CursorY += LineHeightUnits;
+	}
+}
+
+void ABattleDebugHUD::DrawNarrationFeed()
+{
+	const TArray<FBattleNarrationFeed::FLine>& Lines = FBattleNarrationFeed::GetLines();
+	if (Lines.IsEmpty() || !Canvas)
+	{
+		return;
+	}
+
+	const float FeedWidth = FMath::Min(FeedWidthUnits, Canvas->SizeX - MarginUnits * 2.0f);
+	const float FeedHeight = FeedLineHeightUnits * FBattleNarrationFeed::MaxLines + MarginUnits;
+	const float FeedLeft = (Canvas->SizeX - FeedWidth) * 0.5f;
+	const float FeedTop = Canvas->SizeY - FeedHeight - MarginUnits * 2.0f;
+
+	DrawRect(FLinearColor(0.0f, 0.0f, 0.0f, 0.55f), FeedLeft, FeedTop, FeedWidth, FeedHeight);
+
+	// Desenhadas de baixo para cima: a frase mais RECENTE fica no rodapé, que
+	// é onde o olho já está esperando a próxima.
+	float CursorY = FeedTop + MarginUnits * 0.5f
+		+ FeedLineHeightUnits * (FBattleNarrationFeed::MaxLines - Lines.Num());
+
+	for (const FBattleNarrationFeed::FLine& Line : Lines)
+	{
+		DrawText(Line.Text, FLinearColor(Line.Color), FeedLeft + 12.0f, CursorY, nullptr, FeedTextScale);
+		CursorY += FeedLineHeightUnits;
 	}
 }

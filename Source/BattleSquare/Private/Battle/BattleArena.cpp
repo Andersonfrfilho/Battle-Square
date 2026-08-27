@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Battle/BattleArena.h"
+#include "Battle/BattleNarration.h"
 
 #include "Debug/BattleDebugScreen.h"
 #include "DrawDebugHelpers.h"
@@ -155,6 +156,9 @@ bool ABattleArena::BeginBattle(const FBattleState& InitialState, const TArray<FP
 
 void ABattleArena::DispatchEventToPetViews(const FBattleEvent& Event)
 {
+	NarrateEvent(Event);
+
+
 	for (const TObjectPtr<APetView>& View : SpawnedPetViews)
 	{
 		if (View && (View->GetPetId() == Event.ActorId || View->GetPetId() == Event.TargetId))
@@ -450,4 +454,33 @@ void ABattleArena::DrawDebugGrid() const
 				nullptr, CorDaCasa, /*Duration=*/0.0f, /*bDrawShadow=*/true, /*FontScale=*/1.1f);
 		}
 	}
+}
+
+void ABattleArena::NarrateEvent(const FBattleEvent& Event)
+{
+	const FPetPresentationInfo* Actor = PresentationsByPetId.Find(Event.ActorId);
+	const FPetPresentationInfo* Target = PresentationsByPetId.Find(Event.TargetId);
+
+	const FString Frase = FBattleNarration::Describe(Event,
+		Actor ? Actor->Name : FString(),
+		Target ? Target->Name : FString());
+
+	if (Frase.IsEmpty())
+	{
+		return;
+	}
+
+	// Cor pelo lado de quem AGIU: numa troca rápida de golpes, saber de quem
+	// foi a jogada importa mais que ler a frase inteira.
+	FColor Cor = FColor::White;
+	for (const TObjectPtr<APetView>& View : SpawnedPetViews)
+	{
+		if (View && View->GetPetId() == Event.ActorId)
+		{
+			Cor = View->GetSide() == 0 ? FColor::Cyan : FColor::Orange;
+			break;
+		}
+	}
+
+	FBattleNarrationFeed::Push(Frase, Cor);
 }

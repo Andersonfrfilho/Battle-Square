@@ -148,6 +148,9 @@ private:
 
 	void DispatchEventToPetViews(const FBattleEvent& Event);
 
+	/** Traduz o evento para o feed de produto (DP-leg-02: traduz, não decide). */
+	void NarrateEvent(const FBattleEvent& Event);
+
 	// T5 (colecao-e-captura) 🧠: varre o trace por BatalhaEncerrada; se o
 	// jogador local venceu, captura o pet do lado OPOSTO — nunca o
 	// próprio pet do jogador.

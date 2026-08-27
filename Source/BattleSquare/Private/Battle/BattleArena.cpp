@@ -172,7 +172,9 @@ void ABattleArena::DispatchEventToPetViews(const FBattleEvent& Event)
 			// conhece CellSize e a origem da grade. A view só sabe em que
 			// casa está. Sem isto o pet muda de casa no estado e não sai do
 			// lugar na tela.
-			View->SetActorLocation(GetCellWorldLocation(View->GetColumn(), View->GetRow()));
+			// Desliza em vez de aparecer: o teleporte não deixava ver QUEM
+			// andou nem em que ordem.
+			View->GlideTo(GetCellWorldLocation(View->GetColumn(), View->GetRow()));
 			View->RefreshBodyAppearance();
 		}
 	}
@@ -228,7 +230,7 @@ void ABattleArena::RefreshGazes()
 			}
 			else
 			{
-				View->LookAtCell(Other->GetColumn(), Other->GetRow());
+				View->LookAtLocation(Other->GetActorLocation());
 			}
 			break;
 		}
@@ -428,6 +430,11 @@ void ABattleArena::HandlePlayerCommitted()
  */
 void ABattleArena::ResolveTurnWithCommits(const FTurnCommit& LocalCommit, const FTurnCommit& OpponentCommit)
 {
+	// Rascunho é de UM turno. Sobreviver ao turno faria o seguinte começar com
+	// as escolhas do anterior já marcadas.
+	DraftsBySide[0].Reset();
+	DraftsBySide[1].Reset();
+
 	LogCommit(*FString::Printf(TEXT("jogador %d"), static_cast<int32>(GetControlledPlayerNumber())), LocalCommit);
 	LogCommit(TEXT("bot"), OpponentCommit);
 
@@ -490,6 +497,17 @@ void ABattleArena::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	DrawDebugGrid();
+
+	// O deslize e o OLHAR avançam juntos: sem atualizar o olhar durante o
+	// movimento, o pet chegaria olhando para onde o outro estava antes.
+	for (const TObjectPtr<APetView>& View : SpawnedPetViews)
+	{
+		if (View)
+		{
+			View->AdvanceGlide(DeltaSeconds);
+		}
+	}
+	RefreshGazes();
 
 	if (!bWaitingForPlaybackToOpenNextTurn || !TracePlayer)
 	{
@@ -599,14 +617,22 @@ FString ABattleArena::GetPresentationNameForPet(uint8 PetId) const
 
 void ABattleArena::SwapControlledPlayer()
 {
-	LocalPlayerSide = (LocalPlayerSide == 0) ? 1 : 0;
-
-	// As ações já escolhidas eram para o outro pet. Mantê-las faria a troca
-	// produzir uma jogada que ninguém pediu — e o pior tipo de defeito é o que
-	// executa algo plausível.
+	// Guarda o rascunho de quem está saindo e repõe o de quem entra.
+	//
+	// A primeira versão ZERAVA tudo ao trocar, para não aplicar ao pet errado
+	// o que foi pensado para o outro. O motivo era legítimo; a solução,
+	// grosseira: separar os rascunhos resolve o mesmo problema sem jogar fora
+	// o trabalho de quem está jogando.
 	if (PlayerActionQueue)
 	{
-		PlayerActionQueue->BeginNewTurn();
+		DraftsBySide[LocalPlayerSide] = PlayerActionQueue->GetConfirmedActions();
+	}
+
+	LocalPlayerSide = (LocalPlayerSide == 0) ? 1 : 0;
+
+	if (PlayerActionQueue)
+	{
+		PlayerActionQueue->RestoreConfirmedActions(DraftsBySide[LocalPlayerSide]);
 	}
 
 	FBattleDebugScreen::Show(

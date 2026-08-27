@@ -127,26 +127,44 @@ bool FControlledPlayerActionLandsTest::RunTest(const FString& Parameters)
 	return true;
 }
 
-// Trocar no meio de uma escolha não pode manter as ações já confirmadas: elas
-// foram pensadas para o OUTRO pet, e aplicá-las ao novo faria a troca produzir
-// uma jogada que ninguém pediu.
+// Cada jogador tem o PRÓPRIO rascunho, e trocar de um para o outro não apaga
+// nada: quem escolheu dois movimentos pelo jogador 1, foi ver o 2 e voltou,
+// encontra os dois movimentos onde os deixou.
+//
+// A primeira versão ZERAVA as escolhas ao trocar. O motivo era legítimo — não
+// aplicar ao pet errado o que foi pensado para o outro — mas a solução era
+// grosseira: separar os rascunhos resolve o mesmo problema sem perder trabalho
+// de quem está jogando.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FControlledPlayerSwapClearsChoicesTest,
-	"BattleSquare.BattleArena.ControlledPlayer.SwapClearsPendingChoices",
+	FControlledPlayerSwapKeepsDraftsTest,
+	"BattleSquare.BattleArena.ControlledPlayer.SwapKeepsEachDraft",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FControlledPlayerSwapClearsChoicesTest::RunTest(const FString& Parameters)
+bool FControlledPlayerSwapKeepsDraftsTest::RunTest(const FString& Parameters)
 {
 	FScopedArena Cena;
+	UBattleActionQueueComponent* Fila = Cena.Arena->PlayerActionQueue;
 
-	Cena.Arena->PlayerActionQueue->BeginSelectingType(EActionType::Defender);
-	TestEqual(TEXT("Uma ação foi confirmada"),
-		Cena.Arena->PlayerActionQueue->GetConfirmedActionCount(), 1);
+	// Jogador 1 escolhe duas ações.
+	Fila->BeginSelectingType(EActionType::Defender);
+	Fila->BeginSelectingType(EActionType::Esquivar);
+	TestEqual(TEXT("Jogador 1 tem duas ações"), Fila->GetConfirmedActionCount(), 2);
 
 	Cena.Arena->SwapControlledPlayer();
+	TestEqual(TEXT("Jogador 2 começa com a folha em branco"),
+		Fila->GetConfirmedActionCount(), 0);
 
-	TestEqual(TEXT("A troca zera o que estava escolhido"),
-		Cena.Arena->PlayerActionQueue->GetConfirmedActionCount(), 0);
+	// Jogador 2 escolhe uma.
+	Fila->BeginSelectingType(EActionType::Aguardar);
+	TestEqual(TEXT("Jogador 2 tem uma ação"), Fila->GetConfirmedActionCount(), 1);
+
+	Cena.Arena->SwapControlledPlayer();
+	TestEqual(TEXT("As duas do jogador 1 continuam lá"),
+		Fila->GetConfirmedActionCount(), 2);
+
+	Cena.Arena->SwapControlledPlayer();
+	TestEqual(TEXT("E a do jogador 2 também"),
+		Fila->GetConfirmedActionCount(), 1);
 
 	return true;
 }

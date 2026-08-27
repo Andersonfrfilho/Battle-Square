@@ -42,6 +42,7 @@ de medição mais eficiente que este projeto tem; **facilite o trabalho dele.**
 | Recurso | Para que serve |
 |---|---|
 | **Grade desenhada no mundo** | cada casa com `(coluna,linha)` e quem está nela; casa ocupada fica amarela. Torna posição e direção legíveis — teria mostrado na hora que "Baixo" andava para a direita, e mostra a coabitação sem explicação |
+| **Movimento deslizando** | o pet ANDA até a casa nova, e o olhar acompanha durante o percurso. Teleporte não conta a história: quem vê só o antes e o depois não sabe se ele andou, se foi empurrado, nem em que ordem |
 | **Indicador de fase** | `reproduzindo fase 3 de 11`, que desfaz a impressão de "fez tudo de uma vez" |
 | **Painel de texto** | o que cada lado escolheu e onde cada pet terminou |
 

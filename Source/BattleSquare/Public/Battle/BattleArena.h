@@ -200,6 +200,10 @@ private:
 	bool bAwaitingOpponentChoice = false;
 	FTurnCommit StoredLocalCommit;
 
+	// Rascunho POR JOGADOR: trocar de jogador controlado não pode apagar o que
+	// o outro já tinha escolhido. Indexado por lado (0 e 1).
+	TArray<FBattleAction> DraftsBySide[2];
+
 	uint8 FindPostureFlagsForPet(uint8 PetId) const;
 
 	// T5 (colecao-e-captura) 🧠: varre o trace por BatalhaEncerrada; se o

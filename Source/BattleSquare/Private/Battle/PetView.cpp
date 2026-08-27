@@ -78,34 +78,65 @@ APetView::APetView()
 	}
 }
 
-void APetView::LookAtCell(int32 TargetColumn, int32 TargetRow)
+void APetView::LookAtLocation(const FVector& TargetLocation)
 {
 	if (!GazeMarker)
 	{
 		return;
 	}
 
-	const int32 DeltaColumn = TargetColumn - static_cast<int32>(Column);
-	const int32 DeltaRow = TargetRow - static_cast<int32>(Row);
+	FVector Towards = TargetLocation - GetActorLocation();
+	Towards.Z = 0.0f;
 
-	if (DeltaColumn == 0 && DeltaRow == 0)
+	if (Towards.IsNearlyZero())
 	{
-		// Coabitando a mesma casa: não há para onde olhar, e escolher uma
-		// direção qualquer daria a impressão de que o pet se distraiu.
+		// Em cima do outro: não há para onde olhar, e escolher uma direção
+		// qualquer daria a impressão de que o pet se distraiu.
 		return;
 	}
-
-	// Mesma conversão casa->mundo que ABattleArena::GetCellWorldLocation usa:
-	// a coluna anda em +Y e a linha em -X, porque a câmera olha ao longo de
-	// +X. Inverter isto foi o defeito de "Baixo andando para a direita", e é
-	// por isso que a relação está escrita uma vez só, aqui e lá.
-	const FVector Towards(-static_cast<float>(DeltaRow), static_cast<float>(DeltaColumn), 0.0f);
 
 	// A marca ORBITA para o lado do adversário. Girar a esfera não adiantaria:
 	// ela é simétrica, e a rotação seria invisível.
 	const FVector Offset = Towards.GetSafeNormal() * (SphereRadiusUnits * BodyScale);
 	GazeMarker->SetRelativeLocation(Offset + FVector(0.0f, 0.0f, SphereRadiusUnits * BodyScale));
 	GazeMarker->SetWorldRotation(Towards.Rotation());
+}
+
+void APetView::GlideTo(const FVector& Destination)
+{
+	// Distância desprezível não merece animação: um deslize de meio
+	// centímetro só atrasa o evento seguinte.
+	if (FVector::DistSquared(GetActorLocation(), Destination) < 1.0f)
+	{
+		SetActorLocation(Destination);
+		bIsGliding = false;
+		return;
+	}
+
+	GlideStart = GetActorLocation();
+	GlideTarget = Destination;
+	GlideElapsed = 0.0f;
+	bIsGliding = true;
+}
+
+void APetView::AdvanceGlide(float DeltaSeconds)
+{
+	if (!bIsGliding)
+	{
+		return;
+	}
+
+	GlideElapsed += DeltaSeconds;
+	const float Alpha = FMath::Clamp(GlideElapsed / GlideSeconds, 0.0f, 1.0f);
+
+	// Suavizado nas pontas: sai e chega desacelerando, que é o que separa
+	// "andou" de "foi arrastado por um trilho".
+	SetActorLocation(FMath::Lerp(GlideStart, GlideTarget, FMath::SmoothStep(0.0f, 1.0f, Alpha)));
+
+	if (Alpha >= 1.0f)
+	{
+		bIsGliding = false;
+	}
 }
 
 void APetView::LookUp()

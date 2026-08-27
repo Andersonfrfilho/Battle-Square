@@ -95,7 +95,27 @@ public:
 
 	/** Vira o pet para uma casa da grade. A barra de vida NÃO acompanha: ela
 	 *  precisa continuar de frente para a câmera para permanecer legível. */
-	void LookAtCell(int32 TargetColumn, int32 TargetRow);
+	/**
+	 * Vira para uma posição do MUNDO, não para uma casa da grade.
+	 *
+	 * A casa muda de uma vez; a posição desliza. Olhando para a casa, o pet
+	 * viraria a cabeça de repente e depois esperaria o outro chegar — o olhar
+	 * só acompanha o movimento se seguir onde o outro ESTÁ.
+	 */
+	void LookAtLocation(const FVector& TargetLocation);
+
+	/**
+	 * Desliza até uma posição em vez de aparecer nela.
+	 *
+	 * Teleporte não conta a história: quem só vê o antes e o depois não sabe
+	 * se o pet ANDOU ou foi empurrado, nem em que ordem as coisas
+	 * aconteceram. Isso é independente da malha — quando o modelo 3D chegar,
+	 * ele desliza igual, e a animação de passo entra por cima disto.
+	 */
+	void GlideTo(const FVector& Destination);
+
+	/** Chamado pela arena a cada quadro para avançar o deslize. */
+	void AdvanceGlide(float DeltaSeconds);
 
 	/** DP-ia-04: o olhar segue o que o adversário FEZ, não só onde ele está. */
 	void LookUp();
@@ -118,6 +138,10 @@ private:
 	// separação menor que isso deixa faces no mesmo plano, e é o que piscava.
 	static constexpr float BarFrontOffsetUnits = 6.0f;
 	static constexpr float GazeMarkerScale = 0.18f;
+
+	// Um pouco mais curto que o passo da reprodução (0,45s), para o pet chegar
+	// antes do evento seguinte em vez de arrastar por cima dele.
+	static constexpr float GlideSeconds = 0.30f;
 	static constexpr float BodyScale = 0.7f;
 	static constexpr float SphereRadiusUnits = 50.0f;
 
@@ -131,6 +155,11 @@ private:
 
 	UPROPERTY()
 	uint8 Side = 0;
+
+	FVector GlideStart = FVector::ZeroVector;
+	FVector GlideTarget = FVector::ZeroVector;
+	float GlideElapsed = 0.0f;
+	bool bIsGliding = false;
 
 	UPROPERTY()
 	TObjectPtr<UMaterialInstanceDynamic> BodyMaterial;

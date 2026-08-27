@@ -67,6 +67,15 @@ public:
 	// consome isto é a fiação em C++ (ABattleArena, T10), não o widget.
 	FTurnCommit BuildCommit() const;
 
+	/**
+	 * Repõe ações confirmadas guardadas fora daqui.
+	 *
+	 * Existe para o rascunho POR JOGADOR: trocar de jogador controlado não
+	 * pode apagar o que já foi escolhido pelo outro. Só a arena usa isto — a
+	 * tela nunca repõe estado, ela escolhe (DP-ui-01).
+	 */
+	void RestoreConfirmedActions(const TArray<FBattleAction>& Actions);
+
 	UFUNCTION(BlueprintPure, Category = "Battle|ActionQueue")
 	int32 GetConfirmedActionCount() const { return ConfirmedActions.Num(); }
 

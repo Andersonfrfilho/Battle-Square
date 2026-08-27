@@ -115,3 +115,20 @@ void UBattleActionQueueComponent::BeginNewTurn()
 	// um estado pela metade.
 	OnQueueChanged.Broadcast();
 }
+
+void UBattleActionQueueComponent::RestoreConfirmedActions(const TArray<FBattleAction>& Actions)
+{
+	ConfirmedActions = Actions;
+
+	// Nunca acima do teto do turno, mesmo que o rascunho venha corrompido: o
+	// núcleo resolve exatamente três ações.
+	while (ConfirmedActions.Num() > FTurnCommit::ActionsPerTurn)
+	{
+		ConfirmedActions.Pop();
+	}
+
+	Pending = FBattlePendingActionSelection();
+	bCommitted = false;
+
+	OnQueueChanged.Broadcast();
+}

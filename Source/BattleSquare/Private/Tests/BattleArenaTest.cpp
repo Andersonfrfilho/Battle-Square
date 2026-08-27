@@ -517,3 +517,40 @@ bool FArenaCellAxesMatchScreenTest::RunTest(const FString& Parameters)
 	DestroyHeadlessTestWorld(World);
 	return true;
 }
+
+// O pet DESLIZA até a casa nova em vez de aparecer nela. Teleporte não conta a
+// história: quem só vê o antes e o depois não sabe se ele andou, se foi
+// empurrado, nem em que ordem as coisas aconteceram.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FPetViewGlidesInsteadOfTeleportingTest,
+	"BattleSquare.Battle.PetView.GlidesInsteadOfTeleporting",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FPetViewGlidesInsteadOfTeleportingTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
+	FWorldContext& Context = GEngine->CreateNewWorldContext(EWorldType::Game);
+	Context.SetCurrentWorld(World);
+	World->InitializeActorsForPlay(FURL());
+
+	APetView* View = World->SpawnActor<APetView>();
+	View->SetActorLocation(FVector::ZeroVector);
+
+	const FVector Destino(300.0f, 0.0f, 0.0f);
+	View->GlideTo(Destino);
+
+	// Um passo curto: já saiu da origem, e ainda NÃO chegou.
+	View->AdvanceGlide(0.1f);
+	const FVector NoMeio = View->GetActorLocation();
+	TestTrue(TEXT("Saiu do lugar"), NoMeio.X > 1.0f);
+	TestTrue(TEXT("Ainda não chegou — não teleportou"), NoMeio.X < Destino.X - 1.0f);
+
+	// Tempo suficiente: chega exatamente no destino, sem passar dele.
+	View->AdvanceGlide(5.0f);
+	TestTrue(TEXT("Chega no destino"),
+		FVector::DistSquared(View->GetActorLocation(), Destino) < 1.0f);
+
+	GEngine->DestroyWorldContext(World);
+	World->DestroyWorld(false);
+	return true;
+}

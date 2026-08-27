@@ -49,17 +49,46 @@ namespace
 		Arena->PlayerActionQueue->BeginSelectingType(Type);
 	}
 
-	bool IsChoosingForPlayerTwo()
+	int32 ChoosingPlayerNumber()
 	{
 		const ABattleArena* Arena = FindArena();
-		return Arena && Arena->IsControllingBothSides() && Arena->GetSideBeingChosen() == 1;
+		return Arena ? static_cast<int32>(Arena->GetSideBeingChosen()) + 1 : 1;
 	}
 
 	EVisibility PlayerTwoPadVisibility()
 	{
-		// Só aparece quando é a VEZ do jogador 2. Um painel sempre visível
-		// convidaria a clicar quando o clique iria para o pet errado.
-		return IsChoosingForPlayerTwo() ? EVisibility::Visible : EVisibility::Collapsed;
+		// Aparece durante TODO o modo duplo, não só na vez do jogador 2: o
+		// painel é o caminho para chegar ao jogador 2, e escondê-lo até a vez
+		// dele fazia o caminho depender de um botão que parecia encerrar tudo.
+		const ABattleArena* Arena = FindArena();
+		return (Arena && Arena->IsControllingBothSides())
+			? EVisibility::Visible : EVisibility::Collapsed;
+	}
+
+	/**
+	 * O rótulo do confirmar diz a CONSEQUÊNCIA, não a mecânica.
+	 *
+	 * "Confirmar turno" na vez do jogador 1 fazia parecer que a batalha ia
+	 * resolver — então ninguém clicava, e sem clicar não dava para chegar ao
+	 * jogador 2. O botão estava certo; o texto é que mentia.
+	 */
+	FText CommitLabel()
+	{
+		const ABattleArena* Arena = FindArena();
+		if (!Arena || !Arena->IsControllingBothSides())
+		{
+			return FText::FromString(TEXT("Confirmar turno"));
+		}
+
+		return (ChoosingPlayerNumber() == 1)
+			? FText::FromString(TEXT("Confirmar jogador 1  →  passar ao jogador 2"))
+			: FText::FromString(TEXT("Confirmar jogador 2  →  RESOLVER o turno"));
+	}
+
+	FText PadHeaderLabel()
+	{
+		return FText::FromString(FString::Printf(
+			TEXT("── AÇÕES DO JOGADOR %d ──"), ChoosingPlayerNumber()));
 	}
 
 	void ConfirmDirection(EBattleDirection Direction)
@@ -70,7 +99,9 @@ namespace
 			return;
 		}
 
-		FBattleDebugScreen::Show(TEXT("clique (jogador 2): direção"), 10.0f, FColor::White, -1);
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("clique (jogador %d): direção"), ChoosingPlayerNumber()),
+			10.0f, FColor::White, -1);
 		Arena->PlayerActionQueue->ConfirmDirection(Direction);
 	}
 
@@ -82,7 +113,9 @@ namespace
 			return;
 		}
 
-		FBattleDebugScreen::Show(TEXT("clique (jogador 2): CONFIRMAR turno"), 10.0f, FColor::White, -1);
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("clique (jogador %d): confirmar"), ChoosingPlayerNumber()),
+			10.0f, FColor::White, -1);
 		Arena->PlayerActionQueue->Commit();
 	}
 
@@ -187,7 +220,7 @@ void FBattleDebugToolbar::Show(UWorld* World)
 	PadJogadorDois->AddSlot().AutoHeight().Padding(2.0f)
 	[
 		SNew(STextBlock)
-		.Text(FText::FromString(TEXT("── AÇÕES DO JOGADOR 2 ──")))
+		.Text_Lambda([]() { return PadHeaderLabel(); })
 		.ColorAndOpacity(FSlateColor(FLinearColor(1.0f, 0.6f, 0.1f)))
 	];
 
@@ -236,7 +269,12 @@ void FBattleDebugToolbar::Show(UWorld* World)
 
 	PadJogadorDois->AddSlot().AutoHeight().Padding(2.0f)
 	[
-		MakeButton(FText::FromString(TEXT("CONFIRMAR turno do jogador 2")), []() { CommitTurn(); })
+		SNew(SButton)
+		.ContentPadding(FMargin(8.0f, 4.0f))
+		.OnClicked_Lambda([]() { CommitTurn(); return FReply::Handled(); })
+		[
+			SNew(STextBlock).Text_Lambda([]() { return CommitLabel(); })
+		]
 	];
 
 	Coluna->AddSlot().AutoHeight().Padding(2.0f)

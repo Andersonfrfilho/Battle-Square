@@ -115,8 +115,15 @@ mirar a mesma casa — o botão **"Controlar também o jogador 2"**. Aí o turno
 duas escolhas, e quando chega a vez do jogador 2 **aparece na barra um painel
 com as ações dele**: tipos, direções e "CONFIRMAR turno do jogador 2".
 
-O painel só existe enquanto é a vez dele. Sempre visível, ele convidaria a
-clicar quando o clique iria para o pet errado.
+O painel fica visível durante todo o modo duplo, com o cabeçalho dizendo de
+quem são as ações. Escondê-lo até a vez do jogador 2 fazia o caminho até ele
+depender de um botão que parecia encerrar a batalha.
+
+**O confirmar diz a consequência, não a mecânica:**
+`Confirmar jogador 1 → passar ao jogador 2`, e depois
+`Confirmar jogador 2 → RESOLVER o turno`. Com o texto genérico "confirmar
+turno", ninguém clicava na vez do jogador 1 — e sem clicar, o jogador 2 era
+inalcançável.
 
 (`bStartControllingBothSides=True` em `Config/DefaultGame.ini` já abre a batalha
 nesse modo.)

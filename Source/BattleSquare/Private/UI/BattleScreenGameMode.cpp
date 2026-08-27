@@ -221,8 +221,20 @@ void ABattleScreenGameMode::Tick(float DeltaSeconds)
 	// e o número é o que distingue os dois sem ambiguidade.
 	const int32 NumeroDoJogador = static_cast<int32>(LadoEscolhendo) + 1;
 
+	// Com o modo duplo ligado, avisa o que "confirmar" faz AGORA: sem isso o
+	// botão parece encerrar a batalha, ninguém clica, e o jogador 2 fica
+	// inalcançável.
+	FString Aviso;
+	if (ScreenArena->IsControllingBothSides())
+	{
+		Aviso = (NumeroDoJogador == 1)
+			? TEXT("  —  confirmar passa ao jogador 2")
+			: TEXT("  —  confirmar RESOLVE o turno");
+	}
+
 	ActionSelector->SetChoosingForLabel(FText::FromString(
-		FString::Printf(TEXT("▶ escolhendo pelo JOGADOR %d (%s)"), NumeroDoJogador, *NomeDoPet)));
+		FString::Printf(TEXT("▶ escolhendo pelo JOGADOR %d (%s)%s"),
+			NumeroDoJogador, *NomeDoPet, *Aviso)));
 
 	// Também no painel, com Key fixa: a linha se atualiza no lugar em vez de
 	// empilhar, e sobrevive a olhar para outro canto da tela.

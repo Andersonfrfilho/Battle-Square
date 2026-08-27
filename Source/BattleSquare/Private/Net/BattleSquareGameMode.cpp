@@ -1,6 +1,8 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Net/BattleSquareGameMode.h"
+#include "World/EncounterRoamingComponent.h"
+#include "World/WorldEncounterActor.h"
 #include "Blueprint/UserWidget.h"
 #include "Debug/BattleDebugToolbar.h"
 #include "Debug/BattleDebugScreen.h"
@@ -187,6 +189,8 @@ FString ABattleSquareGameMode::SetUpWorldEncounterFlow()
 	// aqui deixaria botões por cima do mundo aberto o tempo todo.
 	WorldEncounterFlow->OnWorldBattleStarted.AddUObject(
 		this, &ABattleSquareGameMode::HandleWorldBattleStarted);
+
+	SpawnRoamingEncounters();
 	return FString();
 }
 
@@ -478,4 +482,64 @@ void ABattleSquareGameMode::TearDownBattleUi()
 	}
 
 	FBattleDebugToolbar::Hide();
+}
+
+void ABattleSquareGameMode::SpawnRoamingEncounters()
+{
+	UWorld* World = GetWorld();
+	if (!World || WorldEncounterCount <= 0 || WorldEncounterCatalogIds.IsEmpty())
+	{
+		return;
+	}
+
+	// Já há encontros no nível? Então este mundo foi povoado à mão, e criar
+	// mais por cima duplicaria o que o autor decidiu.
+	TActorIterator<AWorldEncounterActor> Existente(World);
+	if (Existente)
+	{
+		FBattleDebugScreen::Show(
+			TEXT("mundo já tem encontros colocados à mão — nenhum foi criado"),
+			8.0f, FColor::Silver, /*Key=*/720);
+		return;
+	}
+
+	APawn* Jogador = World->GetFirstPlayerController()
+		? World->GetFirstPlayerController()->GetPawn() : nullptr;
+	const FVector Centro = Jogador ? Jogador->GetActorLocation() : FVector::ZeroVector;
+
+	FRandomStream Sorteio(WorldEncounterSeed);
+
+	for (int32 Indice = 0; Indice < WorldEncounterCount; ++Indice)
+	{
+		// Longe o bastante para não disparar batalha no primeiro passo: nascer
+		// dentro do raio de encontro tiraria o jogador do mundo antes de ele
+		// andar.
+		const float Angulo = Sorteio.FRandRange(0.0f, 2.0f * PI);
+		const float Distancia = FMath::Lerp(WorldEncounterSpawnRadiusUnits * 0.25f,
+			WorldEncounterSpawnRadiusUnits, Sorteio.FRand());
+
+		const FVector Posicao = Centro
+			+ FVector(FMath::Cos(Angulo) * Distancia, FMath::Sin(Angulo) * Distancia, 0.0f);
+
+		AWorldEncounterActor* Encontro = World->SpawnActor<AWorldEncounterActor>(
+			AWorldEncounterActor::StaticClass(), Posicao, FRotator::ZeroRotator);
+		if (!Encontro)
+		{
+			continue;
+		}
+
+		const int32 CatalogoIndice = Sorteio.RandRange(0, WorldEncounterCatalogIds.Num() - 1);
+		Encontro->CatalogId = FName(*WorldEncounterCatalogIds[CatalogoIndice]);
+
+		UEncounterRoamingComponent* Passeio = NewObject<UEncounterRoamingComponent>(Encontro);
+		Passeio->RegisterComponent();
+
+		// Semente derivada do índice: dois encontros criados no mesmo quadro
+		// precisam andar diferente, senão passeiam colados.
+		Passeio->ConfigureRoaming(Posicao, WorldEncounterSeed + Indice * 7919);
+	}
+
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("%d encontros povoaram o mundo, e eles ANDAM"), WorldEncounterCount),
+		0.0f, FColor::Green, /*Key=*/720);
 }

@@ -132,3 +132,17 @@ Agora o fluxo avisa quando a batalha começa, e o GameMode do mundo monta a
       jogo. Se ele nascer parado, a transição de volta não completou.
 - [ ] Se o caminho do widget estiver errado no `.ini`, o painel diz isso em
       vermelho em vez de abrir uma batalha injogável em silêncio.
+
+### ENC-11 — O mundo tem inimigos, e eles andam
+
+Até 2026-08-27 **ninguém criava encontros**: eles só existiam se alguém os
+tivesse colocado à mão no nível. Caminhar pelo mundo nunca disparava batalha, e
+nada acusava — o recurso inteiro ficava inalcançável em silêncio.
+
+- [ ] Ao entrar no mundo, o painel diz `N encontros povoaram o mundo, e eles ANDAM`.
+- [ ] Os inimigos **se movem** e viram para onde andam.
+- [ ] Eles não somem no horizonte: o passeio é ao redor de onde nasceram.
+- [ ] Nenhum nasce em cima do jogador — dá para andar antes do primeiro encontro.
+- [ ] Encostar em um leva à batalha, **com botões** (ENC-10).
+- [ ] Se o nível já tiver encontros colocados à mão, o painel avisa e nenhum é
+      criado por cima.

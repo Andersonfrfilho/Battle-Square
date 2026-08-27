@@ -83,6 +83,31 @@ public:
 	 */
 	void HandleWorldBattleStarted(ABattleArena* Arena);
 
+	/**
+	 * Povoa o mundo com encontros que ANDAM.
+	 *
+	 * Até 2026-08-27 ninguém criava encontro nenhum: eles só existiam se
+	 * alguém os tivesse colocado à mão no nível. Caminhar pelo mundo, então,
+	 * nunca disparava batalha — o recurso inteiro de encontro ficava
+	 * inalcançável sem que nada acusasse.
+	 */
+	void SpawnRoamingEncounters();
+
+	/** Quantos encontros povoam o mundo. Zero desliga. */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
+	int32 WorldEncounterCount = 6;
+
+	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
+	float WorldEncounterSpawnRadiusUnits = 4000.0f;
+
+	/** Semente do povoamento: repetir a mesma dá o mesmo mundo. */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
+	int32 WorldEncounterSeed = 20260827;
+
+	/** Ids do catálogo sorteados para os encontros. */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
+	TArray<FString> WorldEncounterCatalogIds;
+
 	void HandleWorldBattleFinished();
 
 	void TearDownBattleUi();

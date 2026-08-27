@@ -10,8 +10,12 @@
 class UStaticMeshComponent;
 
 /**
- * Pet posicionado no mundo. É dado, não comportamento: sem Tick, sem overlap,
- * sem IA — a regra de disparo vive em FEncounterDetector (DP-enc-01/02).
+ * Pet posicionado no mundo. É DADO, não comportamento: sem overlap, sem IA —
+ * a regra de disparo vive em FEncounterDetector (DP-enc-01/02).
+ *
+ * Andar pelo mundo é comportamento, e por isso mora FORA daqui, em
+ * UEncounterRoamingComponent: assim um encontro pode ser colocado parado
+ * quando for essa a intenção, e o ator continua sendo só o que ele é.
  */
 UCLASS()
 class BATTLESQUARE_API AWorldEncounterActor : public AActor

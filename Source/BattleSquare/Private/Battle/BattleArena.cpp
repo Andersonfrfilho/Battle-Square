@@ -148,6 +148,10 @@ bool ABattleArena::BeginBattle(const FBattleState& InitialState, const TArray<FP
 		PresentationsByPetId.Add(Presentation.PetId, Presentation);
 	}
 
+	// DEPOIS do mapa de apresentação: é dele que sai o id de catálogo, e
+	// chamar antes procurava numa tabela ainda vazia.
+	RegisterOwnPetInCollection();
+
 	if (!TracePlayer)
 	{
 		TracePlayer = NewObject<UBattleTracePlayer>(this);
@@ -297,6 +301,43 @@ void ABattleArena::AnnounceBattleFinishedIfEnded(const TArray<FBattleEvent>& Tra
 			OnBattleFinished.Broadcast();
 			return;
 		}
+	}
+}
+
+void ABattleArena::RegisterOwnPetInCollection()
+{
+	// O pet com que você LUTA é seu.
+	//
+	// A única coisa que povoava a coleção era capturar o oponente derrotado —
+	// o próprio pet do jogador nunca entrava, então a experiência dele não
+	// tinha onde cair e o jogador não progredia NUNCA. A recusa de XP estava
+	// certa; o que faltava era isto.
+	//
+	// O oponente NÃO entra aqui: ele se ganha vencendo, e adicioná-lo ao
+	// começar daria de graça o que a captura deveria custar.
+	const FPetState* OwnPet = CurrentState.Pets.FindByPredicate(
+		[this](const FPetState& Pet) { return Pet.Side == LocalPlayerSide; });
+	if (!OwnPet)
+	{
+		return;
+	}
+
+	const FPetPresentationInfo* Presentation = PresentationsByPetId.Find(OwnPet->PetId);
+	if (!Presentation || Presentation->CatalogId.IsEmpty())
+	{
+		return;
+	}
+
+	FOwnedPetInstance Instance;
+	Instance.CatalogId = Presentation->CatalogId;
+	Instance.Name = Presentation->Name;
+	Instance.Type = Presentation->Type;
+
+	if (FPetCollectionService::CaptureIfNew(PetCollectionSlotName, Instance))
+	{
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("%s entrou na sua coleção"), *Presentation->Name),
+			0.0f, FColor::Green, /*Key=*/952);
 	}
 }
 

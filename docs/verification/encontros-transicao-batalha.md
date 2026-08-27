@@ -128,6 +128,9 @@ Agora o fluxo avisa quando a batalha começa, e o GameMode do mundo monta a
 - [ ] Dá para jogar o turno inteiro: escolher, confirmar, ver a reprodução.
 - [ ] A barra de depuração aparece (ações do jogador 2, copiar painel).
 - [ ] Ao vencer, a tela diz **VOCÊ VENCEU** (e o feed também).
+- [ ] A tela mostra **+N de experiência** para o seu pet — ou diz o motivo de
+      não ter vindo. Silêncio aqui não é aceitável.
+- [ ] Vencendo duas vezes, o total de experiência **cresce**.
 - [ ] Ao fim da batalha, a tela de ações **some** e o controle volta ao mundo.
 - [ ] O explorador volta respondendo ao teclado — cursor escondido, input de
       jogo. Se ele nascer parado, a transição de volta não completou.

@@ -229,6 +229,9 @@ private:
 	// T5 (colecao-e-captura) 🧠: varre o trace por BatalhaEncerrada; se o
 	// jogador local venceu, captura o pet do lado OPOSTO — nunca o
 	// próprio pet do jogador.
+	/** Garante que o pet do jogador está na coleção — é dele que a XP vive. */
+	void RegisterOwnPetInCollection();
+
 	void CheckForCapture(const TArray<FBattleEvent>& Trace);
 
 	// T4 (niveis-experiencia-evolucao): credita XP ao pet do JOGADOR

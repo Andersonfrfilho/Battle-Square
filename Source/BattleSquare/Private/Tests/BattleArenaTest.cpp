@@ -365,12 +365,28 @@ bool FBattleArenaVictoryCapturesOpponentPetTest::RunTest(const FString& Paramete
 	TestTrue(TEXT("Batalha terminou"), Arena->GetCurrentState().bBattleEnded);
 	TestEqual(TEXT("Jogador local (Side 0) venceu"), Arena->GetCurrentState().WinningSide, static_cast<uint8>(0));
 
+	// "Exatamente 1 na coleção" era um PROXY para "a vitória não captura o seu
+	// próprio pet". Ele envelheceu em 2026-08-27, quando o pet do jogador
+	// passou a entrar na coleção ao COMEÇAR a batalha — sem isso a experiência
+	// dele não tinha onde cair e ninguém progredia (L-036, mesmo padrão).
+	//
+	// A intenção original continua guardada, e agora com mais precisão: o
+	// oponente entra por VITÓRIA, e o seu pet já estava lá por ser seu.
 	const TArray<FOwnedPetInstance> Collection = FPetCollectionService::LoadCollection(TestSlotName);
-	TestEqual(TEXT("Exatamente 1 pet capturado"), Collection.Num(), 1);
-	if (Collection.Num() == 1)
-	{
-		TestEqual(TEXT("O pet capturado é o OPONENTE, não o próprio jogador"), Collection[0].CatalogId, FString(TEXT("catalog-oponente-capturado")));
-	}
+
+	TestTrue(TEXT("O oponente derrotado foi capturado"),
+		Collection.ContainsByPredicate([](const FOwnedPetInstance& Instance)
+		{
+			return Instance.CatalogId == TEXT("catalog-oponente-capturado");
+		}));
+
+	TestTrue(TEXT("O pet do jogador está na coleção — por ser dele, não por captura"),
+		Collection.ContainsByPredicate([](const FOwnedPetInstance& Instance)
+		{
+			return Instance.CatalogId == TEXT("catalog-player-nunca-capturado");
+		}));
+
+	TestEqual(TEXT("E nada além dos dois entrou"), Collection.Num(), 2);
 
 	if (UGameplayStatics::DoesSaveGameExist(TestSlotName, 0))
 	{

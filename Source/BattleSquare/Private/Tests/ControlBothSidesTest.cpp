@@ -1,6 +1,8 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Battle/BattleArena.h"
+#include "Meta/PetCollectionSaveGame.h"
+#include "Meta/PetCollectionService.h"
 #include "Battle/BattleActionQueueComponent.h"
 #include "Battle/PetView.h"
 #include "Data/BattleDataTranslator.h"
@@ -313,5 +315,63 @@ bool FBattleEndWaitsForPlaybackTest::RunTest(const FString& Parameters)
 	Cena.PlayOutAnimation();
 
 	TestEqual(TEXT("Anunciou ao fim da reprodução"), Anuncios, 1);
+	return true;
+}
+
+// O pet com que você LUTA é seu, e precisa estar na coleção.
+//
+// A única coisa que povoava a coleção era capturar o oponente derrotado. O pet
+// do jogador nunca entrava — então a XP dele não tinha onde cair, e o jogador
+// nunca progredia. A recusa de XP estava certa; o que faltava era o pet estar
+// lá desde o começo.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FOwnPetJoinsCollectionOnBattleStartTest,
+	"BattleSquare.BattleArena.Collection.OwnPetJoinsOnBattleStart",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FOwnPetJoinsCollectionOnBattleStartTest::RunTest(const FString& Parameters)
+{
+	const FString Slot = TEXT("TesteColecaoInicial");
+	FPetCollectionService::SaveCollection(Slot, {});
+
+	UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
+	FWorldContext& Context = GEngine->CreateNewWorldContext(EWorldType::Game);
+	Context.SetCurrentWorld(World);
+	World->InitializeActorsForPlay(FURL());
+
+	ABattleArena* Arena = World->SpawnActor<ABattleArena>();
+	Arena->PetCollectionSlotName = Slot;
+
+	FBattleState Inicial;
+	FPetState Meu;
+	Meu.PetId = 1; Meu.Side = 0; Meu.Column = 1; Meu.Row = 1;
+	Meu.Health = 100; Meu.MaxHealth = 100;
+	FPetState Dele = Meu;
+	Dele.PetId = 2; Dele.Side = 1; Dele.Column = 2;
+	Inicial.Pets.Add(Meu);
+	Inicial.Pets.Add(Dele);
+
+	TArray<FPetPresentationInfo> Apresentacoes;
+	FPetPresentationInfo A; A.PetId = 1; A.Name = TEXT("Meu"); A.CatalogId = TEXT("meu-pet");
+	FPetPresentationInfo B; B.PetId = 2; B.Name = TEXT("Dele"); B.CatalogId = TEXT("pet-dele");
+	Apresentacoes.Add(A); Apresentacoes.Add(B);
+
+	Arena->BeginBattle(Inicial, Apresentacoes);
+
+	const TArray<FOwnedPetInstance> Colecao = FPetCollectionService::LoadCollection(Slot);
+
+	const bool bTemOMeu = Colecao.ContainsByPredicate(
+		[](const FOwnedPetInstance& Instance) { return Instance.CatalogId == TEXT("meu-pet"); });
+	const bool bTemODele = Colecao.ContainsByPredicate(
+		[](const FOwnedPetInstance& Instance) { return Instance.CatalogId == TEXT("pet-dele"); });
+
+	TestTrue(TEXT("O pet com que você luta entrou na coleção"), bTemOMeu);
+
+	// O oponente NÃO entra por começar a batalha: ele se ganha vencendo, e
+	// entrar aqui daria de graça o que a captura deveria custar.
+	TestFalse(TEXT("O pet do oponente NÃO entra ao começar"), bTemODele);
+
+	GEngine->DestroyWorldContext(World);
+	World->DestroyWorld(false);
 	return true;
 }

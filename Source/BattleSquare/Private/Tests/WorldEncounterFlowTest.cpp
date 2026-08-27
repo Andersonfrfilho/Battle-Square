@@ -173,3 +173,30 @@ bool FWorldEncounterFlowUnknownPetDoesNotTrapPlayerTest::RunTest(const FString& 
 	DestroyFlowTestWorld(World);
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAssemblerSeedsRandomTest,
+	"BattleSquare.World.EncounterMatchAssembler.SeedsRandomPerMatch",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FAssemblerSeedsRandomTest::RunTest(const FString& Parameters)
+{
+	FEncounterMatchParams Params = MakeMatchParams();
+	Params.EncounterCatalogId = TEXT("pet-do-mundo");
+
+	FBattleState ComSemente;
+	TArray<FPetPresentationInfo> Ignorado;
+	Params.RandomSeed = 4242;
+	FEncounterMatchAssembler::AssembleFromEncounter(Params, ComSemente, Ignorado);
+	TestEqual(TEXT("semente explícita é respeitada — teste que precisa de resultado fixo continua possível"),
+		ComSemente.Random.State, static_cast<uint64>(4242));
+
+	// Sem semente, a partida NÃO pode começar sempre no mesmo ponto: era isso
+	// que fazia o primeiro turno do oponente ser idêntico em toda batalha.
+	FBattleState SemSemente;
+	Params.RandomSeed = 0;
+	FEncounterMatchAssembler::AssembleFromEncounter(Params, SemSemente, Ignorado);
+	TestNotEqual(TEXT("sem semente explícita, o gerador não começa em zero"),
+		SemSemente.Random.State, static_cast<uint64>(0));
+
+	return true;
+}

@@ -55,8 +55,6 @@ void UBattleTracePlayer::StartPlayback(const TArray<FBattleEvent>& Trace)
 {
 	PendingGroups = GroupBattleEventsByPhase(Trace);
 	NextGroupIndex = 0;
-	UE_LOG(LogTemp, Display, TEXT("[TRACE] turno com %d eventos em %d grupo(s) de fase"),
-		Trace.Num(), PendingGroups.Num());
 	// O primeiro grupo sai NA HORA: esperar um intervalo antes de qualquer
 	// coisa acontecer faria o commit parecer que não registrou.
 	SecondsSinceLastGroup = SecondsPerGroup;

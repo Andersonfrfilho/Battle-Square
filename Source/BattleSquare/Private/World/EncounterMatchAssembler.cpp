@@ -2,6 +2,7 @@
 
 #include "World/EncounterMatchAssembler.h"
 #include "Net/BattleSquareGameMode.h"
+#include "Misc/DateTime.h"
 
 namespace
 {
@@ -37,6 +38,11 @@ bool FEncounterMatchAssembler::AssembleFromEncounter(const FEncounterMatchParams
 	ABattleSquareGameMode::ApplyOwnedPetProgressionBonus(Params.PetCollectionSlotName, EncounterPet, EncounterPresentation);
 
 	OutInitialState = FBattleState();
+	// A semente é decisão de MONTAGEM, não do núcleo: o BattleSim recebe um
+	// estado já semeado e nunca consulta relógio nenhum.
+	OutInitialState.Random.State = Params.RandomSeed != 0
+		? Params.RandomSeed
+		: static_cast<uint64>(FDateTime::Now().GetTicks());
 	OutInitialState.Pets.Add(PlayerPet);
 	OutInitialState.Pets.Add(EncounterPet);
 

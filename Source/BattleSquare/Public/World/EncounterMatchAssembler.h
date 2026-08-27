@@ -13,6 +13,21 @@ struct FEncounterMatchParams
 	FString PlayerCatalogId;
 	FString EncounterCatalogId;
 	FString PetCollectionSlotName;
+
+	/**
+	 * Semente do gerador da partida. Zero = a engine escolhe uma por relógio.
+	 *
+	 * Sem isto toda batalha começava com State=0, e como o PCG32 é
+	 * determinístico o PRIMEIRO TURNO do oponente era sempre idêntico
+	 * (Esquivar, Aguardar, Esquivar — nenhuma delas move). Num jogo de commit
+	 * às cegas, oponente previsível anula a mecânica.
+	 *
+	 * Determinismo NÃO se perde (AD-004): a semente vive dentro de
+	 * FBattleState, então a mesma semente reproduz a mesma partida. O que
+	 * muda é que partidas diferentes começam em pontos diferentes.
+	 * Teste que precisa de resultado fixo passa a semente explicitamente.
+	 */
+	uint64 RandomSeed = 0;
 };
 
 /**

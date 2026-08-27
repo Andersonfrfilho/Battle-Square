@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "UI/BattleScreenGameMode.h"
+#include "Net/BattleSquarePlayerController.h"
 #include "Battle/BattleArena.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/Paths.h"
@@ -117,5 +118,27 @@ bool FBattleScreenMissingMirrorIsAReasonTest::RunTest(const FString& Parameters)
 	TestNull(TEXT("e não deixa arena pela metade"), GameMode->ScreenArena.Get());
 
 	DestroyScreenTestWorld(World);
+	return true;
+}
+
+// As teclas de depuração (F8 controla os dois lados, F9 copia o painel, F10
+// limpa) vivem em ABattleSquarePlayerController. O GameMode do MUNDO o
+// declarava; o da tela de batalha não — então elas nunca chegavam ao jogador
+// justamente na tela onde ele passa o tempo todo.
+//
+// Achado pelo usuário apertando F9 e nada acontecer, depois de eu ter LEVANTADO
+// essa suspeita e não ter ido verificar.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FBattleScreenGameModeUsesDebugCapableControllerTest,
+	"BattleSquare.UI.BattleScreenGameMode.UsesDebugCapableController",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FBattleScreenGameModeUsesDebugCapableControllerTest::RunTest(const FString& Parameters)
+{
+	const ABattleScreenGameMode* Padrao = GetDefault<ABattleScreenGameMode>();
+
+	TestTrue(TEXT("A tela de batalha usa o controlador com as teclas de depuração"),
+		Padrao->PlayerControllerClass == ABattleSquarePlayerController::StaticClass());
+
 	return true;
 }

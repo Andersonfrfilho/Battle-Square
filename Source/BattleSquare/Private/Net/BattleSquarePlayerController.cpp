@@ -2,8 +2,7 @@
 
 #include "Net/BattleSquarePlayerController.h"
 #include "Debug/BattleDebugScreen.h"
-#include "Battle/BattleArena.h"
-#include "EngineUtils.h"
+#include "Debug/BattleDebugKeys.h"
 #include "Components/InputComponent.h"
 #include "Net/BattleSquareGameMode.h"
 
@@ -94,31 +93,18 @@ void ABattleSquarePlayerController::SetupInputComponent()
 		&ABattleSquarePlayerController::ClearBattleDebugPanel).bConsumeInput = false;
 }
 
+
+void ABattleSquarePlayerController::ToggleControllingBothSides()
+{
+	FBattleDebugKeys::Handle(EKeys::F8, GetWorld());
+}
+
 void ABattleSquarePlayerController::CopyBattleDebugPanel()
 {
-	FBattleDebugScreen::CopyToClipboard();
+	FBattleDebugKeys::Handle(EKeys::F9, GetWorld());
 }
 
 void ABattleSquarePlayerController::ClearBattleDebugPanel()
 {
-	FBattleDebugScreen::Clear();
-}
-
-void ABattleSquarePlayerController::ToggleControllingBothSides()
-{
-#if !UE_BUILD_SHIPPING
-	// Por tecla, e não só por console, pelo mesmo motivo do F9: abrir o
-	// console no meio de uma partida é atrito suficiente para a verificação
-	// simplesmente não acontecer.
-	UWorld* World = GetWorld();
-	if (!World)
-	{
-		return;
-	}
-
-	for (TActorIterator<ABattleArena> It(World); It; ++It)
-	{
-		It->SetControllingBothSides(!It->IsControllingBothSides());
-	}
-#endif
+	FBattleDebugKeys::Handle(EKeys::F10, GetWorld());
 }

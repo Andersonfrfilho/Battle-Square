@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "UI/BattleActionSelectorWidget.h"
+#include "Debug/BattleDebugKeys.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
 #include "Battle/BattleGridNavigation.h"
@@ -232,6 +233,14 @@ void UBattleActionSelectorWidget::RefreshDirectionAvailability()
 FReply UBattleActionSelectorWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
 {
 	const FKey Key = InKeyEvent.GetKey();
+
+	// O widget tem o foco, então ele vê as teclas de depuração PRIMEIRO. Sem
+	// isto, F8/F9/F10 dependeriam de o Slate deixá-las passar até o
+	// PlayerController — e quando não deixa, a tecla morre calada.
+	if (FBattleDebugKeys::Handle(Key, GetWorld()))
+	{
+		return FReply::Handled();
+	}
 
 	if (Key == EKeys::C)
 	{

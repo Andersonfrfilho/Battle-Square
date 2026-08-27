@@ -1,7 +1,9 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "UI/BattleScreenGameMode.h"
+#include "Net/BattleSquarePlayerController.h"
 #include "Debug/BattleDebugHUD.h"
+#include "Debug/BattleDebugScreen.h"
 #include "UI/BattleActionSelectorWidget.h"
 #include "Battle/BattleArena.h"
 #include "Battle/BattleActionQueueComponent.h"
@@ -13,6 +15,11 @@
 
 ABattleScreenGameMode::ABattleScreenGameMode()
 {
+	// As teclas de depuração (F8/F9/F10) vivem neste controlador. Sem
+	// declará-lo aqui, a tela de batalha caía no APlayerController padrão e
+	// elas não existiam — na tela onde o jogador passa o tempo todo.
+	PlayerControllerClass = ABattleSquarePlayerController::StaticClass();
+
 	// A tela de batalha não tem mundo para percorrer: nenhum pawn de
 	// exploração precisa nascer aqui.
 	PrimaryActorTick.bCanEverTick = true;
@@ -139,6 +146,20 @@ FString ABattleScreenGameMode::StartScreenBattle()
 	}
 
 	ActionSelector->AddToViewport();
+
+	// Tecla que ninguém sabe que existe não existe. Isto fica FIXO no painel
+	// (Key própria, sem empilhar) porque o usuário apertou F9 sem retorno e
+	// procurou por botões de controlar o oponente que, por desenho, não
+	// existem — no modo dos dois lados usam-se os MESMOS botões.
+	FBattleDebugScreen::Show(
+		TEXT("F8 escolhe pelos DOIS lados (mesmos botões, sua vez e a dele)"),
+		0.0f, FColor::Orange, /*Key=*/10);
+	FBattleDebugScreen::Show(
+		TEXT("C camufla | V voa | B submerge  (sem botão no widget ainda)"),
+		0.0f, FColor::Orange, /*Key=*/11);
+	FBattleDebugScreen::Show(
+		TEXT("F9 copia este painel e grava Saved/BattleDebug.txt | F10 limpa"),
+		0.0f, FColor::Silver, /*Key=*/12);
 
 	// A tela é o jogo agora: o mouse precisa clicar nos botões.
 	PlayerController->bShowMouseCursor = true;

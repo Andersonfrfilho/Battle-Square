@@ -567,6 +567,14 @@ find "$HOME/Library/Logs/Unreal Engine/BattleSquareEditor" Saved/Logs -newer <ma
 **O que resolveu:** um painel sempre visível, ações escolhidas direto, e o turno fechando pelo botão que já existia. Zero modos, zero fases.
 **Previne:** quando a correção de um fluxo é explicar melhor o que cada passo faz, considerar remover o passo. Rótulo bom não conserta fluxo com etapa desnecessária — só a torna compreensível.
 
+### L-040: caminho que nunca foi percorrido até o fim não tem defeito — tem ausência
+
+**Contexto:** o usuário caminhou pelo mundo, achou o inimigo, foi para a arena, derrotou o inimigo — e **nada aconteceu**. Ele ficou preso numa arena de uma partida já terminada.
+**A causa:** captura, XP e o anúncio de fim de batalha eram chamados **só no caminho de REDE** (`HandleCoordinatorTurnResolved`). A batalha local resolvia o turno, avaliava o desfecho, e não contava a ninguém. Não havia código errado — havia código que nunca fora escrito.
+**Por que passou por M1–M4 e pelos testes:** nenhuma partida jamais tinha sido jogada **até o fim por uma tela**. Os testes de resolução paravam no turno; os de rede exercitavam o outro caminho. O caminho local existia, era testado em pedaços, e nunca tinha chegado ao seu último passo.
+**O parentesco com defeitos anteriores:** é a mesma família de "a batalha era de um turno só" (L-034) e "ninguém criava encontros". Em todos, cada peça funcionava isolada e ninguém tinha percorrido a sequência inteira. **Teste de unidade não descobre etapa que não existe** — só o percurso completo descobre.
+**Previne:** para todo fluxo com começo, meio e fim, escrever um teste que percorra **até o fim**, não só cada etapa. E quando o usuário disser "nada aconteceu", suspeitar primeiro de ausência, não de erro: erro produz comportamento errado; ausência produz silêncio.
+
 ---
 
 ## Ideias Adiadas

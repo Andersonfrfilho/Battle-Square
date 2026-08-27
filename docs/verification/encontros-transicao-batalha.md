@@ -127,6 +127,7 @@ Agora o fluxo avisa quando a batalha começa, e o GameMode do mundo monta a
 - [ ] Caminhar até um encontro leva à arena **com os botões de ação na tela**.
 - [ ] Dá para jogar o turno inteiro: escolher, confirmar, ver a reprodução.
 - [ ] A barra de depuração aparece (ações do jogador 2, copiar painel).
+- [ ] Ao vencer, a tela diz **VOCÊ VENCEU** (e o feed também).
 - [ ] Ao fim da batalha, a tela de ações **some** e o controle volta ao mundo.
 - [ ] O explorador volta respondendo ao teclado — cursor escondido, input de
       jogo. Se ele nascer parado, a transição de volta não completou.

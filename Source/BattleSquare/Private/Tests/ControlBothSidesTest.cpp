@@ -235,3 +235,49 @@ bool FPlayerTwoManualActionsReplaceBotTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+// A batalha LOCAL precisa anunciar que acabou.
+//
+// Defeito que o usuário viveu: caminhou pelo mundo, achou o inimigo, foi para a
+// arena, derrotou o inimigo — e NADA aconteceu. Ele ficou preso numa arena de
+// uma batalha já terminada.
+//
+// A causa: captura, XP e anúncio do fim só eram chamados no caminho de REDE.
+// A batalha local resolvia o turno, avaliava o desfecho, e não contava a
+// ninguém. Como M1–M4 nunca jogaram uma partida até o fim por uma tela, o
+// caminho local nunca tinha chegado ali.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FLocalBattleAnnouncesItsEndTest,
+	"BattleSquare.BattleArena.LocalBattle.AnnouncesItsEnd",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FLocalBattleAnnouncesItsEndTest::RunTest(const FString& Parameters)
+{
+	FScopedArena Cena;
+
+	int32 Anuncios = 0;
+	Cena.Arena->OnBattleFinished.AddLambda([&Anuncios]() { ++Anuncios; });
+
+	// Deixa o jogador 2 quase morto e manda o jogador 1 atacá-lo até cair.
+	for (FPetState& Pet : Cena.Arena->GetMutableCurrentState().Pets)
+	{
+		if (Pet.Side == 1)
+		{
+			Pet.Health = 1;
+		}
+		else
+		{
+			Pet.Attack = 500;
+		}
+	}
+
+	// Vários turnos: a morte pode não vir no primeiro por esquiva ou postura.
+	for (int32 Turno = 0; Turno < 6 && Anuncios == 0; ++Turno)
+	{
+		Cena.Commit(EActionType::Atacar, EBattleDirection::Direita);
+		Cena.PlayOutAnimation();
+	}
+
+	TestEqual(TEXT("O fim da batalha foi anunciado UMA vez"), Anuncios, 1);
+	return true;
+}

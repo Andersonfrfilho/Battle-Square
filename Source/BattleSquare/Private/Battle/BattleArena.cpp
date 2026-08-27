@@ -276,6 +276,24 @@ void ABattleArena::AnnounceBattleFinishedIfEnded(const TArray<FBattleEvent>& Tra
 		if (Event.Type == EBattleEventType::BatalhaEncerrada)
 		{
 			bHasAnnouncedBattleFinished = true;
+
+			// Quem venceu, na tela. "Nada aconteceu" era duas coisas ao mesmo
+			// tempo: a transição não voltava, E o jogador não tinha como saber
+			// se tinha ganho — o silêncio parecia defeito nas duas pontas.
+			const bool bEmpate = (Event.Value == 0xFF);
+			const bool bVenceu = (Event.Value == static_cast<int32>(LocalPlayerSide));
+
+			FBattleDebugScreen::Show(
+				bEmpate ? TEXT("=== EMPATE ===")
+					: (bVenceu ? TEXT("=== VOCÊ VENCEU ===") : TEXT("=== VOCÊ PERDEU ===")),
+				0.0f, bVenceu ? FColor::Green : (bEmpate ? FColor::Silver : FColor::Red),
+				/*Key=*/950);
+
+			FBattleNarrationFeed::Push(
+				FText::FromString(bEmpate ? TEXT("A batalha terminou empatada.")
+					: (bVenceu ? TEXT("Você venceu a batalha!") : TEXT("Você perdeu a batalha."))),
+				bVenceu ? FColor::Green : (bEmpate ? FColor::Silver : FColor::Red));
+
 			OnBattleFinished.Broadcast();
 			return;
 		}
@@ -470,6 +488,17 @@ void ABattleArena::ResolveTurnWithCommits(const FTurnCommit& LocalCommit, const 
 	// chamavam isto, então BatalhaEncerrada nunca disparava em produção.
 	BattleOutcome::EvaluateOutcome(Result.NextState, Result.Trace);
 	CurrentState = Result.NextState;
+
+	// Captura, XP e anúncio do fim viviam SÓ no caminho de rede. A batalha
+	// local resolvia o turno, avaliava o desfecho e não contava a ninguém —
+	// então derrotar o inimigo no mundo não devolvia o jogador ao mundo, e ele
+	// ficava preso numa arena de uma partida já terminada.
+	//
+	// M1–M4 nunca jogaram uma partida até o fim por uma tela; o caminho local
+	// nunca tinha chegado até aqui.
+	CheckForCapture(Result.Trace);
+	GrantExperienceIfOwned(Result.Trace);
+	AnnounceBattleFinishedIfEnded(Result.Trace);
 
 	for (const FPetState& Pet : CurrentState.Pets)
 	{

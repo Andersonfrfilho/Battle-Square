@@ -205,6 +205,9 @@ public:
 
 	uint8 GetControlledPlayerNumber() const { return LocalPlayerSide + 1; }
 
+	/** Só para teste: montar cenários de fim de batalha sem jogar dez turnos. */
+	FBattleState& GetMutableCurrentState() { return CurrentState; }
+
 private:
 	uint8 OpponentSideForChoice() const { return LocalPlayerSide == 0 ? 1 : 0; }
 

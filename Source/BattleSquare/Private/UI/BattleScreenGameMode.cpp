@@ -165,7 +165,7 @@ FString ABattleScreenGameMode::StartScreenBattle()
 	// procurou por botões de controlar o oponente que, por desenho, não
 	// existem — no modo dos dois lados usam-se os MESMOS botões.
 	FBattleDebugScreen::Show(
-		TEXT("F7 escolhe pelos DOIS lados (mesmos botões, sua vez e a dele)"),
+		TEXT("controle duplo: escolha pelo jogador 1, depois pelo jogador 2"),
 		0.0f, FColor::Orange, /*Key=*/10);
 	FBattleDebugScreen::Show(
 		TEXT("C camufla | V voa | B submerge  (sem botão no widget ainda)"),
@@ -213,19 +213,21 @@ void ABattleScreenGameMode::Tick(float DeltaSeconds)
 	}
 	if (NomeDoPet.IsEmpty())
 	{
-		NomeDoPet = bEhOponente ? TEXT("oponente") : TEXT("seu pet");
+		NomeDoPet = TEXT("sem nome");
 	}
 
+	// O NÚMERO do jogador vem primeiro e o nome do pet entre parênteses: com o
+	// controle duplo ligado, o que decide a jogada é por QUEM se está jogando,
+	// e o número é o que distingue os dois sem ambiguidade.
+	const int32 NumeroDoJogador = static_cast<int32>(LadoEscolhendo) + 1;
+
 	ActionSelector->SetChoosingForLabel(FText::FromString(
-		bEhOponente
-			? FString::Printf(TEXT("▶ escolhendo pelo OPONENTE: %s"), *NomeDoPet)
-			: FString::Printf(TEXT("▶ escolhendo por VOCÊ: %s"), *NomeDoPet)));
+		FString::Printf(TEXT("▶ escolhendo pelo JOGADOR %d (%s)"), NumeroDoJogador, *NomeDoPet)));
 
 	// Também no painel, com Key fixa: a linha se atualiza no lugar em vez de
 	// empilhar, e sobrevive a olhar para outro canto da tela.
 	FBattleDebugScreen::Show(
-		FString::Printf(TEXT("controlando: %s (%s)"),
-			*NomeDoPet, bEhOponente ? TEXT("OPONENTE") : TEXT("você")),
+		FString::Printf(TEXT("escolhendo pelo jogador %d (%s)"), NumeroDoJogador, *NomeDoPet),
 		0.0f, bEhOponente ? FColor::Orange : FColor::Cyan, /*Key=*/13);
 	for (const FPetState& Pet : ScreenArena->GetCurrentState().Pets)
 	{

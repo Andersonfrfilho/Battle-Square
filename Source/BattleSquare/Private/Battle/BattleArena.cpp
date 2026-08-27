@@ -394,7 +394,7 @@ void ABattleArena::HandlePlayerCommitted()
 			bAwaitingOpponentChoice = true;
 
 			FBattleDebugScreen::Show(
-				TEXT("agora escolha pelo OPONENTE (bs.ControlOpponent 0 desliga)"),
+				TEXT("agora escolha pelo JOGADOR 2"),
 				8.0f, FColor::Orange, 800);
 
 			PlayerActionQueue->BeginNewTurn();
@@ -402,7 +402,7 @@ void ABattleArena::HandlePlayerCommitted()
 		}
 
 		bAwaitingOpponentChoice = false;
-		FBattleDebugScreen::Show(TEXT("escolhendo pelo JOGADOR"), 8.0f, FColor::Cyan, 800);
+		FBattleDebugScreen::Show(TEXT("turno resolvido — próxima escolha é do jogador 1"), 8.0f, FColor::Cyan, 800);
 		ResolveTurnWithCommits(StoredLocalCommit, PlayerCommit);
 		return;
 	}
@@ -595,8 +595,8 @@ void ABattleArena::SetControllingBothSides(bool bEnabled)
 
 	FBattleDebugScreen::Show(
 		bEnabled
-			? TEXT("controlando OS DOIS lados: escolha pelo jogador, depois pelo oponente")
-			: TEXT("controle dos dois lados desligado — o oponente volta a decidir sozinho"),
+			? TEXT("controlando jogador 1 e jogador 2: escolha pelo 1, depois pelo 2")
+			: TEXT("controle duplo desligado — o jogador 2 volta a decidir sozinho"),
 		8.0f, FColor::Orange, 800);
 }
 

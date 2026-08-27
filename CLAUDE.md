@@ -56,7 +56,7 @@ então funciona em qualquer nível assim que o GameMode o declara.
 | **F9** | copia o painel para a área de transferência **e** grava `Saved/BattleDebug.txt` |
 | **F10** | esvazia o painel |
 | `bs.ShowBattleDebug 0` | esconde |
-| **F7** | alterna o controle dos **dois lados** — primeiro escolhe pelo jogador, depois pelo oponente |
+| **F7** | alterna o controle de **jogador 1 e jogador 2** — escolhe pelo 1, depois pelo 2 |
 | `bs.ControlOpponent 1` | o mesmo, por console |
 
 `bs.ControlOpponent` existe porque verificar trombada, esquiva na trombada ou
@@ -89,7 +89,7 @@ Se uma tecla parecer morta: `bs.LogKeys 1` mostra no painel toda tecla que
 chega e por qual camada. Medir antes de consertar.
 
 **Há uma BARRA DE BOTÕES na tela** (canto inferior esquerdo, `FBattleDebugToolbar`):
-copiar painel, limpar, controlar os dois lados, e Camuflar/Voar/Submergir.
+copiar painel, limpar, controlar jogador 1 e jogador 2, e Camuflar/Voar/Submergir.
 Montada em **Slate por código**, sem asset autorado — o `WBP` não pôde ganhar
 botões, e capacidade que espera edição de asset é capacidade que não existe
 hoje. Clique é o caminho que comprovadamente funciona aqui; as teclas são
@@ -99,7 +99,11 @@ conveniência e falharam três vezes em PIE.
 aparece e a ação não muda nada, o defeito está depois do clique; se nem o
 clique aparece, o widget não está recebendo. Uma rodada, duas respostas.
 
-Para controlar os dois lados sem depender de input nenhum:
+O rótulo diz **por qual jogador** você está escolhendo agora — "jogador 1" e
+"jogador 2", não "seu lado" e "o oponente": com o controle duplo ligado, os
+dois são seus, e "oponente" deixa de nomear alguém.
+
+Para controlar os dois sem depender de input nenhum:
 `bStartControllingBothSides=True` em `Config/DefaultGame.ini`.
 
 O painel é **desenhado**, não é campo de texto: o mouse nunca consegue

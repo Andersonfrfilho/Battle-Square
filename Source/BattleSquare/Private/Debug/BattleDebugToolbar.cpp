@@ -53,9 +53,12 @@ namespace
 	{
 		const ABattleArena* Arena = FindArena();
 		const bool bOn = Arena && Arena->IsControllingBothSides();
+		// "jogador 1 e jogador 2", e não "os dois lados": na hora de escolher,
+		// o que se precisa saber é POR QUEM se está jogando, e "lado" não
+		// nomeia ninguém.
 		return bOn
-			? FText::FromString(TEXT("Controlando OS DOIS lados (clique p/ desligar)"))
-			: FText::FromString(TEXT("Controlar os dois lados"));
+			? FText::FromString(TEXT("Controlando jogador 1 e jogador 2 (clique p/ desligar)"))
+			: FText::FromString(TEXT("Controlar jogador 1 e jogador 2"));
 	}
 
 	TSharedRef<SWidget> MakeButton(const FText& Label, TFunction<void()> OnClick)

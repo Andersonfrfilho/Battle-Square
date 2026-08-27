@@ -5,14 +5,16 @@
 Os testes provam as regras. O que eles não decidem: as três se **sentem**
 diferentes umas das outras, ou viraram três nomes para "esquivar melhor"?
 
-## Controlar os DOIS lados
+## Controlar jogador 1 e jogador 2
 
-**F7** durante a partida (ou `bs.ControlOpponent 1` no console). O turno passa a pedir duas escolhas: a
-primeira pelo jogador, a segunda pelo oponente — o painel diz de quem é a vez,
-e as direções oferecidas seguem o pet de quem está escolhendo.
+Botão **"Controlar jogador 1 e jogador 2"** na barra do canto inferior
+esquerdo. (F7 e `bs.ControlOpponent 1` fazem o mesmo, mas o botão é o caminho
+confiável — as teclas falharam em PIE.) O turno passa a pedir duas escolhas: primeiro
+pelo **jogador 1**, depois pelo **jogador 2** — a tela diz por qual você está
+escolhendo, e as direções oferecidas seguem o pet dele.
 
 Sem isso, quase todo item abaixo depende do oponente sortear exatamente a ação
-que você quer ver. F7 de novo devolve a decisão à IA.
+que você quer ver. Clicar de novo devolve a decisão do jogador 2 à IA.
 
 ## Como usar (enquanto o WBP não tem os botões)
 

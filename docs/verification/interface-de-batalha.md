@@ -2,7 +2,13 @@
 
 **Feature:** `.specs/features/interface-de-batalha/`
 **Nível:** `Content/Maps/BattleScreen` (`/Game/Maps/BattleScreen`)
-**Status:** **não verificado ainda** — nenhum item deste roteiro foi rodado por um humano.
+**Status:** ⚠️ **PARCIALMENTE VERIFICADO em 2026-08-26** — o usuário jogou
+**dois turnos seguidos** e a corrente funcionou de ponta a ponta. UI-03 (desfazer
+e cancelar) e UI-05 (julgamento de usabilidade) seguem em aberto.
+
+**UI-04 falhou na primeira tentativa e expôs um defeito real:** a batalha era de
+UM turno só. O commit resolvia a rodada e a fila ficava travada para sempre —
+`UBattleActionQueueComponent` não tinha `BeginNewTurn`. Corrigido; ver L-034.
 
 Cobre só o que DP-ui-05 marca como não automatizável: o layout aparecer, os
 botões serem clicáveis, o texto caber, e a sensação de jogar um turno inteiro.
@@ -23,7 +29,7 @@ Depois, abra `/Game/Maps/BattleScreen` e aperte Play.
 
 ## UI-01 — A batalha abre sozinha, sem mundo
 
-- [ ] **Não verificado**
+- [x] **Verificado em 2026-08-26** — a arena abriu com os dois pets e a interface por cima, sem nenhum mundo carregado.
 
 **Critério:** ao dar Play, a arena aparece com os **dois pets** e a interface
 por cima. Nenhum mundo aberto é carregado, nenhuma caminhada é necessária.
@@ -35,7 +41,7 @@ ela — é regressão do `SetViewTarget` em `ABattleScreenGameMode`.
 
 ## UI-02 — Escolher os dois passos
 
-- [ ] **Não verificado**
+- [x] **Verificado em 2026-08-26** — os botões de tipo e a grade de direções responderam, e o contador avançou.
 
 **Passo:** clique em **Atacar**.
 
@@ -65,7 +71,7 @@ decidindo por conta própria, o que DP-ui-01 proíbe.
 
 ## UI-04 — Fechar o turno
 
-- [ ] **Não verificado**
+- [x] **Verificado em 2026-08-26** — **dois turnos seguidos** resolveram, com a fila reabrindo para a rodada seguinte. Falhou na primeira tentativa (fila travada para sempre) e passou depois da correção de L-034.
 
 **Passo:** confirme 3 ações e clique em **Confirmar turno**.
 

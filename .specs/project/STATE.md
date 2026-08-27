@@ -518,6 +518,16 @@ find "$HOME/Library/Logs/Unreal Engine/BattleSquareEditor" Saved/Logs -newer <ma
 **Previne:** para toda regra que **guarda acesso**, enumerar explicitamente os pontos de entrada antes de dar por pronta — aqui eram login e renovação; num sistema maior seriam também troca de senha, emissão de token de API, e qualquer rota que crie sessão. A pergunta que faltou: *"que outros caminhos emitem sessão?"*
 **E o mais importante:** este defeito só apareceu porque o roteiro tinha um item escrito para procurá-lo, com o motivo anotado de antemão (*"é o que separa banimento real de anotação"*). Roteiro manual escrito com hipótese de falha vale muito mais que roteiro que só descreve o caminho feliz.
 
+### L-034: a batalha era de UM turno só, e um teste AFIRMAVA o defeito
+
+**Contexto:** primeiro turno jogado por um humano, com a interface finalmente na mão (2026-08-26). O commit funcionou, a rodada resolveu — e a tela travou em "Turno fechado — aguardando o oponente", para sempre.
+**Causa:** `UBattleActionQueueComponent` não tinha como recomeçar. Nenhum `Reset`, nenhum `BeginNewTurn`. Commitada uma vez, ficava commitada. **A batalha acabava na primeira rodada**, e o jogo inteiro de M1–M4 nunca tinha jogado duas.
+**O agravante:** `BattleSquare.BattleArena.FullTurnEndToEnd` afirmava, com todas as letras, `TestTrue("Fila travada após Commit")`. O teste não só deixou passar o defeito — ele o **fixou como contrato**. Quem tentasse consertar veria um teste vermelho e concluiria que estava errado.
+**Solução:** `BeginNewTurn()` (esvazia, volta ao passo de tipo, destrava, com UM broadcast no fim), chamado por `ABattleArena` depois de resolver e **só se a batalha não acabou** — fila travada é o que impede escolher ações para uma partida encerrada. O teste foi atualizado com o porquê escrito no comentário, para ninguém "consertar" de volta. `BattleSim` não foi tocado: o núcleo nunca soube que existe turno seguinte, e continua sem saber.
+**Previne:** duas coisas, e a segunda é a maior.
+1. Testar **um** ciclo de um sistema cíclico não testa o sistema. A pergunta que faltava era "e a segunda rodada?" — a mesma família de L-032/L-033 (o teste prova a peça, não o uso).
+2. **Um teste que afirma o comportamento observado, sem perguntar se ele é o desejado, transforma defeito em contrato.** "Fila travada após Commit" era uma descrição fiel do que o código fazia, e uma descrição errada do que o jogo precisava. Ao escrever asserção sobre estado FINAL de um fluxo, vale perguntar: isto é o que deve acontecer, ou só o que acontece hoje?
+
 ---
 
 ## Ideias Adiadas

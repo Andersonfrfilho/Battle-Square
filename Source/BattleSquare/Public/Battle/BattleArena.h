@@ -166,6 +166,8 @@ public:
 	 */
 	void SetControllingBothSides(bool bEnabled);
 
+	bool IsControllingBothSides() const { return bControlsBothSides; }
+
 private:
 	void ResolveTurnWithCommits(const FTurnCommit& LocalCommit, const FTurnCommit& OpponentCommit);
 

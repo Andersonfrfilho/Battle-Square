@@ -17,7 +17,7 @@ class BATTLESQUARE_API ABattleSquarePlayerController : public APlayerController
 
 public:
 	/**
-	 * F9 copia o painel de depuração; F10 o esvazia.
+	 * F8 alterna o controle dos dois lados; F9 copia o painel; F10 o esvazia.
 	 *
 	 * Por tecla e não só por console: o painel é DESENHADO, então o mouse
 	 * nunca consegue selecionar o texto dele, e abrir o console no meio de uma
@@ -26,6 +26,7 @@ public:
 	virtual void SetupInputComponent() override;
 
 private:
+	void ToggleControllingBothSides();
 	void CopyBattleDebugPanel();
 	void ClearBattleDebugPanel();
 

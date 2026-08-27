@@ -56,11 +56,16 @@ então funciona em qualquer nível assim que o GameMode o declara.
 | **F9** | copia o painel para a área de transferência **e** grava `Saved/BattleDebug.txt` |
 | **F10** | esvazia o painel |
 | `bs.ShowBattleDebug 0` | esconde |
-| `bs.ControlOpponent 1` | **você escolhe pelos dois lados** — primeiro pelo jogador, depois pelo oponente |
+| **F8** | alterna o controle dos **dois lados** — primeiro escolhe pelo jogador, depois pelo oponente |
+| `bs.ControlOpponent 1` | o mesmo, por console |
 
 `bs.ControlOpponent` existe porque verificar trombada, esquiva na trombada ou
 camuflagem depende de as duas escolhas serem deliberadas. Esperar o sorteio do
 oponente cair no caso desejado é medir a sorte, não a regra.
+
+É ferramenta de **desenvolvimento**: compilada fora do Shipping por `#if`, não
+por disciplina. Um jogo publicado onde qualquer um joga pelos dois lados não é
+o mesmo jogo.
 
 O painel é **desenhado**, não é campo de texto: o mouse nunca consegue
 selecioná-lo. Por isso a cópia é por tecla — e por isso ela também grava

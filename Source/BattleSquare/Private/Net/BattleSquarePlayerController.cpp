@@ -2,6 +2,8 @@
 
 #include "Net/BattleSquarePlayerController.h"
 #include "Debug/BattleDebugScreen.h"
+#include "Battle/BattleArena.h"
+#include "EngineUtils.h"
 #include "Components/InputComponent.h"
 #include "Net/BattleSquareGameMode.h"
 
@@ -84,6 +86,8 @@ void ABattleSquarePlayerController::SetupInputComponent()
 	}
 
 	// bConsumeInput=false: teclas de depuração não podem engolir input do jogo.
+	InputComponent->BindKey(EKeys::F8, IE_Pressed, this,
+		&ABattleSquarePlayerController::ToggleControllingBothSides).bConsumeInput = false;
 	InputComponent->BindKey(EKeys::F9, IE_Pressed, this,
 		&ABattleSquarePlayerController::CopyBattleDebugPanel).bConsumeInput = false;
 	InputComponent->BindKey(EKeys::F10, IE_Pressed, this,
@@ -98,4 +102,23 @@ void ABattleSquarePlayerController::CopyBattleDebugPanel()
 void ABattleSquarePlayerController::ClearBattleDebugPanel()
 {
 	FBattleDebugScreen::Clear();
+}
+
+void ABattleSquarePlayerController::ToggleControllingBothSides()
+{
+#if !UE_BUILD_SHIPPING
+	// Por tecla, e não só por console, pelo mesmo motivo do F9: abrir o
+	// console no meio de uma partida é atrito suficiente para a verificação
+	// simplesmente não acontecer.
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	for (TActorIterator<ABattleArena> It(World); It; ++It)
+	{
+		It->SetControllingBothSides(!It->IsControllingBothSides());
+	}
+#endif
 }

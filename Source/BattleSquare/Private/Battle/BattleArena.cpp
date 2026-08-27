@@ -594,6 +594,10 @@ void ABattleArena::SetControllingBothSides(bool bEnabled)
 		8.0f, FColor::Orange, 800);
 }
 
+// Ferramenta de desenvolvimento, e só. Fora do Shipping por compilação, não
+// por disciplina: um jogo publicado onde qualquer um digita o comando e joga
+// pelos dois lados não é o mesmo jogo.
+#if !UE_BUILD_SHIPPING
 namespace
 {
 	FAutoConsoleCommandWithWorldAndArgs GControlOpponentCommand(
@@ -614,3 +618,4 @@ namespace
 				}
 			}));
 }
+#endif // !UE_BUILD_SHIPPING

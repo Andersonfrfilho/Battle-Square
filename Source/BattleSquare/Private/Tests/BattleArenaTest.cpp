@@ -487,3 +487,33 @@ bool FBattleArenaVictoryGrantsExperienceToOwnPetTest::RunTest(const FString& Par
 	DestroyHeadlessTestWorld(World);
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FArenaCellAxesMatchScreenTest,
+	"BattleSquare.BattleArena.CellAxesMatchWhatThePlayerSees",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FArenaCellAxesMatchScreenTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateHeadlessTestWorld();
+	ABattleArena* Arena = World->SpawnActor<ABattleArena>();
+
+	const FVector Centro = Arena->GetCellWorldLocation(1, 1);
+
+	// A câmera olha ao longo de +X: na tela, +Y é a direita e +X é o fundo.
+	// Mapear Coluna->X e Linha->Y fazia "Baixo" andar para a DIREITA na tela,
+	// que foi o defeito relatado jogando.
+	const FVector Direita = Arena->GetCellWorldLocation(2, 1);
+	TestTrue(TEXT("Direita (coluna+1) anda para +Y, que é a direita da tela"),
+		Direita.Y > Centro.Y && FMath::IsNearlyEqual(Direita.X, Centro.X));
+
+	const FVector Baixo = Arena->GetCellWorldLocation(1, 2);
+	TestTrue(TEXT("Baixo (linha+1) anda para -X, que é a frente da tela"),
+		Baixo.X < Centro.X && FMath::IsNearlyEqual(Baixo.Y, Centro.Y));
+
+	const FVector Cima = Arena->GetCellWorldLocation(1, 0);
+	TestTrue(TEXT("Cima (linha-1) anda para +X, que é o fundo da tela"),
+		Cima.X > Centro.X);
+
+	DestroyHeadlessTestWorld(World);
+	return true;
+}

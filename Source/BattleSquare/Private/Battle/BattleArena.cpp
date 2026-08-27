@@ -33,8 +33,12 @@ ABattleArena::ABattleArena()
 
 FVector ABattleArena::GetCellWorldLocation(uint8 Column, uint8 Row) const
 {
-	const float OffsetX = (static_cast<float>(Column) - 1.0f) * CellSize;
-	const float OffsetY = (static_cast<float>(Row) - 1.0f) * CellSize;
+	// A câmera fica recuada em -X olhando ao longo de +X: na tela, +Y é a
+	// DIREITA e +X é o FUNDO. Mapear Coluna->X e Linha->Y (o óbvio) fazia
+	// "Baixo" andar para a direita e "Direita" andar para o fundo — foi o que
+	// se viu jogando. Linha vira o eixo vertical da tela, coluna o horizontal.
+	const float OffsetX = -(static_cast<float>(Row) - 1.0f) * CellSize;
+	const float OffsetY = (static_cast<float>(Column) - 1.0f) * CellSize;
 	return GetActorLocation() + FVector(OffsetX, OffsetY, 0.0f);
 }
 

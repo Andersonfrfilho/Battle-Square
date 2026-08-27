@@ -281,3 +281,57 @@ bool FTacticalOpponentAttacksInsteadOfWanderingTest::RunTest(const FString& Para
 	TestTrue(TEXT("Ataca de fato, e não só se protege"), Ataques > 0);
 	return true;
 }
+
+// A IA só escolhe o que o pet DELA sabe fazer.
+//
+// Sem isto ela escolheria voar com um pet que não voa, a fila recusaria, e o
+// turno viraria um slot perdido — o oponente pareceria travado sem motivo
+// visível na tela.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FTacticalOpponentRespectsItsOwnSkillsTest,
+	"BattleSquare.Battle.TacticalOpponentAI.RespectsItsOwnSkills",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FTacticalOpponentRespectsItsOwnSkillsTest::RunTest(const FString& Parameters)
+{
+	// Ferido e ao alcance: é o estado que faz a IA escolher proteção, que é
+	// onde as skills entram.
+	const FBattleState State = MakeState(/*Self*/2, 1, /*Enemy*/1, 1, /*SelfHealth=*/10);
+
+	// Um pet que só sabe camuflar, entre as protetoras.
+	const TArray<EActionType> SoCamufla = {
+		EActionType::Aguardar, EActionType::Mover, EActionType::Atacar,
+		EActionType::Magia, EActionType::Camuflar
+	};
+
+	bool bUsouCamuflar = false;
+	for (uint64 Seed = 1; Seed <= 60; ++Seed)
+	{
+		FBattleRandom Random;
+		Random.State = Seed;
+
+		const FTurnCommit Commit = FTacticalOpponentAI::GenerateCommit(
+			State, /*Side=*/1, Random, SoCamufla);
+
+		for (int32 Slot = 0; Slot < FTurnCommit::ActionsPerTurn; ++Slot)
+		{
+			const EActionType Tipo = Commit.Actions[Slot].Type;
+
+			TestTrue(TEXT("Nunca escolhe skill que o pet não tem"),
+				SoCamufla.Contains(Tipo) || Tipo == EActionType::Defender);
+
+			TestNotEqual(TEXT("Nunca voa sem saber voar"),
+				static_cast<uint8>(Tipo), static_cast<uint8>(EActionType::Voar));
+			TestNotEqual(TEXT("Nunca submerge sem saber submergir"),
+				static_cast<uint8>(Tipo), static_cast<uint8>(EActionType::Submergir));
+
+			if (Tipo == EActionType::Camuflar)
+			{
+				bUsouCamuflar = true;
+			}
+		}
+	}
+
+	TestTrue(TEXT("E usa de fato a skill que tem"), bUsouCamuflar);
+	return true;
+}

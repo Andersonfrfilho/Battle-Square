@@ -1,0 +1,8 @@
+{
+  "_comment": "Skills por TIPO de pet (DP-skill-01). Os seis tipos de acao universais nao aparecem aqui: eles sao de todo pet, e listar seria convidar alguem a remove-los de um tipo. Uma skill por tipo, de proposito — identidade so existe quando ha diferenca, e duas skills por tipo ja comecam a diluir isso.",
+  "types": [
+    { "type": "Fogo",   "skills": ["voar"] },
+    { "type": "Agua",   "skills": ["submergir"] },
+    { "type": "Planta", "skills": ["camuflar"] }
+  ]
+}

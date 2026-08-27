@@ -109,6 +109,15 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Coleção")
 	FString PetCollectionSlotName = TEXT("PetCollection");
 
+	/**
+	 * Skills por tipo de pet. Vazio = arquivo padrão em Config/.
+	 *
+	 * Ausente ou malformado degrada para "todo pet tem só os seis universais"
+	 * (DP-skill-04) — nunca para crash, e nunca para "todas as skills".
+	 */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Balanceamento")
+	FString PetSkillCatalogPath;
+
 protected:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USceneComponent> ArenaRoot;
@@ -180,6 +189,9 @@ public:
 	 */
 	void SwapControlledPlayer();
 
+	/** O que o pet daquele lado sabe fazer — universais mais skills do tipo. */
+	TArray<EActionType> GetAvailableActionsForSide(uint8 Side) const;
+
 	/**
 	 * Ações do jogador 2, escolhidas à mão na barra da tela.
 	 *
@@ -230,6 +242,11 @@ private:
 	// jogador local venceu, captura o pet do lado OPOSTO — nunca o
 	// próprio pet do jogador.
 	/** Garante que o pet do jogador está na coleção — é dele que a XP vive. */
+	/** Diz à fila o que ESTE pet pode escolher (DP-skill-02). */
+	void ApplySkillsToActionQueue();
+
+
+
 	void RegisterOwnPetInCollection();
 
 	void CheckForCapture(const TArray<FBattleEvent>& Trace);

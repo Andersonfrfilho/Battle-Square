@@ -30,6 +30,21 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Battle|ActionQueue")
 	bool BeginSelectingType(EActionType Type);
 
+	/**
+	 * Define o que ESTE pet pode escolher.
+	 *
+	 * DP-skill-02: a recusa mora aqui, não na tela. Tela que só esconde é tela
+	 * que um cliente adulterado ignora — e a regra precisa existir num lugar
+	 * só, do lado de quem já valida o resto da seleção.
+	 *
+	 * Lista vazia significa "sem restrição", que é o comportamento de antes
+	 * desta feature: nenhuma batalha existente muda por não ter sido
+	 * configurada.
+	 */
+	void SetAvailableActions(const TArray<EActionType>& Actions);
+
+	bool IsActionAvailable(EActionType Type) const;
+
 	// Passo 2: confirma a direção do tipo escolhido em BeginSelectingType.
 	// Fora do passo ChoosingDirection, é ignorado (retorna false, sem
 	// efeito colateral).
@@ -103,6 +118,8 @@ private:
 
 	UPROPERTY()
 	FBattlePendingActionSelection Pending;
+
+	TArray<EActionType> AvailableActions;
 
 	UPROPERTY()
 	bool bCommitted = false;

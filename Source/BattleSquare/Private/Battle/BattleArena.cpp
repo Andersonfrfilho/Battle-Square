@@ -1,6 +1,8 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Battle/BattleArena.h"
+#include "Misc/Paths.h"
+#include "Balance/PetSkillCatalog.h"
 #include "EngineUtils.h"
 #include "Battle/BattleNarration.h"
 
@@ -151,6 +153,7 @@ bool ABattleArena::BeginBattle(const FBattleState& InitialState, const TArray<FP
 	// DEPOIS do mapa de apresentação: é dele que sai o id de catálogo, e
 	// chamar antes procurava numa tabela ainda vazia.
 	RegisterOwnPetInCollection();
+	ApplySkillsToActionQueue();
 
 	if (!TracePlayer)
 	{
@@ -302,6 +305,75 @@ void ABattleArena::AnnounceBattleFinishedIfEnded(const TArray<FBattleEvent>& Tra
 			return;
 		}
 	}
+}
+
+TArray<EActionType> ABattleArena::GetAvailableActionsForSide(uint8 Side) const
+{
+	const FString Caminho = PetSkillCatalogPath.IsEmpty()
+		? FPaths::Combine(FPaths::ProjectConfigDir(), TEXT("PetSkills.json"))
+		: PetSkillCatalogPath;
+
+	FPetSkillCatalog Catalogo;
+	if (!FPetSkillCatalog::LoadFromJson(Caminho, Catalogo))
+	{
+		return FPetSkillCatalog::GetUniversalActions();
+	}
+
+	const FPetState* Pet = CurrentState.Pets.FindByPredicate(
+		[Side](const FPetState& Candidate) { return Candidate.Side == Side; });
+	if (!Pet)
+	{
+		return FPetSkillCatalog::GetUniversalActions();
+	}
+
+	const FPetPresentationInfo* Presentation = PresentationsByPetId.Find(Pet->PetId);
+	return Catalogo.GetAvailableActionsForType(Presentation ? Presentation->Type : FString());
+}
+
+void ABattleArena::ApplySkillsToActionQueue()
+{
+	if (!PlayerActionQueue)
+	{
+		return;
+	}
+
+	const FString Caminho = PetSkillCatalogPath.IsEmpty()
+		? FPaths::Combine(FPaths::ProjectConfigDir(), TEXT("PetSkills.json"))
+		: PetSkillCatalogPath;
+
+	FPetSkillCatalog Catalogo;
+	if (!FPetSkillCatalog::LoadFromJson(Caminho, Catalogo))
+	{
+		// DP-skill-04: sem catálogo, ninguém fica sem ação — todo pet volta a
+		// ter os seis universais, que é o comportamento de antes desta feature.
+		PlayerActionQueue->SetAvailableActions(FPetSkillCatalog::GetUniversalActions());
+		FBattleDebugScreen::Show(
+			TEXT("catálogo de skills não carregou — só as ações universais"),
+			8.0f, FColor::Orange, /*Key=*/953);
+		return;
+	}
+
+	const FPetState* OwnPet = CurrentState.Pets.FindByPredicate(
+		[this](const FPetState& Pet) { return Pet.Side == LocalPlayerSide; });
+	if (!OwnPet)
+	{
+		return;
+	}
+
+	const FPetPresentationInfo* Presentation = PresentationsByPetId.Find(OwnPet->PetId);
+	const FString Tipo = Presentation ? Presentation->Type : FString();
+
+	const TArray<EActionType> Disponiveis = Catalogo.GetAvailableActionsForType(Tipo);
+	PlayerActionQueue->SetAvailableActions(Disponiveis);
+
+	const TArray<EActionType> Skills = Catalogo.GetSkillsForType(Tipo);
+	FBattleDebugScreen::Show(
+		Skills.IsEmpty()
+			? FString::Printf(TEXT("%s (tipo %s) não tem skill própria"),
+				Presentation ? *Presentation->Name : TEXT("seu pet"), *Tipo)
+			: FString::Printf(TEXT("%s (tipo %s) tem %d skill(s) própria(s)"),
+				Presentation ? *Presentation->Name : TEXT("seu pet"), *Tipo, Skills.Num()),
+		0.0f, FColor::Cyan, /*Key=*/953);
 }
 
 void ABattleArena::RegisterOwnPetInCollection()
@@ -514,7 +586,8 @@ void ABattleArena::HandlePlayerCommitted()
 	}
 	else
 	{
-		OtherCommit = FTacticalOpponentAI::GenerateCommit(CurrentState, BotSide, CurrentState.Random);
+		OtherCommit = FTacticalOpponentAI::GenerateCommit(
+			CurrentState, BotSide, CurrentState.Random, GetAvailableActionsForSide(BotSide));
 	}
 
 	ResolveTurnWithCommits(PlayerCommit, OtherCommit);

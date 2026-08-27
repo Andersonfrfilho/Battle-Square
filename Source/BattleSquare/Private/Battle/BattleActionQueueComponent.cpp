@@ -4,6 +4,12 @@
 
 bool UBattleActionQueueComponent::BeginSelectingType(EActionType Type)
 {
+	// Skill que este pet não tem é RECUSADA aqui, não escondida na tela.
+	if (!IsActionAvailable(Type))
+	{
+		return false;
+	}
+
 	if (bCommitted || ConfirmedActions.Num() >= FTurnCommit::ActionsPerTurn)
 	{
 		return false;
@@ -131,4 +137,16 @@ void UBattleActionQueueComponent::RestoreConfirmedActions(const TArray<FBattleAc
 	bCommitted = false;
 
 	OnQueueChanged.Broadcast();
+}
+
+void UBattleActionQueueComponent::SetAvailableActions(const TArray<EActionType>& Actions)
+{
+	AvailableActions = Actions;
+}
+
+bool UBattleActionQueueComponent::IsActionAvailable(EActionType Type) const
+{
+	// Vazio = sem restrição. É o que mantém intacta toda batalha que não
+	// configura skills, em vez de deixá-las sem ação nenhuma.
+	return AvailableActions.IsEmpty() || AvailableActions.Contains(Type);
 }

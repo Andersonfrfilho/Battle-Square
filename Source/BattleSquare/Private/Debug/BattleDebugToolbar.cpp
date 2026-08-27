@@ -95,6 +95,18 @@ namespace
 		AddPlayerTwo(GPendingType, Direction);
 	}
 
+	bool SkillIsAvailableToPlayerTwo(EActionType Tipo)
+	{
+		const ABattleArena* Arena = FindArena();
+		if (!Arena)
+		{
+			return true;
+		}
+
+		const TArray<EActionType> Disponiveis = Arena->GetAvailableActionsForSide(1);
+		return Disponiveis.IsEmpty() || Disponiveis.Contains(Tipo);
+	}
+
 	FText PlayerTwoHeader()
 	{
 		const ABattleArena* Arena = FindArena();
@@ -168,7 +180,18 @@ void FBattleDebugToolbar::Show(UWorld* World)
 		const EActionType Valor = Tipo.Value;
 		LinhaTipos->AddSlot().AutoWidth().Padding(1.0f)
 		[
-			MakeButton(FText::FromString(Tipo.Key), [Valor]() { ChoosePlayerTwoType(Valor); })
+			SNew(SBox)
+			// Skill que o pet não tem some do painel. A recusa mora na fila
+			// (DP-skill-02); esconder aqui evita o clique que só produziria
+			// recusa — botão que nunca funciona é pior que botão ausente.
+			.Visibility_Lambda([Valor]()
+			{
+				return SkillIsAvailableToPlayerTwo(Valor)
+					? EVisibility::Visible : EVisibility::Collapsed;
+			})
+			[
+				MakeButton(FText::FromString(Tipo.Key), [Valor]() { ChoosePlayerTwoType(Valor); })
+			]
 		];
 	}
 	Coluna->AddSlot().AutoHeight()[ LinhaTipos ];

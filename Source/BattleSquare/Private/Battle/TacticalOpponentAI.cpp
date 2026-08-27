@@ -22,6 +22,7 @@ namespace
 	constexpr int32 DefendPercent = 30;
 	constexpr int32 FlyPercent = 20;
 	constexpr int32 CamouflagePercent = 12;
+	constexpr int32 SubmergePercent = 8;
 
 	const FPetState* FindLivingPetOnSide(const FBattleState& State, uint8 Side)
 	{
@@ -64,28 +65,57 @@ namespace
 		return Action;
 	}
 
-	/** Proteção sorteada com pesos — ver os percentuais acima. */
-	EActionType ChooseProtection(FBattleRandom& Random)
+	bool PodeUsar(const TArray<EActionType>& Disponiveis, EActionType Tipo)
 	{
-		const int32 Roll = Random.NextRange(0, 99);
+		// Vazio = sem restrição: comportamento de antes das skills por pet.
+		return Disponiveis.IsEmpty() || Disponiveis.Contains(Tipo);
+	}
 
-		if (Roll < DodgePercent)
+	/**
+	 * Proteção sorteada com pesos, entre as que ESTE pet sabe fazer.
+	 *
+	 * Sortear primeiro e filtrar depois faria o pet sem skill cair sempre na
+	 * mesma proteção — previsível é explorável, e era justamente o que a
+	 * variação existia para evitar.
+	 */
+	EActionType ChooseProtection(FBattleRandom& Random, const TArray<EActionType>& Disponiveis)
+	{
+		TArray<TPair<EActionType, int32>> Candidatas;
+		int32 PesoTotal = 0;
+
+		const TPair<EActionType, int32> Todas[] = {
+			{ EActionType::Esquivar, DodgePercent },
+			{ EActionType::Defender, DefendPercent },
+			{ EActionType::Voar, FlyPercent },
+			{ EActionType::Camuflar, CamouflagePercent },
+			{ EActionType::Submergir, SubmergePercent },
+		};
+
+		for (const TPair<EActionType, int32>& Candidata : Todas)
 		{
-			return EActionType::Esquivar;
+			if (PodeUsar(Disponiveis, Candidata.Key))
+			{
+				Candidatas.Add(Candidata);
+				PesoTotal += Candidata.Value;
+			}
 		}
-		if (Roll < DodgePercent + DefendPercent)
+
+		if (Candidatas.IsEmpty() || PesoTotal <= 0)
 		{
 			return EActionType::Defender;
 		}
-		if (Roll < DodgePercent + DefendPercent + FlyPercent)
+
+		int32 Sorteio = Random.NextRange(0, PesoTotal - 1);
+		for (const TPair<EActionType, int32>& Candidata : Candidatas)
 		{
-			return EActionType::Voar;
+			Sorteio -= Candidata.Value;
+			if (Sorteio < 0)
+			{
+				return Candidata.Key;
+			}
 		}
-		if (Roll < DodgePercent + DefendPercent + FlyPercent + CamouflagePercent)
-		{
-			return EActionType::Camuflar;
-		}
-		return EActionType::Submergir;
+
+		return Candidatas.Last().Key;
 	}
 
 	/** Passo em direção ao inimigo que NÃO sai da grade. */
@@ -123,7 +153,8 @@ namespace
 	}
 }
 
-FTurnCommit FTacticalOpponentAI::GenerateCommit(const FBattleState& State, uint8 Side, FBattleRandom& Random)
+FTurnCommit FTacticalOpponentAI::GenerateCommit(const FBattleState& State, uint8 Side, FBattleRandom& Random,
+	const TArray<EActionType>& AvailableActions)
 {
 	FTurnCommit Commit;
 
@@ -179,7 +210,7 @@ FTurnCommit FTacticalOpponentAI::GenerateCommit(const FBattleState& State, uint8
 
 		if (bIsHurt && Random.NextRange(0, 99) < DefendWhenHurtPercent)
 		{
-			Commit.Actions[Slot] = MakeAction(ChooseProtection(Random), EBattleDirection::Nenhuma);
+			Commit.Actions[Slot] = MakeAction(ChooseProtection(Random, AvailableActions), EBattleDirection::Nenhuma);
 			continue;
 		}
 

@@ -28,5 +28,14 @@
 class BATTLESQUARE_API FTacticalOpponentAI
 {
 public:
-	static FTurnCommit GenerateCommit(const FBattleState& State, uint8 Side, FBattleRandom& Random);
+	/**
+	 * @param AvailableActions o que o pet DELE sabe fazer. Vazio = sem
+	 *        restrição, o comportamento de antes das skills por pet.
+	 *
+	 * A IA precisa da lista porque skill é do pet, não do jogo: sem isto ela
+	 * escolheria voar com um pet que não voa, e a recusa da fila viraria um
+	 * turno perdido — o oponente pareceria travado sem motivo visível.
+	 */
+	static FTurnCommit GenerateCommit(const FBattleState& State, uint8 Side, FBattleRandom& Random,
+		const TArray<EActionType>& AvailableActions = TArray<EActionType>());
 };

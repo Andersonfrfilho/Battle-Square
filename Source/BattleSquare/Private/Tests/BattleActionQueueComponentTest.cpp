@@ -211,3 +211,37 @@ bool FBattleActionQueueBuildCommitFeedsRealResolverTest::RunTest(const FString& 
 
 	return true;
 }
+
+// Skill que o pet não tem é RECUSADA pela fila.
+//
+// DP-skill-02: a tela esconde, mas quem recusa é o componente. Tela que só
+// esconde é tela que um cliente adulterado ignora — e a regra precisa existir
+// num lugar só.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FBattleActionQueueRefusesUnavailableSkillTest,
+	"BattleSquare.Battle.ActionQueue.RefusesUnavailableSkill",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FBattleActionQueueRefusesUnavailableSkillTest::RunTest(const FString& Parameters)
+{
+	UBattleActionQueueComponent* Fila = NewObject<UBattleActionQueueComponent>();
+
+	// Sem configuração, nada muda: é o comportamento de antes desta feature, e
+	// toda batalha que não declara skills continua funcionando.
+	TestTrue(TEXT("Sem restrição, voar é aceito"),
+		Fila->BeginSelectingType(EActionType::Voar));
+
+	Fila->BeginNewTurn();
+	Fila->SetAvailableActions({ EActionType::Atacar, EActionType::Defender, EActionType::Camuflar });
+
+	TestTrue(TEXT("O que o pet tem é aceito"),
+		Fila->BeginSelectingType(EActionType::Defender));
+
+	TestFalse(TEXT("O que ele NÃO tem é recusado"),
+		Fila->BeginSelectingType(EActionType::Voar));
+
+	TestEqual(TEXT("E a recusa não consome slot"),
+		Fila->GetConfirmedActionCount(), 1);
+
+	return true;
+}

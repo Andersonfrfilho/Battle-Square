@@ -30,6 +30,9 @@ public class BattleSquare : ModuleRules
 			"UMG",
 			"Slate",
 			"SlateCore",
+			// FPlatformApplicationMisc::ClipboardCopy — o painel de depuração
+			// precisa poder ser copiado para virar mensagem colável.
+			"ApplicationCore",
 			// T2 (escala-pets-skills): FTypeEffectivenessTable::LoadFromJson
 			// consome a tabela de efetividade de um arquivo JSON local.
 			"Json",

@@ -35,7 +35,24 @@ de medição mais eficiente que este projeto tem; **facilite o trabalho dele.**
   lugar em vez de empilhar.
 - **Evento pontual** → `Key = -1`, para empilhar.
 - **Cor com significado**: um lado numa cor, o outro em outra.
-- Nunca custa em Shipping (compilado fora) e some com `bs.ShowBattleDebug 0`.
+- Nunca custa em Shipping (compilado fora).
+
+### O painel, e por que ele é copiável
+
+`ABattleDebugHUD` desenha as últimas 16 linhas numa caixa fixa no canto
+superior direito. É HUD, não UMG, de propósito: não depende de asset autorado,
+então funciona em qualquer nível assim que o GameMode o declara.
+
+| Console | O que faz |
+|---|---|
+| `bs.CopyBattleDebug` | copia o painel para a área de transferência, pronto para colar |
+| `bs.ShowBattleDebug 0` | esconde |
+| `bs.ClearBattleDebug` | esvazia |
+
+Mensagem que some obriga a ler depressa e a repetir a partida para reler; e
+transcrever da tela à mão perde justamente o detalhe que importa — foi assim
+que `Atacar Esquerda` virou "ele foi para a esquerda" numa investigação real.
+Por isso o painel **persiste** e **copia**.
 
 ### O que a regra NÃO autoriza
 

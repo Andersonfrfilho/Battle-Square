@@ -5,32 +5,57 @@
 #include "CoreMinimal.h"
 
 /**
- * Informação de depuração NA TELA, para quem está jogando poder dizer o que
- * viu sem abrir o Log de Saída.
+ * Painel de depuração NA TELA, para quem está jogando poder dizer o que viu
+ * sem abrir o Log de Saída.
  *
- * POR QUE ISTO EXISTE: em 2026-08-26/27, de oito defeitos sérios desta fase,
- * sete só apareceram quando um humano olhou a tela — pets invisíveis, câmera
- * apontada para o lugar errado, "Baixo" andando para a direita, oponente
- * previsível. Nenhum teste headless podia pegá-los, e cada ciclo de
- * "joga → descreve → eu leio o log" custava caro. Escrever na tela encurta
- * isso para "joga → lê".
+ * POR QUE ISTO EXISTE: em 26–27/08/2026, de oito defeitos sérios desta fase,
+ * sete só apareceram quando um humano olhou a tela. O ciclo "joga → descreve →
+ * eu leio o log → deduzo" custava horas.
  *
- * Desligado por padrão fora do jogo e silenciável a qualquer momento:
- *   bs.ShowBattleDebug 0|1
+ * POR QUE É UM PAINEL, e não mensagem que some: mensagem temporária obriga a
+ * ler depressa e a repetir a partida para reler. O painel mantém as últimas
+ * linhas visíveis o tempo todo — dá para jogar dois turnos e comparar.
+ *
+ * Desligado em Shipping e silenciável com:  bs.ShowBattleDebug 0
  */
 class BATTLESQUARE_API FBattleDebugScreen
 {
 public:
+	struct FLine
+	{
+		FString Text;
+		FColor Color = FColor::White;
+		/** >= 0 substitui a linha de mesma chave; < 0 empilha. */
+		int32 Key = -1;
+	};
+
 	/**
-	 * Escreve uma linha na tela. Não faz nada em Shipping nem com o CVar
-	 * desligado — chamar é sempre seguro e nunca custa em build final.
+	 * Acrescenta (ou atualiza) uma linha do painel.
 	 *
-	 * @param Key   linhas com a mesma chave se SUBSTITUEM (bom para estado que
-	 *              muda a cada turno); -1 empilha (bom para eventos).
+	 * @param Key  >= 0 substitui no lugar — bom para estado que muda a cada
+	 *             turno. < 0 empilha — bom para eventos.
 	 */
 	static void Show(const FString& Message, float Seconds = 8.0f,
 		const FColor& Color = FColor::White, int32 Key = -1);
 
-	/** True quando a depuração em tela está ligada. */
+	/** Esvazia o painel. Console: bs.ClearBattleDebug */
+	static void Clear();
+
+	/**
+	 * Copia o painel inteiro para a área de transferência, pronto para colar.
+	 * Console: bs.CopyBattleDebug
+	 *
+	 * Existe porque ler da tela e transcrever à mão é lento e perde detalhe —
+	 * e é justamente o detalhe (a direção exata, a casa exata) que separou
+	 * "Atacar Esquerda" de "Mover Esquerda" numa investigação real.
+	 */
+	static void CopyToClipboard();
+
 	static bool IsEnabled();
+
+	/** Linhas atuais, da mais antiga para a mais recente. */
+	static const TArray<FLine>& GetLines();
+
+	/** Teto de linhas mantidas — além disso, a mais antiga sai. */
+	static constexpr int32 MaxLines = 16;
 };

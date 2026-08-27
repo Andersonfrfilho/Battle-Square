@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "UI/BattleScreenGameMode.h"
+#include "Debug/BattleDebugHUD.h"
 #include "UI/BattleActionSelectorWidget.h"
 #include "Battle/BattleArena.h"
 #include "Battle/BattleActionQueueComponent.h"
@@ -18,6 +19,11 @@ ABattleScreenGameMode::ABattleScreenGameMode()
 	// O pai tica 1x/s (checagem de sala). Aqui a casa do pet precisa
 	// acompanhar o turno, e um segundo de atraso já aparece na tela.
 	PrimaryActorTick.TickInterval = 0.0f;
+
+	// Painel de depuração em tela (CLAUDE.md): o jogador é o instrumento de
+	// medição mais eficiente deste projeto, e ler da tela é mais barato que
+	// abrir o Log de Saída.
+	HUDClass = ABattleDebugHUD::StaticClass();
 }
 
 void ABattleScreenGameMode::BeginPlay()

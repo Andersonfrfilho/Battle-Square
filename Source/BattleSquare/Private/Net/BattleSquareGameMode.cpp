@@ -2,6 +2,7 @@
 
 #include "Net/BattleSquareGameMode.h"
 #include "Net/BattleSquarePlayerController.h"
+#include "Debug/BattleDebugHUD.h"
 #include "Data/PetDataLoader.h"
 #include "Meta/PetCollectionService.h"
 #include "Meta/PetProgressionService.h"
@@ -17,6 +18,7 @@
 ABattleSquareGameMode::ABattleSquareGameMode()
 {
 	PlayerControllerClass = ABattleSquarePlayerController::StaticClass();
+	HUDClass = ABattleDebugHUD::StaticClass();
 	PrimaryActorTick.bCanEverTick = true;
 	// Timeouts de sala são medidos em dezenas de segundos
 	// (CommitTimeoutSeconds=45, AbandonTimeoutSeconds=120) — checar uma

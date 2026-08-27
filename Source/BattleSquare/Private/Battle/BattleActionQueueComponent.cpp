@@ -104,3 +104,14 @@ FTurnCommit UBattleActionQueueComponent::BuildCommit() const
 	}
 	return Commit;
 }
+
+void UBattleActionQueueComponent::BeginNewTurn()
+{
+	ConfirmedActions.Reset();
+	Pending = FBattlePendingActionSelection();
+	bCommitted = false;
+
+	// Um só broadcast, no fim: quem escuta vê o turno novo já inteiro, nunca
+	// um estado pela metade.
+	OnQueueChanged.Broadcast();
+}

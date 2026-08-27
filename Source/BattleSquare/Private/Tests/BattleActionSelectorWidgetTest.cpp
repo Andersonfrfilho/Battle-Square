@@ -170,3 +170,33 @@ bool FSelectorLocksAfterCommitTest::RunTest(const FString& Parameters)
 	Destroy(Fixture);
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSelectorNewTurnReopensQueueTest,
+	"BattleSquare.UI.BattleActionSelector.NewTurnReopensTheQueue",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FSelectorNewTurnReopensQueueTest::RunTest(const FString& Parameters)
+{
+	FSelectorFixture Fixture = MakeFixture();
+
+	for (int32 Index = 0; Index < 3; ++Index)
+	{
+		Fixture.Widget->BeginSelectingType(EActionType::Aguardar);
+	}
+	Fixture.Widget->Commit();
+	TestTrue(TEXT("o turno fecha no commit"), Fixture.Widget->bIsCommitted);
+
+	// Sem isto a batalha é de UMA rodada só: a fila fica commitada para
+	// sempre e a tela trava em "aguardando o oponente". Foi o que apareceu
+	// no primeiro turno jogado de verdade, em 2026-08-26.
+	Fixture.Queue->BeginNewTurn();
+
+	TestFalse(TEXT("o turno novo destrava a fila"), Fixture.Widget->bIsCommitted);
+	TestEqual(TEXT("as ações do turno anterior não vazam"), Fixture.Widget->ConfirmedActionCount, 0);
+	TestEqual(TEXT("volta ao passo de escolher tipo"),
+		Fixture.Widget->CurrentStep, EBattleActionSelectionStep::ChoosingType);
+	TestTrue(TEXT("e aceita ação de novo"), Fixture.Widget->BeginSelectingType(EActionType::Defender));
+
+	Destroy(Fixture);
+	return true;
+}

@@ -158,5 +158,8 @@ private:
 	// máximo uma vez por arena.
 	void AnnounceBattleFinishedIfEnded(const TArray<FBattleEvent>& Trace);
 
+	/** Destrava a fila para a próxima rodada, se a batalha ainda não acabou. */
+	void OpenNextTurnIfBattleContinues();
+
 	bool bHasAnnouncedBattleFinished = false;
 };

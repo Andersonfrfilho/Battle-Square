@@ -50,6 +50,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Battle|ActionQueue")
 	bool Commit();
 
+	/**
+	 * Abre um turno novo: esvazia as ações, volta ao passo de tipo e destrava
+	 * a fila.
+	 *
+	 * POR QUE ISTO NÃO EXISTIA ATÉ 2026-08-26: M1–M4 testaram a resolução de
+	 * UM turno e nunca jogaram dois. Sem isto a fila fica commitada para
+	 * sempre, e a batalha é de uma rodada só — o que só apareceu quando a
+	 * tela existiu e alguém apertou "Confirmar turno".
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Battle|ActionQueue")
+	void BeginNewTurn();
+
 	// Não exposto ao Blueprint: FTurnCommit tem um array C puro
 	// (Actions[3]) que UHT não suporta como retorno Blueprint. Quem
 	// consome isto é a fiação em C++ (ABattleArena, T10), não o widget.

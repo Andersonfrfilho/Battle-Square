@@ -170,6 +170,7 @@ void ABattleArena::HandleCoordinatorTurnResolved(const FBattleState& NextState, 
 	CheckForCapture(Trace);
 	GrantExperienceIfOwned(Trace);
 	AnnounceBattleFinishedIfEnded(Trace);
+	OpenNextTurnIfBattleContinues();
 
 	if (TracePlayer)
 	{
@@ -315,9 +316,22 @@ void ABattleArena::HandlePlayerCommitted()
 	CheckForCapture(Result.Trace);
 	GrantExperienceIfOwned(Result.Trace);
 	AnnounceBattleFinishedIfEnded(Result.Trace);
+	OpenNextTurnIfBattleContinues();
 
 	if (TracePlayer)
 	{
 		TracePlayer->PlayTrace(Result.Trace);
 	}
+}
+
+void ABattleArena::OpenNextTurnIfBattleContinues()
+{
+	// Batalha encerrada NÃO abre turno novo: a fila travada é o que impede o
+	// jogador de escolher ações para uma partida que já acabou.
+	if (bHasAnnouncedBattleFinished || !PlayerActionQueue)
+	{
+		return;
+	}
+
+	PlayerActionQueue->BeginNewTurn();
 }

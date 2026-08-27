@@ -125,7 +125,18 @@ bool FBattleArenaFullTurnEndToEndTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("3 ações confirmadas antes de commitar"), Arena->PlayerActionQueue->GetConfirmedActionCount(), 3);
 
 	Arena->PlayerActionQueue->Commit();
-	TestTrue(TEXT("Fila travada após Commit"), Arena->PlayerActionQueue->IsCommitted());
+
+	// Até 2026-08-26 este teste afirmava "fila travada após Commit" — e isso
+	// era verdade só porque NADA reabria o turno: a batalha era de uma rodada
+	// só, e o defeito apareceu no primeiro turno jogado de verdade, com a
+	// tela travada em "aguardando o oponente".
+	// O commit resolve o turno e, se a batalha continua, a fila reabre para a
+	// rodada seguinte. O travamento em si segue coberto, isolado, em
+	// BattleSquare.UI.BattleActionSelector.LockedAfterCommit.
+	TestFalse(TEXT("Turno seguinte reaberto: a fila destrava depois da resolução"),
+		Arena->PlayerActionQueue->IsCommitted());
+	TestEqual(TEXT("E começa vazia, sem vazar as ações da rodada anterior"),
+		Arena->PlayerActionQueue->GetConfirmedActionCount(), 0);
 
 	const FBattleState StateAfterCommit = Arena->GetCurrentState();
 	TestTrue(TEXT("HandlePlayerCommitted rodou o resolvedor real: TurnNumber avançou"), StateAfterCommit.TurnNumber != StateBeforeCommit.TurnNumber || StateAfterCommit.Random.State != StateBeforeCommit.Random.State);

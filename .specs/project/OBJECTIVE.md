@@ -1,89 +1,115 @@
-# Objetivo — Fechar o Roadmap (M3 → M7)
+# Objetivo — Terminar
 
-**Criado:** 2026-08-26, ao concluir M1 e M2.
-**O que este documento é:** o critério de "pronto" para o projeto inteiro, e a ordem em que os marcos restantes se encaixam — não um cronograma com datas, e não uma spec. Cada marco continua ganhando `spec.md`/`design.md`/`tasks.md` próprios quando chegar a vez dele, no mesmo fluxo spec-driven já usado em M1/M2.
+**Criado:** 2026-08-28, substituindo o objetivo de fechar M1→M7 (cumprido).
+**O que este documento é:** o critério de "acabou" e a ordem do que falta.
+Não é cronograma, não é lista de desejos: cada item aqui é trabalho identificado,
+com o motivo de ainda não estar pronto.
 
 ---
 
 ## Onde estamos
 
-M1 (Fatia Vertical do Combate) e M2 (Combate Online) estão concluídos e verificados — ver `ROADMAP.md`. O jogo hoje: dois jogadores reais resolvem um combate 1v1 por turnos, às cegas, num tabuleiro 3x3, com 1 pet de cada lado, via código de sala. Isso prova o núcleo (a mecânica é divertida) e a espinha de rede (o mesmo código serve local e online).
+O roadmap M1→M7 está fechado. O jogo tem, hoje, o **laço completo**: caminhar
+pelo mundo, encontrar um inimigo que anda, cair numa arena com botões, escolher
+ações que o pet sabe fazer, ver o que aconteceu narrado em português, vencer,
+ganhar experiência, e voltar a um mundo que se repõe.
 
-O que falta é **conteúdo, progressão, escala e alcance** — os marcos que decidem se isto vira um jogo que alguém joga por mais de uma sessão, e se alcança alguém fora do PC do desenvolvedor.
+**246 testes** (181 BattleSquare + 65 BattleSim), quatro sondas, Editor e
+Shipping compilando.
 
-## O que "roadmap completo" significa
+O que mudou o método em 2026-08-27/28: **quatro recursos completos e testados
+estavam inalcançáveis** porque ninguém os chamava (L-041). A varredura que os
+achou virou rotina.
 
-O jogo tem, ao final de M7:
+---
 
-1. **Combate com profundidade real** — N pets por lado (não 1), tipos com fraquezas/resistências, arenas com propriedades, balanceado por dados e testado em lote, não no olho.
-2. **Razão para voltar** — captura, coleção, progressão de pet (nível/experiência/evolução).
-3. **O salto de escopo pago com os pés no chão** — mundo aberto contínuo, só depois do combate provado divertido (gate explícito, ver B-001).
-4. **Alcance multiplataforma** — mobile no mínimo; console se o custo de licença/devkit se justificar.
-5. **Identidade persistente** — conta de jogador, e a trilha de auditoria que M2 já deixou pronta (AD-017) virando banimento de verdade.
+## O que falta, em ordem
 
-**Critério de sucesso do roadmap inteiro:** um jogador novo consegue instalar o jogo, jogar sozinho ou com um amigo, evoluir um time de pets ao longo de várias sessões, e (quando M5/M6 chegarem) fazer isso num mundo persistente, em pelo menos uma plataforma além de PC — tudo sem que qualquer marco anterior tenha regredido no caminho.
+### 1. Tornar visível o que já funciona
 
-## Ordem e por quê
+O padrão mais caro deste projeto é regra que existe e não aparece. Cada item
+abaixo é regra pronta, testada, invisível:
 
-A ordem do `ROADMAP.md` já não é arbitrária — cada marco existe onde está porque desbloqueia ou é bloqueado por outro:
+- **Efetividade de tipo.** Fogo contra Planta agora dói mais — e nada diz isso.
+  O valor precisa vir da MONTAGEM (`FPetPresentationInfo`), não de recálculo na
+  apresentação (`audit_no_recalculation.sh`).
+- **Skills no `WBP`.** Camuflar/voar/submergir só existem na barra em C++ e no
+  teclado. O widget do jogador 1 não tem botões — depende do plugin de edição,
+  indisponível na sessão em que foram criados.
 
-```
-M3 (Conteúdo e Balanceamento)
-   │  prova que N pets, tipos e arenas variadas
-   │  não exigem reescrever o núcleo — só dados novos
-   ▼
-M4 (Progressão e Meta)
-   │  dá ao jogador um motivo para voltar — mas só faz
-   │  sentido sobre um combate já variado (M3), senão
-   │  progressão vira "grind do mesmo turno sempre"
-   ▼
-┌─── GATE: B-001 — go/no-go consciente ───┐
-│  M1-M3 concluídos + combate validado    │
-│  como divertido (decisão humana, não    │
-│  técnica) antes de abrir M5             │
-└──────────────────────────────────────────┘
-   ▼
-M5 (Mundo Aberto Contínuo)
-   │  o salto de escopo — 10x a 100x mais caro que
-   │  o battler sozinho. Só se paga se M1-M4 já
-   │  provaram que existe um jogo por trás
-   ▼
-M6 (Plataformas)
-   │  exige orçamento de performance definido a partir
-   │  de M5 (mundo aberto muda o teto de hardware) —
-   │  não faz sentido portar antes do maior consumidor
-   │  de recurso existir
-   ▼
-M7 (Contas e Moderação)
-      identidade persistente é pré-requisito de
-      QUALQUER coisa que precise sobreviver ao fim de
-      uma sessão (ranking, amizades, progressão em
-      nuvem, banimento real) — mas não bloqueia nenhum
-      marco anterior; é consumidor do que eles produzem
-```
+### 2. Verificar o que ninguém verificou
 
-**M7 não é o último por ser menos importante — é o último porque nada antes dele depende dele.** Poderia, em tese, entrar mais cedo (logo depois de M2, já que a trilha de auditoria existe desde AD-017); fica em M7 porque contas sem conteúdo (M3/M4) e sem mundo (M5) não têm o que proteger ainda. Se prioridade de produto mudar, M7 é o marco com menor custo de reordenar.
+**Onze roteiros nunca rodados.** Testes headless não decidem nada do que está
+neles: eles existem justamente para o que só uma pessoa jogando responde.
 
-## Gates que já existem e continuam valendo
+Ordem por valor, do mais decisivo:
 
-- **B-001** (`STATE.md`): M5 bloqueado até M1–M3 concluídos e o combate validado como divertido — decisão consciente de go/no-go no fim de M3, com o combate na mão. Este documento não muda esse gate, só o reafirma no contexto do objetivo maior.
-- **B-004** (`STATE.md`): verificação de `DedicatedServer` real bloqueada pela engine instalada (builds do Epic Games Launcher não compilam `TargetType.Server`). Não bloqueia M3/M4 — só precisa ser resolvido (trocar para engine compilada da fonte) antes de M2 ir para produção real, o que pode acontecer em paralelo a qualquer marco de conteúdo.
+1. `encontros-transicao-batalha.md` — o laço completo, ENC-10 a ENC-12
+2. `skills-por-pet.md` — a identidade do pet se sente?
+3. `esconderijos.md` — as três trocas são distintas?
+4. `legibilidade-do-combate.md` — a narração explica a jogada?
+5. `arenas-variadas-jogabilidade.md` — a arena parece justa?
+6. `escala-pets-skills-balanceamento.md` — a efetividade parece certa?
+7. `traversal-camera-mundo.md`, `streaming-de-mundo.md`
+8. `apresentacao-combate-visual.md`, `combate-online-rede.md`, `mobile.md`
 
-## O que este documento NÃO faz
+Os três últimos exigem infraestrutura (dois processos, aparelho) e seguem
+bloqueados.
 
-- Não specifica M3–M7 antecipadamente — cada marco ganha spec própria na hora, com o contexto real de quando chegar lá (o que se aprendeu nos marcos anteriores muda decisões, sempre mudou nesta sessão).
-- Não compromete prazo — não há estimativa de tempo aqui, só ordem e dependência.
+### 3. Decidir o que está em aberto
 
-## Modo de execução (atualizado 2026-08-26, instrução explícita do usuário)
+**Oito specs com decisão pendente.** Duas são ideias novas do usuário, e as
+duas estão paradas pela mesma razão — falta uma decisão, não código:
 
-A partir de M4, a instrução foi **"terminar todas as tarefas sem parar"**, com **uma varredura final de bugs** ao fim de cada marco. Isso muda o que os portões de aprovação (Specify → Design → Tasks → Execute) significam na prática:
+- **Clima no campo** (`clima-no-campo/`) — nove perguntas, sendo as mais
+  pesadas: clima por região faz dois jogadores enfrentarem campos diferentes na
+  mesma partida; localização é dado pessoal; campo que muda depois do commit faz
+  perder por algo imprevisível.
+- **Captura, roubo e treinador** (`captura-roubo-e-treinador/`) — o jogo não tem
+  o conceito de DONO, e sem ele "sem dono", "selvagem" e "roubar" não têm como
+  ser distinguidos.
 
-- **Os documentos continuam sendo escritos e commitados** em cada fase — spec, design, tasks — exatamente como em M1–M3. A disciplina de registro não é o que muda.
-- **A pausa para aprovação explícita entre fases é suspensa** para o trabalho de rotina — sigo de Specify direto a Execute sem esperar confirmação a cada portão, pelo tempo que esta instrução estiver de pé.
-- **B-001 continua sendo uma exceção que exige parar de verdade.** É um gate marcado como "decisão consciente de go/no-go", não técnica — "sem parar" não sobrescreve isso. Ao chegar em M5, o gate é apresentado ao usuário explicitamente antes de specar/implementar, mesmo sob esta instrução.
-- **Ambiguidade de produto real (não técnica) ainda pausa para perguntar** — como já aconteceu ao decidir o gatilho de captura de M4. "Sem parar" cobre execução mecânica, não decisões que só o usuário pode tomar.
-- **Um bug real que muda o resultado de uma feature já entregue** (como L-019/L-020 em M3) é corrigido na hora, registrado em `STATE.md`, e o trabalho continua — não é motivo de pausa, é o tipo de coisa que a varredura final de bugs existe para pegar quando passar despercebida.
+As outras seis têm PROPOSTAs registradas que nunca foram confirmadas nem
+recusadas. Enquanto isso, o comportamento vigente é o da proposta — decisão por
+inércia, que é a pior forma de decidir.
 
-## Próximo passo concreto
+### 4. Bloqueios que não são trabalho
 
-**M4 concluído** (Coleção e Captura + Níveis, Experiência e Evolução — ambas ✅, 127/127 testes, sondas limpas). Próximo: **gate B-001**, o go/no-go consciente para M5 (Mundo Aberto Contínuo) — por ser decisão de produto/infra, não técnica, este é o ponto em que a execução contínua PARA de verdade e o gate é apresentado ao usuário explicitamente, como já reafirmado na seção "Modo de execução" acima.
+Não têm solução por código nesta máquina, e ficam registrados para não serem
+confundidos com pendência:
+
+| | O quê |
+|---|---|
+| **B-006/B-007** | nenhuma plataforma móvel é compilável aqui |
+| **B-008** | console exige licença e devkit |
+| **B-004** | Server Target não compila com a engine do Launcher |
+| **B-001** | escopo de mundo aberto contínuo |
+| **B-003** | BTL-05 sem cobertura de execução sob o contrato de v1 |
+| **B-005** | coleção local não distingue jogadores em partida de rede |
+
+`FTouchMovementInput` fica sem ligar enquanto B-006/B-007 durarem: ligá-la sem
+poder verificar seria entregar trabalho não medido.
+
+---
+
+## Critério de "acabou"
+
+1. Nada de regra pronta e invisível (item 1 zerado).
+2. Os oito roteiros verificáveis nesta máquina, rodados, com o resultado escrito
+   no próprio roteiro — inclusive o que reprovar.
+3. Toda PROPOSTA confirmada ou recusada, com o motivo registrado.
+4. Bateria verde, quatro sondas limpas, Editor e Shipping compilando.
+5. `STATE.md` e `ROADMAP.md` refletindo o que existe — não o que se pretendia.
+
+**O que NÃO conta como pronto:** recurso testado que ninguém alcança (L-041),
+regra que só aparece perdendo, e proposta que virou comportamento por inércia.
+
+---
+
+## Como trabalhar até lá
+
+- Item 1 primeiro: é o único que eu resolvo sozinho e o que mais muda o jogo.
+- Item 3 em paralelo, perguntando — decisão não bloqueia enquanto houver item 1.
+- Item 2 é do usuário, e é o único caminho para o que teste nenhum decide.
+- Ao terminar qualquer feature: **quem chama isto no jogo?** e a varredura de
+  classe sem uso em produção.

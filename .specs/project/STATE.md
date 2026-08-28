@@ -575,6 +575,23 @@ find "$HOME/Library/Logs/Unreal Engine/BattleSquareEditor" Saved/Logs -newer <ma
 **O parentesco com defeitos anteriores:** é a mesma família de "a batalha era de um turno só" (L-034) e "ninguém criava encontros". Em todos, cada peça funcionava isolada e ninguém tinha percorrido a sequência inteira. **Teste de unidade não descobre etapa que não existe** — só o percurso completo descobre.
 **Previne:** para todo fluxo com começo, meio e fim, escrever um teste que percorra **até o fim**, não só cada etapa. E quando o usuário disser "nada aconteceu", suspeitar primeiro de ausência, não de erro: erro produz comportamento errado; ausência produz silêncio.
 
+### L-041: feature testada não é feature alcançável — varra os caminhos, não as peças
+
+**Contexto:** em 2026-08-27/28 encontrei QUATRO recursos completos, testados e **inalcançáveis em produção**, todos pela mesma razão: ninguém os chamava.
+
+| Recurso | Como estava | Consequência para quem joga |
+|---|---|---|
+| Encontros no mundo | ninguém criava `AWorldEncounterActor` | caminhar nunca disparava batalha |
+| Fim da batalha local | captura/XP/anúncio só no caminho de rede | derrotar o inimigo não devolvia ao mundo |
+| Layouts de arena | `CellLayout` nascia neutro e ninguém o preenchia | casa de dano, bônus e água jamais apareciam |
+| Efetividade de tipo | tabela nunca carregada; produção usava `TranslatePet` em vez de `TranslateMatchup` | **Fogo contra Planta batia igual a Fogo contra Água** |
+
+**O que os quatro têm em comum:** cada peça tinha teste, cada teste passava, e nenhum teste percorria o caminho do jogador de ponta a ponta. Bateria verde e recurso morto convivem sem atrito.
+
+**A varredura que os encontrou** — e que vale repetir: para cada classe pública, contar em quantos arquivos de PRODUÇÃO (fora de `Tests/`) ela aparece. Um só é o próprio `.cpp` — ou seja, ninguém a usa. Foi assim que a efetividade de tipo apareceu, e ela é o coração de um jogo de coleção.
+
+**Previne:** ao terminar uma feature, perguntar **quem chama isto no jogo** e escrever o teste que percorre o caminho inteiro. E rodar a varredura de "classe sem uso em produção" periodicamente — ela custa um comando e achou quatro recursos mortos numa tarde.
+
 ---
 
 ## Ideias Adiadas

@@ -1,6 +1,8 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "World/EncounterMatchAssembler.h"
+#include "Misc/Paths.h"
+#include "Balance/TypeEffectivenessTable.h"
 #include "Net/BattleSquareGameMode.h"
 #include "Misc/DateTime.h"
 
@@ -28,11 +30,26 @@ bool FEncounterMatchAssembler::AssembleFromEncounter(const FEncounterMatchParams
 
 	FPetState PlayerPet;
 	FPetPresentationInfo PlayerPresentation;
-	FBattleDataTranslator::TranslatePet(*PlayerRecord, /*PetId=*/1, /*Side=*/0, /*Column=*/1, /*Row=*/1, PlayerPet, PlayerPresentation);
-
 	FPetState EncounterPet;
 	FPetPresentationInfo EncounterPresentation;
-	FBattleDataTranslator::TranslatePet(*EncounterRecord, /*PetId=*/2, /*Side=*/1, /*Column=*/2, /*Row=*/1, EncounterPet, EncounterPresentation);
+
+	// TranslateMatchup, e não TranslatePet: só ele aplica a efetividade de
+	// tipo. Com TranslatePet, Fogo contra Planta batia igual a Fogo contra
+	// Água — a tabela existia, era testada, e nunca chegava ao jogo.
+	FTypeEffectivenessTable Efetividade;
+	if (!FTypeEffectivenessTable::LoadFromJson(
+		FPaths::Combine(FPaths::ProjectConfigDir(), TEXT("TypeEffectiveness.json")), Efetividade))
+	{
+		// Tabela ausente degrada para NEUTRO — GetPercent devolve 100 para
+		// par desconhecido, e uma tabela vazia é exatamente isso. Nunca
+		// impede a batalha de acontecer.
+		UE_LOG(LogTemp, Warning,
+			TEXT("EncounterMatchAssembler: tabela de efetividade nao carregou — combate neutro"));
+	}
+
+	FBattleDataTranslator::TranslateMatchup(*PlayerRecord, *EncounterRecord, Efetividade,
+		/*LeftPetId=*/1, /*RightPetId=*/2,
+		PlayerPet, PlayerPresentation, EncounterPet, EncounterPresentation);
 
 	ABattleSquareGameMode::ApplyOwnedPetProgressionBonus(Params.PetCollectionSlotName, PlayerPet, PlayerPresentation);
 	ABattleSquareGameMode::ApplyOwnedPetProgressionBonus(Params.PetCollectionSlotName, EncounterPet, EncounterPresentation);

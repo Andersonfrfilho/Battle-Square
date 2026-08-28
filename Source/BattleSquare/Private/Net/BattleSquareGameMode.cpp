@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Net/BattleSquareGameMode.h"
+#include "Balance/TypeEffectivenessTable.h"
 #include "World/EncounterRoamingComponent.h"
 #include "World/WorldEncounterActor.h"
 #include "Blueprint/UserWidget.h"
@@ -327,11 +328,23 @@ void ABattleSquareGameMode::HandleRoomReady(const FString& Code)
 
 	FPetState Side0Pet;
 	FPetPresentationInfo Side0Presentation;
-	FBattleDataTranslator::TranslatePet(Pets[0], /*PetId=*/1, /*Side=*/0, /*Column=*/1, /*Row=*/1, Side0Pet, Side0Presentation);
-
 	FPetState Side1Pet;
 	FPetPresentationInfo Side1Presentation;
-	FBattleDataTranslator::TranslatePet(Pets[1], /*PetId=*/2, /*Side=*/1, /*Column=*/2, /*Row=*/1, Side1Pet, Side1Presentation);
+
+	// Mesma correção da montagem de encontro: TranslateMatchup é o único que
+	// aplica efetividade de tipo. Sem ele, os tipos existem no dado e não
+	// mudam nada na luta.
+	FTypeEffectivenessTable Efetividade;
+	if (!FTypeEffectivenessTable::LoadFromJson(
+		FPaths::Combine(FPaths::ProjectConfigDir(), TEXT("TypeEffectiveness.json")), Efetividade))
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("BattleSquareGameMode: tabela de efetividade nao carregou — combate neutro"));
+	}
+
+	FBattleDataTranslator::TranslateMatchup(Pets[0], Pets[1], Efetividade,
+		/*LeftPetId=*/1, /*RightPetId=*/2,
+		Side0Pet, Side0Presentation, Side1Pet, Side1Presentation);
 
 	// T5 (niveis-experiencia-evolucao): pet de catálogo já capturado
 	// entra na partida com o bônus de atributo do nível dele. Pet não

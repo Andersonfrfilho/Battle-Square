@@ -22,6 +22,15 @@ public:
 	// False se o nome não existir — nunca crasha, nunca inventa layout.
 	bool GetLayoutByName(const FString& ArenaName, TArray<uint8>& OutLayout) const;
 
+	/**
+	 * Nomes ORDENADOS, para escolha determinística.
+	 *
+	 * A ordem de um TMap não é estável entre execuções: escolher por índice
+	 * sobre ela faria a mesma semente abrir arenas diferentes, e o
+	 * determinismo do núcleo não valeria de nada acima dele.
+	 */
+	TArray<FString> GetSortedLayoutNames() const;
+
 private:
 	TMap<FString, TArray<uint8>> Layouts;
 };

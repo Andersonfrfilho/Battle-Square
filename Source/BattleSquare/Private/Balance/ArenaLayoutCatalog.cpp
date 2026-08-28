@@ -84,3 +84,11 @@ bool FArenaLayoutCatalog::LoadFromJson(const FString& FilePath, FArenaLayoutCata
 	OutCatalog = ParsedCatalog;
 	return true;
 }
+
+TArray<FString> FArenaLayoutCatalog::GetSortedLayoutNames() const
+{
+	TArray<FString> Nomes;
+	Layouts.GetKeys(Nomes);
+	Nomes.Sort();
+	return Nomes;
+}

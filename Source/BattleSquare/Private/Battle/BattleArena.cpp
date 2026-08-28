@@ -3,6 +3,7 @@
 #include "Battle/BattleArena.h"
 #include "Misc/Paths.h"
 #include "Balance/PetSkillCatalog.h"
+#include "Balance/ArenaLayoutCatalog.h"
 #include "EngineUtils.h"
 #include "Battle/BattleNarration.h"
 
@@ -139,6 +140,12 @@ bool ABattleArena::BeginBattle(const FBattleState& InitialState, const TArray<FP
 	}
 
 	CurrentState = InitialState;
+
+	// ANTES da checagem de casa bloqueada não daria certo: a escolha precisa
+	// do estado montado para saber onde os pets estão. Por isso ela própria
+	// recusa layouts que bloqueiem casa inicial.
+	ApplyArenaLayoutIfNeeded();
+
 	SpawnPetViews(CurrentState, Presentations);
 
 	// T4 (colecao-e-captura): retido para CheckForCapture (T5) consultar
@@ -328,6 +335,77 @@ TArray<EActionType> ABattleArena::GetAvailableActionsForSide(uint8 Side) const
 
 	const FPetPresentationInfo* Presentation = PresentationsByPetId.Find(Pet->PetId);
 	return Catalogo.GetAvailableActionsForType(Presentation ? Presentation->Type : FString());
+}
+
+void ABattleArena::ApplyArenaLayoutIfNeeded()
+{
+	// Montagem que já trouxe terreno manda: só preenche quem chegou neutro.
+	// Sobrescrever apagaria a arena escolhida por quem montou a partida.
+	const bool bTodaNeutra = !CurrentState.CellLayout.ContainsByPredicate(
+		[](uint8 Propriedade) { return Propriedade != static_cast<uint8>(ECellProperty::None); });
+	if (!bTodaNeutra)
+	{
+		return;
+	}
+
+	const FString Caminho = ArenaLayoutCatalogPath.IsEmpty()
+		? FPaths::Combine(FPaths::ProjectConfigDir(), TEXT("Arenas.json"))
+		: ArenaLayoutCatalogPath;
+
+	FArenaLayoutCatalog Catalogo;
+	if (!FArenaLayoutCatalog::LoadFromJson(Caminho, Catalogo))
+	{
+		FBattleDebugScreen::Show(TEXT("catálogo de arenas não carregou — arena neutra"),
+			8.0f, FColor::Orange, /*Key=*/954);
+		return;
+	}
+
+	const TArray<FString> Nomes = Catalogo.GetSortedLayoutNames();
+	if (Nomes.IsEmpty())
+	{
+		return;
+	}
+
+	// Escolha derivada da semente da partida, e SEM consumir o gerador do
+	// núcleo: gastar números dele aqui deslocaria toda a batalha e quebraria
+	// os snapshots de determinismo.
+	//
+	// A semente passa por uma MISTURA antes de virar índice. Usá-la crua (ou
+	// dividida) faz sementes pequenas e vizinhas caírem sempre na mesma arena:
+	// escrevi `Semente / 1000` primeiro e toda partida abriu no mesmo lugar,
+	// porque a divisão zerava tudo abaixo de mil.
+	const uint64 Misturada =
+		CurrentState.Random.State * 6364136223846793005ULL + 1442695040888963407ULL;
+	const uint64 Semente = Misturada >> 33;
+
+	for (int32 Tentativa = 0; Tentativa < Nomes.Num(); ++Tentativa)
+	{
+		const int32 Indice = static_cast<int32>((Semente + Tentativa) % Nomes.Num());
+
+		TArray<uint8> Layout;
+		if (!Catalogo.GetLayoutByName(Nomes[Indice], Layout)
+			|| Layout.Num() != CurrentState.CellLayout.Num())
+		{
+			continue;
+		}
+
+		// Layout que bloqueia casa inicial faria BeginBattle rejeitar a
+		// montagem, e a batalha simplesmente não abriria. Tenta o próximo.
+		const bool bBloqueiaAlguem = CurrentState.Pets.ContainsByPredicate(
+			[&Layout](const FPetState& Pet)
+			{
+				return Layout[CellLayoutIndex(Pet.Column, Pet.Row)] == static_cast<uint8>(ECellProperty::Blocked);
+			});
+		if (bBloqueiaAlguem)
+		{
+			continue;
+		}
+
+		CurrentState.CellLayout = Layout;
+		FBattleDebugScreen::Show(FString::Printf(TEXT("arena: %s"), *Nomes[Indice]),
+			0.0f, FColor::Cyan, /*Key=*/954);
+		return;
+	}
 }
 
 void ABattleArena::ApplySkillsToActionQueue()

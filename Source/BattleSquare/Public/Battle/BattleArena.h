@@ -118,6 +118,15 @@ public:
 	UPROPERTY(config, EditDefaultsOnly, Category = "Balanceamento")
 	FString PetSkillCatalogPath;
 
+	/**
+	 * Layouts de arena. Vazio = arquivo padrão em Config/.
+	 *
+	 * Ausente ou malformado degrada para arena neutra — o comportamento de
+	 * antes desta ligação, nunca crash.
+	 */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Balanceamento")
+	FString ArenaLayoutCatalogPath;
+
 protected:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USceneComponent> ArenaRoot;
@@ -243,6 +252,9 @@ private:
 	// próprio pet do jogador.
 	/** Garante que o pet do jogador está na coleção — é dele que a XP vive. */
 	/** Diz à fila o que ESTE pet pode escolher (DP-skill-02). */
+	/** Escolhe e aplica um layout de arena, se a montagem não trouxe um. */
+	void ApplyArenaLayoutIfNeeded();
+
 	void ApplySkillsToActionQueue();
 
 

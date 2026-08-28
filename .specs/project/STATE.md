@@ -217,6 +217,13 @@ O caminho de leitura NÃO é o servidor de combate chamando o backend remoto a c
 **Basta resolver:** B-006 + B-006b (caminho iOS) **ou** B-007 (caminho Android). Não são necessários os dois.
 **Parentesco com B-004:** mesma categoria — a engine instalada pelo Launcher não traz tudo que o roadmap pede, e a descoberta só acontece quando se tenta.
 
+### B-009: botões de skill no WBP exigem o plugin de edição
+
+**O quê:** `WBP_BattleActionSelector` não tem botões para Camuflar, Voar e Submergir. O C++ já os espera por `BindWidgetOptional` (`Button_Camuflar`, `Button_Voar`, `Button_Submergir`) — criá-los com esses nomes basta, e eles se ligam sozinhos.
+**Por que está bloqueado:** editar o asset exige o plugin `unreal-mcp`, indisponível na sessão em que as skills foram criadas. Editar `.uasset` por fora não é opção.
+**Contorno em vigor:** as três aparecem na barra em Slate (C++) e por C/V/B no teclado — o jogador não fica sem elas, mas o widget principal não as mostra.
+**Custo de resolver:** minutos no editor, por uma pessoa com ele aberto.
+
 ### B-008: Console exige licença e devkit
 
 **Descoberto:** 2026-08-26.

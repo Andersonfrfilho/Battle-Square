@@ -220,6 +220,9 @@ public:
 	/** Nome de apresentação do pet, ou vazio se ele não tem um. */
 	FString GetPresentationNameForPet(uint8 PetId) const;
 
+	/** Tipo do pet, ou "?" se desconhecido — nunca vazio. */
+	FString GetPresentationTypeForPet(uint8 PetId) const;
+
 private:
 	void ResolveTurnWithCommits(const FTurnCommit& LocalCommit, const FTurnCommit& OpponentCommit);
 
@@ -260,6 +263,9 @@ private:
 	void ShowResultWidgetIfConfigured(const FBattleEvent& EndEvent);
 
 	void ApplyArenaLayoutIfNeeded();
+
+	/** Diz quem enfrenta quem, e quem tem vantagem, ANTES da primeira escolha. */
+	void AnnounceMatchup();
 
 	void ApplySkillsToActionQueue();
 

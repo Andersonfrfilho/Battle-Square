@@ -34,9 +34,15 @@ abaixo é regra pronta, testada, invisível:
   efetivo!" e "Não é muito efetivo...". O número vem da montagem
   (`FPetPresentationInfo::EffectivenessPercent`) — o MESMO que multiplicou o
   ataque, não um recálculo.
-- **Skills no `WBP`.** Camuflar/voar/submergir só existem na barra em C++ e no
-  teclado. O widget do jogador 1 não tem botões — depende do plugin de edição,
-  indisponível na sessão em que foram criados.
+- **Skills no `WBP`.** ⛔ **BLOQUEADO — B-009.** Camuflar/voar/submergir só
+  existem na barra em C++ e no teclado. O widget do jogador 1 não tem botões, e
+  criá-los exige o plugin de edição do Unreal, indisponível nesta sessão. O C++
+  já os espera por `BindWidgetOptional` (`Button_Camuflar`, `Button_Voar`,
+  `Button_Submergir`): basta criá-los com esses nomes e eles funcionam sozinhos.
+- ~~**Tipos dos pets.**~~ ✅ **Feito em 2026-08-28.** O painel diz
+  `Faísca [Fogo] x Brisa [Planta] (você tem VANTAGEM de tipo)` **antes da
+  primeira escolha**, e cada linha de estado mostra nome e tipo em vez de
+  "lado N". Sem isso, "é super efetivo" era surpresa, não decisão.
 
 ### 2. Verificar o que ninguém verificou
 

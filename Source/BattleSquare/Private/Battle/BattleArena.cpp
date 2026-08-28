@@ -163,6 +163,7 @@ bool ABattleArena::BeginBattle(const FBattleState& InitialState, const TArray<FP
 	// chamar antes procurava numa tabela ainda vazia.
 	RegisterOwnPetInCollection();
 	ApplySkillsToActionQueue();
+	AnnounceMatchup();
 
 	if (!TracePlayer)
 	{
@@ -444,6 +445,38 @@ void ABattleArena::ApplyArenaLayoutIfNeeded()
 			0.0f, FColor::Cyan, /*Key=*/954);
 		return;
 	}
+}
+
+void ABattleArena::AnnounceMatchup()
+{
+	const FPetState* Meu = CurrentState.Pets.FindByPredicate(
+		[this](const FPetState& Pet) { return Pet.Side == LocalPlayerSide; });
+	const FPetState* Dele = CurrentState.Pets.FindByPredicate(
+		[this](const FPetState& Pet) { return Pet.Side != LocalPlayerSide; });
+	if (!Meu || !Dele)
+	{
+		return;
+	}
+
+	const FPetPresentationInfo* MinhaInfo = PresentationsByPetId.Find(Meu->PetId);
+	const int32 Efetividade = MinhaInfo ? MinhaInfo->EffectivenessPercent : 100;
+
+	// ANTES da primeira escolha, não depois do primeiro golpe: saber que se
+	// está em desvantagem muda a jogada — descobrir isso pelo dano recebido é
+	// aprender tarde demais para agir.
+	const TCHAR* Vantagem =
+		Efetividade > 100 ? TEXT("  (você tem VANTAGEM de tipo)")
+		: Efetividade < 100 ? TEXT("  (você está em DESVANTAGEM de tipo)")
+		: TEXT("  (tipos neutros entre si)");
+
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("%s [%s]  x  %s [%s]%s"),
+			*GetPresentationNameForPet(Meu->PetId), *GetPresentationTypeForPet(Meu->PetId),
+			*GetPresentationNameForPet(Dele->PetId), *GetPresentationTypeForPet(Dele->PetId),
+			Vantagem),
+		0.0f,
+		Efetividade > 100 ? FColor::Green : (Efetividade < 100 ? FColor::Orange : FColor::Silver),
+		/*Key=*/955);
 }
 
 void ABattleArena::ApplySkillsToActionQueue()
@@ -768,8 +801,16 @@ void ABattleArena::ResolveTurnWithCommits(const FTurnCommit& LocalCommit, const 
 		// Chave por lado: a linha de cada pet se ATUALIZA no lugar, em vez de
 		// empilhar uma nova a cada turno.
 		FBattleDebugScreen::Show(
-			FString::Printf(TEXT("lado %d: casa (%d,%d)  vida %d/%d"),
-				static_cast<int32>(Pet.Side), static_cast<int32>(Pet.Column),
+			// NOME e TIPO, não "lado N".
+			//
+			// A efetividade passou a doer mais ou menos conforme o tipo, e o
+			// jogador não via tipo nenhum: "é super efetivo" vira surpresa em
+			// vez de decisão quando não se sabe o que está em campo. Tipo na
+			// tela é o que transforma a tabela em algo que se joga.
+			FString::Printf(TEXT("%s [%s]: casa (%d,%d)  vida %d/%d"),
+				*GetPresentationNameForPet(Pet.PetId),
+				*GetPresentationTypeForPet(Pet.PetId),
+				static_cast<int32>(Pet.Column),
 				static_cast<int32>(Pet.Row), Pet.Health, Pet.MaxHealth),
 			30.0f, FColor::Green, /*Key=*/100 + Pet.Side);
 	}
@@ -998,6 +1039,15 @@ FString ABattleArena::GetPresentationNameForPet(uint8 PetId) const
 {
 	const FPetPresentationInfo* Presentation = PresentationsByPetId.Find(PetId);
 	return Presentation ? Presentation->Name : FString();
+}
+
+FString ABattleArena::GetPresentationTypeForPet(uint8 PetId) const
+{
+	const FPetPresentationInfo* Presentation = PresentationsByPetId.Find(PetId);
+
+	// Sem tipo conhecido diz "?" em vez de vazio: colchete vazio pareceria
+	// defeito da tela, e não dado ausente.
+	return (Presentation && !Presentation->Type.IsEmpty()) ? Presentation->Type : FString(TEXT("?"));
 }
 
 void ABattleArena::AddPlayerTwoAction(const FBattleAction& Action)

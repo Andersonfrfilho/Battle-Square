@@ -154,3 +154,15 @@ veio. Agora se joga por tela, sem depender do mundo aberto.
 - Pixel Streaming como demo jogável por link (não como canal de distribuição)
 - Modo de batalha avulso em navegador, se a batalha for separável do mundo
 - Espectador e replay a partir do trace de eventos — o formato já permite de graça
+
+---
+
+## Fila de ideias — levantadas pelo usuário, aguardando decisão
+
+Não bloqueiam nada em andamento. Cada uma tem spec com as perguntas que
+precisam de resposta antes de virar código.
+
+| Ideia | Spec | Por que ainda não virou código |
+|---|---|---|
+| **Clima no campo** | `.specs/features/clima-no-campo/` | O núcleo não pode consultar clima durante a batalha — replay e rede divergiriam. Precisa entrar como parâmetro da montagem, e há 9 perguntas em aberto (fonte, offline, justiça em ranqueada) |
+| **Captura, roubo e treinador** | `.specs/features/captura-roubo-e-treinador/` | O jogo não tem o conceito de DONO. Sem ele, "sem dono", "selvagem" e "roubar" não têm como ser distinguidos |

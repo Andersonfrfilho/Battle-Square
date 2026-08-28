@@ -850,12 +850,60 @@ void ABattleArena::DrawDebugGrid() const
 				}
 			}
 
-			const FColor CorDaCasa = Ocupantes.IsEmpty() ? FColor(80, 80, 80) : FColor::Yellow;
+			// O QUE a casa é, não só onde ela fica.
+			//
+			// Submergir exige água, casa de dano fere, casa de bônus ajuda — e
+			// nada disso aparecia. Uma regra que depende do terreno numa grade
+			// que não mostra o terreno é uma regra que o jogador só descobre
+			// perdendo.
+			const uint8 Propriedade = CurrentState.CellLayout.IsValidIndex(CellLayoutIndex(Column, Row))
+				? CurrentState.CellLayout[CellLayoutIndex(Column, Row)]
+				: static_cast<uint8>(ECellProperty::None);
+
+			FString NomeDaCasa;
+			FColor CorDoTerreno = FColor(80, 80, 80);
+
+			switch (static_cast<ECellProperty>(Propriedade))
+			{
+			case ECellProperty::Water:
+				NomeDaCasa = TEXT(" ÁGUA");
+				CorDoTerreno = FColor(60, 140, 255);
+				break;
+			case ECellProperty::Damage:
+				NomeDaCasa = TEXT(" DANO");
+				CorDoTerreno = FColor(230, 70, 40);
+				break;
+			case ECellProperty::Buff:
+				NomeDaCasa = TEXT(" BÔNUS");
+				CorDoTerreno = FColor(80, 220, 120);
+				break;
+			case ECellProperty::Blocked:
+				NomeDaCasa = TEXT(" BLOQUEADA");
+				CorDoTerreno = FColor(140, 140, 140);
+				break;
+			default:
+				break;
+			}
+
+			// Ocupação em AMARELO por cima do terreno: saber quem está onde
+			// decide o turno, e o terreno decide o seguinte.
+			const FColor CorDaCasa = Ocupantes.IsEmpty() ? CorDoTerreno : FColor::Yellow;
+
 			DrawDebugBox(GetWorld(), Centro, FVector(HalfCell, HalfCell, 2.0f),
 				CorDaCasa, /*bPersistent=*/false, /*LifeTime=*/-1.0f, /*DepthPriority=*/0, /*Thickness=*/2.0f);
 
+			// Casa de terreno ganha um plano sólido: contorno sozinho some
+			// contra o tabuleiro quando se olha de cima, e é exatamente aí que
+			// se procura a água.
+			if (Propriedade != static_cast<uint8>(ECellProperty::None))
+			{
+				DrawDebugSolidBox(GetWorld(), Centro, FVector(HalfCell * 0.85f, HalfCell * 0.85f, 1.0f),
+					FColor(CorDoTerreno.R, CorDoTerreno.G, CorDoTerreno.B, 90),
+					/*bPersistent=*/false, /*LifeTime=*/-1.0f);
+			}
+
 			DrawDebugString(GetWorld(), Centro + FVector(0.0f, 0.0f, 10.0f),
-				FString::Printf(TEXT("(%d,%d)%s"), Column, Row, *Ocupantes),
+				FString::Printf(TEXT("(%d,%d)%s%s"), Column, Row, *NomeDaCasa, *Ocupantes),
 				nullptr, CorDaCasa, /*Duration=*/0.0f, /*bDrawShadow=*/true, /*FontScale=*/1.1f);
 		}
 	}

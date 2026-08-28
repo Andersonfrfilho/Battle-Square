@@ -51,7 +51,10 @@ mapa irrelevante para a decisão.
 - [ ] Em casa seca, submergir **falha**, e o feed diz o motivo: *"tentou
       mergulhar, mas não há água nesta casa"*. Não é silêncio nem "não
       funcionou".
+- [ ] A grade **mostra** onde é água (azul, com o rótulo ÁGUA) — sem isso a
+      regra só se descobre perdendo.
 - [ ] Numa casa de água, funciona e a imunidade vale.
+- [ ] Dá para planejar: andar até a água num turno, mergulhar no seguinte.
 - [ ] As outras posturas (defender, esquivar, camuflar, voar) **não** dependem
       de terreno.
 - [ ] Julgamento: procurar a água antes de submergir torna a arena parte da

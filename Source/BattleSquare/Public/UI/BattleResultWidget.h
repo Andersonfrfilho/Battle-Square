@@ -20,6 +20,18 @@ enum class EBattleResultOutcome : uint8
 	Empate
 };
 
+/**
+ * Traduz o evento de fim de batalha para o PONTO DE VISTA do jogador local.
+ *
+ * Função livre, e não método do widget, porque há dois consumidores: a tela de
+ * resultado e a mensagem que a arena escreve no feed. Eu tinha escrito esta
+ * mesma escada de if dentro da arena — duas verdades sobre "quem venceu", e
+ * cópias concordam até a primeira edição (L-032, L-033, e o defeito de
+ * direção).
+ */
+BATTLESQUARE_API EBattleResultOutcome BattleOutcomeForLocalPlayer(
+	const FBattleEvent& Event, uint8 LocalPlayerSide);
+
 UCLASS()
 class BATTLESQUARE_API UBattleResultWidget : public UUserWidget
 {

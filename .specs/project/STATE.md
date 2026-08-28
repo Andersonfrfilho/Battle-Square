@@ -592,6 +592,8 @@ find "$HOME/Library/Logs/Unreal Engine/BattleSquareEditor" Saved/Logs -newer <ma
 
 **Previne:** ao terminar uma feature, perguntar **quem chama isto no jogo** e escrever o teste que percorre o caminho inteiro. E rodar a varredura de "classe sem uso em produção" periodicamente — ela custa um comando e achou quatro recursos mortos numa tarde.
 
+**A varredura completa (2026-08-28)** achou 9 classes sem uso em produção, de 64 declaradas. Sete são legítimas: GameModes e pawn referenciados pelo NÍVEL e por config (não por C++), o simulador de balanceamento que é ferramenta de teste, a sonda de rota determinística, e structs internas de um único `.cpp`. **Duas eram reais:** `UBattleResultWidget` (corrigida) e `FTouchMovementInput` (entrada por toque nunca ligada ao explorador — mobile segue bloqueado por B-006/B-007, e ligar sem poder verificar seria entregar trabalho não medido).
+
 ---
 
 ## Ideias Adiadas

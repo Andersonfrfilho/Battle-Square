@@ -42,3 +42,50 @@ bool FBattleResultWidgetReadsThreeOutcomesTest::RunTest(const FString& Parameter
 
 	return true;
 }
+
+// A tradução do desfecho vive numa função só.
+//
+// A tela de resultado a tinha, e a arena ganhou uma cópia inline quando a
+// mensagem de "VOCÊ VENCEU" foi escrita — duas verdades sobre quem venceu do
+// ponto de vista do jogador. Este teste guarda a função compartilhada, que é
+// onde a regra passou a morar.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FBattleOutcomeForLocalPlayerIsSharedTest,
+	"BattleSquare.UI.BattleResult.OutcomeTranslationIsShared",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FBattleOutcomeForLocalPlayerIsSharedTest::RunTest(const FString& Parameters)
+{
+	FBattleEvent Fim;
+	Fim.Type = EBattleEventType::BatalhaEncerrada;
+
+	// O mesmo evento significa coisas OPOSTAS para cada lado — é justamente
+	// isso que uma cópia divergente estragaria em silêncio.
+	Fim.Value = 0;
+	TestEqual(TEXT("Lado 0 venceu, do ponto de vista do lado 0"),
+		static_cast<uint8>(BattleOutcomeForLocalPlayer(Fim, 0)),
+		static_cast<uint8>(EBattleResultOutcome::Vitoria));
+	TestEqual(TEXT("E o mesmo evento é derrota para o lado 1"),
+		static_cast<uint8>(BattleOutcomeForLocalPlayer(Fim, 1)),
+		static_cast<uint8>(EBattleResultOutcome::Derrota));
+
+	// 0xFF é empate por convenção de BattleOutcome.cpp, para os dois lados.
+	Fim.Value = 0xFF;
+	TestEqual(TEXT("Empate para o lado 0"),
+		static_cast<uint8>(BattleOutcomeForLocalPlayer(Fim, 0)),
+		static_cast<uint8>(EBattleResultOutcome::Empate));
+	TestEqual(TEXT("Empate também para o lado 1"),
+		static_cast<uint8>(BattleOutcomeForLocalPlayer(Fim, 1)),
+		static_cast<uint8>(EBattleResultOutcome::Empate));
+
+	// E o widget usa a MESMA função — se alguém reintroduzir uma cópia lá
+	// dentro, o valor deixa de acompanhar e isto reprova.
+	UBattleResultWidget* Tela = NewObject<UBattleResultWidget>();
+	Fim.Value = 1;
+	Tela->ApplyBattleEndedEvent(Fim, /*LocalPlayerSide=*/1);
+	TestEqual(TEXT("A tela concorda com a função"),
+		static_cast<uint8>(Tela->Outcome),
+		static_cast<uint8>(BattleOutcomeForLocalPlayer(Fim, 1)));
+
+	return true;
+}

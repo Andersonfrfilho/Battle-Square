@@ -127,6 +127,10 @@ public:
 	UPROPERTY(config, EditDefaultsOnly, Category = "Balanceamento")
 	FString ArenaLayoutCatalogPath;
 
+	/** Tela de resultado. Vazia = o feed de combate anuncia sozinho. */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Interface")
+	FSoftClassPath BattleResultWidgetClassPath;
+
 protected:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USceneComponent> ArenaRoot;
@@ -253,6 +257,8 @@ private:
 	/** Garante que o pet do jogador está na coleção — é dele que a XP vive. */
 	/** Diz à fila o que ESTE pet pode escolher (DP-skill-02). */
 	/** Escolhe e aplica um layout de arena, se a montagem não trouxe um. */
+	void ShowResultWidgetIfConfigured(const FBattleEvent& EndEvent);
+
 	void ApplyArenaLayoutIfNeeded();
 
 	void ApplySkillsToActionQueue();

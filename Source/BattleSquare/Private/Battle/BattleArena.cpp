@@ -1,6 +1,8 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Battle/BattleArena.h"
+#include "UI/BattleResultWidget.h"
+#include "Blueprint/UserWidget.h"
 #include "Misc/Paths.h"
 #include "Balance/PetSkillCatalog.h"
 #include "Balance/ArenaLayoutCatalog.h"
@@ -294,8 +296,15 @@ void ABattleArena::AnnounceBattleFinishedIfEnded(const TArray<FBattleEvent>& Tra
 			// Quem venceu, na tela. "Nada aconteceu" era duas coisas ao mesmo
 			// tempo: a transição não voltava, E o jogador não tinha como saber
 			// se tinha ganho — o silêncio parecia defeito nas duas pontas.
-			const bool bEmpate = (Event.Value == 0xFF);
-			const bool bVenceu = (Event.Value == static_cast<int32>(LocalPlayerSide));
+			//
+			// A tradução vem da MESMA função que a tela de resultado usa: eu
+			// tinha escrito esta escada de if aqui também, e duas cópias da
+			// mesma regra concordam só até a primeira edição.
+			const EBattleResultOutcome Desfecho = BattleOutcomeForLocalPlayer(Event, LocalPlayerSide);
+			const bool bEmpate = (Desfecho == EBattleResultOutcome::Empate);
+			const bool bVenceu = (Desfecho == EBattleResultOutcome::Vitoria);
+
+			ShowResultWidgetIfConfigured(Event);
 
 			FBattleDebugScreen::Show(
 				bEmpate ? TEXT("=== EMPATE ===")
@@ -335,6 +344,35 @@ TArray<EActionType> ABattleArena::GetAvailableActionsForSide(uint8 Side) const
 
 	const FPetPresentationInfo* Presentation = PresentationsByPetId.Find(Pet->PetId);
 	return Catalogo.GetAvailableActionsForType(Presentation ? Presentation->Type : FString());
+}
+
+void ABattleArena::ShowResultWidgetIfConfigured(const FBattleEvent& EndEvent)
+{
+	// A tela de resultado existia desde M1 e NINGUÉM a mostrava — o comentário
+	// dela dizia "quem chama isto é ABattleArena", e ABattleArena não chamava.
+	//
+	// Sem classe configurada, nada acontece: o feed de combate já anuncia o
+	// desfecho, e uma tela obrigatória exigiria um asset que talvez não exista.
+	UClass* ClasseDaTela = BattleResultWidgetClassPath.TryLoadClass<UBattleResultWidget>();
+	if (!ClasseDaTela)
+	{
+		return;
+	}
+
+	APlayerController* PlayerController = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
+	if (!PlayerController)
+	{
+		return;
+	}
+
+	UBattleResultWidget* Tela = CreateWidget<UBattleResultWidget>(PlayerController, ClasseDaTela);
+	if (!Tela)
+	{
+		return;
+	}
+
+	Tela->ApplyBattleEndedEvent(EndEvent, LocalPlayerSide);
+	Tela->AddToViewport();
 }
 
 void ABattleArena::ApplyArenaLayoutIfNeeded()

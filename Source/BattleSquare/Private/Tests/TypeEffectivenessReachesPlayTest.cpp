@@ -83,3 +83,47 @@ bool FTypeEffectivenessChangesTheAttackTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+// A efetividade precisa CHEGAR À APRESENTAÇÃO, não só ao ataque.
+//
+// Ela passou a se aplicar e continuava invisível: o jogador tomava mais dano
+// sem ter como saber por quê. Guardar o número na montagem é o que permite a
+// tela DIZER "é super efetivo" sem reescrever a fórmula de dano — que é o que
+// audit_no_recalculation.sh proíbe.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FTypeEffectivenessReachesPresentationTest,
+	"BattleSquare.Balance.TypeEffectiveness.ReachesPresentation",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FTypeEffectivenessReachesPresentationTest::RunTest(const FString& Parameters)
+{
+	FTypeEffectivenessTable Tabela;
+	FTypeEffectivenessTable::LoadFromJson(
+		FPaths::Combine(FPaths::ProjectConfigDir(), TEXT("TypeEffectiveness.json")), Tabela);
+
+	const FLoadedPetRecord Fogo = MakeRecord(TEXT("fogo"), TEXT("Fogo"));
+	const FLoadedPetRecord Planta = MakeRecord(TEXT("planta"), TEXT("Planta"));
+
+	FPetState EsquerdoState, DireitoState;
+	FPetPresentationInfo EsquerdoInfo, DireitoInfo;
+
+	FBattleDataTranslator::TranslateMatchup(Fogo, Planta, Tabela, 1, 2,
+		EsquerdoState, EsquerdoInfo, DireitoState, DireitoInfo);
+
+	TestTrue(TEXT("Quem é forte carrega isso na apresentação"),
+		EsquerdoInfo.EffectivenessPercent > 100);
+	TestTrue(TEXT("E quem é fraco também"),
+		DireitoInfo.EffectivenessPercent < 100);
+
+	// O número da apresentação tem de ser O MESMO que multiplicou o ataque.
+	// Dois valores para a mesma coisa divergiriam na primeira edição.
+	TestEqual(TEXT("Apresentação e ataque concordam"),
+		EsquerdoState.Attack, (Fogo.Attack * EsquerdoInfo.EffectivenessPercent) / 100);
+
+	// Montagem sem tabela é NEUTRA, não zero: 100 é o padrão, e zero faria a
+	// tela anunciar "pouco efetivo" para todo mundo.
+	FPetPresentationInfo SemTabela;
+	TestEqual(TEXT("Padrão é neutro"), SemTabela.EffectivenessPercent, 100);
+
+	return true;
+}

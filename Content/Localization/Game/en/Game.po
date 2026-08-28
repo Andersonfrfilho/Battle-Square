@@ -4,8 +4,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Game\n"
-"POT-Creation-Date: 2026-08-27 22:02\n"
-"PO-Revision-Date: 2026-08-27 22:02\n"
+"POT-Creation-Date: 2026-08-28 04:21\n"
+"PO-Revision-Date: 2026-08-28 04:21\n"
 "Language-Team: \n"
 "Language: en\n"
 "MIME-Version: 1.0\n"
@@ -137,6 +137,20 @@ msgstr ""
 #: /Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Text_Status.Text
 msgctxt ",4F03AD8C7C4EC3933D6517B4C8B9430F"
 msgid "Ações: 0 de 3 — escolha o tipo"
+msgstr ""
+
+#. Key:	SuperEfetivo
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(985)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(985)
+msgctxt "BattleNarration,SuperEfetivo"
+msgid "É super efetivo!"
+msgstr ""
+
+#. Key:	PoucoEfetivo
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(991)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(991)
+msgctxt "BattleNarration,PoucoEfetivo"
+msgid "Não é muito efetivo..."
 msgstr ""
 
 #. Key:	PetSemNome

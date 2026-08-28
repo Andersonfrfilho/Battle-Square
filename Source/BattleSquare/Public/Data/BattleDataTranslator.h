@@ -44,6 +44,22 @@ struct FPetPresentationInfo
 	// resto desta struct).
 	UPROPERTY()
 	FString CatalogId;
+
+	/**
+	 * Efetividade do tipo DESTE pet contra o do oponente, em porcentagem.
+	 *
+	 * Guardado na MONTAGEM, não recalculado na apresentação: a fórmula de dano
+	 * vive no núcleo, e reescrevê-la num widget é o que `audit_no_recalculation.sh`
+	 * proíbe — cliente e servidor podem divergir sem nada acusar.
+	 *
+	 * Existe porque a efetividade passou a se aplicar e continuava INVISÍVEL:
+	 * o jogador tomava mais dano sem ter como saber por quê, e regra que só se
+	 * descobre perdendo não ensina nada.
+	 *
+	 * 100 = neutro, e é o padrão para quem monta sem tabela.
+	 */
+	UPROPERTY()
+	int32 EffectivenessPercent = 100;
 };
 
 class BATTLESQUARE_API FBattleDataTranslator

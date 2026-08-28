@@ -64,4 +64,9 @@ void FBattleDataTranslator::TranslateMatchup(
 
 	OutLeftState.Attack = (OutLeftState.Attack * LeftEffectivenessPercent) / 100;
 	OutRightState.Attack = (OutRightState.Attack * RightEffectivenessPercent) / 100;
+
+	// O mesmo número que multiplicou o ataque vai para a apresentação. Assim a
+	// tela DIZ a efetividade sem recalculá-la — um valor só, computado uma vez.
+	OutLeftPresentation.EffectivenessPercent = LeftEffectivenessPercent;
+	OutRightPresentation.EffectivenessPercent = RightEffectivenessPercent;
 }

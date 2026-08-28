@@ -30,9 +30,10 @@ achou virou rotina.
 O padrão mais caro deste projeto é regra que existe e não aparece. Cada item
 abaixo é regra pronta, testada, invisível:
 
-- **Efetividade de tipo.** Fogo contra Planta agora dói mais — e nada diz isso.
-  O valor precisa vir da MONTAGEM (`FPetPresentationInfo`), não de recálculo na
-  apresentação (`audit_no_recalculation.sh`).
+- ~~**Efetividade de tipo.**~~ ✅ **Feito em 2026-08-28.** O feed diz "É super
+  efetivo!" e "Não é muito efetivo...". O número vem da montagem
+  (`FPetPresentationInfo::EffectivenessPercent`) — o MESMO que multiplicou o
+  ataque, não um recálculo.
 - **Skills no `WBP`.** Camuflar/voar/submergir só existem na barra em C++ e no
   teclado. O widget do jogador 1 não tem botões — depende do plugin de edição,
   indisponível na sessão em que foram criados.

@@ -974,6 +974,24 @@ void ABattleArena::NarrateEvent(const FBattleEvent& Event)
 	}
 
 	FBattleNarrationFeed::Push(Frase, Cor);
+
+	// Efetividade só faz sentido no golpe que ACERTOU: dizê-la num erro ou num
+	// movimento seria ruído, e o jogador aprende associando ao dano que veio.
+	if (Event.Type == EBattleEventType::AtaqueAcertou && Actor)
+	{
+		if (Actor->EffectivenessPercent > 100)
+		{
+			FBattleNarrationFeed::Push(
+				NSLOCTEXT("BattleNarration", "SuperEfetivo", "É super efetivo!"),
+				FColor::Green);
+		}
+		else if (Actor->EffectivenessPercent < 100)
+		{
+			FBattleNarrationFeed::Push(
+				NSLOCTEXT("BattleNarration", "PoucoEfetivo", "Não é muito efetivo..."),
+				FColor(150, 150, 150));
+		}
+	}
 }
 
 FString ABattleArena::GetPresentationNameForPet(uint8 PetId) const

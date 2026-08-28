@@ -36,3 +36,19 @@ Já coberto por `Automation RunTests BattleSquare`: `FTypeEffectivenessTable` (c
 | Data | Quem | Itens verificados | Resultado |
 |---|---|---|---|
 | — | — | nenhum ainda | — |
+
+---
+
+## BAL-10 — A efetividade APARECE (2026-08-28)
+
+Até hoje a efetividade de tipo nem sequer se aplicava (ninguém carregava a
+tabela). Aplicada, ela seguia invisível: o jogador tomava mais dano sem ter como
+saber por quê, e regra que só se descobre perdendo não ensina nada.
+
+- [ ] Golpe de Fogo em Planta: o feed diz **"É super efetivo!"** logo abaixo do
+      acerto.
+- [ ] Golpe de Fogo em Água: **"Não é muito efetivo..."**.
+- [ ] Confronto neutro: nenhuma das duas linhas aparece — ruído em toda troca
+      de golpes ensinaria menos, não mais.
+- [ ] A frase só sai no golpe que ACERTOU, nunca num erro ou num movimento.
+- [ ] Julgamento: dá para deduzir a tabela jogando, sem ninguém explicar?

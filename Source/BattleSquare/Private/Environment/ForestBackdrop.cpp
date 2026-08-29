@@ -192,7 +192,12 @@ void AForestBackdrop::BuildForest(float CellSize, uint32 Seed, const FVector2D& 
 		EspessuraDoChao / CilindroDaEngineUnidades));
 	GroundMesh->SetRelativeLocation(FVector::ZeroVector);
 
-	if (UMaterialInterface* Chao = GroundMaterial.LoadSynchronous())
+	// O que o mundo emprestou vem primeiro: a batalha que nasce de um
+	// encontro deve acontecer no chão daquele lugar, não numa paleta à parte.
+	UMaterialInterface* Chao = AdoptedGroundMaterial
+		? AdoptedGroundMaterial.Get()
+		: GroundMaterial.LoadSynchronous();
+	if (Chao)
 	{
 		GroundMesh->SetMaterial(0, Chao);
 	}
@@ -303,4 +308,27 @@ TArray<FVector> AForestBackdrop::GetPlantedLocations() const
 		}
 	}
 	return Posicoes;
+}
+
+float AForestBackdrop::GroundTopLocalZ()
+{
+	return MataDoCenario::EspessuraDoChao * 0.5f;
+}
+
+void AForestBackdrop::SetGroundMaterialOverride(UMaterialInterface* Material)
+{
+	AdoptedGroundMaterial = Material;
+
+	// Aplicar JÁ, e não só na próxima construção: a arena empresta o chão
+	// depois de sondar o mundo, que é depois de a mata estar plantada.
+	if (GroundMesh)
+	{
+		UMaterialInterface* Chao = AdoptedGroundMaterial
+			? AdoptedGroundMaterial.Get()
+			: GroundMaterial.LoadSynchronous();
+		if (Chao)
+		{
+			GroundMesh->SetMaterial(0, Chao);
+		}
+	}
 }

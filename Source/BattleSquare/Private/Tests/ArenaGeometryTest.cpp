@@ -2,6 +2,7 @@
 
 #include "Battle/BattleArena.h"
 #include "Battle/BattleTypes.h"
+#include "Environment/ForestBackdrop.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Misc/AutomationTest.h"
@@ -62,10 +63,6 @@ bool FArenaMeshesHaveAssignedAssetsTest::RunTest(const FString& Parameters)
 {
 	const ABattleArena* Padrao = GetDefault<ABattleArena>();
 
-	TestTrue(TEXT("Tem chão"), Padrao->GetArenaFloorMesh() != nullptr);
-	TestTrue(TEXT("E a malha do chão está ATRIBUÍDA"),
-		Padrao->GetArenaFloorMesh() && Padrao->GetArenaFloorMesh()->GetStaticMesh() != nullptr);
-
 	const TArray<TObjectPtr<UStaticMeshComponent>>& Lajes = Padrao->GetCellTileMeshes();
 	TestEqual(TEXT("Uma laje por casa da grade configurada"), Lajes.Num(),
 		Padrao->GridColumns * Padrao->GridRows);
@@ -90,7 +87,6 @@ bool FArenaMaterialsArePointedAtTest::RunTest(const FString& Parameters)
 	const ABattleArena* Padrao = GetDefault<ABattleArena>();
 
 	const TPair<const TCHAR*, const TSoftObjectPtr<UMaterialInterface>*> Materiais[] = {
-		{ TEXT("chão"), &Padrao->FloorMaterial },
 		{ TEXT("neutro"), &Padrao->NeutralTileMaterial },
 		{ TEXT("água"), &Padrao->WaterTileMaterial },
 		{ TEXT("dano"), &Padrao->DamageTileMaterial },
@@ -258,16 +254,17 @@ bool FArenaSitsAboveLevelGroundTest::RunTest(const FString& Parameters)
 	return true;
 }
 
-// A arena tem que ser PARTE DO CENÁRIO, não uma placa quadriculada posta em
-// cima dele.
+// A arena tem que ser PARTE DO CENÁRIO, não uma placa posta em cima dele.
 //
-// Foi o que o usuário viu na tela em 2026-08-29: "ainda temos uns quadrados na
-// arena marcados com bordas". O vão existia em TODA casa, inclusive na que não
-// tem regra nenhuma — e vão em toda casa desenha um tabuleiro de damas.
+// Duas vezes o usuário viu a mesma coisa na tela: primeiro "uns quadrados na
+// arena marcados com bordas", depois "a arena está um redondo". As duas são o
+// mesmo defeito — o tabuleiro trazia chão próprio. Achatar a casa neutra até
+// o nível da terra escondeu a borda; o prato de terra escondeu o degrau. Nada
+// disso tirava a placa de cima do cenário.
 //
-// Agora a casa sem regra é o próprio chão da clareira, e só o que carrega
-// regra fica recuado: aí o recuo tem serventia, porque água, dano, bônus e
-// bloqueio precisam ser achados de relance.
+// Agora a casa sem regra NÃO É DESENHADA: o que se vê ali é o chão da mata.
+// Só o que carrega regra ganha laje, e aí o relevo tem serventia, porque
+// água, dano, bônus e bloqueio precisam ser achados de relance.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FArenaNeutralCellIsTheGroundTest,
 	"BattleSquare.Battle.Arena.NeutralCellIsTheGroundItself",
@@ -292,56 +289,53 @@ bool FArenaNeutralCellIsTheGroundTest::RunTest(const FString& Parameters)
 	if (TestNotNull(TEXT("A casa de água existe"), ComRegra)
 		&& TestNotNull(TEXT("A casa neutra existe"), SemRegra))
 	{
-		// A malha é o cubo de 100uu da engine: escala 1 é uma casa de 100.
-		const float LadoNeutro = SemRegra->GetRelativeScale3D().X * 100.0f;
-		const float LadoComRegra = ComRegra->GetRelativeScale3D().X * 100.0f;
-
-		TestEqual(TEXT("A casa sem regra ocupa a casa INTEIRA — sem vão, sem borda"),
-			LadoNeutro, Arena->CellSize, 0.01f);
-		TestTrue(TEXT("E só o que tem regra fica recuado"), LadoComRegra < LadoNeutro);
+		TestFalse(TEXT("A casa SEM REGRA não é desenhada — ela é o chão da mata"),
+			SemRegra->IsVisible());
+		TestTrue(TEXT("E a casa COM REGRA é desenhada, senão a água some"),
+			ComRegra->IsVisible());
 	}
 
 	ArenaCena::DestruirMundoDaGeometria(World);
 	return true;
 }
 
-// O tabuleiro nasce erguido BoardElevation acima do chão da mata. Enquanto a
-// terra embaixo dele tinha espessura própria e curta, o conjunto FLUTUAVA — a
-// outra metade de "placa posta em cima do cenário".
+// A batalha acontece SOBRE O CHÃO DA MATA, não sobre um prato de terra.
+//
+// "A arena está um redondo, não precisa disso, deixe como se fosse o cenário
+// real, estamos lutando em parte dele" — 2026-08-29, olhando a tela. A arena
+// desenhava um disco de terra próprio porque a mata ficava BoardElevation
+// abaixo dela, e alguma coisa tinha que tapar o degrau. Encostar o topo do
+// chão da mata na superfície da casa neutra desfaz o degrau e a necessidade.
+//
+// O teste mede o ENCOSTE. Enquanto ele valer, não há degrau para tapar, e o
+// prato não pode voltar por falta de chão.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FArenaClearingReachesTheForestFloorTest,
-	"BattleSquare.Battle.Arena.ClearingReachesTheForestFloor",
+	FArenaBoardSitsOnTheForestFloorTest,
+	"BattleSquare.Battle.Arena.BoardSitsOnTheForestFloor",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FArenaClearingReachesTheForestFloorTest::RunTest(const FString& Parameters)
+bool FArenaBoardSitsOnTheForestFloorTest::RunTest(const FString& Parameters)
 {
 	UWorld* World = ArenaCena::CriarMundoDaGeometria();
 	ABattleArena* Arena = World->SpawnActor<ABattleArena>();
 	Arena->DispatchBeginPlay();
 
-	const UStaticMeshComponent* Terra = Arena->GetArenaFloorMesh();
-	if (!TestNotNull(TEXT("A clareira existe"), Terra))
+	AForestBackdrop* Mata = Arena->GetForestBackdrop();
+	if (!TestNotNull(TEXT("A mata existe"), Mata))
 	{
 		ArenaCena::DestruirMundoDaGeometria(World);
 		return false;
 	}
 
-	// Cilindro da engine: origem no CENTRO, 100uu de caixa.
-	const float Altura = Terra->GetRelativeScale3D().Z * 100.0f;
-	const float FundoDaTerra = Terra->GetRelativeLocation().Z - Altura * 0.5f;
+	// Onde o pet pisa numa casa sem regra — a mesma altura que a arena usa
+	// para posicionar o pet, e por isso a única referência honesta aqui.
+	const float SuperficieDaCasa =
+		Arena->GetCellWorldLocation(/*Column=*/1, /*Row=*/1).Z;
+	const float TopoDoChaoDaMata =
+		Mata->GetActorLocation().Z + AForestBackdrop::GroundTopLocalZ();
 
-	TestTrue(TEXT("A terra desce até o chão da mata — nada flutua"),
-		FundoDaTerra <= -Arena->BoardElevation + 0.01f);
-
-	// Raio pela DIAGONAL: com meia largura só, os cantos do eixo maior ficam
-	// pendurados fora da terra em qualquer campo retangular.
-	const float MeiaLargura = Arena->CellSize * static_cast<float>(Arena->GetActiveGridColumns()) * 0.5f;
-	const float MeiaAltura = Arena->CellSize * static_cast<float>(Arena->GetActiveGridRows()) * 0.5f;
-	const float Diagonal = FMath::Sqrt(MeiaLargura * MeiaLargura + MeiaAltura * MeiaAltura);
-	const float Raio = Terra->GetRelativeScale3D().X * 100.0f * 0.5f;
-
-	TestTrue(TEXT("E é larga o bastante para o canto mais distante do tabuleiro"),
-		Raio > Diagonal);
+	TestEqual(TEXT("O topo do chão da mata É a superfície da casa"),
+		TopoDoChaoDaMata, SuperficieDaCasa, 0.01f);
 
 	ArenaCena::DestruirMundoDaGeometria(World);
 	return true;

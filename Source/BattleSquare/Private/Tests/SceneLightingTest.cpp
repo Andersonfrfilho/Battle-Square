@@ -3,6 +3,7 @@
 #include "Battle/BattleArena.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
+#include "Components/PostProcessComponent.h"
 #include "Components/SkyLightComponent.h"
 #include "Engine/DirectionalLight.h"
 #include "Engine/Engine.h"
@@ -138,5 +139,74 @@ bool FSceneLightingDoesNotDuplicateSunTest::RunTest(const FString& Parameters)
 	TestNull(TEXT("E a arena NÃO acendeu um segundo"), Arena->GetSceneLighting());
 
 	CenaIluminada::DestruirMundoDaIluminacao(World);
+	return true;
+}
+
+// A exposição automática desfaz qualquer ajuste de luz.
+//
+// "As cores estão muito azul claro, deveria ser mais verde" — e o sol JÁ era
+// quente quando o usuário disse isso. O motivo é que a engine reabria o
+// diafragma até o quadro médio virar cinza: escurecer o céu deixava a cena
+// igualmente lavada, só que com o azul reamplificado. Enquanto a exposição
+// flutua, medir cor na tela é medir a compensação, não a iluminação.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSceneLightingExposureIsFixedTest,
+	"BattleSquare.Environment.SceneLighting.ExposureIsFixedNotAutomatic",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FSceneLightingExposureIsFixedTest::RunTest(const FString& Parameters)
+{
+	const ABattleSceneLighting* Padrao = GetDefault<ABattleSceneLighting>();
+
+	const UPostProcessComponent* Exposicao = Padrao->GetSceneExposure();
+	if (!TestNotNull(TEXT("A cena controla a própria exposição"), Exposicao))
+	{
+		return false;
+	}
+
+	// Sem isto o efeito só vale dentro de uma caixa, e a câmera da arena fica
+	// longe de qualquer caixa que coubesse neste ator.
+	TestTrue(TEXT("O pós-processamento vale em toda parte"), Exposicao->bUnbound);
+
+	TestTrue(TEXT("O piso da exposição é nosso"),
+		static_cast<bool>(Exposicao->Settings.bOverride_AutoExposureMinBrightness));
+	TestTrue(TEXT("O teto também"),
+		static_cast<bool>(Exposicao->Settings.bOverride_AutoExposureMaxBrightness));
+
+	// Piso == teto é o que TRAVA: com folga entre eles a engine volta a
+	// compensar dentro da folga, que é o defeito de novo, só que menor.
+	TestEqual(TEXT("Piso e teto no mesmo valor — exposição travada"),
+		Exposicao->Settings.AutoExposureMinBrightness,
+		Exposicao->Settings.AutoExposureMaxBrightness, 0.001f);
+
+	return true;
+}
+
+// Luz que vem de todas as direções vence luz que vem de uma só.
+//
+// A captura em tempo real de um SkyAtmosphere devolve azul por física. Em pé
+// de igualdade com o sol, esse azul pinta cada superfície da mata e a cena
+// inteira puxa para o ciano — mesmo com o sol quente que SunIsWarmNotBlue já
+// garante. O sol precisa mandar com folga, e o número que garante isso não
+// pode ficar a critério de quem editar a próxima vez.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSceneLightingAmbientDoesNotDrownSunTest,
+	"BattleSquare.Environment.SceneLighting.AmbientDoesNotDrownTheSun",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FSceneLightingAmbientDoesNotDrownSunTest::RunTest(const FString& Parameters)
+{
+	const ABattleSceneLighting* Padrao = GetDefault<ABattleSceneLighting>();
+
+	const UDirectionalLightComponent* Sol = Padrao->GetSunLight();
+	const USkyLightComponent* Ceu = Padrao->GetSkyLight();
+	if (!TestNotNull(TEXT("Tem sol"), Sol) || !TestNotNull(TEXT("Tem céu"), Ceu))
+	{
+		return false;
+	}
+
+	TestTrue(TEXT("O céu é preenchimento de sombra, não a luz principal"),
+		Ceu->Intensity < Sol->Intensity * 0.2f);
+
 	return true;
 }

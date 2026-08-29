@@ -58,6 +58,23 @@ public:
 	/** O disco de chão que cobre o xadrez do template. */
 	UStaticMeshComponent* GetGroundMesh() const { return GroundMesh; }
 
+	/**
+	 * Altura LOCAL do topo do chão, em unidades.
+	 *
+	 * Existe para quem posiciona a mata poder encostá-la numa superfície
+	 * conhecida sem repetir a espessura do disco — a mesma medida em dois
+	 * lugares discorda na primeira edição (L-032/L-033).
+	 */
+	static float GroundTopLocalZ();
+
+	/**
+	 * Veste o chão com o material que o mundo emprestou.
+	 *
+	 * Nulo devolve o chão à paleta própria da mata. Quem empresta é a arena,
+	 * ao sondar o terreno onde o encontro aconteceu.
+	 */
+	void SetGroundMaterialOverride(UMaterialInterface* Material);
+
 	/** Quantas plantas foram de fato plantadas na última montagem. */
 	int32 GetPlantedCount() const;
 
@@ -82,6 +99,10 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UStaticMeshComponent> GroundMesh;
+
+	/** Chão emprestado pelo mundo; vazio faz valer GroundMaterial. */
+	UPROPERTY()
+	TObjectPtr<UMaterialInterface> AdoptedGroundMaterial;
 
 	UPROPERTY()
 	TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> SpeciesClusters;

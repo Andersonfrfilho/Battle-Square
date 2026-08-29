@@ -5,6 +5,7 @@
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SkyLightComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
+#include "Components/PostProcessComponent.h"
 #include "Engine/DirectionalLight.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
@@ -20,10 +21,26 @@ namespace LuzDaCena
 	 */
 	const FLinearColor CorDoSol(1.0f, 0.94f, 0.82f);
 
-	constexpr float IntensidadeDoSol = 6.0f;
+	constexpr float IntensidadeDoSol = 10.0f;
 
-	/** Preenchimento de sombra. Alto demais e a cena volta a lavar. */
-	constexpr float IntensidadeDoCeu = 1.0f;
+	/**
+	 * Preenchimento de sombra, e SÓ isso.
+	 *
+	 * Com captura em tempo real de um SkyAtmosphere, o que o céu devolve é
+	 * azul por física, não por engano. Ele precisa então ficar bem abaixo do
+	 * sol: em pé de igualdade, a luz que vem de todas as direções vence a que
+	 * vem de uma só, e a cena inteira puxa para o azul mesmo com sol quente.
+	 */
+	constexpr float IntensidadeDoCeu = 0.5f;
+
+	/**
+	 * Exposição TRAVADA: mínimo e máximo no mesmo valor.
+	 *
+	 * Travar é o ponto — não o número. Enquanto a exposição era automática, a
+	 * engine compensava qualquer ajuste de luz e a tela voltava para o mesmo
+	 * cinza-azulado, o que fazia toda medição de cor mentir.
+	 */
+	constexpr float ExposicaoFixa = 1.0f;
 }
 
 ABattleSceneLighting::ABattleSceneLighting()
@@ -56,6 +73,17 @@ ABattleSceneLighting::ABattleSceneLighting()
 
 	SkyAtmosphere = CreateDefaultSubobject<USkyAtmosphereComponent>(TEXT("SkyAtmosphere"));
 	SkyAtmosphere->SetupAttachment(LightingRoot);
+
+	SceneExposure = CreateDefaultSubobject<UPostProcessComponent>(TEXT("SceneExposure"));
+	SceneExposure->SetupAttachment(LightingRoot);
+	// Sem limite de volume: o efeito vale onde a câmera estiver, e a câmera da
+	// arena fica fora de qualquer caixa que coubesse neste ator.
+	SceneExposure->bUnbound = true;
+
+	SceneExposure->Settings.bOverride_AutoExposureMinBrightness = true;
+	SceneExposure->Settings.AutoExposureMinBrightness = ExposicaoFixa;
+	SceneExposure->Settings.bOverride_AutoExposureMaxBrightness = true;
+	SceneExposure->Settings.AutoExposureMaxBrightness = ExposicaoFixa;
 }
 
 bool ABattleSceneLighting::WorldAlreadyHasSun(const UWorld* World)

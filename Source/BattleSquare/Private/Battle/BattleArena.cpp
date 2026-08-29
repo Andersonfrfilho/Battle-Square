@@ -64,8 +64,16 @@ namespace ArenaGeometria
 	constexpr float ProporcaoDaLajeNeutra = 1.0f;
 	constexpr float ProporcaoDaLajeComRegra = 0.90f;
 
-	constexpr float EspessuraDoChao = 24.0f;
 	constexpr float MargemDoChao = 95.0f;
+
+	/**
+	 * Dano e bônus ficam na ALTURA do chão. Sem este relevo mínimo, o topo da
+	 * laje e o chão da mata dividem o mesmo plano e brigam em Z na tela.
+	 *
+	 * É correção de desenho, não regra: quem diz onde o pet pisa continua
+	 * sendo GetCellSurfaceHeight, e ele não sabe deste número.
+	 */
+	constexpr float RelevoDaMarca = 1.5f;
 
 	/**
 	 * Coordenada do CENTRO da grade naquele eixo, em casas.
@@ -193,45 +201,18 @@ void ABattleArena::BeginPlay()
 	// A luz vem ANTES da mata: sem sol, o verde das folhas chega na tela
 	// lavado de azul, e a mata parece um problema de material que não é.
 	SpawnSceneLighting();
-	RefreshTileVisuals();
+	// A mata vem antes das lajes porque o chão dela É o chão da batalha: as
+	// lajes só existem onde há regra, e se apoiam nele.
 	SpawnForestBackdrop();
+	RefreshTileVisuals();
 }
 
-void ABattleArena::RefreshClearingGround()
+void ABattleArena::ApplyAdoptedGroundMaterial()
 {
-	using namespace ArenaGeometria;
-
-	if (!ArenaFloorMesh)
+	if (ForestBackdrop && AdoptedFloorMaterial)
 	{
-		return;
+		ForestBackdrop->SetGroundMaterialOverride(AdoptedFloorMaterial);
 	}
-
-	// A clareira é REDONDA: o contorno quadrado era metade da impressão de
-	// "placa posta em cima do cenário". Raio pela diagonal, senão os cantos
-	// do tabuleiro ficam pendurados fora da terra.
-	// Raio pela DIAGONAL do tabuleiro, que num campo retangular não é o
-	// mesmo que meia largura: usar só um dos lados deixaria os cantos do
-	// eixo maior pendurados fora da terra.
-	const float MeiaLargura = CellSize * static_cast<float>(GetActiveGridColumns()) * 0.5f;
-	const float MeiaAltura = CellSize * static_cast<float>(GetActiveGridRows()) * 0.5f;
-	const float RaioDaClareira =
-		FMath::Sqrt(MeiaLargura * MeiaLargura + MeiaAltura * MeiaAltura) + MargemDoChao;
-
-	// Topo NO NÍVEL da casa neutra: assim a casa sem regra fica rente à terra
-	// e o tabuleiro deixa de ser um platô. O que sobra em relevo é só o que
-	// tem regra — água afunda, pedra sobe.
-	const float TopoDaTerra = SuperficieNeutra;
-	// Fundo no chão da mata, o mesmo BoardElevation que ergueu o ator: sem
-	// isto o tabuleiro fica FLUTUANDO sobre o cenário.
-	const float BaseDaTerra = -BoardElevation;
-	const float AlturaDaTerra = FMath::Max(TopoDaTerra - BaseDaTerra, EspessuraDoChao);
-
-	ArenaFloorMesh->SetRelativeScale3D(FVector(
-		(RaioDaClareira * 2.0f) / CuboDaEngine,
-		(RaioDaClareira * 2.0f) / CuboDaEngine,
-		AlturaDaTerra / CuboDaEngine));
-	ArenaFloorMesh->SetRelativeLocation(
-		FVector(0.0f, 0.0f, TopoDaTerra - AlturaDaTerra * 0.5f));
 }
 
 void ABattleArena::SpawnSceneLighting()
@@ -246,6 +227,12 @@ void ABattleArena::SpawnSceneLighting()
 	// devolvem a cena lavada por outro caminho.
 	if (ABattleSceneLighting::WorldAlreadyHasSun(World))
 	{
+		// Dizer QUAL caminho foi tomado: sem esta linha, cena lavada e cena
+		// com dois sóis são indistinguíveis na tela, e a investigação começa
+		// pela hipótese errada.
+		FBattleDebugScreen::Show(
+			TEXT("cenario: o mapa ja tem sol — luz por codigo dispensada"),
+			0.0f, FColor::Yellow, /*Key=*/22);
 		return;
 	}
 
@@ -323,7 +310,13 @@ void ABattleArena::SpawnForestBackdrop()
 	// BoardElevation acima do plano do mundo, e a mata cresce no plano.
 	// Descer aqui deriva do mesmo número que ergueu — dois valores
 	// discordariam na primeira edição (L-032/L-033).
-	const FVector ChaoDaMata = GetActorLocation() - FVector(0.0f, 0.0f, BoardElevation);
+	// O topo do chão da mata cai EXATAMENTE na superfície da casa neutra: é
+	// o que faz a batalha acontecer sobre o cenário em vez de sobre um prato
+	// de terra próprio. Enterrar a mata em BoardElevation abria um degrau de
+	// mais de cem unidades, e o prato existia só para tapar esse degrau.
+	const FVector ChaoDaMata = GetActorLocation()
+		+ FVector(0.0f, 0.0f,
+			ArenaGeometria::SuperficieNeutra - AForestBackdrop::GroundTopLocalZ());
 
 	FActorSpawnParameters Parametros;
 	Parametros.Owner = this;
@@ -340,10 +333,20 @@ void ABattleArena::SpawnForestBackdrop()
 
 	// Painel de desenvolvimento, não texto de jogador: FString aqui é a
 	// mesma escolha das outras linhas de diagnóstico, e some no Shipping.
+	// Chão emprestado pelo mundo só chega aqui quando a sondagem correu antes
+	// de a mata existir; quando corre depois, quem aplica é AdoptAmbience.
+	ApplyAdoptedGroundMaterial();
+
 	FBattleDebugScreen::Show(
 		FString::Printf(TEXT("cenario: mata de floresta com %d elementos"),
 			ForestBackdrop->GetPlantedCount()),
 		0.0f, FColor::Green, /*Key=*/21);
+
+	// Sem esta linha, "a arena virou parte do cenário" é opinião: ninguém
+	// distingue na tela um chão de mata de um prato com a mesma textura.
+	FBattleDebugScreen::Show(
+		TEXT("chao: o proprio da mata — a arena nao tem chao"),
+		0.0f, FColor::Green, /*Key=*/23);
 }
 
 void ABattleArena::BuildArenaGeometry()
@@ -352,28 +355,20 @@ void ABattleArena::BuildArenaGeometry()
 
 	// Conteúdo da engine, não vendorizado — mesmo princípio de AD-019.
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CuboDaArena(TEXT("/Engine/BasicShapes/Cube.Cube"));
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> CilindroDaArena(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
-
 	// Caminhos dos materiais autorados em /Game/Arena/Materials. Soft: o CDO
 	// não carrega textura nenhuma no boot do módulo, e o editor continua
 	// podendo trocar a paleta sem recompilar.
-	// Chão e casa neutra saem da PALETA DA MATA, não da paleta da arena: é o
-	// que faz o tabuleiro ser parte do cenário em vez de um objeto pousado
-	// nele. O que continua com material próprio é o que carrega regra.
-	FloorMaterial = TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/Environment/Nature/dirt.dirt")));
+	// A arena NÃO tem chão próprio: quem faz chão é a mata, e a batalha
+	// acontece em cima dele. A casa neutra sequer é desenhada — ver
+	// RefreshTileVisuals. O que tem material próprio é só o que carrega regra.
 	NeutralTileMaterial = TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/Environment/Nature/dirt.dirt")));
 	WaterTileMaterial = TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/Arena/Materials/MI_Tile_Water.MI_Tile_Water")));
 	DamageTileMaterial = TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/Arena/Materials/MI_Tile_Damage.MI_Tile_Damage")));
 	BuffTileMaterial = TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/Arena/Materials/MI_Tile_Buff.MI_Tile_Buff")));
 	BlockedTileMaterial = TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/Arena/Materials/MI_Tile_Blocked.MI_Tile_Blocked")));
 
-	ArenaFloorMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ArenaFloor"));
-	ArenaFloorMesh->SetupAttachment(ArenaRoot);
 	// Sem colisão em nada do tabuleiro: quem decide onde o pet está é o
 	// núcleo. Geometria que empurra seria uma segunda fonte de verdade.
-	ArenaFloorMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	RefreshClearingGround();
-
 	// Nasce do tamanho da casa NEUTRA; quem recua o que tem regra é
 	// RefreshTileVisuals, que é o único lugar que conhece o tabuleiro.
 	const float LadoDaLaje = CellSize * ProporcaoDaLajeNeutra;
@@ -408,10 +403,6 @@ void ABattleArena::BuildArenaGeometry()
 	// A malha é atribuída AQUI, no construtor. Componente criado sem asset
 	// passa em todo teste de lógica e não existe na tela — foi assim três
 	// vezes neste projeto (pets, inimigos do mundo, o próprio jogador).
-	if (CilindroDaArena.Succeeded())
-	{
-		ArenaFloorMesh->SetStaticMesh(CilindroDaArena.Object);
-	}
 	if (CuboDaArena.Succeeded())
 	{
 		for (UStaticMeshComponent* Laje : CellTileMeshes)
@@ -442,19 +433,8 @@ void ABattleArena::RefreshTileVisuals()
 {
 	using namespace ArenaGeometria;
 
-	// O que o mundo emprestou vem primeiro: a arena que nasce de um encontro
-	// deve parecer o lugar onde ele aconteceu, não um cenário à parte.
-	UMaterialInterface* MaterialDoChao = AdoptedFloorMaterial
-		? AdoptedFloorMaterial.Get()
-		: FloorMaterial.LoadSynchronous();
-	if (MaterialDoChao)
-	{
-		ArenaFloorMesh->SetMaterial(0, MaterialDoChao);
-	}
-
-	// A clareira acompanha o tabuleiro: se o tamanho da casa ou a elevação
-	// mudarem, a terra embaixo muda junto em vez de virar uma placa solta.
-	RefreshClearingGround();
+	// O que o mundo emprestou veste o chão da MATA — a arena não tem chão.
+	ApplyAdoptedGroundMaterial();
 
 	for (int32 Linha = 0; Linha < GetActiveGridRows(); ++Linha)
 	{
@@ -469,10 +449,26 @@ void ABattleArena::RefreshTileVisuals()
 			const uint8 Propriedade = GetCellProperty(
 				static_cast<uint8>(Coluna), static_cast<uint8>(Linha));
 
-			const float Superficie = GetCellSurfaceHeight(Propriedade);
+			UStaticMeshComponent* Laje = CellTileMeshes[Indice];
+
+			// A casa SEM REGRA não é desenhada: ela é o próprio chão da mata.
+			// Enquanto toda casa tinha laje, o tabuleiro lia como uma placa
+			// quadriculada pousada sobre o cenário — que é o defeito que o
+			// prato de terra tentou esconder em vez de resolver.
+			const bool bCarregaRegra =
+				static_cast<ECellProperty>(Propriedade) != ECellProperty::None;
+			Laje->SetVisibility(bCarregaRegra);
+			if (!bCarregaRegra)
+			{
+				continue;
+			}
+
+			const float SuperficieDaRegra = GetCellSurfaceHeight(Propriedade);
+			const float Superficie = FMath::IsNearlyEqual(SuperficieDaRegra, SuperficieNeutra)
+				? SuperficieDaRegra + RelevoDaMarca
+				: SuperficieDaRegra;
 			const float Espessura = Superficie - FundoDoTabuleiro;
 
-			UStaticMeshComponent* Laje = CellTileMeshes[Indice];
 			const float LadoDaLaje = CellSize * ProporcaoDaLajePara(Propriedade);
 			Laje->SetRelativeScale3D(FVector(LadoDaLaje / CuboDaEngine,
 				LadoDaLaje / CuboDaEngine, Espessura / CuboDaEngine));
@@ -550,6 +546,7 @@ bool ABattleArena::AdoptAmbienceFromWorldLocation(const FVector& WorldLocation)
 	}
 
 	AdoptedFloorMaterial = MaterialDoLugar;
+	ApplyAdoptedGroundMaterial();
 	RefreshTileVisuals();
 
 	// Sem esta linha, "a arena parece o mundo" é opinião: ninguém distingue

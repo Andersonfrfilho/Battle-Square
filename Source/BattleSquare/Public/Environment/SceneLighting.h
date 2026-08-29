@@ -9,6 +9,7 @@
 class UDirectionalLightComponent;
 class USkyLightComponent;
 class USkyAtmosphereComponent;
+class UPostProcessComponent;
 
 /**
  * O sol da cena, em código.
@@ -33,6 +34,17 @@ public:
 	USkyLightComponent* GetSkyLight() const { return SkyLight; }
 	USkyAtmosphereComponent* GetSkyAtmosphere() const { return SkyAtmosphere; }
 
+	/**
+	 * A exposição da cena, travada.
+	 *
+	 * Sol quente não basta: com exposição automática a engine reabre o
+	 * diafragma até o quadro médio ficar cinza, e o azul do céu — que é
+	 * ambiente, ocupa tudo e não tem sombra — é justamente o que sobrevive a
+	 * essa reabertura. Foi por isso que a cena continuou lavada de azul mesmo
+	 * depois de o sol existir.
+	 */
+	UPostProcessComponent* GetSceneExposure() const { return SceneExposure; }
+
 	/** Verdadeiro quando o mundo já tem um sol próprio e este ator é dispensável. */
 	static bool WorldAlreadyHasSun(const UWorld* World);
 
@@ -48,4 +60,7 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<USkyAtmosphereComponent> SkyAtmosphere;
+
+	UPROPERTY()
+	TObjectPtr<UPostProcessComponent> SceneExposure;
 };

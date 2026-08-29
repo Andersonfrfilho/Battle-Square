@@ -96,9 +96,6 @@ public:
 	float BoardElevation = 120.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Arena|Materiais")
-	TSoftObjectPtr<UMaterialInterface> FloorMaterial;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Arena|Materiais")
 	TSoftObjectPtr<UMaterialInterface> NeutralTileMaterial;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Arena|Materiais")
@@ -153,7 +150,7 @@ public:
 	 */
 	bool AdoptAmbienceFromWorldLocation(const FVector& WorldLocation);
 
-	/** Material herdado do mundo, ou nulo quando a arena usa a paleta própria. */
+	/** Material herdado do mundo, ou nulo quando o chão da mata vale por si. */
 	UMaterialInterface* GetAdoptedFloorMaterial() const { return AdoptedFloorMaterial; }
 
 	/**
@@ -171,7 +168,6 @@ public:
 
 	/** Malhas da arena, para o teste que exige asset atribuído em todas. */
 	const TArray<TObjectPtr<UStaticMeshComponent>>& GetCellTileMeshes() const { return CellTileMeshes; }
-	UStaticMeshComponent* GetArenaFloorMesh() const { return ArenaFloorMesh; }
 
 	/**
 	 * O sol da cena, ou nulo quando o mapa já tinha um.
@@ -276,10 +272,6 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UCameraComponent> ArenaCamera;
 
-	/** A clareira em que o tabuleiro se apoia — terra, e redonda. */
-	UPROPERTY(VisibleAnywhere)
-	TObjectPtr<UStaticMeshComponent> ArenaFloorMesh;
-
 	UPROPERTY()
 	TObjectPtr<AForestBackdrop> ForestBackdrop;
 
@@ -298,8 +290,14 @@ protected:
 	/** Põe um treinador em campo por lado que tem pet lutando. */
 	void SpawnOwnerViews(const FBattleState& InitialState);
 
-	/** Dimensiona a clareira a partir do tabuleiro e da elevação dele. */
-	void RefreshClearingGround();
+	/**
+	 * Empurra para a mata o chão que o mundo emprestou.
+	 *
+	 * Quem tem chão é a MATA, não a arena: enquanto a arena desenhava terra
+	 * própria, ela lia na tela como um prato pousado sobre o cenário. O que
+	 * o mundo empresta, portanto, veste o chão da mata.
+	 */
+	void ApplyAdoptedGroundMaterial();
 
 	/** Chão emprestado pelo mundo (AdoptAmbienceFromWorldLocation). */
 	UPROPERTY()

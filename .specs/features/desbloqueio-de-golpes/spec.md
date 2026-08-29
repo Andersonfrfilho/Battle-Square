@@ -85,6 +85,57 @@ visível.** Esconder faria o jogador não saber que existe algo a perseguir — 
 `Explosão — pede musculatura 60 (você tem 45)` é o que transforma o atributo em
 objetivo em vez de número.
 
+## Atributo alto também muda a RESOLUÇÃO, não só o que aparece
+
+> "quando temos bastante alto algum número específico, ele quando recebe um
+> ataque desvia dependendo da numeração randômica que tirar ali; ou quando ele
+> é muito agressivo, o ataque perto do oponente fica mais constante conforme a
+> numeração que ele tira"
+
+Ou seja: atributo não serve só para **destravar golpe** — ele muda a **chance**
+dentro do combate. Duas formas, uma para cada ponta do eixo:
+
+| | Quem ganha | O que muda |
+|---|---|---|
+| **Esquiva por reflexo** | skill / cautela alta | ao RECEBER ataque, chance de desviar sozinho, sem ter gastado a ação em Esquivar |
+| **Golpe constante** | agressividade alta | ao ATACAR adjacente, o dano varia menos — o agressivo é confiável no que ele faz |
+
+### O que isso introduz no jogo, e precisa estar dito
+
+**Hoje o combate não tem acaso nenhum.** Ataque adjacente sempre acerta; o
+único sorteio da partida é a escolha da IA. Isto acrescenta **acaso na
+resolução**, e a consequência é real: **dá para perder por causa de um número.**
+
+Isso não é necessariamente ruim — é o que faz atributo alto valer sem ser
+garantia — mas exige três amarras, ou vira frustração:
+
+**DP-atr-06 — Todo sorteio sai do `FBattleRandom` do estado.** Nunca
+`FMath::Rand`, nunca relógio (AD-004). Sem isso o replay diverge, e numa
+partida em rede os dois lados resolvem diferente — o defeito mais caro que este
+projeto pode ter.
+
+**DP-atr-07 — O acaso é ESTREITO, e o atributo domina.** A esquiva por reflexo
+tem teto (proposta: 25% no atributo máximo) e a constância reduz variação, não
+garante dano. Se o número decidir mais que a decisão, o jogo deixa de premiar
+quem joga melhor — e o commit às cegas já traz incerteza suficiente.
+
+**DP-atr-08 — Todo sorteio que muda o resultado é NARRADO.** `Brisa desviou por
+reflexo` precisa aparecer. Dano que some sem explicação parece defeito, e este
+projeto já gastou rodadas com jogador achando que a regra estava quebrada
+quando ela estava funcionando.
+
+### Proposta concreta, para você aceitar ou corrigir
+
+- **Esquiva por reflexo:** chance = `skill / 4`, teto 25%. Só contra ataque
+  FÍSICO — magia já ignora esquiva declarada (BTL-10), e ignorar as duas
+  tornaria magia obrigatória.
+- **Golpe constante:** o dano do golpe varia ±20% por padrão; a agressividade
+  reduz essa faixa até ±5% no extremo. O cauteloso bate mais irregular, o
+  agressivo bate no que promete.
+
+Os dois números são chute meu e existem para dar o que criticar — a decisão de
+equilíbrio é sua, e só se toma jogando.
+
 ## Fatiamento
 
 **Fatia 1 — os três atributos existem, crescem e APARECEM.** Sem trancar nada.
@@ -97,6 +148,11 @@ decide o resto: **ver o pet mudar é interessante?**
 **Fatia 3 — a tela mostra o golpe trancado com o requisito**, e anuncia quando
 ele abre.
 
+**Fatia 4 — atributo alto muda a resolução**: esquiva por reflexo e golpe
+constante, sorteados pelo gerador do estado e narrados. Por último de propósito:
+ela acrescenta acaso ao combate, e acaso só deve entrar depois que o atributo já
+significa alguma coisa visível para o jogador.
+
 ## Perguntas abertas
 
 1. **Personalidade: eixo ou traço nomeado?** (proponho eixo)
@@ -105,6 +161,8 @@ ele abre.
 3. Um golpe pode exigir **mais de um** atributo? (ex.: musculatura 50 **e**
    cautela)
 4. O pet começa com quantos golpes ao alcance — **um** ou dois?
+5. Os números da fatia 4 (25% de esquiva, ±20% a ±5% de variação) são chute meu
+   — servem de começo, e só o jogo diz se estão certos.
 
 ---
 

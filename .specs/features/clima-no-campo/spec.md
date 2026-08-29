@@ -1,6 +1,6 @@
 # Clima no Campo
 
-**Status:** PROPOSTA — aguarda decisão. Levantada pelo usuário em 2026-08-27.
+**Status:** PROPOSTA — aguarda decisão. Levantada pelo usuário em 2026-08-27, e **redirecionada por ele em 2026-08-28**: o clima nasce da jogada, não de fora.
 **Na fila:** sim. Não bloqueia nada em andamento.
 
 ## O pedido
@@ -68,7 +68,70 @@ verificável.
 9. **Vale em partida ranqueada?** Clima que muda o resultado e vem de fora do
    jogo é justo numa disputa?
 
-## Proposta de fatiamento, se a decisão for seguir
+---
+
+## Reviravolta: o clima nasce da JOGADA (usuário, 2026-08-28)
+
+> "os pets com alguns poderes podem mudar o clima como jogar fogo na grama gera
+> nuvens e pode chover... água se jogar algum poder ou se chover muito pode
+> alagar"
+
+**Isto é melhor que o clima de fora, e por um motivo técnico, não só de gosto.**
+
+Ação já está no traço. Clima *causado por ação* é determinístico **por
+construção**: mesma semente, mesmas ações, mesmo clima — sem rede, sem offline,
+sem divergência entre os dois lados, sem as nove perguntas acima. A restrição
+que tornava o clima externo caro simplesmente não se aplica aqui.
+
+E o encadeamento fecha um laço que o jogo já tem:
+
+```
+fogo na grama  →  fumaça/nuvem  →  chuva  →  casa vira ÁGUA  →  submergir passa a valer
+poder de água (ou chuva forte)  →  alagamento  →  mais casas de água
+```
+
+Ou seja: o pet de Água **cria o próprio terreno**. Hoje ele tem uma skill que só
+funciona onde já existe água; com isto, ele fabrica a condição dela. Isso é
+identidade de tipo virando decisão, que é o que as skills por pet buscavam.
+
+### O que isso decide sozinho
+
+- O clima deixa de precisar de **fonte externa** para existir. A fatia 3 (clima
+  real) vira enfeite opcional, não pré-requisito.
+- O terreno passa a ser **mutável durante a batalha** — e isso já é a "alteração
+  no meio da batalha" que o pedido original queria.
+
+### Perguntas novas que ele abre
+
+1. **Que ação muda o quê?** Precisa de uma tabela ação × terreno → terreno
+   (fogo em grama vira fumaça; água em qualquer coisa vira água), no mesmo
+   padrão dos catálogos que já existem.
+2. **A grama existe?** Hoje `ECellProperty` tem neutra, bloqueada, dano, bônus e
+   água. "Grama" e "nuvem/fumaça" seriam valores novos — e cada valor novo é
+   estado que entra no hash.
+3. **A mudança é imediata ou demora turnos?** Fogo → nuvem → chuva é uma
+   CADEIA: se ela resolve num slot, ninguém a percebe; se demora, vira plano.
+4. **Alagar prejudica quem não nada?** Se sim, é a primeira regra que pune um
+   tipo por existir — e isso muda o equilíbrio inteiro.
+5. **O jogador vê a cadeia se formando?** Nuvem visível antes da chuva é a
+   diferença entre plano e sorte (mesma razão do aviso em P8).
+
+### Fatiamento revisado
+
+**Fatia 1 — terreno mutável por ação.** Uma tabela ação × terreno, aplicada no
+núcleo, no traço. Sem clima, sem rede: fogo em grama deixa fumaça, água alaga.
+**É a fatia que tem quase todo o valor**, e agora ela não depende de nada
+externo.
+
+**Fatia 2 — a cadeia com atraso** (nuvem → chuva), com o estado intermediário
+VISÍVEL na grade.
+
+**Fatia 3 — clima ambiente** (de fora, ou sorteado), que dá a condição inicial.
+Opcional, e a única com dependência externa.
+
+---
+
+## Proposta de fatiamento original (clima externo)
 
 **Fatia 1 — clima como parâmetro, sem rede.** `FBattleState` ganha um clima; o
 núcleo aplica o efeito dele; a montagem escolhe por semente. Entrega o campo

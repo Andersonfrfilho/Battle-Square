@@ -83,6 +83,16 @@ protected:
 
 	void HandleMove(const FInputActionValue& Value);
 
+public:
+	/** Correr enquanto a tecla estiver pressionada. */
+	void StartSprinting();
+	void StopSprinting();
+
+	/** Alterna terceira pessoa → primeira pessoa → de cima → terceira. */
+	void CycleCameraMode();
+
+protected:
+
 	/**
 	 * Sonda de diagnóstico, por binding de tecla CRU (caminho legado), ao lado
 	 * do Enhanced Input. Ela separa duas perguntas que o silêncio confundia:
@@ -94,6 +104,30 @@ protected:
 private:
 	// Bem abaixo de qualquer relevo jogável: acionar cedo demais impediria
 	// pular de um degrau alto.
+	/**
+	 * Modos de câmera.
+	 *
+	 * Terceira pessoa é o padrão porque o encontro exige ver o pet A DISTÂNCIA
+	 * para decidir abordar (DP-enc-02). Primeira pessoa esconde isso, e por
+	 * isso não pode ser o padrão — mas é opção, que foi o que o usuário pediu.
+	 */
+	enum class ECameraMode : uint8
+	{
+		TerceiraPessoa = 0,
+		PrimeiraPessoa,
+		DeCima,
+		MAX
+	};
+
+	void ApplyCameraMode();
+
+	ECameraMode CameraMode = ECameraMode::TerceiraPessoa;
+	float WalkSpeedBeforeSprint = 0.0f;
+
+	static constexpr float SprintSpeedMultiplier = 1.8f;
+	static constexpr float FirstPersonArmLengthUnits = 0.0f;
+	static constexpr float TopDownArmLengthUnits = 900.0f;
+
 	static constexpr float BodyScale = 0.9f;
 	static constexpr float FacingMarkerForwardUnits = 55.0f;
 

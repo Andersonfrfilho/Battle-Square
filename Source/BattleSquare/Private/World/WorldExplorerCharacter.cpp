@@ -176,6 +176,22 @@ void AWorldExplorerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerI
 	// que o Enhanced Input não roteie nada.
 	PlayerInputComponent->BindKey(EKeys::W, IE_Pressed, this, &AWorldExplorerCharacter::LogRawKeyProbe);
 
+	// Pular, correr e trocar de câmera por TECLA DIRETA, e não por asset de
+	// Enhanced Input.
+	//
+	// DP-trav-06 manda as teclas virem de asset, e continua valendo para andar
+	// e olhar — que já têm assets. Criar asset novo depende do editor, e a
+	// ausência dele degradaria para "não pula, não corre", exatamente o tipo de
+	// recurso invisível que este projeto passou o dia removendo. Quando os
+	// assets existirem, eles se somam a isto sem conflito.
+	PlayerInputComponent->BindKey(EKeys::SpaceBar, IE_Pressed, this, &ACharacter::Jump);
+	PlayerInputComponent->BindKey(EKeys::SpaceBar, IE_Released, this, &ACharacter::StopJumping);
+
+	PlayerInputComponent->BindKey(EKeys::LeftShift, IE_Pressed, this, &AWorldExplorerCharacter::StartSprinting);
+	PlayerInputComponent->BindKey(EKeys::LeftShift, IE_Released, this, &AWorldExplorerCharacter::StopSprinting);
+
+	PlayerInputComponent->BindKey(EKeys::Y, IE_Pressed, this, &AWorldExplorerCharacter::CycleCameraMode);
+
 	if (MoveAction)
 	{
 		EnhancedInput->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AWorldExplorerCharacter::HandleMove);
@@ -292,4 +308,80 @@ void AWorldExplorerCharacter::Tick(float DeltaSeconds)
 	}
 
 	CheckFallGuard();
+}
+
+void AWorldExplorerCharacter::StartSprinting()
+{
+	UCharacterMovementComponent* Movement = GetCharacterMovement();
+	if (!Movement || WalkSpeedBeforeSprint > 0.0f)
+	{
+		return;
+	}
+
+	// Guarda a velocidade ANTES de multiplicar. Multiplicar sobre o valor
+	// atual faria cada toque acelerar de novo, e em três toques o explorador
+	// atravessaria o mundo.
+	WalkSpeedBeforeSprint = Movement->MaxWalkSpeed;
+	Movement->MaxWalkSpeed = WalkSpeedBeforeSprint * SprintSpeedMultiplier;
+
+	FBattleDebugScreen::Show(TEXT("correndo"), 0.0f, FColor::Cyan, /*Key=*/730);
+}
+
+void AWorldExplorerCharacter::StopSprinting()
+{
+	UCharacterMovementComponent* Movement = GetCharacterMovement();
+	if (!Movement || WalkSpeedBeforeSprint <= 0.0f)
+	{
+		return;
+	}
+
+	Movement->MaxWalkSpeed = WalkSpeedBeforeSprint;
+	WalkSpeedBeforeSprint = 0.0f;
+
+	FBattleDebugScreen::Show(TEXT("andando"), 0.0f, FColor::Silver, /*Key=*/730);
+}
+
+void AWorldExplorerCharacter::CycleCameraMode()
+{
+	CameraMode = static_cast<ECameraMode>(
+		(static_cast<uint8>(CameraMode) + 1) % static_cast<uint8>(ECameraMode::MAX));
+	ApplyCameraMode();
+}
+
+void AWorldExplorerCharacter::ApplyCameraMode()
+{
+	if (!CameraBoom || !BodyMesh)
+	{
+		return;
+	}
+
+	const TCHAR* Nome = TEXT("terceira pessoa");
+
+	switch (CameraMode)
+	{
+	case ECameraMode::PrimeiraPessoa:
+		CameraBoom->TargetArmLength = FirstPersonArmLengthUnits;
+		CameraBoom->SetRelativeRotation(FRotator::ZeroRotator);
+		// O próprio corpo some: com o braço em zero, a câmera fica DENTRO da
+		// esfera e o jogador veria o interior dela.
+		BodyMesh->SetVisibility(false);
+		Nome = TEXT("primeira pessoa");
+		break;
+
+	case ECameraMode::DeCima:
+		CameraBoom->TargetArmLength = TopDownArmLengthUnits;
+		CameraBoom->SetRelativeRotation(FRotator(-70.0f, 0.0f, 0.0f));
+		BodyMesh->SetVisibility(true);
+		Nome = TEXT("de cima");
+		break;
+
+	default:
+		CameraBoom->TargetArmLength = WorldTraversal::CameraArmLengthUnits;
+		CameraBoom->SetRelativeRotation(FRotator::ZeroRotator);
+		BodyMesh->SetVisibility(true);
+		break;
+	}
+
+	FBattleDebugScreen::Show(FString::Printf(TEXT("câmera: %s"), Nome),
+		0.0f, FColor::Cyan, /*Key=*/731);
 }

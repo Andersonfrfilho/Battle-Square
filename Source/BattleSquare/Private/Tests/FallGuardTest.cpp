@@ -4,6 +4,8 @@
 #include "Engine/World.h"
 #include "Misc/AutomationTest.h"
 #include "World/WorldExplorerCharacter.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Components/StaticMeshComponent.h"
 
@@ -109,6 +111,71 @@ bool FWorldExplorerHasAVisibleBodyTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Tem marca de direção"), Padrao->FacingMarker != nullptr);
 	TestTrue(TEXT("A marca fica À FRENTE do corpo"),
 		Padrao->FacingMarker->GetRelativeLocation().X > 1.0f);
+
+	return true;
+}
+
+// Correr acelera e devolve a velocidade ORIGINAL ao soltar.
+//
+// O erro fácil aqui é multiplicar a velocidade atual: cada toque aceleraria de
+// novo, e em três toques o explorador atravessaria o mundo. Guardar a
+// velocidade de antes é o que impede isso.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FWorldExplorerSprintRestoresSpeedTest,
+	"BattleSquare.World.Explorer.SprintRestoresSpeed",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FWorldExplorerSprintRestoresSpeedTest::RunTest(const FString& Parameters)
+{
+	FScopedWorld Cena;
+
+	AWorldExplorerCharacter* Explorador = Cena.World->SpawnActor<AWorldExplorerCharacter>();
+	UCharacterMovementComponent* Movimento = Explorador->GetCharacterMovement();
+
+	const float Andando = Movimento->MaxWalkSpeed;
+
+	Explorador->StartSprinting();
+	const float Correndo = Movimento->MaxWalkSpeed;
+	TestTrue(TEXT("Correr é mais rápido que andar"), Correndo > Andando);
+
+	// Segundo toque sem soltar NÃO acelera de novo.
+	Explorador->StartSprinting();
+	TestEqual(TEXT("Correr duas vezes não acumula"), Movimento->MaxWalkSpeed, Correndo);
+
+	Explorador->StopSprinting();
+	TestEqual(TEXT("Soltar devolve a velocidade original"), Movimento->MaxWalkSpeed, Andando);
+
+	// Soltar duas vezes também não pode estragar nada.
+	Explorador->StopSprinting();
+	TestEqual(TEXT("Soltar de novo não muda nada"), Movimento->MaxWalkSpeed, Andando);
+
+	return true;
+}
+
+// A câmera cicla e VOLTA ao início: um ciclo que não fecha deixaria o jogador
+// preso no último modo sem saber como voltar.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FWorldExplorerCameraCyclesBackTest,
+	"BattleSquare.World.Explorer.CameraCyclesBack",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FWorldExplorerCameraCyclesBackTest::RunTest(const FString& Parameters)
+{
+	FScopedWorld Cena;
+
+	AWorldExplorerCharacter* Explorador = Cena.World->SpawnActor<AWorldExplorerCharacter>();
+	const float BracoInicial = Explorador->GetCameraBoom()->TargetArmLength;
+
+	TSet<float> Distancias;
+	for (int32 Passo = 0; Passo < 3; ++Passo)
+	{
+		Explorador->CycleCameraMode();
+		Distancias.Add(Explorador->GetCameraBoom()->TargetArmLength);
+	}
+
+	TestTrue(TEXT("Os modos são de fato diferentes"), Distancias.Num() > 1);
+	TestEqual(TEXT("Três passos voltam ao começo"),
+		Explorador->GetCameraBoom()->TargetArmLength, BracoInicial);
 
 	return true;
 }

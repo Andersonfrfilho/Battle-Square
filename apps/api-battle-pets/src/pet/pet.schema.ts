@@ -43,6 +43,18 @@ export const petMoves = pgTable(
      * guarda o dado, não a regra.
      */
     terrainEffect: varchar('terrain_effect', { length: 16 }).notNull().default('none'),
+    /**
+     * Atributo que o pet precisa TER para poder usar este golpe.
+     *
+     * 'none' | 'musculature' | 'personality' | 'camouflage' | 'flight' |
+     * 'underground'. Vive na assinatura pelo mesmo motivo de `power`: golpe
+     * fora dela seria o caminho óbvio para destravar o que não se conquistou.
+     *
+     * 'none' com valor 0 é golpe SEM requisito — o comportamento de antes
+     * desta feature, e o que todo golpe já cadastrado continua sendo.
+     */
+    requiresAttribute: varchar('requires_attribute', { length: 16 }).notNull().default('none'),
+    requiresValue: integer('requires_value').notNull().default(0),
   },
   (table) => ({
     petSlotUnique: unique('pet_moves_pet_slot_unique').on(table.petId, table.slot),

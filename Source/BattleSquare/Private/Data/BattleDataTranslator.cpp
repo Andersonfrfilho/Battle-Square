@@ -60,9 +60,15 @@ void FBattleDataTranslator::TranslatePet(
 	// viaja no commit (DP-golpe-04) — reordenar aqui faria o jogador escolher
 	// um golpe e o resolvedor usar outro.
 	OutPresentation.MoveNames.Reset();
+	OutPresentation.MoveRequiresAttribute.Reset();
+	OutPresentation.MoveRequiresValue.Reset();
+	OutPresentation.MoveUnlocked.Reset();
 	for (const FLoadedPetMove& Move : Source.Moves)
 	{
 		OutPresentation.MoveNames.Add(Move.Name);
+		OutPresentation.MoveRequiresAttribute.Add(Move.RequiresAttribute);
+		OutPresentation.MoveRequiresValue.Add(Move.RequiresValue);
+		OutPresentation.MoveUnlocked.Add(true);
 	}
 
 	// O PODER vai para o núcleo, o NOME fica na apresentação.

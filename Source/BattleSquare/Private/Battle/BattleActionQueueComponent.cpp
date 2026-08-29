@@ -161,6 +161,19 @@ bool UBattleActionQueueComponent::IsActionAvailable(EActionType Type) const
 	return AvailableActions.IsEmpty() || AvailableActions.Contains(Type);
 }
 
+void UBattleActionQueueComponent::SetUnlockedMoves(const TArray<bool>& Unlocked)
+{
+	UnlockedMoves = Unlocked;
+}
+
+bool UBattleActionQueueComponent::IsMoveUnlocked(int32 MoveIndex) const
+{
+	// Fora da lista é DESTRANCADO, não trancado: pet com dois golpes
+	// cadastrados não pode ter o segundo recusado por a lista ter um item a
+	// menos, e lista vazia precisa continuar significando "sem restrição".
+	return !UnlockedMoves.IsValidIndex(MoveIndex) || UnlockedMoves[MoveIndex];
+}
+
 bool UBattleActionQueueComponent::ConfirmMove(int32 MoveIndex)
 {
 	if (bCommitted || Pending.Step != EBattleActionSelectionStep::ChoosingDirection)
@@ -176,6 +189,13 @@ bool UBattleActionQueueComponent::ConfirmMove(int32 MoveIndex)
 	// Índice fora da faixa é RECUSADO, não corrigido para zero: aceitar
 	// silenciosamente faria o jogador executar um golpe que não escolheu.
 	if (MoveIndex < 0 || MoveIndex >= BattleMovesPerPet)
+	{
+		return false;
+	}
+
+	// Golpe trancado é RECUSADO aqui, não escondido lá. A tela some com o
+	// botão para quem joga; esta linha é o que segura quem não joga pela tela.
+	if (!IsMoveUnlocked(MoveIndex))
 	{
 		return false;
 	}

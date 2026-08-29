@@ -267,3 +267,57 @@ bool FBattleActionQueueRefusesUnavailableSkillTest::RunTest(const FString& Param
 
 	return true;
 }
+
+// A recusa do golpe trancado mora na FILA, não na tela.
+//
+// DP-skill-02, aplicado aos golpes: esconder o botão basta para quem joga
+// pela interface e não basta para um cliente adulterado. Um teste que só
+// verificasse o botão sumido aprovaria exatamente o caso que a regra existe
+// para impedir.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FQueueRefusesLockedMoveTest,
+	"BattleSquare.Battle.ActionQueue.RefusesLockedMove",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FQueueRefusesLockedMoveTest::RunTest(const FString& Parameters)
+{
+	UBattleActionQueueComponent* Queue = MakeQueue();
+	Queue->SetUnlockedMoves({ true, false, true, true });
+
+	Queue->BeginSelectingType(EActionType::Atacar);
+	TestFalse(TEXT("Golpe 1 está trancado e é recusado"), Queue->ConfirmMove(1));
+	TestEqual(TEXT("E nada foi confirmado"), Queue->GetConfirmedActionCount(), 0);
+
+	// A seleção continua ABERTA depois da recusa: cancelar por conta própria
+	// obrigaria o jogador a escolher o tipo de novo por ter clicado errado.
+	TestTrue(TEXT("O golpe 2, destrancado, ainda entra"), Queue->ConfirmMove(2));
+	TestEqual(TEXT("O índice preservado é o 2"),
+		static_cast<int32>(GetMoveIndexFromAction(Queue->BuildCommit().Actions[0])), 2);
+
+	return true;
+}
+
+// Lista vazia é "sem restrição" — o comportamento de antes desta feature.
+// Sem isto, toda batalha que não configurasse os golpes ficaria sem golpe
+// nenhum, que é a regressão que a feature inteira não pode causar.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FQueueWithoutUnlockListAllowsEveryMoveTest,
+	"BattleSquare.Battle.ActionQueue.WithoutUnlockListAllowsEveryMove",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FQueueWithoutUnlockListAllowsEveryMoveTest::RunTest(const FString& Parameters)
+{
+	UBattleActionQueueComponent* Queue = MakeQueue();
+	Queue->BeginSelectingType(EActionType::Atacar);
+	TestTrue(TEXT("Sem lista, o golpe 3 passa"), Queue->ConfirmMove(3));
+
+	// Lista MENOR que o número de golpes não tranca o que ela não menciona:
+	// o silêncio ali é ausência de informação, não proibição.
+	UBattleActionQueueComponent* Curta = MakeQueue();
+	Curta->SetUnlockedMoves({ false });
+	Curta->BeginSelectingType(EActionType::Atacar);
+	TestFalse(TEXT("O golpe 0, mencionado e trancado, é recusado"), Curta->ConfirmMove(0));
+	TestTrue(TEXT("O golpe 3, não mencionado, passa"), Curta->ConfirmMove(3));
+
+	return true;
+}

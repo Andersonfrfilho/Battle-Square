@@ -20,7 +20,16 @@ export type MirrorPetRow = {
   speed: number;
   maxHealth: number;
   updatedAt: string;
-  moves: { name: string; power: number; terrainEffect: string }[];
+  moves: {
+    name: string;
+    power: number;
+    terrainEffect: string;
+    // Presentes só nos golpes assinados DEPOIS do requisito existir. Ausência
+    // é golpe sem requisito, e o verificador reserializa o que veio — então
+    // acrescentar a chave num golpe antigo quebraria a assinatura DELE.
+    requiresAttribute?: string;
+    requiresValue?: number;
+  }[];
   signature: string;
 };
 

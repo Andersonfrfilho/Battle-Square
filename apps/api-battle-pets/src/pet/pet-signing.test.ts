@@ -32,7 +32,9 @@ describe('golpes no payload assinado', () => {
     // a casa, logo muda o resultado, logo precisa estar sob assinatura.
     const assinados = toSignedMoves([{ slot: 0, name: 'Bote', power: 10 }]);
 
-    expect(assinados).toEqual([{ name: 'Bote', power: 10, terrainEffect: 'none' }]);
+    expect(assinados).toEqual([
+      { name: 'Bote', power: 10, terrainEffect: 'none', requiresAttribute: 'none', requiresValue: 0 },
+    ]);
   });
 
   test('pet sem golpe produz lista vazia, não erro', () => {
@@ -49,7 +51,13 @@ describe('efeito de terreno do golpe', () => {
     // e a assinatura falharia sem ninguém entender por quê.
     const assinados = toSignedMoves([{ slot: 0, name: 'Bote', power: 10 }]);
 
-    expect(assinados[0]).toEqual({ name: 'Bote', power: 10, terrainEffect: 'none' });
+    expect(assinados[0]).toEqual({
+      name: 'Bote',
+      power: 10,
+      terrainEffect: 'none',
+      requiresAttribute: 'none',
+      requiresValue: 0,
+    });
   });
 
   test('o efeito declarado é preservado', () => {
@@ -59,5 +67,43 @@ describe('efeito de terreno do golpe', () => {
     ]);
 
     expect(assinados.map((move) => move.terrainEffect)).toEqual(['damage', 'water']);
+  });
+});
+
+describe('requisito de atributo do golpe', () => {
+  test('ausente vira "none"/0, nunca some do payload', () => {
+    // Mesmo motivo do efeito de terreno: o verificador RESERIALIZA o golpe,
+    // então uma chave omitida produz um texto diferente do que foi assinado.
+    const [assinado] = toSignedMoves([{ slot: 0, name: 'Bote', power: 10 }]);
+
+    expect(assinado?.requiresAttribute).toBe('none');
+    expect(assinado?.requiresValue).toBe(0);
+  });
+
+  test('o requisito declarado é preservado', () => {
+    const [assinado] = toSignedMoves([
+      { slot: 0, name: 'Rasante', power: 45, requiresAttribute: 'flight', requiresValue: 12 },
+    ]);
+
+    expect(assinado?.requiresAttribute).toBe('flight');
+    expect(assinado?.requiresValue).toBe(12);
+  });
+
+  test('o requisito entra NO FIM do objeto do golpe', () => {
+    // A posição é contrato, não estética: o verificador reserializa o golpe,
+    // então a ordem das chaves dentro dele entra na assinatura tanto quanto
+    // a ordem dos campos do pet. Inserir no meio invalidaria todo golpe já
+    // assinado que tivesse os campos anteriores.
+    const [assinado] = toSignedMoves([
+      { slot: 0, name: 'Bote', power: 10, terrainEffect: 'water', requiresAttribute: 'flight', requiresValue: 3 },
+    ]);
+
+    expect(Object.keys(assinado ?? {})).toEqual([
+      'name',
+      'power',
+      'terrainEffect',
+      'requiresAttribute',
+      'requiresValue',
+    ]);
   });
 });

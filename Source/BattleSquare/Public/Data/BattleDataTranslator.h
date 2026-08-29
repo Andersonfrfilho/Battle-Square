@@ -70,6 +70,34 @@ struct FPetPresentationInfo
 	 */
 	UPROPERTY()
 	TArray<FString> MoveNames;
+
+	/**
+	 * Requisito de atributo de cada golpe, na MESMA ordem de MoveNames.
+	 *
+	 * Vem do dado assinado. "none" com 0 é golpe sem requisito — o que todo
+	 * golpe cadastrado antes desta feature continua sendo.
+	 */
+	UPROPERTY()
+	TArray<FString> MoveRequiresAttribute;
+
+	UPROPERTY()
+	TArray<int32> MoveRequiresValue;
+
+	/**
+	 * O pet ALCANÇA o requisito de cada golpe?
+	 *
+	 * Começa tudo verdadeiro e só é apertado por quem conhece os atributos do
+	 * pet (FPetMoveRequirements, contra a coleção). Nasce permissivo de
+	 * propósito: pet que não está na coleção — o oponente selvagem, por
+	 * exemplo — não tem atributo nenhum, e trancá-lo por isso o deixaria sem
+	 * golpe nenhum para usar.
+	 *
+	 * É por ÍNDICE, nunca por filtragem da lista: o índice do golpe é o que
+	 * viaja no commit (DP-golpe-04), e remover um item deslocaria todos os
+	 * seguintes — o jogador escolheria um golpe e o servidor resolveria outro.
+	 */
+	UPROPERTY()
+	TArray<bool> MoveUnlocked;
 };
 
 class BATTLESQUARE_API FBattleDataTranslator

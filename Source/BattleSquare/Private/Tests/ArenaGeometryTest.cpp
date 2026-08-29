@@ -12,7 +12,7 @@
 
 namespace ArenaCena
 {
-	UWorld* CriarMundo()
+	UWorld* CriarMundoDaGeometria()
 	{
 		UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
 		FWorldContext& Contexto = GEngine->CreateNewWorldContext(EWorldType::Game);
@@ -21,7 +21,7 @@ namespace ArenaCena
 		return World;
 	}
 
-	void DestruirMundo(UWorld* World)
+	void DestruirMundoDaGeometria(UWorld* World)
 	{
 		if (!World)
 		{
@@ -147,7 +147,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FArenaCellLocationFollowsTerrainTest::RunTest(const FString& Parameters)
 {
-	UWorld* World = ArenaCena::CriarMundo();
+	UWorld* World = ArenaCena::CriarMundoDaGeometria();
 	ABattleArena* Arena = World->SpawnActor<ABattleArena>();
 
 	FBattleState& Estado = Arena->GetMutableCurrentState();
@@ -170,7 +170,7 @@ bool FArenaCellLocationFollowsTerrainTest::RunTest(const FString& Parameters)
 		Arena->GetCellSurfaceHeightAt(2, 2),
 		ABattleArena::GetCellSurfaceHeight(static_cast<uint8>(ECellProperty::Blocked)));
 
-	ArenaCena::DestruirMundo(World);
+	ArenaCena::DestruirMundoDaGeometria(World);
 	return true;
 }
 
@@ -186,13 +186,13 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FArenaAdoptsAmbienceFromWorldTest::RunTest(const FString& Parameters)
 {
-	UWorld* World = ArenaCena::CriarMundo();
+	UWorld* World = ArenaCena::CriarMundoDaGeometria();
 
 	UMaterialInterface* MaterialDoLugar = LoadObject<UMaterialInterface>(
 		nullptr, TEXT("/Engine/EngineMaterials/WorldGridMaterial.WorldGridMaterial"));
 	if (!TestNotNull(TEXT("Material de referência carregou"), MaterialDoLugar))
 	{
-		ArenaCena::DestruirMundo(World);
+		ArenaCena::DestruirMundoDaGeometria(World);
 		return false;
 	}
 
@@ -207,7 +207,7 @@ bool FArenaAdoptsAmbienceFromWorldTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("E o chão da arena é o material DE LÁ"),
 		Arena->GetAdoptedFloorMaterial() == MaterialDoLugar);
 
-	ArenaCena::DestruirMundo(World);
+	ArenaCena::DestruirMundoDaGeometria(World);
 	return true;
 }
 
@@ -222,14 +222,14 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FArenaKeepsOwnPaletteWithoutGroundTest::RunTest(const FString& Parameters)
 {
-	UWorld* World = ArenaCena::CriarMundo();
+	UWorld* World = ArenaCena::CriarMundoDaGeometria();
 	ABattleArena* Arena = World->SpawnActor<ABattleArena>();
 
 	TestFalse(TEXT("Sem chão embaixo, não há o que adotar"),
 		Arena->AdoptAmbienceFromWorldLocation(FVector(0.0f, 0.0f, 500000.0f)));
 	TestNull(TEXT("E nada foi emprestado"), Arena->GetAdoptedFloorMaterial());
 
-	ArenaCena::DestruirMundo(World);
+	ArenaCena::DestruirMundoDaGeometria(World);
 	return true;
 }
 
@@ -255,5 +255,94 @@ bool FArenaSitsAboveLevelGroundTest::RunTest(const FString& Parameters)
 
 	TestTrue(TEXT("Até a casa mais funda fica acima do chão do nível"), TopoDaAgua > 0.0f);
 
+	return true;
+}
+
+// A arena tem que ser PARTE DO CENÁRIO, não uma placa quadriculada posta em
+// cima dele.
+//
+// Foi o que o usuário viu na tela em 2026-08-29: "ainda temos uns quadrados na
+// arena marcados com bordas". O vão existia em TODA casa, inclusive na que não
+// tem regra nenhuma — e vão em toda casa desenha um tabuleiro de damas.
+//
+// Agora a casa sem regra é o próprio chão da clareira, e só o que carrega
+// regra fica recuado: aí o recuo tem serventia, porque água, dano, bônus e
+// bloqueio precisam ser achados de relance.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FArenaNeutralCellIsTheGroundTest,
+	"BattleSquare.Battle.Arena.NeutralCellIsTheGroundItself",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FArenaNeutralCellIsTheGroundTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = ArenaCena::CriarMundoDaGeometria();
+	ABattleArena* Arena = World->SpawnActor<ABattleArena>();
+
+	FBattleState& Estado = Arena->GetMutableCurrentState();
+	Estado.CellLayout[Estado.CellIndex(0, 0)] = static_cast<uint8>(ECellProperty::Water);
+
+	Arena->DispatchBeginPlay();
+
+	const TArray<TObjectPtr<UStaticMeshComponent>>& Lajes = Arena->GetCellTileMeshes();
+	const int32 Colunas = Arena->GetActiveGridColumns();
+
+	const UStaticMeshComponent* ComRegra = Lajes[CellLayoutIndex(0, 0, Colunas)];
+	const UStaticMeshComponent* SemRegra = Lajes[CellLayoutIndex(1, 1, Colunas)];
+
+	if (TestNotNull(TEXT("A casa de água existe"), ComRegra)
+		&& TestNotNull(TEXT("A casa neutra existe"), SemRegra))
+	{
+		// A malha é o cubo de 100uu da engine: escala 1 é uma casa de 100.
+		const float LadoNeutro = SemRegra->GetRelativeScale3D().X * 100.0f;
+		const float LadoComRegra = ComRegra->GetRelativeScale3D().X * 100.0f;
+
+		TestEqual(TEXT("A casa sem regra ocupa a casa INTEIRA — sem vão, sem borda"),
+			LadoNeutro, Arena->CellSize, 0.01f);
+		TestTrue(TEXT("E só o que tem regra fica recuado"), LadoComRegra < LadoNeutro);
+	}
+
+	ArenaCena::DestruirMundoDaGeometria(World);
+	return true;
+}
+
+// O tabuleiro nasce erguido BoardElevation acima do chão da mata. Enquanto a
+// terra embaixo dele tinha espessura própria e curta, o conjunto FLUTUAVA — a
+// outra metade de "placa posta em cima do cenário".
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FArenaClearingReachesTheForestFloorTest,
+	"BattleSquare.Battle.Arena.ClearingReachesTheForestFloor",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FArenaClearingReachesTheForestFloorTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = ArenaCena::CriarMundoDaGeometria();
+	ABattleArena* Arena = World->SpawnActor<ABattleArena>();
+	Arena->DispatchBeginPlay();
+
+	const UStaticMeshComponent* Terra = Arena->GetArenaFloorMesh();
+	if (!TestNotNull(TEXT("A clareira existe"), Terra))
+	{
+		ArenaCena::DestruirMundoDaGeometria(World);
+		return false;
+	}
+
+	// Cilindro da engine: origem no CENTRO, 100uu de caixa.
+	const float Altura = Terra->GetRelativeScale3D().Z * 100.0f;
+	const float FundoDaTerra = Terra->GetRelativeLocation().Z - Altura * 0.5f;
+
+	TestTrue(TEXT("A terra desce até o chão da mata — nada flutua"),
+		FundoDaTerra <= -Arena->BoardElevation + 0.01f);
+
+	// Raio pela DIAGONAL: com meia largura só, os cantos do eixo maior ficam
+	// pendurados fora da terra em qualquer campo retangular.
+	const float MeiaLargura = Arena->CellSize * static_cast<float>(Arena->GetActiveGridColumns()) * 0.5f;
+	const float MeiaAltura = Arena->CellSize * static_cast<float>(Arena->GetActiveGridRows()) * 0.5f;
+	const float Diagonal = FMath::Sqrt(MeiaLargura * MeiaLargura + MeiaAltura * MeiaAltura);
+	const float Raio = Terra->GetRelativeScale3D().X * 100.0f * 0.5f;
+
+	TestTrue(TEXT("E é larga o bastante para o canto mais distante do tabuleiro"),
+		Raio > Diagonal);
+
+	ArenaCena::DestruirMundoDaGeometria(World);
 	return true;
 }

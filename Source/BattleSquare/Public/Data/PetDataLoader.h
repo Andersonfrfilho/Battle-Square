@@ -17,6 +17,15 @@ struct FLoadedPetMove
 
 	/** "none" | "water" | "damage" — o que o golpe deixa na casa que acertou. */
 	FString TerrainEffect = TEXT("none");
+
+	/**
+	 * Atributo exigido para usar o golpe, e o mínimo dele.
+	 *
+	 * "none" com 0 é golpe SEM requisito — o que todo golpe assinado antes
+	 * desta feature continua sendo, e o comportamento de sempre.
+	 */
+	FString RequiresAttribute = TEXT("none");
+	int32 RequiresValue = 0;
 };
 
 struct FLoadedPetRecord

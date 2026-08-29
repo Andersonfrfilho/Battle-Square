@@ -61,6 +61,20 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Battle|ActionQueue")
 	bool ConfirmMove(int32 MoveIndex);
 
+	/**
+	 * Quais golpes o pet ALCANÇA, por índice.
+	 *
+	 * Mesma forma e mesmo motivo de SetAvailableActions: a recusa mora aqui,
+	 * não na tela. Esconder o botão basta para o jogador honesto e não basta
+	 * para um cliente adulterado — e a regra precisa existir num lugar só.
+	 *
+	 * Lista vazia é "sem restrição", o comportamento de antes desta feature.
+	 * É por ÍNDICE porque o índice é o que viaja no commit (DP-golpe-04).
+	 */
+	void SetUnlockedMoves(const TArray<bool>& Unlocked);
+
+	bool IsMoveUnlocked(int32 MoveIndex) const;
+
 	// Volta do passo 2 para o passo 1, sem alterar ações já confirmadas.
 	UFUNCTION(BlueprintCallable, Category = "Battle|ActionQueue")
 	bool CancelPendingSelection();
@@ -130,6 +144,8 @@ private:
 	FBattlePendingActionSelection Pending;
 
 	TArray<EActionType> AvailableActions;
+
+	TArray<bool> UnlockedMoves;
 
 	UPROPERTY()
 	bool bCommitted = false;

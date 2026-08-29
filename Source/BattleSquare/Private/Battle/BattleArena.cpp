@@ -30,6 +30,7 @@ DEFINE_LOG_CATEGORY(LogBattleArena);
 #include "Battle/BattleOutcome.h"
 #include "Meta/PetCollectionService.h"
 #include "Meta/PetProgressionService.h"
+#include "Meta/PetMoveRequirements.h"
 
 namespace ArenaGeometria
 {
@@ -688,6 +689,7 @@ bool ABattleArena::BeginBattle(const FBattleState& InitialState, const TArray<FP
 	// chamar antes procurava numa tabela ainda vazia.
 	RegisterOwnPetInCollection();
 	ApplySkillsToActionQueue();
+	ApplyMoveRequirementsToActionQueue();
 	AnnounceMatchup();
 
 	if (!TracePlayer)
@@ -1003,6 +1005,63 @@ void ABattleArena::AnnounceMatchup()
 		0.0f,
 		Efetividade > 100 ? FColor::Green : (Efetividade < 100 ? FColor::Orange : FColor::Silver),
 		/*Key=*/955);
+}
+
+void ABattleArena::ApplyMoveRequirementsToActionQueue()
+{
+	if (!PlayerActionQueue)
+	{
+		return;
+	}
+
+	const FPetState* OwnPet = CurrentState.Pets.FindByPredicate(
+		[this](const FPetState& Pet) { return Pet.Side == LocalPlayerSide; });
+	if (!OwnPet)
+	{
+		return;
+	}
+
+	FPetPresentationInfo* Presentation = PresentationsByPetId.Find(OwnPet->PetId);
+	if (!Presentation)
+	{
+		return;
+	}
+
+	// Pet fora da coleção fica com tudo destrancado — ver FPetMoveRequirements.
+	const TArray<FOwnedPetInstance> Colecao =
+		FPetCollectionService::LoadCollection(PetCollectionSlotName);
+	const FOwnedPetInstance* Instancia = Colecao.FindByPredicate(
+		[Presentation](const FOwnedPetInstance& Item)
+		{
+			return Item.CatalogId == Presentation->CatalogId;
+		});
+
+	FPetMoveRequirements::ApplyToPresentation(*Presentation, Instancia);
+	PlayerActionQueue->SetUnlockedMoves(Presentation->MoveUnlocked);
+
+	// O que está trancado DIZ o que falta. Golpe que some sem explicação é
+	// indistinguível de golpe que o backend esqueceu de cadastrar — e o
+	// jogador não tem como saber que existe algo a conquistar ali.
+	for (int32 Indice = 0; Indice < Presentation->MoveUnlocked.Num(); ++Indice)
+	{
+		if (Presentation->MoveUnlocked[Indice])
+		{
+			continue;
+		}
+
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("golpe trancado: %s (exige %s %d)"),
+				Presentation->MoveNames.IsValidIndex(Indice)
+					? *Presentation->MoveNames[Indice]
+					: TEXT("?"),
+				Presentation->MoveRequiresAttribute.IsValidIndex(Indice)
+					? *Presentation->MoveRequiresAttribute[Indice]
+					: TEXT("?"),
+				Presentation->MoveRequiresValue.IsValidIndex(Indice)
+					? Presentation->MoveRequiresValue[Indice]
+					: 0),
+			0.0f, FColor::Orange, /*Key=*/-1);
+	}
 }
 
 void ABattleArena::ApplySkillsToActionQueue()

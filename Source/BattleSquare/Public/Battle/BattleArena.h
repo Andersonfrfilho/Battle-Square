@@ -475,6 +475,15 @@ private:
 	 */
 	void AccumulateAttributeGains(const TArray<FBattleEvent>& Trace);
 
+	/**
+	 * Tranca os golpes cujo requisito o pet do jogador ainda não alcança.
+	 *
+	 * Avaliado UMA vez, na montagem, contra a coleção — e não a cada clique:
+	 * o atributo não muda no meio da batalha, e reavaliar por clique só
+	 * abriria a chance de o botão e a fila discordarem entre um e outro.
+	 */
+	void ApplyMoveRequirementsToActionQueue();
+
 	FPetAttributeGains AccumulatedAttributeGains;
 
 	/**

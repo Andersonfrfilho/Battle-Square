@@ -20,6 +20,19 @@ export const petMoveSchema = z.object({
   name: z.string().min(1, 'Nome do golpe é obrigatório').max(60),
   power: z.number().int().min(1, 'Poder do golpe precisa ser ao menos 1').max(500),
   terrainEffect: z.enum(['none', 'water', 'damage']).default('none'),
+  /**
+   * Atributo exigido para usar o golpe, e o mínimo dele.
+   *
+   * Conjunto FECHADO pelo mesmo motivo do efeito de terreno: requisito com
+   * nome errado nunca tranca nada (o jogo trata desconhecido como "sem
+   * requisito", que é a escolha segura lá), então o erro passaria despercebido
+   * — o golpe simplesmente ficaria livre para todos, e ninguém notaria.
+   * Barrar na escrita é o único lugar em que isso aparece.
+   */
+  requiresAttribute: z
+    .enum(['none', 'musculature', 'personality', 'camouflage', 'flight', 'underground'])
+    .default('none'),
+  requiresValue: z.number().int().min(0).max(999).default(0),
 });
 
 export const createPetSchema = z.object({
@@ -43,6 +56,17 @@ export const listPetsQuerySchema = z.object({
 });
 
 export type CreatePetInput = z.infer<typeof createPetSchema>;
+
+/**
+ * O que se ESCREVE ao declarar um pet, antes de o schema aplicar os padrões.
+ *
+ * `CreatePetInput` é a SAÍDA do parse: ali todo campo com `.default()` já é
+ * obrigatório, porque depois de validar ele sempre existe. Usar esse tipo para
+ * literal escrito à mão — a semente do catálogo — obriga a repetir cada padrão
+ * em cada golpe, e transforma toda opção nova com padrão numa edição de
+ * arquivo inteiro.
+ */
+export type CreatePetDeclaration = z.input<typeof createPetSchema>;
 export type UpdatePetInput = z.infer<typeof updatePetSchema>;
 export type ListPetsQuery = z.infer<typeof listPetsQuerySchema>;
 

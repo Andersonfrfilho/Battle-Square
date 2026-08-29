@@ -1,7 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 import * as PetUseCase from '../pet.use-case';
-import type { CreatePetInput } from '../pet.validation';
+import { createPetSchema, type CreatePetDeclaration } from '../pet.validation';
 
 /**
  * Catálogo inicial de pets, com golpes.
@@ -22,7 +22,7 @@ import type { CreatePetInput } from '../pet.validation';
  *   da própria skill), fogo QUEIMA (casa de dano). Planta camufla e não mexe
  *   no chão, porque quem se esconde continua pisando onde estava.
  */
-export const PET_CATALOG_SEED: CreatePetInput[] = [
+export const PET_CATALOG_SEED: CreatePetDeclaration[] = [
   {
     name: 'Faísca',
     type: 'Fogo',
@@ -36,7 +36,7 @@ export const PET_CATALOG_SEED: CreatePetInput[] = [
       // Queima a casa: forte no terreno, fraco no dano. Quem escolhe isto
       // troca dano AGORA por um tabuleiro pior para o outro DEPOIS.
       { name: 'Brasa Viva', power: 60, terrainEffect: 'damage' },
-      { name: 'Explosão', power: 150, terrainEffect: 'none' },
+      { name: 'Explosão', power: 150, terrainEffect: 'none', requiresAttribute: 'musculature', requiresValue: 12 },
     ],
   },
   {
@@ -50,7 +50,7 @@ export const PET_CATALOG_SEED: CreatePetInput[] = [
       { name: 'Arranhão', power: 75, terrainEffect: 'none' },
       { name: 'Sopro Quente', power: 105, terrainEffect: 'none' },
       { name: 'Rastro de Fogo', power: 55, terrainEffect: 'damage' },
-      { name: 'Fúria', power: 160, terrainEffect: 'none' },
+      { name: 'Fúria', power: 160, terrainEffect: 'none', requiresAttribute: 'musculature', requiresValue: 15 },
     ],
   },
   {
@@ -64,7 +64,7 @@ export const PET_CATALOG_SEED: CreatePetInput[] = [
       { name: 'Chicote', power: 85, terrainEffect: 'none' },
       { name: 'Espinhos', power: 100, terrainEffect: 'none' },
       { name: 'Raiz Presa', power: 70, terrainEffect: 'none' },
-      { name: 'Tempestade Verde', power: 145, terrainEffect: 'none' },
+      { name: 'Tempestade Verde', power: 145, terrainEffect: 'none', requiresAttribute: 'camouflage', requiresValue: 8 },
     ],
   },
   {
@@ -78,7 +78,7 @@ export const PET_CATALOG_SEED: CreatePetInput[] = [
       { name: 'Empurrão', power: 70, terrainEffect: 'none' },
       { name: 'Folha Cortante', power: 95, terrainEffect: 'none' },
       { name: 'Abraço', power: 115, terrainEffect: 'none' },
-      { name: 'Colheita', power: 135, terrainEffect: 'none' },
+      { name: 'Colheita', power: 135, terrainEffect: 'none', requiresAttribute: 'personality', requiresValue: 6 },
     ],
   },
   {
@@ -94,7 +94,7 @@ export const PET_CATALOG_SEED: CreatePetInput[] = [
       // propósito — a recompensa dele é o turno seguinte, não este.
       { name: 'Maré Alta', power: 60, terrainEffect: 'water' },
       { name: 'Redemoinho', power: 110, terrainEffect: 'none' },
-      { name: 'Tsunami', power: 155, terrainEffect: 'none' },
+      { name: 'Tsunami', power: 155, terrainEffect: 'none', requiresAttribute: 'musculature', requiresValue: 14 },
     ],
   },
   {
@@ -108,7 +108,7 @@ export const PET_CATALOG_SEED: CreatePetInput[] = [
       { name: 'Borrifo', power: 75, terrainEffect: 'none' },
       { name: 'Poça', power: 50, terrainEffect: 'water' },
       { name: 'Correnteza', power: 120, terrainEffect: 'none' },
-      { name: 'Vaga', power: 140, terrainEffect: 'none' },
+      { name: 'Vaga', power: 140, terrainEffect: 'none', requiresAttribute: 'underground', requiresValue: 8 },
     ],
   },
 ];
@@ -138,7 +138,11 @@ export async function seedPetCatalog(): Promise<SeedResult> {
       continue;
     }
 
-    await PetUseCase.createPet(definicao);
+    // A semente passa pelo MESMO schema que valida uma requisição HTTP.
+    // Ela é dado escrito à mão, e dado escrito à mão erra — sem o parse, um
+    // requisito com nome trocado entraria no banco e só apareceria como um
+    // golpe que nunca tranca, meses depois, sem pista da causa.
+    await PetUseCase.createPet(createPetSchema.parse(definicao));
     created += 1;
   }
 

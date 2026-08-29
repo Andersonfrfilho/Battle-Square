@@ -15,6 +15,8 @@ export type SignedPetMove = {
   name: string;
   power: number;
   terrainEffect: string;
+  requiresAttribute: string;
+  requiresValue: number;
 };
 
 export type SignedPetExport = {
@@ -64,7 +66,14 @@ function toCanonicalPayload(pet: Pet, moves: SignedPetMove[]): string {
  * um golpe e o servidor resolver outro.
  */
 export function toSignedMoves(
-  moves: { slot: number; name: string; power: number; terrainEffect?: string }[],
+  moves: {
+    slot: number;
+    name: string;
+    power: number;
+    terrainEffect?: string;
+    requiresAttribute?: string;
+    requiresValue?: number;
+  }[],
 ): SignedPetMove[] {
   return [...moves]
     .sort((left, right) => left.slot - right.slot)
@@ -75,6 +84,11 @@ export function toSignedMoves(
       // existir não muda a casa, e omitir a chave produziria um payload
       // diferente do que o verificador espera.
       terrainEffect: move.terrainEffect ?? 'none',
+      // NO FIM do objeto, e a posição é contrato: o verificador reserializa
+      // o golpe, então a ordem das chaves dentro dele entra na assinatura
+      // tanto quanto a ordem dos campos do pet.
+      requiresAttribute: move.requiresAttribute ?? 'none',
+      requiresValue: move.requiresValue ?? 0,
     }));
 }
 

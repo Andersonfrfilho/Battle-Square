@@ -75,6 +75,13 @@ namespace
 			// não muda a casa, e é assim que ele sempre se comportou.
 			(*Objeto)->TryGetStringField(TEXT("terrainEffect"), Golpe.TerrainEffect);
 
+			// Chaves ausentes ficam com o padrão do struct: golpe assinado
+			// antes do requisito existir não exige nada, e é assim que ele
+			// sempre se comportou. O payload canônico não muda por causa
+			// disto — o JSON dos golpes é repassado como veio do espelho.
+			(*Objeto)->TryGetStringField(TEXT("requiresAttribute"), Golpe.RequiresAttribute);
+			(*Objeto)->TryGetNumberField(TEXT("requiresValue"), Golpe.RequiresValue);
+
 			if (!Golpe.Name.IsEmpty())
 			{
 				OutMoves.Add(Golpe);

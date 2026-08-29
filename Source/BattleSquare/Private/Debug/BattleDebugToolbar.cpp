@@ -140,10 +140,34 @@ namespace
 			return FText::AsNumber(Slot + 1);
 		}
 
-		const TArray<FString> Nomes = Arena->GetMoveNamesForSide(Arena->GetSideBeingChosen());
-		return Nomes.IsValidIndex(Slot)
+		const uint8 Lado = Arena->GetSideBeingChosen();
+		const TArray<FString> Nomes = Arena->GetMoveNamesForSide(Lado);
+		const FText Nome = Nomes.IsValidIndex(Slot)
 			? FText::FromString(Nomes[Slot])
-			: FText::FromString(FString::Printf(TEXT("golpe %d"), Slot + 1));
+			: FText::Format(NSLOCTEXT("BattleToolbar", "GolpeSemNome", "golpe {Numero}"),
+				FFormatNamedArguments{ { TEXT("Numero"), FText::AsNumber(Slot + 1) } });
+
+		if (Arena->IsMoveUnlockedForSide(Lado, Slot))
+		{
+			return Nome;
+		}
+
+		// TRANCADO aparece, com o que falta. Sumir com o botão diria "este
+		// golpe não existe"; dizer o requisito diz "este golpe eu ainda vou
+		// ter" — que é a diferença entre uma ausência e um objetivo.
+		return FText::Format(
+			NSLOCTEXT("BattleToolbar", "GolpeTrancado", "🔒 {Nome} ({Requisito})"),
+			FFormatNamedArguments{
+				{ TEXT("Nome"), Nome },
+				{ TEXT("Requisito"), Arena->GetMoveRequirementTextForSide(Lado, Slot) },
+			});
+	}
+
+	/** Botão de golpe trancado fica visível e INERTE. */
+	bool IsPlayerMoveEnabled(int32 Slot)
+	{
+		const ABattleArena* Arena = FindArena();
+		return !Arena || Arena->IsMoveUnlockedForSide(Arena->GetSideBeingChosen(), Slot);
 	}
 
 	void ChoosePlayerMove(int32 Slot)
@@ -258,6 +282,7 @@ void FBattleDebugToolbar::Show(UWorld* World)
 		[
 			SNew(SButton)
 			.ContentPadding(FMargin(8.0f, 4.0f))
+			.IsEnabled_Lambda([Slot]() { return IsPlayerMoveEnabled(Slot); })
 			.OnClicked_Lambda([Slot]() { ChoosePlayerMove(Slot); return FReply::Handled(); })
 			[
 				SNew(STextBlock).Text_Lambda([Slot]() { return PlayerMoveLabel(Slot); })

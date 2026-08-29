@@ -399,6 +399,18 @@ public:
 	/** Nomes dos golpes do pet daquele lado, na ordem do slot. */
 	TArray<FString> GetMoveNamesForSide(uint8 Side) const;
 
+	/**
+	 * O golpe daquele índice está liberado para o pet daquele lado?
+	 *
+	 * Consulta, não decisão: quem RECUSA é UBattleActionQueueComponent. A tela
+	 * pergunta para não oferecer o que seria recusado — se ela decidisse,
+	 * haveria duas regras, e elas concordariam até a primeira edição.
+	 */
+	bool IsMoveUnlockedForSide(uint8 Side, int32 MoveIndex) const;
+
+	/** "exige Voo 12", ou vazio quando o golpe não exige nada. */
+	FText GetMoveRequirementTextForSide(uint8 Side, int32 MoveIndex) const;
+
 private:
 	void ResolveTurnWithCommits(const FTurnCommit& LocalCommit, const FTurnCommit& OpponentCommit);
 
@@ -494,6 +506,19 @@ private:
 	 * final não deixa ver que houve ganho.
 	 */
 	void ShowAttributeGains(const FPetPresentationInfo& Presentation,
+		const FOwnedPetInstance& Antes, const FOwnedPetInstance& Depois) const;
+
+	/**
+	 * Anuncia o golpe que ABRIU com o que o pet acabou de ganhar.
+	 *
+	 * É o retorno que fecha a volta: sem ele, o jogador vê o atributo subir
+	 * numa tela e descobre o golpe novo — se descobrir — numa batalha
+	 * seguinte, sem ligar uma coisa à outra.
+	 *
+	 * Compara o requisito contra o ANTES e o DEPOIS. Só olhar o depois
+	 * anunciaria de novo, a cada batalha, todo golpe já destravado.
+	 */
+	void AnnounceMovesUnlockedBy(const FPetPresentationInfo& Presentation,
 		const FOwnedPetInstance& Antes, const FOwnedPetInstance& Depois) const;
 
 	// Dispara OnBattleFinished se o trace contiver BatalhaEncerrada, no

@@ -1208,18 +1208,21 @@ void ABattleArena::ShowAttributeGains(const FPetPresentationInfo& Presentation,
 		int32 Depois;
 	};
 
+	// Os rótulos vêm de FPetMoveRequirements, que é quem já os tinha para
+	// descrever o requisito do golpe. Repeti-los aqui daria ao mesmo atributo
+	// dois nomes na mesma partida assim que um dos dois fosse editado.
 	const FLinhaDeAtributo Linhas[] = {
-		{ NSLOCTEXT("PetAttributes", "Musculatura", "Musculatura"),
+		{ FPetMoveRequirements::GetAttributeLabel(TEXT("musculature")),
 		  Antes.Musculature, Depois.Musculature },
-		{ NSLOCTEXT("PetAttributes", "Personalidade", "Personalidade"),
+		{ FPetMoveRequirements::GetAttributeLabel(TEXT("personality")),
 		  Antes.Personality, Depois.Personality },
-		{ NSLOCTEXT("PetAttributes", "Camuflagem", "Camuflagem"),
+		{ FPetMoveRequirements::GetAttributeLabel(TEXT("camouflage")),
 		  Antes.SkillProficiency[FPetAttributeProgression::Camouflage],
 		  Depois.SkillProficiency[FPetAttributeProgression::Camouflage] },
-		{ NSLOCTEXT("PetAttributes", "Voo", "Voo"),
+		{ FPetMoveRequirements::GetAttributeLabel(TEXT("flight")),
 		  Antes.SkillProficiency[FPetAttributeProgression::Flight],
 		  Depois.SkillProficiency[FPetAttributeProgression::Flight] },
-		{ NSLOCTEXT("PetAttributes", "Subsolo", "Subsolo"),
+		{ FPetMoveRequirements::GetAttributeLabel(TEXT("underground")),
 		  Antes.SkillProficiency[FPetAttributeProgression::Underground],
 		  Depois.SkillProficiency[FPetAttributeProgression::Underground] },
 	};
@@ -1247,6 +1250,37 @@ void ABattleArena::ShowAttributeGains(const FPetPresentationInfo& Presentation,
 			Linha.Depois > Linha.Antes ? FColor::Green : FColor::Orange, /*Key=*/-1);
 		FBattleNarrationFeed::Push(Texto,
 			Linha.Depois > Linha.Antes ? FColor::Green : FColor::Orange);
+	}
+}
+
+void ABattleArena::AnnounceMovesUnlockedBy(const FPetPresentationInfo& Presentation,
+	const FOwnedPetInstance& Antes, const FOwnedPetInstance& Depois) const
+{
+	for (int32 Indice = 0; Indice < Presentation.MoveRequiresAttribute.Num(); ++Indice)
+	{
+		const FString Atributo = Presentation.MoveRequiresAttribute[Indice];
+		const int32 Valor = Presentation.MoveRequiresValue.IsValidIndex(Indice)
+			? Presentation.MoveRequiresValue[Indice]
+			: 0;
+
+		const bool bJaTinha = FPetMoveRequirements::IsMet(Atributo, Valor, Antes);
+		const bool bTemAgora = FPetMoveRequirements::IsMet(Atributo, Valor, Depois);
+		if (bJaTinha || !bTemAgora)
+		{
+			continue;
+		}
+
+		const FText Texto = FText::Format(
+			NSLOCTEXT("PetAttributes", "GolpeDesbloqueado", "{Pet} desbloqueou {Golpe}!"),
+			FFormatNamedArguments{
+				{ TEXT("Pet"), FText::FromString(Presentation.Name) },
+				{ TEXT("Golpe"), Presentation.MoveNames.IsValidIndex(Indice)
+					? FText::FromString(Presentation.MoveNames[Indice])
+					: FText::AsNumber(Indice + 1) },
+			});
+
+		FBattleDebugScreen::Show(Texto.ToString(), 0.0f, FColor::Yellow, /*Key=*/-1);
+		FBattleNarrationFeed::Push(Texto, FColor::Yellow);
 	}
 }
 
@@ -1331,6 +1365,7 @@ void ABattleArena::GrantExperienceIfOwned(const TArray<FBattleEvent>& Trace)
 		FPetCollectionService::SaveCollection(PetCollectionSlotName, Collection);
 
 		ShowAttributeGains(*Presentation, AntesDosGanhos, *OwnedInstance);
+		AnnounceMovesUnlockedBy(*Presentation, AntesDosGanhos, *OwnedInstance);
 
 		FBattleDebugScreen::Show(
 			FString::Printf(TEXT("+%d de experiência para %s (total %d)"),
@@ -1778,6 +1813,39 @@ TArray<FString> ABattleArena::GetMoveNamesForSide(uint8 Side) const
 
 	const FPetPresentationInfo* Presentation = PresentationsByPetId.Find(Pet->PetId);
 	return Presentation ? Presentation->MoveNames : TArray<FString>();
+}
+
+bool ABattleArena::IsMoveUnlockedForSide(uint8 Side, int32 MoveIndex) const
+{
+	const FPetState* Pet = CurrentState.Pets.FindByPredicate(
+		[Side](const FPetState& Candidato) { return Candidato.Side == Side; });
+	const FPetPresentationInfo* Presentation = Pet ? PresentationsByPetId.Find(Pet->PetId) : nullptr;
+	if (!Presentation)
+	{
+		return true;
+	}
+
+	// Fora da lista é LIBERADO, como em UBattleActionQueueComponent: pet sem
+	// avaliação de requisito não pode ficar sem golpe por omissão.
+	return !Presentation->MoveUnlocked.IsValidIndex(MoveIndex)
+		|| Presentation->MoveUnlocked[MoveIndex];
+}
+
+FText ABattleArena::GetMoveRequirementTextForSide(uint8 Side, int32 MoveIndex) const
+{
+	const FPetState* Pet = CurrentState.Pets.FindByPredicate(
+		[Side](const FPetState& Candidato) { return Candidato.Side == Side; });
+	const FPetPresentationInfo* Presentation = Pet ? PresentationsByPetId.Find(Pet->PetId) : nullptr;
+	if (!Presentation || !Presentation->MoveRequiresAttribute.IsValidIndex(MoveIndex))
+	{
+		return FText::GetEmpty();
+	}
+
+	return FPetMoveRequirements::DescribeRequirement(
+		Presentation->MoveRequiresAttribute[MoveIndex],
+		Presentation->MoveRequiresValue.IsValidIndex(MoveIndex)
+			? Presentation->MoveRequiresValue[MoveIndex]
+			: 0);
 }
 
 FString ABattleArena::GetPresentationTypeForPet(uint8 PetId) const

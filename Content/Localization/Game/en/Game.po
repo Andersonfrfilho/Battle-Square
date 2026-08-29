@@ -4,8 +4,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Game\n"
-"POT-Creation-Date: 2026-08-29 20:08\n"
-"PO-Revision-Date: 2026-08-29 20:08\n"
+"POT-Creation-Date: 2026-08-29 20:33\n"
+"PO-Revision-Date: 2026-08-29 20:33\n"
 "Language-Team: \n"
 "Language: en\n"
 "MIME-Version: 1.0\n"
@@ -160,65 +160,37 @@ msgctxt ",4F03AD8C7C4EC3933D6517B4C8B9430F"
 msgid "Ações: 0 de 3 — escolha o tipo"
 msgstr ""
 
-#. Key:	Musculatura
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1153)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1153)
-msgctxt "PetAttributes,Musculatura"
-msgid "Musculatura"
-msgstr ""
-
-#. Key:	Personalidade
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1155)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1155)
-msgctxt "PetAttributes,Personalidade"
-msgid "Personalidade"
-msgstr ""
-
-#. Key:	Camuflagem
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1157)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1157)
-msgctxt "PetAttributes,Camuflagem"
-msgid "Camuflagem"
-msgstr ""
-
-#. Key:	Voo
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1160)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1160)
-msgctxt "PetAttributes,Voo"
-msgid "Voo"
-msgstr ""
-
-#. Key:	Subsolo
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1163)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1163)
-msgctxt "PetAttributes,Subsolo"
-msgid "Subsolo"
-msgstr ""
-
 #. Key:	AtributoSubiu
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1179)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1179)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1241)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1241)
 msgctxt "PetAttributes,AtributoSubiu"
 msgid "{Pet}: {Atributo} {Antes} → {Depois}"
 msgstr ""
 
+#. Key:	GolpeDesbloqueado
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1274)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1274)
+msgctxt "PetAttributes,GolpeDesbloqueado"
+msgid "{Pet} desbloqueou {Golpe}!"
+msgstr ""
+
 #. Key:	GolpeUsado
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1680)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1680)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1774)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1774)
 msgctxt "BattleNarration,GolpeUsado"
 msgid "— usou {Move}"
 msgstr ""
 
 #. Key:	SuperEfetivo
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1693)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1693)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1787)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1787)
 msgctxt "BattleNarration,SuperEfetivo"
 msgid "É super efetivo!"
 msgstr ""
 
 #. Key:	PoucoEfetivo
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1699)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1699)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1793)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1793)
 msgctxt "BattleNarration,PoucoEfetivo"
 msgid "Não é muito efetivo..."
 msgstr ""
@@ -354,6 +326,62 @@ msgstr ""
 #: Source/BattleSquare/Private/Battle/BattleNarration.cpp(88)
 msgctxt "BattleNarration,Moveu"
 msgid "{Actor} se moveu"
+msgstr ""
+
+#. Key:	GolpeSemNome
+#. SourceLocation:	Source/BattleSquare/Private/Debug/BattleDebugToolbar.cpp(147)
+#: Source/BattleSquare/Private/Debug/BattleDebugToolbar.cpp(147)
+msgctxt "BattleToolbar,GolpeSemNome"
+msgid "golpe {Numero}"
+msgstr ""
+
+#. Key:	GolpeTrancado
+#. SourceLocation:	Source/BattleSquare/Private/Debug/BattleDebugToolbar.cpp(159)
+#: Source/BattleSquare/Private/Debug/BattleDebugToolbar.cpp(159)
+msgctxt "BattleToolbar,GolpeTrancado"
+msgid "🔒 {Nome} ({Requisito})"
+msgstr ""
+
+#. Key:	ExigeAtributo
+#. SourceLocation:	Source/BattleSquare/Private/Meta/PetMoveRequirements.cpp(100)
+#: Source/BattleSquare/Private/Meta/PetMoveRequirements.cpp(100)
+msgctxt "PetAttributes,ExigeAtributo"
+msgid "exige {Atributo} {Valor}"
+msgstr ""
+
+#. Key:	Musculatura
+#. SourceLocation:	Source/BattleSquare/Private/Meta/PetMoveRequirements.cpp(67)
+#: Source/BattleSquare/Private/Meta/PetMoveRequirements.cpp(67)
+msgctxt "PetAttributes,Musculatura"
+msgid "Musculatura"
+msgstr ""
+
+#. Key:	Personalidade
+#. SourceLocation:	Source/BattleSquare/Private/Meta/PetMoveRequirements.cpp(71)
+#: Source/BattleSquare/Private/Meta/PetMoveRequirements.cpp(71)
+msgctxt "PetAttributes,Personalidade"
+msgid "Personalidade"
+msgstr ""
+
+#. Key:	Camuflagem
+#. SourceLocation:	Source/BattleSquare/Private/Meta/PetMoveRequirements.cpp(75)
+#: Source/BattleSquare/Private/Meta/PetMoveRequirements.cpp(75)
+msgctxt "PetAttributes,Camuflagem"
+msgid "Camuflagem"
+msgstr ""
+
+#. Key:	Voo
+#. SourceLocation:	Source/BattleSquare/Private/Meta/PetMoveRequirements.cpp(79)
+#: Source/BattleSquare/Private/Meta/PetMoveRequirements.cpp(79)
+msgctxt "PetAttributes,Voo"
+msgid "Voo"
+msgstr ""
+
+#. Key:	Subsolo
+#. SourceLocation:	Source/BattleSquare/Private/Meta/PetMoveRequirements.cpp(83)
+#: Source/BattleSquare/Private/Meta/PetMoveRequirements.cpp(83)
+msgctxt "PetAttributes,Subsolo"
+msgid "Subsolo"
 msgstr ""
 
 #. Key:	Committed

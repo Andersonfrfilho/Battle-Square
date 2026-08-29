@@ -42,4 +42,21 @@ public:
 	 */
 	static void ApplyToPresentation(FPetPresentationInfo& Presentation,
 		const FOwnedPetInstance* Instance);
+
+	/**
+	 * Nome do atributo como o JOGADOR lê ("flight" → "Voo").
+	 *
+	 * Mora aqui, e não em quem desenha, porque três telas precisam dele — o
+	 * golpe trancado, o ganho de atributo e o anúncio de desbloqueio. Três
+	 * cópias concordariam até a primeira edição, e o sintoma seria o mesmo
+	 * atributo com dois nomes na mesma partida.
+	 *
+	 * Nome desconhecido volta COMO VEIO. Inventar um rótulo bonito para um
+	 * atributo que o jogo não conhece esconderia o erro de cadastro atrás de
+	 * uma palavra plausível.
+	 */
+	static FText GetAttributeLabel(const FString& Attribute);
+
+	/** "exige Voo 12", ou vazio quando o golpe não exige nada. */
+	static FText DescribeRequirement(const FString& Attribute, int32 RequiredValue);
 };

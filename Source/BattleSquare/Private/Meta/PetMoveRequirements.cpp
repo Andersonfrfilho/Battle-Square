@@ -60,6 +60,50 @@ bool FPetMoveRequirements::IsMet(const FString& RequiredAttribute, int32 Require
 	return ValorAtual >= RequiredValue;
 }
 
+FText FPetMoveRequirements::GetAttributeLabel(const FString& Attribute)
+{
+	if (Attribute == AtributoMusculatura)
+	{
+		return NSLOCTEXT("PetAttributes", "Musculatura", "Musculatura");
+	}
+	if (Attribute == AtributoPersonalidade)
+	{
+		return NSLOCTEXT("PetAttributes", "Personalidade", "Personalidade");
+	}
+	if (Attribute == AtributoCamuflagem)
+	{
+		return NSLOCTEXT("PetAttributes", "Camuflagem", "Camuflagem");
+	}
+	if (Attribute == AtributoVoo)
+	{
+		return NSLOCTEXT("PetAttributes", "Voo", "Voo");
+	}
+	if (Attribute == AtributoSubsolo)
+	{
+		return NSLOCTEXT("PetAttributes", "Subsolo", "Subsolo");
+	}
+
+	// Cru, de propósito — ver o comentário no header.
+	return FText::FromString(Attribute);
+}
+
+FText FPetMoveRequirements::DescribeRequirement(const FString& Attribute, int32 RequiredValue)
+{
+	// Mesmo critério de IsMet: valor não-positivo é ausência de requisito, e
+	// descrever "exige Musculatura 0" mostraria uma trava que não existe.
+	if (RequiredValue <= 0)
+	{
+		return FText::GetEmpty();
+	}
+
+	return FText::Format(
+		NSLOCTEXT("PetAttributes", "ExigeAtributo", "exige {Atributo} {Valor}"),
+		FFormatNamedArguments{
+			{ TEXT("Atributo"), GetAttributeLabel(Attribute) },
+			{ TEXT("Valor"), FText::AsNumber(RequiredValue) },
+		});
+}
+
 void FPetMoveRequirements::ApplyToPresentation(FPetPresentationInfo& Presentation,
 	const FOwnedPetInstance* Instance)
 {

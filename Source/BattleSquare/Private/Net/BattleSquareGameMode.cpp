@@ -16,6 +16,9 @@
 #include "Meta/PetProgressionService.h"
 #include "Meta/PetAttributeProgression.h"
 #include "World/WorldEncounterFlow.h"
+#include "Environment/ForestBackdrop.h"
+#include "Environment/SceneLighting.h"
+#include "World/WorldStatusReadout.h"
 #include "World/EncounterDetectionComponent.h"
 #include "World/EncounterMatchAssembler.h"
 #include "Battle/BattleArena.h"
@@ -68,6 +71,18 @@ void ABattleSquareGameMode::BeginPlay()
 
 namespace
 {
+	/**
+	 * Alcance do traço que procura o chão sob o jogador.
+	 *
+	 * Generoso de propósito: num nível cujo piso esteja bem abaixo do ponto de
+	 * nascimento, um traço curto não acharia nada e a mata pousaria na altura
+	 * do jogador — flutuando, que é pior que não existir.
+	 */
+	constexpr float TracoDeChaoUnidades = 100000.0f;
+
+	/** Folga que evita as duas superfícies coplanares. */
+	constexpr float FolgaDoChaoUnidades = 2.0f;
+
 	TArray<uint8> MirrorKeyHexToBytes(const FString& Hex)
 	{
 		TArray<uint8> Bytes;
@@ -192,7 +207,16 @@ FString ABattleSquareGameMode::SetUpWorldEncounterFlow()
 	WorldEncounterFlow->OnWorldBattleStarted.AddUObject(
 		this, &ABattleSquareGameMode::HandleWorldBattleStarted);
 
+	SpawnWorldScenery();
 	SpawnRoamingEncounters();
+
+	ReloadOwnedPetSnapshot();
+	if (WorldStatusRefreshSeconds > 0.0f)
+	{
+		World->GetTimerManager().SetTimer(WorldStatusTimer, this,
+			&ABattleSquareGameMode::RefreshWorldStatus,
+			WorldStatusRefreshSeconds, /*bLoop=*/true);
+	}
 	return FString();
 }
 
@@ -484,6 +508,11 @@ void ABattleSquareGameMode::HandleWorldBattleFinished()
 {
 	TearDownBattleUi();
 
+	// A batalha acabou de gravar experiência e atributo na coleção. Sem
+	// reler aqui, o painel do mundo continuaria mostrando o pet de antes da
+	// luta — e o jogador veria o ganho passar na tela da batalha e sumir.
+	ReloadOwnedPetSnapshot();
+
 	// De volta ao mundo: cursor escondido e input de jogo, senão o explorador
 	// nasce sem responder e parece que a transição quebrou.
 	if (APlayerController* PlayerController = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr)
@@ -502,6 +531,149 @@ void ABattleSquareGameMode::TearDownBattleUi()
 	}
 
 	FBattleDebugToolbar::Hide();
+}
+
+void ABattleSquareGameMode::ReloadOwnedPetSnapshot()
+{
+	const TArray<FOwnedPetInstance> Colecao =
+		FPetCollectionService::LoadCollection(PetCollectionSlotName);
+
+	const FOwnedPetInstance* Meu = WorldEncounterPlayerCatalogId.IsEmpty()
+		// Sem pet declarado, o primeiro da coleção serve — mesmo critério da
+		// montagem de encontro, e pelo mesmo motivo: travar por configuração
+		// ausente num nível de teste não ajudaria ninguém.
+		? (Colecao.IsEmpty() ? nullptr : &Colecao[0])
+		: Colecao.FindByPredicate(
+			[this](const FOwnedPetInstance& Item)
+			{
+				return Item.CatalogId == WorldEncounterPlayerCatalogId;
+			});
+
+	bHasCachedOwnedPet = Meu != nullptr;
+	if (Meu)
+	{
+		CachedOwnedPet = *Meu;
+	}
+}
+
+void ABattleSquareGameMode::RefreshWorldStatus()
+{
+	UWorld* World = GetWorld();
+	if (!World || !FBattleDebugScreen::IsEnabled())
+	{
+		return;
+	}
+
+	const APawn* Jogador = World->GetFirstPlayerController()
+		? World->GetFirstPlayerController()->GetPawn() : nullptr;
+
+	FWorldStatusSnapshot Retrato;
+	Retrato.bHasOwnedPet = bHasCachedOwnedPet;
+	Retrato.OwnedPet = CachedOwnedPet;
+
+	float MenorDistancia = TNumericLimits<float>::Max();
+	for (TActorIterator<AWorldEncounterActor> It(World); It; ++It)
+	{
+		if (!IsValid(*It) || It->bIsResolved)
+		{
+			continue;
+		}
+
+		++Retrato.EncountersAlive;
+		if (Jogador)
+		{
+			MenorDistancia = FMath::Min(MenorDistancia,
+				FVector::Dist(Jogador->GetActorLocation(), It->GetActorLocation()));
+		}
+	}
+
+	Retrato.DistanceToNearestUnits = (Retrato.EncountersAlive > 0 && Jogador)
+		? MenorDistancia
+		: -1.0f;
+
+	// Chaves FIXAS e consecutivas: a linha se reescreve no lugar em vez de
+	// empilhar. Empilhando, o painel encheria sozinho em segundos e engoliria
+	// tudo o que a batalha tem a dizer.
+	const TArray<FWorldStatusLine> Linhas = FWorldStatusReadout::Build(Retrato);
+	for (int32 Indice = 0; Indice < Linhas.Num(); ++Indice)
+	{
+		FBattleDebugScreen::Show(Linhas[Indice].Text.ToString(), 0.0f,
+			Linhas[Indice].Color, /*Key=*/740 + Indice);
+	}
+}
+
+void ABattleSquareGameMode::SpawnWorldScenery()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	// Sol primeiro: sem ele a mata nasce azul, e o defeito parece ser da mata.
+	if (!ABattleSceneLighting::WorldAlreadyHasSun(World))
+	{
+		FActorSpawnParameters Parametros;
+		Parametros.ObjectFlags |= RF_Transient;
+		World->SpawnActor<ABattleSceneLighting>(
+			ABattleSceneLighting::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, Parametros);
+	}
+
+	// Mata já colocada à mão manda — mesmo critério dos encontros: criar por
+	// cima duplicaria o que o autor do nível decidiu.
+	if (TActorIterator<AForestBackdrop>(World))
+	{
+		FBattleDebugScreen::Show(TEXT("mundo já tem mata própria — nenhuma foi plantada"),
+			8.0f, FColor::Silver, /*Key=*/721);
+		return;
+	}
+
+	APawn* Jogador = World->GetFirstPlayerController()
+		? World->GetFirstPlayerController()->GetPawn() : nullptr;
+	if (!Jogador)
+	{
+		return;
+	}
+
+	// O chão da mata pousa no chão QUE JÁ EXISTE, achado por traço para baixo
+	// a partir do jogador. Chutar Z=0 empilharia dois chãos disputando os
+	// mesmos pixels — o mesmo z-fighting que fez a barra de vida piscar — e
+	// num nível cujo piso não estivesse em zero a mata ficaria no ar.
+	const FVector Origem = Jogador->GetActorLocation();
+	FHitResult Toque;
+	FCollisionQueryParams Consulta;
+	Consulta.AddIgnoredActor(Jogador);
+
+	const bool bAchouChao = World->LineTraceSingleByChannel(Toque, Origem,
+		Origem - FVector(0.0f, 0.0f, TracoDeChaoUnidades), ECC_WorldStatic, Consulta);
+
+	const float AlturaDoChao = bAchouChao ? Toque.Location.Z : Origem.Z;
+
+	FActorSpawnParameters Parametros;
+	Parametros.ObjectFlags |= RF_Transient;
+
+	// Um fio ABAIXO do piso encontrado: encostar exato deixaria as duas
+	// superfícies coplanares, e é isso que produz o brilho piscando.
+	const FVector Onde(Origem.X, Origem.Y,
+		AlturaDoChao - AForestBackdrop::GroundTopLocalZ() - FolgaDoChaoUnidades);
+
+	AForestBackdrop* Mata = World->SpawnActor<AForestBackdrop>(
+		AForestBackdrop::StaticClass(), Onde, FRotator::ZeroRotator, Parametros);
+	if (!Mata)
+	{
+		return;
+	}
+
+	// Sem vazio reservado para câmera: no mundo aberto a câmera segue o
+	// jogador, então não existe uma direção fixa a proteger — e reservar uma
+	// abriria um buraco sem explicação no meio da floresta.
+	Mata->BuildForest(WorldSceneryCellSizeUnits,
+		static_cast<uint32>(WorldScenerySeed), FVector2D::ZeroVector);
+
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("mundo: sol e mata plantados (chão em Z=%.0f%s)"),
+			AlturaDoChao, bAchouChao ? TEXT("") : TEXT(", NÃO encontrado por traço")),
+		0.0f, FColor::Green, /*Key=*/721);
 }
 
 void ABattleSquareGameMode::SpawnRoamingEncounters()

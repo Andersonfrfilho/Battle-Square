@@ -96,6 +96,35 @@ public:
 	void SpawnRoamingEncounters();
 
 	/**
+	 * Dá SOL e CHÃO ao mundo aberto.
+	 *
+	 * Sem isto o nível não tem ator de luz nenhum, e a engine ilumina tudo
+	 * com o ambiente azul padrão — foi exatamente assim que a mata da arena
+	 * apareceu azul-clara na tela. É o mesmo defeito, num lugar diferente.
+	 */
+	void SpawnWorldScenery();
+
+	/**
+	 * Escreve o painel do mundo: seu pet, seus atributos, quem está por perto.
+	 *
+	 * Num TEMPORIZADOR lento, não a cada quadro: nada disso muda em 16ms, e um
+	 * painel reescrito 60 vezes por segundo é custo puro. A coleção só é
+	 * relida quando pode ter mudado — o disco não tem por que ser tocado
+	 * enquanto o jogador só anda.
+	 */
+	void RefreshWorldStatus();
+
+	void ReloadOwnedPetSnapshot();
+
+	FTimerHandle WorldStatusTimer;
+	FOwnedPetInstance CachedOwnedPet;
+	bool bHasCachedOwnedPet = false;
+
+	/** De quantos em quantos segundos o painel do mundo é reescrito. */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
+	float WorldStatusRefreshSeconds = 0.5f;
+
+	/**
 	 * Repõe a população: tira de cena os derrotados e cria novos até o alvo.
 	 *
 	 * Sem isto o mundo ACABA — com um número fixo, seis batalhas esvaziavam o
@@ -127,6 +156,26 @@ public:
 	/** Semente do povoamento: repetir a mesma dá o mesmo mundo. */
 	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
 	int32 WorldEncounterSeed = 20260827;
+
+	/**
+	 * Escala da mata do mundo, em unidades por "casa".
+	 *
+	 * AForestBackdrop mede tudo em casas de tabuleiro porque nasceu para a
+	 * arena. O mundo reusa o MESMO ator com uma casa maior, em vez de ganhar
+	 * um segundo sistema de cenário: duas matas concordariam até a primeira
+	 * edição, e a paleta do jogo passaria a depender de qual delas se está
+	 * olhando.
+	 *
+	 * 200 dá chão de raio 6000 — o bastante para cobrir os 4000 em que os
+	 * encontros nascem, com margem para o jogador andar além deles.
+	 */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
+	float WorldSceneryCellSizeUnits = 200.0f;
+
+	/** Semente da mata. Separada da do povoamento: mudar onde os inimigos
+	 *  nascem não deveria replantar a floresta inteira. */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
+	int32 WorldScenerySeed = 20260829;
 
 	/** Ids do catálogo sorteados para os encontros. */
 	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")

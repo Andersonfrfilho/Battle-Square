@@ -9,6 +9,7 @@
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "Environment/SceneLighting.h"
+#include "Net/BattleSquareGameMode.h"
 #include "Misc/AutomationTest.h"
 
 namespace CenaIluminada
@@ -207,6 +208,41 @@ bool FSceneLightingAmbientDoesNotDrownSunTest::RunTest(const FString& Parameters
 
 	TestTrue(TEXT("O céu é preenchimento de sombra, não a luz principal"),
 		Ceu->Intensity < Sol->Intensity * 0.2f);
+
+	return true;
+}
+
+// O MUNDO precisa de sol, não só a arena.
+//
+// AForestBackdrop e ABattleSceneLighting existiam, tinham teste, e só a arena
+// os criava — o mundo aberto abria sem ator de luz nenhum, iluminado pelo
+// ambiente azul padrão da engine. É a QUARTA vez que este projeto encontra o
+// mesmo padrão: recurso visual que existe, funciona, e não é alcançado por
+// quem precisava dele.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FWorldSceneryIsReachableTest,
+	"BattleSquare.World.SceneryIsReachable",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FWorldSceneryIsReachableTest::RunTest(const FString& Parameters)
+{
+	// O padrão da mata do mundo precisa cobrir o raio em que os encontros
+	// nascem, senão o jogador anda até um inimigo e sai do chão no caminho.
+	const ABattleSquareGameMode* Padrao = GetDefault<ABattleSquareGameMode>();
+
+	// AForestBackdrop mede o chão em 30 casas de raio — ver o .cpp dele.
+	constexpr float RaioDoChaoEmCasas = 30.0f;
+	const float RaioDoChao = Padrao->WorldSceneryCellSizeUnits * RaioDoChaoEmCasas;
+
+	TestTrue(
+		*FString::Printf(TEXT("Chão de raio %.0f cobre os %.0f dos encontros"),
+			RaioDoChao, Padrao->WorldEncounterSpawnRadiusUnits),
+		RaioDoChao > Padrao->WorldEncounterSpawnRadiusUnits);
+
+	// Semente da mata SEPARADA da do povoamento: mudar onde os inimigos
+	// nascem não pode replantar a floresta inteira.
+	TestNotEqual(TEXT("As duas sementes são independentes"),
+		Padrao->WorldScenerySeed, Padrao->WorldEncounterSeed);
 
 	return true;
 }

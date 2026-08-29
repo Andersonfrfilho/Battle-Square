@@ -36,7 +36,7 @@ namespace
 		{
 			if (Pet.Side == 1)
 			{
-				return State.CellLayout[CellLayoutIndex(Pet.Column, Pet.Row)];
+				return State.CellLayout[State.CellIndex(Pet.Column, Pet.Row)];
 			}
 		}
 		return 0;
@@ -90,7 +90,7 @@ bool FMoveWithoutEffectLeavesTerrainAloneTest::RunTest(const FString& Parameters
 
 	// Casa do alvo começa como BÔNUS: se o golpe sem efeito a "neutralizasse",
 	// o bônus sumiria sem ninguém ter pedido.
-	State.CellLayout[CellLayoutIndex(2, 1)] = static_cast<uint8>(ECellProperty::Buff);
+	State.CellLayout[State.CellIndex(2, 1)] = static_cast<uint8>(ECellProperty::Buff);
 
 	TArray<FBattleEvent> Trace;
 	FBattleAction Aguardar;
@@ -115,7 +115,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FBlockedCellNeverChangesTest::RunTest(const FString& Parameters)
 {
 	FBattleState State = MakeTerrainDuel(static_cast<uint8>(ECellProperty::Water));
-	State.CellLayout[CellLayoutIndex(2, 1)] = static_cast<uint8>(ECellProperty::Blocked);
+	State.CellLayout[State.CellIndex(2, 1)] = static_cast<uint8>(ECellProperty::Blocked);
 
 	TArray<FBattleEvent> Trace;
 	FBattleAction Aguardar;

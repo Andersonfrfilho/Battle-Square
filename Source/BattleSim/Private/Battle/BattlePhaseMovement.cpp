@@ -53,9 +53,9 @@ namespace
 			// caminho de "fora da grade" — bInsideGrid é, na prática,
 			// "destino válido", nome mantido para não mexer no resto do
 			// algoritmo (colisão entre aliados, EmitBlocked já existentes).
-			const bool bWithinBounds = IsInsideGrid(DestColumn, DestRow);
+			const bool bWithinBounds = State.IsInside(DestColumn, DestRow);
 			const bool bDestinationBlocked = bWithinBounds
-				&& State.CellLayout[CellLayoutIndex(DestColumn, DestRow)] == static_cast<uint8>(ECellProperty::Blocked);
+				&& State.CellLayout[State.CellIndex(DestColumn, DestRow)] == static_cast<uint8>(ECellProperty::Blocked);
 			Intent.bInsideGrid = bWithinBounds && !bDestinationBlocked;
 			OutIntents.Add(Intent);
 
@@ -269,7 +269,7 @@ void BattlePhases::ApplyMovement(
 			|| (Pet.PostureFlags & static_cast<uint8>(EBattlePostureFlags::Underground)) != 0;
 
 		if (!bFolgaDoChao
-			&& State.CellLayout[CellLayoutIndex(Pet.Column, Pet.Row)] == static_cast<uint8>(ECellProperty::Damage))
+			&& State.CellLayout[State.CellIndex(Pet.Column, Pet.Row)] == static_cast<uint8>(ECellProperty::Damage))
 		{
 			Pet.PendingDamage += BattleArenaConstants::CellDamageAmount;
 		}

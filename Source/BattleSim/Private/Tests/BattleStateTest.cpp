@@ -117,7 +117,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FBattleStateDefaultCellLayoutTest::RunTest(const FString& Parameters)
 {
 	FBattleState State;
-	TestEqual(TEXT("CellLayout tem 9 posições (grade 3x3)"), State.CellLayout.Num(), BattleGridCellCount);
+	TestEqual(TEXT("CellLayout tem 9 posições (grade 3x3)"), State.CellLayout.Num(), BattleGridDefaultCellCount);
 
 	bool bAllNone = true;
 	for (uint8 CellProperty : State.CellLayout)
@@ -151,7 +151,7 @@ bool FBattleStateComputeHashIncludesCellLayoutTest::RunTest(const FString& Param
 
 	FBattleState StateWithBlocked;
 	StateWithBlocked.Pets.Add(MakeTestPet(1, 50));
-	StateWithBlocked.CellLayout[CellLayoutIndex(0, 0)] = static_cast<uint8>(ECellProperty::Blocked);
+	StateWithBlocked.CellLayout[StateWithBlocked.CellIndex(0, 0)] = static_cast<uint8>(ECellProperty::Blocked);
 
 	TestNotEqual(TEXT("Layout diferente (uma casa bloqueada) muda o hash"), StateNeutral.ComputeHash(), StateWithBlocked.ComputeHash());
 

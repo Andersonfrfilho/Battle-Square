@@ -136,7 +136,7 @@ bool FArenaNeverBlocksStartingCellsTest::RunTest(const FString& Parameters)
 		for (const FPetState& Pet : Arena->GetCurrentState().Pets)
 		{
 			TestNotEqual(TEXT("Casa inicial nunca é bloqueada"),
-				static_cast<int32>(Layout[CellLayoutIndex(Pet.Column, Pet.Row)]),
+				static_cast<int32>(Layout[Arena->GetCurrentState().CellIndex(Pet.Column, Pet.Row)]),
 				static_cast<int32>(ECellProperty::Blocked));
 		}
 	}

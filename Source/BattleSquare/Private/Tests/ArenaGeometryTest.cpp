@@ -66,16 +66,9 @@ bool FArenaMeshesHaveAssignedAssetsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("E a malha do chão está ATRIBUÍDA"),
 		Padrao->GetArenaFloorMesh() && Padrao->GetArenaFloorMesh()->GetStaticMesh() != nullptr);
 
-	const TArray<TObjectPtr<UStaticMeshComponent>>& Moldura = Padrao->GetArenaFrameMeshes();
-	TestEqual(TEXT("Moldura fechada nos quatro lados"), Moldura.Num(), 4);
-	for (const UStaticMeshComponent* Viga : Moldura)
-	{
-		TestTrue(TEXT("Viga existe e tem malha ATRIBUÍDA"),
-			Viga != nullptr && Viga->GetStaticMesh() != nullptr);
-	}
-
 	const TArray<TObjectPtr<UStaticMeshComponent>>& Lajes = Padrao->GetCellTileMeshes();
-	TestEqual(TEXT("Uma laje por casa da grade 3x3"), Lajes.Num(), 9);
+	TestEqual(TEXT("Uma laje por casa da grade configurada"), Lajes.Num(),
+		Padrao->GridColumns * Padrao->GridRows);
 	for (const UStaticMeshComponent* Laje : Lajes)
 	{
 		TestTrue(TEXT("Laje existe e tem malha ATRIBUÍDA"),
@@ -98,7 +91,6 @@ bool FArenaMaterialsArePointedAtTest::RunTest(const FString& Parameters)
 
 	const TPair<const TCHAR*, const TSoftObjectPtr<UMaterialInterface>*> Materiais[] = {
 		{ TEXT("chão"), &Padrao->FloorMaterial },
-		{ TEXT("moldura"), &Padrao->FrameMaterial },
 		{ TEXT("neutro"), &Padrao->NeutralTileMaterial },
 		{ TEXT("água"), &Padrao->WaterTileMaterial },
 		{ TEXT("dano"), &Padrao->DamageTileMaterial },
@@ -159,8 +151,8 @@ bool FArenaCellLocationFollowsTerrainTest::RunTest(const FString& Parameters)
 	ABattleArena* Arena = World->SpawnActor<ABattleArena>();
 
 	FBattleState& Estado = Arena->GetMutableCurrentState();
-	Estado.CellLayout[CellLayoutIndex(0, 0)] = static_cast<uint8>(ECellProperty::Water);
-	Estado.CellLayout[CellLayoutIndex(2, 2)] = static_cast<uint8>(ECellProperty::Blocked);
+	Estado.CellLayout[Estado.CellIndex(0, 0)] = static_cast<uint8>(ECellProperty::Water);
+	Estado.CellLayout[Estado.CellIndex(2, 2)] = static_cast<uint8>(ECellProperty::Blocked);
 
 	const float Base = Arena->GetActorLocation().Z;
 	const float NaAgua = Arena->GetCellWorldLocation(0, 0).Z;

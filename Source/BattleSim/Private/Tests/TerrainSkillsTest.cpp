@@ -88,7 +88,7 @@ bool FSubmergeRequiresWaterTest::RunTest(const FString& Parameters)
 	// Na água: funciona, e a imunidade vale.
 	{
 		FBattleState State = MakeDuelForTerrain();
-		State.CellLayout[CellLayoutIndex(2, 1)] = static_cast<uint8>(ECellProperty::Water);
+		State.CellLayout[State.CellIndex(2, 1)] = static_cast<uint8>(ECellProperty::Water);
 
 		TArray<FBattleEvent> Trace;
 		RunTerrainSlot(State, TerrainAct(EActionType::Atacar, EBattleDirection::Direita),

@@ -36,7 +36,7 @@ bool FArenaDamageCellCombinesWithCombatForSimultaneousDeathTest::RunTest(const F
 	// mesmo slot que Right também está numa casa de dano.
 	State.Pets.Add(MakeArenaPet(1, 0, 1, 1, /*Health=*/6, /*Attack=*/10, /*Defense=*/5));
 	State.Pets.Add(MakeArenaPet(2, 1, 2, 1, /*Health=*/50, /*Attack=*/3, /*Defense=*/5));
-	State.CellLayout[CellLayoutIndex(1, 1)] = static_cast<uint8>(ECellProperty::Damage); // casa do Left
+	State.CellLayout[State.CellIndex(1, 1)] = static_cast<uint8>(ECellProperty::Damage); // casa do Left
 
 	FTurnCommit LeftCommit;
 	LeftCommit.Actions[0] = { EActionType::Aguardar, EBattleDirection::Nenhuma };
@@ -80,7 +80,7 @@ bool FArenaBuffCellStrengthensContextuallyTest::RunTest(const FString& Parameter
 		FBattleState BuffedState;
 		BuffedState.Pets.Add(MakeArenaPet(1, 0, 1, 1, 50, /*Attack=*/20, 5));
 		BuffedState.Pets.Add(MakeArenaPet(2, 1, 2, 1, 50, 10, /*Defense=*/5));
-		BuffedState.CellLayout[CellLayoutIndex(1, 1)] = static_cast<uint8>(ECellProperty::Buff); // casa do atacante
+		BuffedState.CellLayout[BuffedState.CellIndex(1, 1)] = static_cast<uint8>(ECellProperty::Buff); // casa do atacante
 
 		FBattleState NeutralState;
 		NeutralState.Pets.Add(MakeArenaPet(1, 0, 1, 1, 50, 20, 5));
@@ -104,7 +104,7 @@ bool FArenaBuffCellStrengthensContextuallyTest::RunTest(const FString& Parameter
 		FBattleState TargetBuffedState;
 		TargetBuffedState.Pets.Add(MakeArenaPet(1, 0, 1, 1, 50, /*Attack=*/20, 5));
 		TargetBuffedState.Pets.Add(MakeArenaPet(2, 1, 2, 1, 50, 10, /*Defense=*/5));
-		TargetBuffedState.CellLayout[CellLayoutIndex(2, 1)] = static_cast<uint8>(ECellProperty::Buff); // casa do alvo
+		TargetBuffedState.CellLayout[TargetBuffedState.CellIndex(2, 1)] = static_cast<uint8>(ECellProperty::Buff); // casa do alvo
 
 		FBattleState NeutralState;
 		NeutralState.Pets.Add(MakeArenaPet(1, 0, 1, 1, 50, 20, 5));
@@ -129,7 +129,7 @@ bool FArenaBuffCellStrengthensContextuallyTest::RunTest(const FString& Parameter
 		FBattleState State;
 		State.Pets.Add(MakeArenaPet(1, 0, 1, 1, 50, /*Attack=*/20, 5));
 		State.Pets.Add(MakeArenaPet(2, 1, 2, 1, 50, 10, /*Defense=*/5));
-		State.CellLayout[CellLayoutIndex(1, 1)] = static_cast<uint8>(ECellProperty::Buff);
+		State.CellLayout[State.CellIndex(1, 1)] = static_cast<uint8>(ECellProperty::Buff);
 
 		// Slot 0: Left sai da casa de buff (move para longe); Right espera.
 		FTurnCommit LeftMoveAway;

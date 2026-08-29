@@ -1,5 +1,5 @@
 {
-  "_comment": "Layouts de arena. Indice = linha*3 + coluna. 0 neutra, 1 bloqueada, 2 dano, 3 bonus, 4 agua. As casas iniciais dos pets sao (1,1) e (2,1) — indices 4 e 5 — e NENHUM layout pode bloquea-las: a montagem seria rejeitada e a batalha nao abriria.",
+  "_comment": "Layouts de arena. Indice = linha*columns + coluna. 0 neutra, 1 bloqueada, 2 dano, 3 bonus, 4 agua. \"columns\" e \"rows\" sao opcionais e valem 3x3 quando ausentes; o layout precisa ter columns*rows casas. Um layout so e escolhido para uma arena do MESMO tamanho. As casas iniciais sao a primeira e a ultima coluna da linha do meio (num 3x3: (0,1) e (2,1)) e NENHUM layout pode bloquea-las: a montagem seria rejeitada e a batalha nao abriria.",
   "arenas": [
     { "name": "Campo Aberto",   "layout": [0,0,0, 0,0,0, 0,0,0] },
     { "name": "Lago",           "layout": [4,4,0, 0,0,0, 0,4,4] },

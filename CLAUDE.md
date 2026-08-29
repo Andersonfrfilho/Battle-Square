@@ -232,6 +232,12 @@ Culturas empacotadas: `pt-BR` (nativa), `en`, `es`.
   relógio. Semente e montagem são decisão da camada de fora.
 - **A tela não decide regra** (DP-ui-01). Todo botão encaminha ao
   `UBattleActionQueueComponent`, que já tem a regra e o teste.
+- **O tamanho da grade mora no ESTADO** (`FBattleState::GridColumns/GridRows`),
+  entra no hash e não é 3x3 fixo. Campo pode ser 4x4, 3x2 ou 4x6; o teto é 15
+  por eixo porque `PackCell` guarda cada eixo em 4 bits. Configurável em
+  `DefaultGame.ini`, seção `[/Script/BattleSquare.BattleArena]`. A casa inicial
+  também sai daí: lado 0 na primeira coluna, lado 1 na última, ambos na linha do
+  meio — nunca uma coordenada escrita à mão.
 - **Uma fonte de verdade por regra.** Duplicar uma tabela ou uma validação foi
   a causa de L-032, L-033 e de um defeito de direção — as cópias concordam até
   a primeira edição.

@@ -154,7 +154,7 @@ bool FLeavingTheGroundAvoidsCellDamageTest::RunTest(const FString& Parameters)
 	auto RodarSobreCasaDeDano = [](EActionType Postura) -> int32
 	{
 		FBattleState State = MakeAdjacentDuel();
-		State.CellLayout[CellLayoutIndex(2, 1)] = static_cast<uint8>(ECellProperty::Damage);
+		State.CellLayout[State.CellIndex(2, 1)] = static_cast<uint8>(ECellProperty::Damage);
 		TArray<FBattleEvent> Trace;
 		RunSlot(State, Act(EActionType::Aguardar), Act(Postura), Trace);
 		return 200 - PetOnSide(State, 1).Health;
@@ -173,7 +173,7 @@ bool FLeavingTheGroundAvoidsCellDamageTest::RunTest(const FString& Parameters)
 	// que não tem mais como ser exercida numa casa de dano.
 	{
 		FBattleState State = MakeAdjacentDuel();
-		State.CellLayout[CellLayoutIndex(2, 1)] = static_cast<uint8>(ECellProperty::Water);
+		State.CellLayout[State.CellIndex(2, 1)] = static_cast<uint8>(ECellProperty::Water);
 		TArray<FBattleEvent> Trace;
 		RunSlot(State, Act(EActionType::Aguardar), Act(EActionType::Submergir), Trace);
 		TestEqual(TEXT("E submergir na água não fere ninguém"), PetOnSide(State, 1).Health, 200);
@@ -195,7 +195,7 @@ bool FUndergroundCostsMovementAndAttackTest::RunTest(const FString& Parameters)
 
 	// Água na casa dele: desde 2026-08-27 submergir exige o terreno, e sem
 	// isso este teste mediria a FALHA da postura, não o custo dela.
-	State.CellLayout[CellLayoutIndex(2, 1)] = static_cast<uint8>(ECellProperty::Water);
+	State.CellLayout[State.CellIndex(2, 1)] = static_cast<uint8>(ECellProperty::Water);
 
 	TArray<FBattleEvent> Trace;
 

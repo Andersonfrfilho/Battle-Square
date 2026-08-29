@@ -4,6 +4,7 @@
 
 void FBattleGridNavigation::ProjectCell(uint8 StartColumn, uint8 StartRow,
 	const TArray<FBattleAction>& ConfirmedActions,
+	int32 GridColumns, int32 GridRows,
 	uint8& OutColumn, uint8& OutRow)
 {
 	int32 Column = StartColumn;
@@ -24,7 +25,7 @@ void FBattleGridNavigation::ProjectCell(uint8 StartColumn, uint8 StartRow,
 
 		// Movimento que sairia é recusado pelo núcleo: a projeção precisa
 		// recusar igual, senão ela mente sobre onde o pet vai parar.
-		if (IsInsideGrid(Column + DeltaColumn, Row + DeltaRow))
+		if (IsInsideGrid(Column + DeltaColumn, Row + DeltaRow, GridColumns, GridRows))
 		{
 			Column += DeltaColumn;
 			Row += DeltaRow;
@@ -35,10 +36,12 @@ void FBattleGridNavigation::ProjectCell(uint8 StartColumn, uint8 StartRow,
 	OutRow = static_cast<uint8>(Row);
 }
 
-bool FBattleGridNavigation::WouldLeaveGrid(uint8 Column, uint8 Row, EBattleDirection Direction)
+bool FBattleGridNavigation::WouldLeaveGrid(uint8 Column, uint8 Row, EBattleDirection Direction,
+	int32 GridColumns, int32 GridRows)
 {
 	int8 DeltaColumn = 0;
 	int8 DeltaRow = 0;
 	GetDirectionDelta(Direction, DeltaColumn, DeltaRow);
-	return !IsInsideGrid(static_cast<int32>(Column) + DeltaColumn, static_cast<int32>(Row) + DeltaRow);
+	return !IsInsideGrid(static_cast<int32>(Column) + DeltaColumn, static_cast<int32>(Row) + DeltaRow,
+		GridColumns, GridRows);
 }

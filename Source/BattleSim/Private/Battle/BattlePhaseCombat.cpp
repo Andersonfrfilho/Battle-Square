@@ -87,9 +87,9 @@ namespace
 		return Escolhido;
 	}
 
-	bool IsOnBuffCell(const FPetState& Pet, const TArray<uint8>& CellLayout)
+	bool IsOnBuffCell(const FPetState& Pet, const FBattleState& State)
 	{
-		return CellLayout[CellLayoutIndex(Pet.Column, Pet.Row)] == static_cast<uint8>(ECellProperty::Buff);
+		return State.CellLayout[State.CellIndex(Pet.Column, Pet.Row)] == static_cast<uint8>(ECellProperty::Buff);
 	}
 
 	// Fórmula de dano — só inteiros, multiplicador em percentual (design.md).
@@ -99,11 +99,11 @@ namespace
 	//   contextual: fortalece quem ataca a partir dela E quem defende
 	//   nela, nunca persiste em FPetState).
 	// Dano          = Max(DanoMinimo, EfetivoAtaque - DefesaEfetiva)
-	int32 ComputeDamage(const FPetState& Attacker, const FPetState& Target, int32 ActionMultiplierPercent, const TArray<uint8>& CellLayout)
+	int32 ComputeDamage(const FPetState& Attacker, const FPetState& Target, int32 ActionMultiplierPercent, const FBattleState& State)
 	{
 		const bool bTargetDefending = HasPosture(Target, EBattlePostureFlags::Defending);
-		const bool bAttackerBuffed = IsOnBuffCell(Attacker, CellLayout);
-		const bool bTargetBuffed = IsOnBuffCell(Target, CellLayout);
+		const bool bAttackerBuffed = IsOnBuffCell(Attacker, State);
+		const bool bTargetBuffed = IsOnBuffCell(Target, State);
 
 		const int32 EffectiveAttack = bAttackerBuffed
 			? (Attacker.Attack * BattleArenaConstants::CellBuffPercent) / 100
@@ -275,7 +275,7 @@ namespace
 			Multiplier = (Multiplier * ExposedInTheAirDamagePercent) / 100;
 		}
 
-		const int32 Damage = ComputeDamage(*AttackerPtr, *TargetPtr, Multiplier, State.CellLayout);
+		const int32 Damage = ComputeDamage(*AttackerPtr, *TargetPtr, Multiplier, State);
 
 		// Acumula — NÃO aplica. F5 (T8) aplica tudo de uma vez (BTL-07).
 		TargetPtr->PendingDamage += Damage;
@@ -290,7 +290,7 @@ namespace
 		// acertar é ruído.
 		if (TerrainEffect != static_cast<uint8>(ECellProperty::None))
 		{
-			const int32 CellIndex = CellLayoutIndex(TargetPtr->Column, TargetPtr->Row);
+			const int32 CellIndex = State.CellIndex(TargetPtr->Column, TargetPtr->Row);
 			if (State.CellLayout.IsValidIndex(CellIndex)
 				&& State.CellLayout[CellIndex] != static_cast<uint8>(ECellProperty::Blocked))
 			{

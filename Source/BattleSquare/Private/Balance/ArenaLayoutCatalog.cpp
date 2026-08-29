@@ -59,15 +59,33 @@ bool FArenaLayoutCatalog::LoadFromJson(const FString& FilePath, FArenaLayoutCata
 			return false;
 		}
 
+		// Dimensões OPCIONAIS: arena que não as declara é 3x3, que é o que
+		// todo layout escrito antes de grades variáveis já era. Declará-las
+		// obrigatórias invalidaria o arquivo existente inteiro por uma
+		// informação que ele nunca precisou dar.
+		int32 Colunas = BattleGridDefaultColumns;
+		int32 Linhas = BattleGridDefaultRows;
+		(*ArenaObject)->TryGetNumberField(TEXT("columns"), Colunas);
+		(*ArenaObject)->TryGetNumberField(TEXT("rows"), Linhas);
+
+		if (Colunas < BattleGridMinSide || Colunas > BattleGridMaxSide
+			|| Linhas < BattleGridMinSide || Linhas > BattleGridMaxSide)
+		{
+			return false;
+		}
+
+		// O comprimento do layout é a verificação que importa: um array com
+		// casas a menos silenciosamente deslocaria toda linha depois da
+		// primeira, e a arena abriria com a água no lugar errado.
 		const TArray<TSharedPtr<FJsonValue>>* LayoutArray = nullptr;
 		if (!(*ArenaObject)->TryGetArrayField(TEXT("layout"), LayoutArray) || !LayoutArray
-			|| LayoutArray->Num() != BattleGridCellCount)
+			|| LayoutArray->Num() != Colunas * Linhas)
 		{
 			return false;
 		}
 
 		TArray<uint8> Layout;
-		Layout.Reserve(BattleGridCellCount);
+		Layout.Reserve(Colunas * Linhas);
 		for (const TSharedPtr<FJsonValue>& CellValue : *LayoutArray)
 		{
 			int32 CellProperty = 0;

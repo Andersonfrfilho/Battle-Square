@@ -37,7 +37,7 @@ bool FArenaLayoutCatalogLoadAndLookupTest::RunTest(const FString& Parameters)
 
 	TArray<uint8> LavaLayout;
 	TestTrue(TEXT("Arena de Lava encontrada pelo nome"), Catalog.GetLayoutByName(TEXT("Arena de Lava"), LavaLayout));
-	TestEqual(TEXT("Layout tem 9 posições"), LavaLayout.Num(), BattleGridCellCount);
+	TestEqual(TEXT("Layout tem 9 posições"), LavaLayout.Num(), BattleGridDefaultCellCount);
 	TestEqual(TEXT("Casa central é Damage (valor 2)"), LavaLayout[4], static_cast<uint8>(2));
 	TestEqual(TEXT("Última casa é Blocked (valor 1)"), LavaLayout[8], static_cast<uint8>(1));
 
@@ -59,6 +59,50 @@ bool FArenaLayoutCatalogLoadAndLookupTest::RunTest(const FString& Parameters)
 	const FString WrongSizePath = WriteArenaFixtureFile(TEXT("wrong-size.json"), WrongSizeJson);
 	FArenaLayoutCatalog WrongSizeCatalog;
 	TestFalse(TEXT("Layout com tamanho diferente de 9 é rejeitado"), FArenaLayoutCatalog::LoadFromJson(WrongSizePath, WrongSizeCatalog));
+
+	return true;
+}
+
+// Arena com dimensões DECLARADAS. Sem isto, todo layout teria de ser 3x3
+// e um campo 4x6 abriria sempre neutro — a feature existiria no núcleo e
+// não teria como chegar ao arquivo que descreve os campos.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FArenaLayoutCatalogAcceptsDeclaredSizeTest,
+	"BattleSquare.Balance.ArenaLayoutCatalog.AcceptsDeclaredSize",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FArenaLayoutCatalogAcceptsDeclaredSizeTest::RunTest(const FString& Parameters)
+{
+	const FString RetangularJson = TEXT(R"({
+		"arenas": [
+			{ "name": "Corredor", "columns": 4, "rows": 6,
+			  "layout": [0,0,0,0, 0,0,0,0, 0,4,4,0, 0,4,4,0, 0,0,0,0, 0,0,0,0] }
+		]
+	})");
+
+	FArenaLayoutCatalog Catalogo;
+	TestTrue(TEXT("Arena 4x6 declarada carrega"),
+		FArenaLayoutCatalog::LoadFromJson(
+			WriteArenaFixtureFile(TEXT("retangular.json"), RetangularJson), Catalogo));
+
+	TArray<uint8> Layout;
+	TestTrue(TEXT("Corredor encontrado"), Catalogo.GetLayoutByName(TEXT("Corredor"), Layout));
+	TestEqual(TEXT("Layout tem 24 casas"), Layout.Num(), 24);
+	TestEqual(TEXT("Água na casa (1,2), índice 9"), Layout[9], static_cast<uint8>(4));
+
+	// Comprimento que não bate com as dimensões declaradas é recusa, não
+	// preenchimento: um layout curto deslocaria toda linha depois da
+	// primeira, e a arena abriria com a água no lugar errado.
+	const FString TruncadoJson = TEXT(R"({
+		"arenas": [
+			{ "name": "Curto", "columns": 4, "rows": 6, "layout": [0,0,0,0, 0,0,0,0] }
+		]
+	})");
+
+	FArenaLayoutCatalog Recusado;
+	TestFalse(TEXT("Layout curto para as dimensões declaradas é recusado"),
+		FArenaLayoutCatalog::LoadFromJson(
+			WriteArenaFixtureFile(TEXT("truncado.json"), TruncadoJson), Recusado));
 
 	return true;
 }

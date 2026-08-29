@@ -34,7 +34,7 @@ namespace
 
 	// Direções de Mover que mantêm o pet dentro da grade, a partir da
 	// posição registrada em FBattleState (início do turno).
-	TArray<EBattleDirection> ValidMoveDirections(const FPetState& Pet)
+	TArray<EBattleDirection> ValidMoveDirections(const FBattleState& State, const FPetState& Pet)
 	{
 		TArray<EBattleDirection> Valid;
 		for (EBattleDirection Direction : AllDirections)
@@ -44,7 +44,7 @@ namespace
 			GetDirectionDelta(Direction, DeltaColumn, DeltaRow);
 			const int32 DestColumn = static_cast<int32>(Pet.Column) + DeltaColumn;
 			const int32 DestRow = static_cast<int32>(Pet.Row) + DeltaRow;
-			if (IsInsideGrid(DestColumn, DestRow))
+			if (State.IsInside(DestColumn, DestRow))
 			{
 				Valid.Add(Direction);
 			}
@@ -52,7 +52,7 @@ namespace
 		return Valid;
 	}
 
-	FBattleAction GenerateOneAction(const FPetState* Pet, FBattleRandom& Random)
+	FBattleAction GenerateOneAction(const FBattleState& State, const FPetState* Pet, FBattleRandom& Random)
 	{
 		const int32 TypeIndex = Random.NextRange(0, UE_ARRAY_COUNT(AllActionTypes) - 1);
 		const EActionType ChosenType = AllActionTypes[TypeIndex];
@@ -68,10 +68,10 @@ namespace
 
 		if (ChosenType == EActionType::Mover && Pet)
 		{
-			const TArray<EBattleDirection> ValidDirections = ValidMoveDirections(*Pet);
+			const TArray<EBattleDirection> ValidDirections = ValidMoveDirections(State, *Pet);
 			if (ValidDirections.IsEmpty())
 			{
-				// Pet encurralado (não deveria acontecer numa grade 3x3
+				// Pet encurralado (não deveria acontecer numa grade usável
 				// com posição válida, mas nunca gerar Mover impossível).
 				Action.Type = EActionType::Aguardar;
 				Action.Direction = EBattleDirection::Nenhuma;
@@ -97,7 +97,7 @@ FTurnCommit FDumbOpponentAI::GenerateRandomValidCommit(const FBattleState& State
 	FTurnCommit Commit;
 	for (int32 Index = 0; Index < FTurnCommit::ActionsPerTurn; ++Index)
 	{
-		Commit.Actions[Index] = GenerateOneAction(Pet, Random);
+		Commit.Actions[Index] = GenerateOneAction(State, Pet, Random);
 	}
 	return Commit;
 }

@@ -195,7 +195,7 @@ bool FBattlePhaseMovementBlockedCellRejectsMovementTest::RunTest(const FString& 
 	FBattleState State;
 	State.Pets.Add(MakeMovementPet(1, 0, 1, 1));
 	State.Pets.Add(MakeMovementPet(2, 1, 0, 0)); // longe, não interfere
-	State.CellLayout[CellLayoutIndex(2, 1)] = static_cast<uint8>(ECellProperty::Blocked); // casa à direita do Pet 1
+	State.CellLayout[State.CellIndex(2, 1)] = static_cast<uint8>(ECellProperty::Blocked); // casa à direita do Pet 1
 
 	for (int32 Attempt = 0; Attempt < 5; ++Attempt)
 	{
@@ -249,7 +249,7 @@ bool FBattlePhaseMovementDamageCellAccumulatesPendingDamageTest::RunTest(const F
 {
 	FBattleState State;
 	State.Pets.Add(MakeMovementPet(1, 0, 1, 1));
-	State.CellLayout[CellLayoutIndex(1, 1)] = static_cast<uint8>(ECellProperty::Damage);
+	State.CellLayout[State.CellIndex(1, 1)] = static_cast<uint8>(ECellProperty::Damage);
 
 	TArray<FBattleEvent> Trace;
 	BattlePhases::ApplyMovement(State, WaitAction(), WaitAction(), 0, Trace);

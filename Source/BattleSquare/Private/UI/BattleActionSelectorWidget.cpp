@@ -212,10 +212,12 @@ void UBattleActionSelectorWidget::OnClickCancelar() { CancelPendingSelection(); 
 void UBattleActionSelectorWidget::OnClickDesfazer() { RemoveLastAction(); }
 void UBattleActionSelectorWidget::OnClickCommit()   { Commit(); }
 
-void UBattleActionSelectorWidget::SetOwningPetCell(uint8 Column, uint8 Row)
+void UBattleActionSelectorWidget::SetOwningPetCell(const FBattleState& State, const FPetState& Pet)
 {
-	OwningPetColumn = Column;
-	OwningPetRow = Row;
+	OwningPetColumn = Pet.Column;
+	OwningPetRow = Pet.Row;
+	GridColumns = static_cast<int32>(State.GridColumns);
+	GridRows = static_cast<int32>(State.GridRows);
 	RefreshDirectionAvailability();
 }
 
@@ -232,7 +234,8 @@ void UBattleActionSelectorWidget::RefreshDirectionAvailability()
 	if (BoundQueue)
 	{
 		FBattleGridNavigation::ProjectCell(OwningPetColumn, OwningPetRow,
-			BoundQueue->GetConfirmedActions(), ProjectedColumn, ProjectedRow);
+			BoundQueue->GetConfirmedActions(), GridColumns, GridRows,
+			ProjectedColumn, ProjectedRow);
 	}
 
 	const TPair<UButton*, EBattleDirection> Direcoes[] = {
@@ -253,7 +256,8 @@ void UBattleActionSelectorWidget::RefreshDirectionAvailability()
 			continue;
 		}
 		const bool bBloqueado = bIsMoving
-			&& FBattleGridNavigation::WouldLeaveGrid(ProjectedColumn, ProjectedRow, Entrada.Value);
+			&& FBattleGridNavigation::WouldLeaveGrid(ProjectedColumn, ProjectedRow, Entrada.Value,
+				GridColumns, GridRows);
 		Entrada.Key->SetIsEnabled(!bBloqueado);
 	}
 }

@@ -136,7 +136,7 @@ namespace
 	}
 
 	/** Passo em direção ao inimigo que NÃO sai da grade. */
-	EBattleDirection StepTowardsInsideGrid(int32 SelfColumn, int32 SelfRow, int32 EnemyColumn, int32 EnemyRow)
+	EBattleDirection StepTowardsInsideGrid(const FBattleState& State, int32 SelfColumn, int32 SelfRow, int32 EnemyColumn, int32 EnemyRow)
 	{
 		const EBattleDirection Direct = GetDirectionTowards(EnemyColumn - SelfColumn, EnemyRow - SelfRow);
 
@@ -144,24 +144,24 @@ namespace
 		int8 DeltaRow = 0;
 		GetDirectionDelta(Direct, DeltaColumn, DeltaRow);
 
-		if (IsInsideGrid(SelfColumn + DeltaColumn, SelfRow + DeltaRow))
+		if (State.IsInside(SelfColumn + DeltaColumn, SelfRow + DeltaRow))
 		{
 			return Direct;
 		}
 
 		// Diagonal barrada pela borda: tentar cada eixo sozinho antes de
-		// desistir. Numa grade 3x3 isto quase sempre salva o passo — e desistir
+		// desistir. Em grade pequena isto quase sempre salva o passo — e desistir
 		// custaria o slot inteiro.
 		const EBattleDirection ApenasColuna = GetDirectionTowards(EnemyColumn - SelfColumn, 0);
 		GetDirectionDelta(ApenasColuna, DeltaColumn, DeltaRow);
-		if (ApenasColuna != EBattleDirection::Nenhuma && IsInsideGrid(SelfColumn + DeltaColumn, SelfRow + DeltaRow))
+		if (ApenasColuna != EBattleDirection::Nenhuma && State.IsInside(SelfColumn + DeltaColumn, SelfRow + DeltaRow))
 		{
 			return ApenasColuna;
 		}
 
 		const EBattleDirection ApenasLinha = GetDirectionTowards(0, EnemyRow - SelfRow);
 		GetDirectionDelta(ApenasLinha, DeltaColumn, DeltaRow);
-		if (ApenasLinha != EBattleDirection::Nenhuma && IsInsideGrid(SelfColumn + DeltaColumn, SelfRow + DeltaRow))
+		if (ApenasLinha != EBattleDirection::Nenhuma && State.IsInside(SelfColumn + DeltaColumn, SelfRow + DeltaRow))
 		{
 			return ApenasLinha;
 		}
@@ -207,7 +207,7 @@ FTurnCommit FTacticalOpponentAI::GenerateCommit(const FBattleState& State, uint8
 	{
 		if (!IsWithinReach(Column, Row, EnemyColumn, EnemyRow))
 		{
-			const EBattleDirection Step = StepTowardsInsideGrid(Column, Row, EnemyColumn, EnemyRow);
+			const EBattleDirection Step = StepTowardsInsideGrid(State, Column, Row, EnemyColumn, EnemyRow);
 			if (Step != EBattleDirection::Nenhuma)
 			{
 				int8 DeltaColumn = 0;

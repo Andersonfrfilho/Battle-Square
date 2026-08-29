@@ -58,6 +58,9 @@ uint64 FBattleState::ComputeHash() const
 	// Arenas Variadas (design.md): layout entra no hash na ordem fixa do
 	// array — não precisa de sort, CellLayout não é um contêiner cuja
 	// ordem de iteração varia (é indexado por posição de casa, estável).
+	Hash = CombineBattleHash(Hash, GridColumns);
+	Hash = CombineBattleHash(Hash, GridRows);
+
 	for (uint8 CellProperty : CellLayout)
 	{
 		Hash = CombineBattleHash(Hash, CellProperty);
@@ -70,6 +73,33 @@ uint64 FBattleState::ComputeHash() const
 	Hash = CombineBattleHash(Hash, Random.Increment);
 
 	return Hash;
+}
+
+void FBattleState::ResizeGrid(int32 Columns, int32 Rows)
+{
+	GridColumns = static_cast<uint8>(
+		FMath::Clamp(Columns, BattleGridMinSide, BattleGridMaxSide));
+	GridRows = static_cast<uint8>(
+		FMath::Clamp(Rows, BattleGridMinSide, BattleGridMaxSide));
+
+	CellLayout.Init(static_cast<uint8>(ECellProperty::None),
+		static_cast<int32>(GridColumns) * static_cast<int32>(GridRows));
+}
+
+void FBattleState::PlaceDuelistsAtStartingCells()
+{
+	// Linha do meio, arredondando para baixo em grade de altura par: numa
+	// 4x6 os dois ficam na mesma linha, que é o que faz o duelo ser um
+	// duelo e não uma perseguição na diagonal.
+	const uint8 LinhaDoMeio = static_cast<uint8>((GridRows - 1) / 2);
+
+	for (FPetState& Pet : Pets)
+	{
+		Pet.Column = Pet.Side == 0
+			? 0
+			: static_cast<uint8>(GridColumns - 1);
+		Pet.Row = LinhaDoMeio;
+	}
 }
 
 FPetState* FBattleState::FindAlivePetOnSide(uint8 Side)

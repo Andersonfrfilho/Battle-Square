@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Battle/BattleActionQueueComponent.h"
+#include "Battle/BattleState.h"
 #include "BattleActionSelectorWidget.generated.h"
 
 class UButton;
@@ -126,11 +127,18 @@ private:
 public:
 
 	/**
-	 * Casa do pet do jogador no início do turno. Quem sabe disso é a arena;
-	 * a tela só usa para não OFERECER um movimento que sairia do tabuleiro.
+	 * Casa do pet do jogador no início do turno, E a grade em que ela vale.
+	 * Quem sabe disso é a arena; a tela só usa para não OFERECER um
+	 * movimento que sairia do tabuleiro.
+	 *
+	 * NÃO exposta ao Blueprint: FBattleState/FPetState não são
+	 * BlueprintType, pelo mesmo motivo de SpawnPetViews.
+	 *
+	 * Separar em duas chamadas deixaria a projeção de borda decidir com a
+	 * casa nova e a grade velha entre uma e outra — e o sintoma seria um
+	 * botão de direção habilitado que o núcleo recusa.
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Battle|ActionSelector")
-	void SetOwningPetCell(uint8 Column, uint8 Row);
+	void SetOwningPetCell(const FBattleState& State, const FPetState& Pet);
 
 private:
 	void WireButtons();
@@ -141,8 +149,13 @@ private:
 	/** Desabilita as direções que tirariam o pet da grade (só ao Mover). */
 	void RefreshDirectionAvailability();
 
-	uint8 OwningPetColumn = 1;
-	uint8 OwningPetRow = 1;
+	uint8 OwningPetColumn = 0;
+	uint8 OwningPetRow = 0;
+
+	// Grade em que a casa acima vale. Padrão é a do projeto — a tela nunca
+	// desabilita direção nenhuma antes de saber onde o pet está.
+	int32 GridColumns = BattleGridDefaultColumns;
+	int32 GridRows = BattleGridDefaultRows;
 
 	void LogClick(const TCHAR* Rotulo);
 

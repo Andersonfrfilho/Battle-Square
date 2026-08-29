@@ -103,10 +103,12 @@ void FBattleDataTranslator::TranslateMatchup(
 	FPetState& OutRightState,
 	FPetPresentationInfo& OutRightPresentation)
 {
-	// Posições padrão de duelo 1v1 — mesma convenção usada em todo o
-	// projeto (esquerda coluna 1, direita coluna 2, linha 1).
-	TranslatePet(LeftSource, LeftPetId, /*Side=*/0, /*Column=*/1, /*Row=*/1, OutLeftState, OutLeftPresentation);
-	TranslatePet(RightSource, RightPetId, /*Side=*/1, /*Column=*/2, /*Row=*/1, OutRightState, OutRightPresentation);
+	// Casa de saída PROVISÓRIA. Quem decide de verdade é
+	// FBattleState::PlaceDuelistsAtStartingCells, depois de os pets
+	// entrarem no estado: só lá se sabe o tamanho da grade, e a casa
+	// inicial de um campo 4x6 não é a de um 3x3.
+	TranslatePet(LeftSource, LeftPetId, /*Side=*/0, /*Column=*/0, /*Row=*/0, OutLeftState, OutLeftPresentation);
+	TranslatePet(RightSource, RightPetId, /*Side=*/1, /*Column=*/0, /*Row=*/0, OutRightState, OutRightPresentation);
 
 	// Efetividade é sobre O ATAQUE do lado — o Attack do Left muda pela
 	// efetividade DO TIPO DO LEFT CONTRA O TIPO DO RIGHT, nunca o

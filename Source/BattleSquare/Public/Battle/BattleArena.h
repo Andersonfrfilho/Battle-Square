@@ -16,6 +16,8 @@ class UCameraComponent;
 class UStaticMeshComponent;
 class UMaterialInterface;
 class AForestBackdrop;
+class ABattleSceneLighting;
+class APetOwnerView;
 
 // T9 (tasks.md, PRES-06/07/08): scaffold da cena de combate — câmera fixa
 // enquadrando a grade 3x3, spawn de APetView a partir do estado inicial.
@@ -28,7 +30,7 @@ DECLARE_MULTICAST_DELEGATE(FBattleFinishedSignature);
 /** Categoria própria para o que aconteceu no turno — silenciável sozinha. */
 DECLARE_LOG_CATEGORY_EXTERN(LogBattleArena, Display, All);
 
-UCLASS()
+UCLASS(config = Game)
 class BATTLESQUARE_API ABattleArena : public AActor
 {
 	GENERATED_BODY()
@@ -42,6 +44,33 @@ public:
 	// de verdade para o espaçamento; nunca um número mágico espalhado.
 	UPROPERTY(EditDefaultsOnly, Category = "Grade")
 	float CellSize = 150.0f;
+
+	/**
+	 * Dimensões da grade desta arena, editáveis por `DefaultGame.ini`.
+	 *
+	 * Não precisam ser iguais — 3x2 e 4x6 são campos legítimos. O tabuleiro,
+	 * a clareira, a moldura e o enquadramento da câmera saem daqui; nada
+	 * mais no ator assume três.
+	 *
+	 * A grade que VALE numa batalha é a do estado (FBattleState::GridColumns),
+	 * porque é ela que entra no hash. Estes valores são o que a arena usa
+	 * quando monta a batalha ela mesma.
+	 */
+	UPROPERTY(EditDefaultsOnly, config, Category = "Grade")
+	int32 GridColumns = BattleGridDefaultColumns;
+
+	UPROPERTY(EditDefaultsOnly, config, Category = "Grade")
+	int32 GridRows = BattleGridDefaultRows;
+
+	/** Colunas/linhas em uso agora: as do estado durante a batalha. */
+	int32 GetActiveGridColumns() const;
+	int32 GetActiveGridRows() const;
+
+private:
+	/** Lê GridColumns/GridRows do .ini já no construtor — ver o .cpp. */
+	void ResolveConfiguredGridSize();
+
+public:
 
 	// Material da grade — configurável por Blueprint/instância, nunca uma
 	// cor hex fixa no C++.
@@ -67,9 +96,6 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Arena|Materiais")
 	TSoftObjectPtr<UMaterialInterface> FloorMaterial;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Arena|Materiais")
-	TSoftObjectPtr<UMaterialInterface> FrameMaterial;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Arena|Materiais")
 	TSoftObjectPtr<UMaterialInterface> NeutralTileMaterial;
@@ -144,10 +170,21 @@ public:
 
 	/** Malhas da arena, para o teste que exige asset atribuído em todas. */
 	const TArray<TObjectPtr<UStaticMeshComponent>>& GetCellTileMeshes() const { return CellTileMeshes; }
-	const TArray<TObjectPtr<UStaticMeshComponent>>& GetArenaFrameMeshes() const { return ArenaFrameMeshes; }
 	UStaticMeshComponent* GetArenaFloorMesh() const { return ArenaFloorMesh; }
 
-	// Centro (em espaço de mundo) da casa (Column, Row), Column/Row em [0,2].
+	/**
+	 * O sol da cena, ou nulo quando o mapa já tinha um.
+	 *
+	 * O mapa do jogo não tem ator de luz nenhum, e sem sol a engine ilumina
+	 * tudo com o ambiente azul padrão — foi assim que a mata verde apareceu
+	 * azul-clara na tela.
+	 */
+	ABattleSceneLighting* GetSceneLighting() const { return SceneLighting; }
+
+	/** Os treinadores em campo, um por lado que tem pet. */
+	const TArray<TObjectPtr<APetOwnerView>>& GetOwnerViews() const { return SpawnedOwnerViews; }
+
+	// Centro (em espaço de mundo) da casa (Column, Row), dentro da grade ativa.
 	UFUNCTION(BlueprintPure)
 	FVector GetCellWorldLocation(uint8 Column, uint8 Row) const;
 
@@ -238,22 +275,34 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UCameraComponent> ArenaCamera;
 
-	/** O tabuleiro em si: chão, moldura e uma laje por casa. */
+	/** A clareira em que o tabuleiro se apoia — terra, e redonda. */
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UStaticMeshComponent> ArenaFloorMesh;
 
 	UPROPERTY()
 	TObjectPtr<AForestBackdrop> ForestBackdrop;
 
+	UPROPERTY()
+	TObjectPtr<ABattleSceneLighting> SceneLighting;
+
+	UPROPERTY()
+	TArray<TObjectPtr<APetOwnerView>> SpawnedOwnerViews;
+
 	/** Planta a mata em volta, uma vez, quando a arena entra em cena. */
 	void SpawnForestBackdrop();
+
+	/** Acende sol e céu, a menos que o mapa já traga os seus. */
+	void SpawnSceneLighting();
+
+	/** Põe um treinador em campo por lado que tem pet lutando. */
+	void SpawnOwnerViews(const FBattleState& InitialState);
+
+	/** Dimensiona a clareira a partir do tabuleiro e da elevação dele. */
+	void RefreshClearingGround();
 
 	/** Chão emprestado pelo mundo (AdoptAmbienceFromWorldLocation). */
 	UPROPERTY()
 	TObjectPtr<UMaterialInterface> AdoptedFloorMaterial;
-
-	UPROPERTY(VisibleAnywhere)
-	TArray<TObjectPtr<UStaticMeshComponent>> ArenaFrameMeshes;
 
 	UPROPERTY(VisibleAnywhere)
 	TArray<TObjectPtr<UStaticMeshComponent>> CellTileMeshes;

@@ -67,7 +67,7 @@ struct FTurnCommit
 
 static_assert(sizeof(FBattleAction) == 2, "FBattleAction deve ocupar 2 bytes — ver design.md, custo de rede do commit.");
 
-// Empacota coluna e linha (0..2 cada) num único uint8: 4 bits por eixo.
+// Empacota coluna e linha (0..14 cada) num único uint8: 4 bits por eixo.
 // Usado no trace de eventos (FromCell/ToCell) para manter o struct plano.
 FORCEINLINE uint8 PackCell(uint8 Column, uint8 Row)
 {
@@ -162,9 +162,9 @@ FORCEINLINE FBattleAction MakeMoveAction(EActionType Type, uint8 MoveIndex)
 	return Action;
 }
 
-FORCEINLINE bool IsInsideGrid(int32 Column, int32 Row, int32 GridSize = 3)
+FORCEINLINE bool IsInsideGrid(int32 Column, int32 Row, int32 GridColumns, int32 GridRows)
 {
-	return Column >= 0 && Column < GridSize && Row >= 0 && Row < GridSize;
+	return Column >= 0 && Column < GridColumns && Row >= 0 && Row < GridRows;
 }
 
 // Arenas Variadas (design.md, DP-arena-01): propriedade de uma casa da
@@ -184,11 +184,26 @@ enum class ECellProperty : uint8
 	Water
 };
 
-// Tamanho fixo da grade (3x3 = 9 casas) — ver spec.md, Out of Scope:
-// tamanho variável de arena é reformulação de UI/câmera, fora daqui.
-inline constexpr int32 BattleGridCellCount = 9;
+// Grade PADRÃO. Não é mais o único tamanho possível: o estado carrega as
+// suas próprias dimensões (FBattleState::GridColumns/GridRows), e estes
+// valores são só o que uma arena nasce sendo quando ninguém escolheu.
+inline constexpr int32 BattleGridDefaultColumns = 3;
+inline constexpr int32 BattleGridDefaultRows = 3;
+inline constexpr int32 BattleGridDefaultCellCount =
+	BattleGridDefaultColumns * BattleGridDefaultRows;
 
-FORCEINLINE int32 CellLayoutIndex(int32 Column, int32 Row)
+// TETO DE 15 POR EIXO, e ele não é arbitrário: PackCell guarda coluna e
+// linha em 4 bits cada dentro de um uint8, e o trace de eventos depende
+// desse empacotamento. Grade 16x16 não estouraria a memória — estouraria
+// o evento, calada, trocando a coluna 16 pela 0.
+inline constexpr int32 BattleGridMinSide = 1;
+inline constexpr int32 BattleGridMaxSide = 15;
+
+// Índice da casa no layout linear. O número de COLUNAS é obrigatório e não
+// tem padrão de propósito: um padrão silencioso aqui reintroduziria o 3
+// fixo em qualquer chamada que esquecesse de passá-lo, e o erro apareceria
+// como casa trocada, não como falha de compilação.
+FORCEINLINE int32 CellLayoutIndex(int32 Column, int32 Row, int32 GridColumns)
 {
-	return Row * 3 + Column;
+	return Row * GridColumns + Column;
 }

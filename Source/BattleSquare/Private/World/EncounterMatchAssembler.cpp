@@ -62,6 +62,7 @@ bool FEncounterMatchAssembler::AssembleFromEncounter(const FEncounterMatchParams
 		: static_cast<uint64>(FDateTime::Now().GetTicks());
 	OutInitialState.Pets.Add(PlayerPet);
 	OutInitialState.Pets.Add(EncounterPet);
+	OutInitialState.PlaceDuelistsAtStartingCells();
 
 	OutPresentations.Reset();
 	OutPresentations.Add(PlayerPresentation);

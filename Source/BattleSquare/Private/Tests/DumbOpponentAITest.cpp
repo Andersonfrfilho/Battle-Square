@@ -22,9 +22,9 @@ namespace
 		return State;
 	}
 
-	bool IsInsideGridBounds(uint8 Column, uint8 Row)
+	bool IsInsideGridBounds(const FBattleState& State, uint8 Column, uint8 Row)
 	{
-		return IsInsideGrid(static_cast<int32>(Column), static_cast<int32>(Row));
+		return State.IsInside(static_cast<int32>(Column), static_cast<int32>(Row));
 	}
 }
 
@@ -57,7 +57,7 @@ bool FDumbOpponentAINeverMovesOutOfBoundsTest::RunTest(const FString& Parameters
 			GetDirectionDelta(Action.Direction, DeltaColumn, DeltaRow);
 			const int32 DestColumn = static_cast<int32>(State.Pets[0].Column) + DeltaColumn;
 			const int32 DestRow = static_cast<int32>(State.Pets[0].Row) + DeltaRow;
-			if (!IsInsideGrid(DestColumn, DestRow))
+			if (!State.IsInside(DestColumn, DestRow))
 			{
 				AddError(FString::Printf(TEXT("Iteração %d: Mover gerado para fora da grade (%d,%d)"), Iteration, DestColumn, DestRow));
 				bAllValid = false;

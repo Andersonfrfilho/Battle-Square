@@ -245,7 +245,7 @@ bool FTacticalOpponentStaysInsideGridTest::RunTest(const FString& Parameters)
 			Column += DeltaColumn;
 			Row += DeltaRow;
 
-			TestTrue(TEXT("Movimento planejado cai dentro da grade"), IsInsideGrid(Column, Row));
+			TestTrue(TEXT("Movimento planejado cai dentro da grade"), State.IsInside(Column, Row));
 		}
 	}
 

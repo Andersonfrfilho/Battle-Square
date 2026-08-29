@@ -23,8 +23,10 @@ public:
 	/** Casa resultante depois de aplicar os movimentos já confirmados. */
 	static void ProjectCell(uint8 StartColumn, uint8 StartRow,
 		const TArray<FBattleAction>& ConfirmedActions,
+		int32 GridColumns, int32 GridRows,
 		uint8& OutColumn, uint8& OutRow);
 
 	/** Direção que sairia da grade a partir da casa dada. */
-	static bool WouldLeaveGrid(uint8 Column, uint8 Row, EBattleDirection Direction);
+	static bool WouldLeaveGrid(uint8 Column, uint8 Row, EBattleDirection Direction,
+		int32 GridColumns, int32 GridRows);
 };

@@ -21,17 +21,23 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGridNavEdgeBlocksTest,
 bool FGridNavEdgeBlocksTest::RunTest(const FString& Parameters)
 {
 	// Canto superior esquerdo (0,0): cima, esquerda e as diagonais para fora.
-	TestTrue(TEXT("de (0,0), Cima sai"), FBattleGridNavigation::WouldLeaveGrid(0, 0, EBattleDirection::Cima));
-	TestTrue(TEXT("de (0,0), Esquerda sai"), FBattleGridNavigation::WouldLeaveGrid(0, 0, EBattleDirection::Esquerda));
-	TestTrue(TEXT("de (0,0), CimaEsquerda sai"), FBattleGridNavigation::WouldLeaveGrid(0, 0, EBattleDirection::CimaEsquerda));
-	TestFalse(TEXT("de (0,0), Direita fica"), FBattleGridNavigation::WouldLeaveGrid(0, 0, EBattleDirection::Direita));
-	TestFalse(TEXT("de (0,0), Baixo fica"), FBattleGridNavigation::WouldLeaveGrid(0, 0, EBattleDirection::Baixo));
+	TestTrue(TEXT("de (0,0), Cima sai"), FBattleGridNavigation::WouldLeaveGrid(0, 0, EBattleDirection::Cima,
+			BattleGridDefaultColumns, BattleGridDefaultRows));
+	TestTrue(TEXT("de (0,0), Esquerda sai"), FBattleGridNavigation::WouldLeaveGrid(0, 0, EBattleDirection::Esquerda,
+			BattleGridDefaultColumns, BattleGridDefaultRows));
+	TestTrue(TEXT("de (0,0), CimaEsquerda sai"), FBattleGridNavigation::WouldLeaveGrid(0, 0, EBattleDirection::CimaEsquerda,
+			BattleGridDefaultColumns, BattleGridDefaultRows));
+	TestFalse(TEXT("de (0,0), Direita fica"), FBattleGridNavigation::WouldLeaveGrid(0, 0, EBattleDirection::Direita,
+			BattleGridDefaultColumns, BattleGridDefaultRows));
+	TestFalse(TEXT("de (0,0), Baixo fica"), FBattleGridNavigation::WouldLeaveGrid(0, 0, EBattleDirection::Baixo,
+			BattleGridDefaultColumns, BattleGridDefaultRows));
 
 	// Do centro, nenhuma direção sai.
 	for (int32 Dir = 1; Dir <= 8; ++Dir)
 	{
 		TestFalse(TEXT("do centro nenhuma direção sai"),
-			FBattleGridNavigation::WouldLeaveGrid(1, 1, static_cast<EBattleDirection>(Dir)));
+			FBattleGridNavigation::WouldLeaveGrid(1, 1, static_cast<EBattleDirection>(Dir),
+				BattleGridDefaultColumns, BattleGridDefaultRows));
 	}
 	return true;
 }
@@ -48,7 +54,8 @@ bool FGridNavProjectsQueuedMovesTest::RunTest(const FString& Parameters)
 	// Duas ações de mover: a projeção precisa ACUMULAR, senão a 2ª direção
 	// seria julgada a partir da casa errada.
 	FBattleGridNavigation::ProjectCell(1, 1,
-		{ Mover(EBattleDirection::Direita), Mover(EBattleDirection::Direita) }, Column, Row);
+		{ Mover(EBattleDirection::Direita), Mover(EBattleDirection::Direita) },
+		BattleGridDefaultColumns, BattleGridDefaultRows, Column, Row);
 	TestEqual(TEXT("dois passos à direita saem de (1,1) para a coluna 2 — o segundo é recusado pela borda"),
 		static_cast<int32>(Column), 2);
 	TestEqual(TEXT("a linha não muda"), static_cast<int32>(Row), 1);
@@ -56,7 +63,8 @@ bool FGridNavProjectsQueuedMovesTest::RunTest(const FString& Parameters)
 	// Ações que não movem são ignoradas pela projeção.
 	FBattleAction Defender;
 	Defender.Type = EActionType::Defender;
-	FBattleGridNavigation::ProjectCell(1, 1, { Defender }, Column, Row);
+	FBattleGridNavigation::ProjectCell(1, 1, { Defender },
+		BattleGridDefaultColumns, BattleGridDefaultRows, Column, Row);
 	TestEqual(TEXT("Defender não move"), static_cast<int32>(Column), 1);
 	TestEqual(TEXT("Defender não move (linha)"), static_cast<int32>(Row), 1);
 

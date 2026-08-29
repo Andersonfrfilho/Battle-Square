@@ -129,8 +129,8 @@ struct FBattleState
 	{
 		// Arena neutra por padrão — toda casa None, comportamento
 		// idêntico ao de antes de Arenas Variadas (design.md, zero
-		// regressão). Índice = Row*3+Column (CellLayoutIndex).
-		CellLayout.Init(static_cast<uint8>(ECellProperty::None), BattleGridCellCount);
+		// regressão). Índice = Row*GridColumns+Column (CellLayoutIndex).
+		CellLayout.Init(static_cast<uint8>(ECellProperty::None), BattleGridDefaultCellCount);
 	}
 
 	UPROPERTY()
@@ -142,6 +142,21 @@ struct FBattleState
 	// serialização, replicação e reconexão junto com o resto.
 	UPROPERTY()
 	TArray<uint8> CellLayout;
+
+	/**
+	 * Dimensões da grade. Moram no ESTADO, e não numa constante global,
+	 * porque a resolução depende delas: mesma semente e mesmas ações num
+	 * campo 3x3 e num 4x6 são duas batalhas diferentes, e um tamanho lido
+	 * de fora deixaria essa diferença invisível para o hash — que é
+	 * exatamente a assinatura que existe para detectar divergência.
+	 *
+	 * Não precisam ser iguais: 3x2 e 4x6 são grades legítimas.
+	 */
+	UPROPERTY()
+	uint8 GridColumns = static_cast<uint8>(BattleGridDefaultColumns);
+
+	UPROPERTY()
+	uint8 GridRows = static_cast<uint8>(BattleGridDefaultRows);
 
 	// O gerador de aleatoriedade da batalha vive AQUI DENTRO — ver AD-004 e
 	// BattleRandom.h. É o que permite que reconexão e replay reproduzam a
@@ -165,6 +180,36 @@ struct FBattleState
 	// servidor (ver design.md, Tratamento de Erro). Não depende de ordem
 	// de contêiner: itera Pets ordenado por PetId antes de combinar.
 	uint64 ComputeHash() const;
+
+	/** Índice da casa no layout, com as dimensões DESTE estado. */
+	int32 CellIndex(int32 Column, int32 Row) const
+	{
+		return CellLayoutIndex(Column, Row, static_cast<int32>(GridColumns));
+	}
+
+	bool IsInside(int32 Column, int32 Row) const
+	{
+		return IsInsideGrid(Column, Row,
+			static_cast<int32>(GridColumns), static_cast<int32>(GridRows));
+	}
+
+	/**
+	 * Troca as dimensões e redimensiona o layout, deixando toda casa nova
+	 * neutra. Recorta para a faixa válida em vez de recusar: uma grade
+	 * pedida errada num arquivo de config não deve derrubar a batalha.
+	 */
+	BATTLESIM_API void ResizeGrid(int32 Columns, int32 Rows);
+
+	/**
+	 * Põe um duelo 1v1 nas bordas OPOSTAS da grade atual: lado 0 na primeira
+	 * coluna, lado 1 na última, ambos na linha do meio.
+	 *
+	 * Mora aqui porque a posição inicial depende do tamanho da grade, e a
+	 * grade mora aqui. Deixar a montagem escolher a casa levaria a duas
+	 * respostas para a mesma pergunta assim que o campo deixasse de ser 3x3
+	 * — que é exatamente o que aconteceu com as posições fixas (1,1)/(2,1).
+	 */
+	BATTLESIM_API void PlaceDuelistsAtStartingCells();
 
 	/**
 	 * v1 é 1v1 (spec: mais de um pet por lado é M3) — o primeiro pet vivo do

@@ -53,7 +53,7 @@ namespace
 		// condicionar as demais mudaria o combate inteiro, e ninguém pediu
 		// isso — a skill é que descreve estar DENTRO da água.
 		if (Action.Type == EActionType::Submergir
-			&& State.CellLayout[CellLayoutIndex(Pet->Column, Pet->Row)] != static_cast<uint8>(ECellProperty::Water))
+			&& State.CellLayout[State.CellIndex(Pet->Column, Pet->Row)] != static_cast<uint8>(ECellProperty::Water))
 		{
 			// Falha ALTA, com evento próprio. Silenciosamente virar Aguardar
 			// deixaria o jogador achando que a skill não funciona, quando o

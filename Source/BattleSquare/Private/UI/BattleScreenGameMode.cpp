@@ -147,7 +147,7 @@ FString ABattleScreenGameMode::StartScreenBattle()
 	{
 		if (Pet.Side == ScreenArena->LocalPlayerSide)
 		{
-			ActionSelector->SetOwningPetCell(Pet.Column, Pet.Row);
+			ActionSelector->SetOwningPetCell(ScreenArena->GetCurrentState(), Pet);
 			break;
 		}
 	}
@@ -251,7 +251,7 @@ void ABattleScreenGameMode::Tick(float DeltaSeconds)
 	{
 		if (Pet.Side == LadoEscolhendo)
 		{
-			ActionSelector->SetOwningPetCell(Pet.Column, Pet.Row);
+			ActionSelector->SetOwningPetCell(ScreenArena->GetCurrentState(), Pet);
 			return;
 		}
 	}

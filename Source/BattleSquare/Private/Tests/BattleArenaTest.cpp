@@ -260,7 +260,7 @@ bool FBattleArenaRejectsInitialPositionOnBlockedCellTest::RunTest(const FString&
 	OpponentPet.Health = 50; OpponentPet.MaxHealth = 50;
 	BlockedState.Pets.Add(PlayerPet);
 	BlockedState.Pets.Add(OpponentPet);
-	BlockedState.CellLayout[CellLayoutIndex(1, 1)] = static_cast<uint8>(ECellProperty::Blocked); // casa do próprio PlayerPet
+	BlockedState.CellLayout[BlockedState.CellIndex(1, 1)] = static_cast<uint8>(ECellProperty::Blocked); // casa do próprio PlayerPet
 
 	TArray<FPetPresentationInfo> Presentations;
 	FPetPresentationInfo PlayerPresentation;
@@ -277,7 +277,7 @@ bool FBattleArenaRejectsInitialPositionOnBlockedCellTest::RunTest(const FString&
 
 	// Confirma que uma montagem válida (mesmos pets, layout neutro) continua funcionando.
 	FBattleState ValidState = BlockedState;
-	ValidState.CellLayout[CellLayoutIndex(1, 1)] = static_cast<uint8>(ECellProperty::None);
+	ValidState.CellLayout[ValidState.CellIndex(1, 1)] = static_cast<uint8>(ECellProperty::None);
 	const bool bValidAccepted = Arena->BeginBattle(ValidState, Presentations);
 	TestTrue(TEXT("Montagem sem casa bloqueada é aceita normalmente"), bValidAccepted);
 

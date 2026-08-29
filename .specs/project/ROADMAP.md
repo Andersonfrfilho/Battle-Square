@@ -165,4 +165,5 @@ precisam de resposta antes de virar código.
 | Ideia | Spec | Por que ainda não virou código |
 |---|---|---|
 | **Clima no campo** | `.specs/features/clima-no-campo/` | O núcleo não pode consultar clima durante a batalha — replay e rede divergiriam. Precisa entrar como parâmetro da montagem, e há 9 perguntas em aberto (fonte, offline, justiça em ranqueada) |
+| **Desbloqueio de golpes** | `.specs/features/desbloqueio-de-golpes/` | Cruza dado ASSINADO (golpe) com estado LOCAL (nível): quem decide o desbloqueio decide o próprio dano. Três desenhos possíveis, e a escolha depende de conta obrigatória e de ranqueada existirem |
 | **Captura, roubo e treinador** | `.specs/features/captura-roubo-e-treinador/` | O jogo não tem o conceito de DONO. Sem ele, "sem dono", "selvagem" e "roubar" não têm como ser distinguidos |

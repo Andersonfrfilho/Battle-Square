@@ -71,3 +71,15 @@ uint64 FBattleState::ComputeHash() const
 
 	return Hash;
 }
+
+FPetState* FBattleState::FindAlivePetOnSide(uint8 Side)
+{
+	for (FPetState& Pet : Pets)
+	{
+		if (Pet.Side == Side && Pet.IsAlive())
+		{
+			return &Pet;
+		}
+	}
+	return nullptr;
+}

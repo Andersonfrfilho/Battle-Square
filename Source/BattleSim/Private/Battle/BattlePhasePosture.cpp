@@ -9,17 +9,6 @@ namespace
 	// v1 é 1v1 (spec: mais de um pet por lado é M3) — o primeiro pet vivo
 	// do lado é o único pet do lado. A busca por Side, em vez de índice
 	// fixo, é o que deixa a fase pronta para N pets sem mudar assinatura.
-	FPetState* FindAlivePetOnSide(FBattleState& State, uint8 Side)
-	{
-		for (FPetState& Pet : State.Pets)
-		{
-			if (Pet.Side == Side && Pet.IsAlive())
-			{
-				return &Pet;
-			}
-		}
-		return nullptr;
-	}
 
 	void ApplyPostureForSide(
 		FBattleState& State,
@@ -28,7 +17,7 @@ namespace
 		uint8 SlotIndex,
 		TArray<FBattleEvent>& OutTrace)
 	{
-		FPetState* Pet = FindAlivePetOnSide(State, Side);
+		FPetState* Pet = State.FindAlivePetOnSide(Side);
 		if (!Pet)
 		{
 			return;

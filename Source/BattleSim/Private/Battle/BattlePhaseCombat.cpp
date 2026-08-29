@@ -23,17 +23,6 @@ namespace
 		return (Pet.PostureFlags & static_cast<uint8>(Flag)) != 0;
 	}
 
-	FPetState* FindAlivePetOnSide(FBattleState& State, uint8 Side)
-	{
-		for (FPetState& Pet : State.Pets)
-		{
-			if (Pet.Side == Side && Pet.IsAlive())
-			{
-				return &Pet;
-			}
-		}
-		return nullptr;
-	}
 
 	// Encontra um oponente vivo na célula informada.
 	FPetState* FindLivingOpponentAtCell(FBattleState& State, uint8 AttackerSide, int32 Column, int32 Row)
@@ -193,7 +182,7 @@ namespace
 			return;
 		}
 
-		FPetState* Attacker = FindAlivePetOnSide(State, AttackerSide);
+		FPetState* Attacker = State.FindAlivePetOnSide(AttackerSide);
 		if (!Attacker)
 		{
 			return;

@@ -11,6 +11,17 @@ const attributeSchema = z
   .int('Deve ser um número inteiro')
   .nonnegative('Não pode ser negativo');
 
+// Golpe de pet: nome, poder e o que ele deixa na casa que acertou.
+//
+// O conjunto de efeitos é FECHADO (enum do Zod, e CHECK no banco): efeito
+// desconhecido faria o núcleo escolher entre ignorar em silêncio ou recusar a
+// batalha, e as duas saídas são piores que barrar na escrita.
+export const petMoveSchema = z.object({
+  name: z.string().min(1, 'Nome do golpe é obrigatório').max(60),
+  power: z.number().int().min(1, 'Poder do golpe precisa ser ao menos 1').max(500),
+  terrainEffect: z.enum(['none', 'water', 'damage']).default('none'),
+});
+
 export const createPetSchema = z.object({
   name: z.string().min(1, 'Nome do pet é obrigatório').max(80),
   type: z.string().min(1, 'Tipo do pet é obrigatório').max(40),
@@ -18,6 +29,9 @@ export const createPetSchema = z.object({
   defense: attributeSchema,
   speed: attributeSchema,
   maxHealth: attributeSchema,
+  // ATÉ quatro, e opcional: pet sem golpe continua válido enquanto a migração
+  // não termina, e exigir quatro quebraria todo cadastro existente.
+  moves: z.array(petMoveSchema).max(4, 'Um pet tem no máximo 4 golpes').optional(),
 });
 
 export const updatePetSchema = createPetSchema;

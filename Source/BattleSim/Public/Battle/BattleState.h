@@ -165,4 +165,15 @@ struct FBattleState
 	// servidor (ver design.md, Tratamento de Erro). Não depende de ordem
 	// de contêiner: itera Pets ordenado por PetId antes de combinar.
 	uint64 ComputeHash() const;
+
+	/**
+	 * v1 é 1v1 (spec: mais de um pet por lado é M3) — o primeiro pet vivo do
+	 * lado é o único pet do lado. A busca por Side, em vez de índice fixo, é o
+	 * que deixa as fases prontas para N pets sem mudar assinatura.
+	 *
+	 * Mora aqui porque duas fases precisavam dela e cada uma tinha a sua
+	 * cópia: cópias concordam até a primeira edição, e o compilador só
+	 * reclamou quando o unity build juntou os dois arquivos.
+	 */
+	FPetState* FindAlivePetOnSide(uint8 Side);
 };

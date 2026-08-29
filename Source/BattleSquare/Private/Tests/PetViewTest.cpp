@@ -251,3 +251,91 @@ bool FPetViewTurnsAndTiltsSeparatelyTest::RunTest(const FString& Parameters)
 	GEngine->DestroyWorldContext(World);
 	return true;
 }
+
+// As patas terminavam ~7uu ABAIXO da barriga e o corpo pairava sobre quatro
+// tocos soltos — visível na tela, invisível para todo teste de lógica.
+//
+// A causa não era o número 20: era ser um número FIXO. O corpo é um elipsoide,
+// e sua face de baixo sobe conforme se afasta do centro; a pata não fica no
+// centro. Por isso a altura agora é derivada da barriga, e é isto que o teste
+// prende — mexer na escala do corpo não pode reabrir o vão.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPetViewLegsReachTheBodyTest,
+	"BattleSquare.PetView.LegsReachTheBody",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FPetViewLegsReachTheBodyTest::RunTest(const FString& Parameters)
+{
+	const APetView* Padrao = GetDefault<APetView>();
+	const float Barriga = APetView::BodyUnderSurfaceAtLegUnits();
+
+	TestEqual(TEXT("quatro patas"), Padrao->Legs.Num(), 4);
+
+	for (const UStaticMeshComponent* Pata : Padrao->Legs)
+	{
+		const float Centro = Pata->GetRelativeLocation().Z;
+		const float Altura = Pata->GetRelativeScale3D().Z * 100.0f;
+		const float Pe = Centro - Altura * 0.5f;
+		const float Topo = Centro + Altura * 0.5f;
+
+		TestTrue(FString::Printf(TEXT("%s pisa no chão da casa (pé em %.1f)"), *Pata->GetName(), Pe),
+			FMath::IsNearlyEqual(Pe, 0.0f, 0.5f));
+		TestTrue(FString::Printf(
+				TEXT("%s ENCOSTA no corpo: topo %.1f contra barriga %.1f"), *Pata->GetName(), Topo, Barriga),
+			Topo >= Barriga);
+	}
+
+	// A barriga na posição da pata é mais alta que o ponto mais baixo do
+	// corpo. Se estes dois valores coincidissem, o cálculo teria virado
+	// "fundo do corpo" e o vão voltaria na próxima mudança de escala.
+	TestTrue(TEXT("a barriga sob a pata é mais alta que o fundo do corpo"),
+		Barriga > APetView::BodyLowestPointUnits() + 1.0f);
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPetViewCrestsEmergeFromTheHeadTest,
+	"BattleSquare.PetView.CrestsEmergeFromTheHead",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FPetViewCrestsEmergeFromTheHeadTest::RunTest(const FString& Parameters)
+{
+	// Os quatro tipos, porque cada um tem escala e inclinação próprias e o
+	// adorno mais tombado é justamente o que mais afundava.
+	const TArray<FString> Tipos = {TEXT("Cat"), TEXT("Fogo"), TEXT("Agua"), TEXT("Planta")};
+	const float Raio = APetView::HeadRadiusUnits();
+	const float Encaixe = APetView::CrestEmbedUnits();
+
+	for (const FString& Tipo : Tipos)
+	{
+		const FPetAppearance Aparencia = FPetAppearance::ForType(Tipo);
+
+		for (const float Lado : {-1.0f, 1.0f})
+		{
+			const FVector Centro = APetView::CrestRelativeLocation(Aparencia, Lado);
+			const FRotator Rotacao = APetView::CrestRotationForSide(Aparencia.CrestRotation, Lado);
+			const float MeiaAltura = Aparencia.CrestScale.Z * 100.0f * 0.5f;
+			const FVector DaBaseAoCentro = Rotacao.RotateVector(FVector(0.0f, 0.0f, MeiaAltura));
+
+			const float Base = (Centro - DaBaseAoCentro).Size();
+			const float Ponta = (Centro + DaBaseAoCentro).Size();
+
+			TestTrue(FString::Printf(
+					TEXT("%s lado %.0f: a base encosta na cabeça, sem afundar (base a %.1f, raio %.1f)"),
+					*Tipo, Lado, Base, Raio),
+				FMath::IsNearlyEqual(Base, Raio - Encaixe, 0.5f));
+			TestTrue(FString::Printf(
+					TEXT("%s lado %.0f: a ponta sai da cabeça (ponta a %.1f, raio %.1f)"),
+					*Tipo, Lado, Ponta, Raio),
+				Ponta > Raio + MeiaAltura * 0.5f);
+
+			const float BaseParaFora = Lado * (Centro - DaBaseAoCentro).Y;
+			const float PontaParaFora = Lado * (Centro + DaBaseAoCentro).Y;
+			TestTrue(FString::Printf(
+					TEXT("%s lado %.0f: o adorno tomba para FORA (base %.1f, ponta %.1f)"),
+					*Tipo, Lado, BaseParaFora, PontaParaFora),
+				PontaParaFora > BaseParaFora);
+		}
+	}
+
+	return true;
+}

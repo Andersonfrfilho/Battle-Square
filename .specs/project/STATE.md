@@ -648,7 +648,7 @@ find "$HOME/Library/Logs/Unreal Engine/BattleSquareEditor" Saved/Logs -newer <ma
 
 **Model Guidance Shown:** 2026-08-25 (troca de modelo por fase confirmada pelo usuário via /model sonnet)
 
-### L-042: o mapa tem um chão, e ele fica na frente do que você acabou de construir
+### L-043: o mapa tem um chão, e ele fica na frente do que você acabou de construir
 
 **Contexto:** em 2026-08-29, ao dar geometria 3D à arena (chão, moldura e uma laje por casa), tudo compilou, os testes de asset atribuído passaram, e o tabuleiro teria nascido **invisível** — enterrado.
 
@@ -661,3 +661,26 @@ find "$HOME/Library/Logs/Unreal Engine/BattleSquareEditor" Saved/Logs -newer <ma
 **Correção:** `ABattleArena::BoardElevation` (120), aplicado com `AddActorWorldOffset` no `BeginPlay`. Erguer o ATOR, não as lajes: `GetCellWorldLocation` deriva da posição dele, então pets, grade desenhada e câmera sobem juntos. E a elevação mora na arena, não nos **três** pontos de spawn (`BattleScreenGameMode`, `BattleSquareGameMode`, `WorldBattleTransitionService`) — três cópias do mesmo número discordam na primeira edição, que é L-032 e L-033 de novo.
 
 **Previne:** ao pôr geometria nova num nível existente, **medir o que já está lá** antes de escolher alturas. O teste que ficou (`Arena.SitsAboveLevelGround`) prende a folga: a casa mais funda, a água, tem que terminar acima de zero.
+
+
+### L-044: a convenção de sinal do motor se MEDE, não se lê na tela
+
+**Contexto:** em 2026-08-29 os adornos de tipo (orelha, chama, barbatana, folha) tombavam para o lado errado. Olhei a captura, concluí "estão deitando para dentro" e troquei o sinal do Roll para o que parecia óbvio. O teste caiu nos oito casos — e o número dizia o contrário do que eu tinha lido: base a 8.7 do meio, ponta a 0.7. O código original já estava certo.
+
+**Medido:** `FRotator(0,0,Roll).RotateVector(FVector(0,0,h))` rende **`Y = +h·sen(Roll)`**. Como a tabela de tipos traz Roll negativo, abrir para fora exige `-LateralSign * Roll`. O sinal que "fica mais óbvio de ler" era o que deitava os dois para dentro.
+
+**Por que a leitura visual falhou:** dois cones simétricos vistos em perspectiva de diorama são ambíguos — o de trás aparece menor e mais alto, e isso lê como inclinação. A tela mostra QUE está errado; ela não mostra PARA QUE LADO.
+
+**Previne:** convenção de eixo, sinal e ordem de rotação sai de um teste que imprime o vetor, não de uma captura. É o mesmo L-035 (consertar por hipótese) num lugar novo: aqui a hipótese veio de um sentido que eu confiei demais.
+
+### L-045: ramo que o DADO nunca exercita é ramo que nunca apareceu na tela
+
+**Contexto:** `FPetAppearance::ForType` tinha uma tabela com cinco tipos (Fogo, Água, Planta, Cachorro, neutro), testada e chamada em produção. Em jogo, nunca se viu nenhuma diferença de tipo — e não por defeito de código.
+
+**A causa:** o espelho de fixture tem seis pets, e só dois tipos: `Cat` (cinco) e `Dog` (um). `Dog` caía no ramo neutro, idêntico a gato. E a tela de batalha abria com os ids de catálogo VAZIOS, o que punha gato contra gato. Resultado: a tabela inteira era código sem uma única prova visual, com bateria verde o tempo todo.
+
+**O que isso é:** o mesmo modo de falhar do "ator com componente mas sem malha atribuída" que o `CLAUDE.md` já registra três vezes — só que a peça que falta não é o asset, é o **dado que faria o ramo ser tomado**. Teste de unidade prova o ramo; ele não prova que alguém chega nele.
+
+**O que fiz:** dei ao cachorro orelha caída e acento próprio, mapeei a forma nova para a malha, escrevi `TellsDogFromCat`, e fixei `PlayerCatalogId`/`OpponentCatalogId` no `DefaultGame.ini` para a tela abrir **gato contra cachorro**. Os outros três tipos seguem sem prova visual: não há pet deles no espelho.
+
+**Previne:** ao fechar uma tabela de variação, perguntar **qual dado de produção cai em cada ramo**. Ramo sem dado é ramo que só existe no teste — e é assim que se descobre, um mês depois, que ele nunca funcionou.

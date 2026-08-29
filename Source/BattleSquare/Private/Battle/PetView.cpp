@@ -14,7 +14,10 @@ namespace PetSilhueta
 	constexpr int32 NumeroDePatas = 4;
 	constexpr float PataAfastamentoX = 16.0f;
 	constexpr float PataAfastamentoY = 13.0f;
-	const FVector PataEscala = FVector(0.11f, 0.11f, 0.20f);
+	constexpr float PataEspessura = 0.11f;
+
+	/** Quanto a pata ENTRA no corpo, para não sobrar costura entre os dois. */
+	constexpr float EncaixeDaPataNoCorpo = 4.0f;
 
 	// Ovalado, não redondo: a esfera perfeita não tem frente nem costas, e
 	// era por isso que o pet precisava de um cubo orbitando para mostrar
@@ -23,7 +26,11 @@ namespace PetSilhueta
 	constexpr float CabecaEscala = 0.36f;
 	constexpr float FocinhoEscala = 0.14f;
 	const FVector FocinhoLocal = FVector(18.0f, 0.0f, -4.0f);
-	const FVector AdornoLocal = FVector(0.0f, 10.0f, 14.0f);
+	constexpr float AdornoAfastamentoY = 10.0f;
+	constexpr float AdornoAlturaZ = 14.0f;
+
+	/** Quanto o adorno ENTRA na cabeça, para não sobrar costura entre os dois. */
+	constexpr float EncaixeDoAdornoNaCabeca = 3.0f;
 
 	const FVector CaudaEscala = FVector(0.16f, 0.16f, 0.40f);
 	const FVector CaudaLocal = FVector(-34.0f, 0.0f, 44.0f);
@@ -146,6 +153,34 @@ void APetView::BuildHead()
 	RefreshCrests();
 }
 
+float APetView::BodyUnderSurfaceAtLegUnits()
+{
+	using namespace PetSilhueta;
+
+	// As primitivas da engine têm 100uu de lado/diâmetro: o semieixo é
+	// metade disso vezes a escala.
+	const float SemiEixoX = CorpoEscala.X * CubeSizeUnits * 0.5f;
+	const float SemiEixoY = CorpoEscala.Y * CubeSizeUnits * 0.5f;
+	const float SemiEixoZ = CorpoEscala.Z * CubeSizeUnits * 0.5f;
+
+	const float Normalizado = FMath::Square(PataAfastamentoX / SemiEixoX)
+		+ FMath::Square(PataAfastamentoY / SemiEixoY);
+
+	const float Queda = SemiEixoZ * FMath::Sqrt(FMath::Max(0.0f, 1.0f - Normalizado));
+	return BodyCenterUnits - Queda;
+}
+
+float APetView::BodyLowestPointUnits()
+{
+	using namespace PetSilhueta;
+	return BodyCenterUnits - CorpoEscala.Z * CubeSizeUnits * 0.5f;
+}
+
+float APetView::LegHeightUnits()
+{
+	return BodyUnderSurfaceAtLegUnits() + PetSilhueta::EncaixeDaPataNoCorpo;
+}
+
 void APetView::BuildLegs()
 {
 	using namespace PetSilhueta;
@@ -161,11 +196,12 @@ void APetView::BuildLegs()
 		Pata->SetupAttachment(BodyPivot);
 		Pata->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		Pata->SetStaticMesh(CylinderAsset);
-		Pata->SetRelativeScale3D(PataEscala);
+		const float Altura = LegHeightUnits();
+		Pata->SetRelativeScale3D(FVector(PataEspessura, PataEspessura, Altura / CubeSizeUnits));
 
 		const float Frente = (Indice < 2) ? PataAfastamentoX : -PataAfastamentoX;
 		const float Lado = (Indice % 2 == 0) ? -PataAfastamentoY : PataAfastamentoY;
-		Pata->SetRelativeLocation(FVector(Frente, Lado, LegHeightUnits * 0.5f));
+		Pata->SetRelativeLocation(FVector(Frente, Lado, Altura * 0.5f));
 
 		Legs.Add(Pata);
 	}
@@ -208,9 +244,51 @@ UStaticMesh* APetView::CrestMeshFor(EPetCrestShape Shape) const
 		case EPetCrestShape::Barbatana:
 		case EPetCrestShape::Chama:
 		case EPetCrestShape::Orelha:
+		case EPetCrestShape::OrelhaCaida:
 		default:
 			return ConeAsset;
 	}
+}
+
+float APetView::HeadRadiusUnits()
+{
+	return PetSilhueta::CabecaEscala * CubeSizeUnits * 0.5f;
+}
+
+float APetView::CrestEmbedUnits()
+{
+	return PetSilhueta::EncaixeDoAdornoNaCabeca;
+}
+
+FRotator APetView::CrestRotationForSide(const FRotator& CrestRotation, float LateralSign)
+{
+	// Os dois espelham o Roll: sem isso tombam para o mesmo lado, e o bicho
+	// fica com a cabeça torta em vez de simétrica.
+	//
+	// E tombam para FORA, que é o que tira o adorno da frente da silhueta da
+	// cabeça no ângulo do diorama. O sinal é NEGATIVO porque um Roll aplicado
+	// a (0,0,h) rende Y = h*sen(Roll), e a tabela de tipos traz Roll negativo:
+	// trocar o sinal "para ficar mais óbvio" deitou os dois para dentro, e o
+	// teste mediu a ponta chegando mais perto do meio que a base.
+	return FRotator(CrestRotation.Pitch, CrestRotation.Yaw, -LateralSign * CrestRotation.Roll);
+}
+
+FVector APetView::CrestRelativeLocation(const FPetAppearance& Appearance, float LateralSign)
+{
+	using namespace PetSilhueta;
+
+	const FRotator Rotacao = CrestRotationForSide(Appearance.CrestRotation, LateralSign);
+	const float MeiaAltura = Appearance.CrestScale.Z * CubeSizeUnits * 0.5f;
+	const FVector DaBaseAoCentro = Rotacao.RotateVector(FVector(0.0f, 0.0f, MeiaAltura));
+
+	// O ponto de encaixe é achado pela DIREÇÃO na esfera, não por um Z: a
+	// base cai sempre na superfície, seja qual for a escala ou a inclinação
+	// que o tipo pedir. Foi o Z fixo que enterrou o cone de 26uu na testa.
+	const FVector Direcao =
+		FVector(0.0f, LateralSign * AdornoAfastamentoY, AdornoAlturaZ).GetSafeNormal();
+	const FVector Base = Direcao * (HeadRadiusUnits() - EncaixeDoAdornoNaCabeca);
+
+	return Base + DaBaseAoCentro;
 }
 
 void APetView::RefreshCrests()
@@ -230,14 +308,12 @@ void APetView::RefreshCrests()
 	CrestLeft->SetRelativeScale3D(Aparencia.CrestScale);
 	CrestRight->SetRelativeScale3D(Aparencia.CrestScale);
 
-	// O direito espelha o Roll: sem isso os dois adornos tombam para o mesmo
-	// lado, e o bicho fica com a cabeça torta em vez de simétrica.
-	const FRotator Espelhada(
-		Aparencia.CrestRotation.Pitch, Aparencia.CrestRotation.Yaw, -Aparencia.CrestRotation.Roll);
-
 	CrestLeft->SetRelativeLocationAndRotation(
-		FVector(AdornoLocal.X, -AdornoLocal.Y, AdornoLocal.Z), Aparencia.CrestRotation);
-	CrestRight->SetRelativeLocationAndRotation(AdornoLocal, Espelhada);
+		CrestRelativeLocation(Aparencia, -1.0f),
+		CrestRotationForSide(Aparencia.CrestRotation, -1.0f));
+	CrestRight->SetRelativeLocationAndRotation(
+		CrestRelativeLocation(Aparencia, 1.0f),
+		CrestRotationForSide(Aparencia.CrestRotation, 1.0f));
 }
 
 void APetView::LookAtLocation(const FVector& TargetLocation)
@@ -397,7 +473,10 @@ void APetView::RefreshBodyAppearance()
 
 	Pintar(CrestLeft, Aparencia.AccentColor);
 	Pintar(CrestRight, Aparencia.AccentColor);
-	Pintar(TailMesh, Aparencia.AccentColor);
+	// A cauda usa a cor do LADO, não a de acento: branca sobre um corpo azul
+	// ela lia como uma asa colada, uma peça de outro bicho. O tipo continua
+	// sendo dito pelos adornos, que é onde se olha para saber o tipo.
+	Pintar(TailMesh, CorDoLado * EscurecimentoDasPatas);
 	Pintar(GazeMarker, CorDoFocinho);
 
 	SetMeshesVisible(!bDefeated);

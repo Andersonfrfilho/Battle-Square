@@ -67,3 +67,40 @@ bool FPetAppearanceFallsBackForUnknownTypeTest::RunTest(const FString& Parameter
 
 	return true;
 }
+
+// Cachorro não pode sair igual a gato.
+//
+// Os dois são os ÚNICOS tipos que o espelho de pets tem hoje, e é por eles que
+// o sistema de tipos aparece ou não aparece na tela. Enquanto "Dog" caía no
+// neutro, a tabela inteira era código sem prova visual — o mesmo modo de falhar
+// dos atores sem malha atribuída, que passam em todo teste de lógica.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FPetAppearanceTellsDogFromCatTest,
+	"BattleSquare.PetAppearance.TellsDogFromCat",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FPetAppearanceTellsDogFromCatTest::RunTest(const FString& Parameters)
+{
+	const FPetAppearance Cachorro = FPetAppearance::ForType(TEXT("Dog"));
+	const FPetAppearance Gato = FPetAppearance::ForType(TEXT("Cat"));
+
+	TestTrue(TEXT("A orelha do cachorro CAI, a do gato aponta"),
+		Cachorro.CrestShape == EPetCrestShape::OrelhaCaida
+			&& Gato.CrestShape == EPetCrestShape::Orelha);
+
+	// Forma diferente com o mesmo tombo seria diferença só no enum: quem olha
+	// a tela vê o ângulo, não o nome da constante.
+	TestTrue(TEXT("E cai bem mais que a do gato"),
+		FMath::Abs(Cachorro.CrestRotation.Roll) > FMath::Abs(Gato.CrestRotation.Roll) + 20.0f);
+
+	TestFalse(TEXT("A cor de acento não é a neutra"),
+		Cachorro.AccentColor.Equals(Gato.AccentColor, 0.01f));
+
+	TestTrue(TEXT("O adorno do cachorro tem tamanho"), Cachorro.CrestScale.GetMin() > 0.0f);
+
+	// Mesma tolerância a caixa dos outros tipos: o nome vem de dado assinado.
+	TestTrue(TEXT("O tipo casa sem depender da caixa"),
+		FPetAppearance::ForType(TEXT("dOg")).CrestShape == EPetCrestShape::OrelhaCaida);
+
+	return true;
+}

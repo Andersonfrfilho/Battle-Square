@@ -159,6 +159,44 @@ public:
 
 	uint8 GetSide() const { return Side; }
 
+	/**
+	 * Z da face de BAIXO do corpo na posição de uma pata.
+	 *
+	 * O corpo é um elipsoide: a barriga sobe conforme se afasta do centro, e
+	 * a pata não fica no centro. Por isso este valor não é "o fundo do corpo".
+	 */
+	static float BodyUnderSurfaceAtLegUnits();
+
+	/**
+	 * Altura da pata — DERIVADA da barriga, não escolhida.
+	 *
+	 * Com 20uu fixos as patas paravam ~7uu abaixo da barriga, e na tela o
+	 * corpo pairava sobre quatro tocos soltos. Número fixo não acompanha
+	 * mudança de escala do corpo; este acompanha.
+	 */
+	static float LegHeightUnits();
+
+	/** Ponto mais baixo do corpo — no centro, onde a barriga desce mais. */
+	static float BodyLowestPointUnits();
+
+	/** Raio da cabeça. É nele que o adorno assenta. */
+	static float HeadRadiusUnits();
+
+	/** Quanto o adorno entra na cabeça, para não sobrar costura entre os dois. */
+	static float CrestEmbedUnits();
+
+	/** -1 é o adorno esquerdo, +1 o direito. O direito espelha o Roll. */
+	static FRotator CrestRotationForSide(const FRotator& CrestRotation, float LateralSign);
+
+	/**
+	 * Onde o adorno assenta, com a BASE encostando na superfície da cabeça.
+	 *
+	 * Com um Z fixo o cone de 26uu afundava e sobravam 9uu para fora: na tela
+	 * isso não é orelha, é uma mancha clara na testa — e o adorno é justamente
+	 * quem diz o TIPO do pet, então o tipo deixava de ser dito.
+	 */
+	static FVector CrestRelativeLocation(const FPetAppearance& Appearance, float LateralSign);
+
 private:
 	void BuildBody();
 	void BuildHead();
@@ -190,7 +228,6 @@ private:
 
 	// A silhueta cabe numa casa de 150uu com folga: o bicho ocupa a casa sem
 	// encostar na vizinha, e a laje continua sendo lida como casa.
-	static constexpr float LegHeightUnits = 20.0f;
 	static constexpr float BodyCenterUnits = 44.0f;
 	static constexpr float HeadForwardUnits = 30.0f;
 	static constexpr float HeadCenterUnits = 58.0f;

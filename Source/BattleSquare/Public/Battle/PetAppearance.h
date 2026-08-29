@@ -12,6 +12,7 @@
 enum class EPetCrestShape : uint8
 {
 	Orelha,
+	OrelhaCaida,
 	Chama,
 	Barbatana,
 	Folha
@@ -26,9 +27,12 @@ enum class EPetCrestShape : uint8
  * de quem é cada esfera.
  *
  * A cor do CORPO continua sendo do LADO (azul é meu, vermelho é do outro):
- * saber de quem é o pet vale mais, em combate, do que saber o tipo dele. O
- * tipo entra pelo adorno e pela cauda, que ficam ACIMA da linha do corpo e
- * por isso continuam legíveis no ângulo do diorama.
+ * saber de quem é o pet vale mais, em combate, do que saber o tipo dele.
+ *
+ * O tipo entra SÓ pelo adorno, que fica acima da linha do corpo e por isso
+ * continua legível no ângulo do diorama. A cauda já foi de cor de acento e
+ * voltou a ser do lado: no tipo neutro o acento é quase branco, e uma cauda
+ * clara saindo de um corpo azul não lia como cauda — lia como asa.
  */
 struct BATTLESQUARE_API FPetAppearance
 {

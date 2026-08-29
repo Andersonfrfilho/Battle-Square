@@ -17,8 +17,32 @@ export async function createPet(input: CreatePetInput): Promise<CreatePetResult>
     speed: input.speed,
     maxHealth: input.maxHealth,
   };
-  const [created] = await db.insert(pets).values(values).returning();
-  return created!;
+
+  // TRANSAÇÃO: pet e golpes nascem juntos ou não nascem.
+  //
+  // Sem ela, uma falha entre os dois inserts deixaria um pet sem golpe no
+  // catálogo — e ele passaria a ser exportado, assinado e jogável assim,
+  // silenciosamente mais fraco que os outros.
+  return db.transaction(async (tx) => {
+    const [created] = await tx.insert(pets).values(values).returning();
+
+    if (input.moves && input.moves.length > 0) {
+      await tx.insert(petMoves).values(
+        input.moves.map((move, slot) => ({
+          petId: created!.id,
+          // O SLOT vem da posição no array, não do cliente: ele é o índice que
+          // viaja no commit da batalha, e deixar o chamador escolher abriria
+          // espaço para dois golpes no mesmo slot.
+          slot,
+          name: move.name,
+          power: move.power,
+          terrainEffect: move.terrainEffect,
+        })),
+      );
+    }
+
+    return created!;
+  });
 }
 
 export type ListPetsResult = {

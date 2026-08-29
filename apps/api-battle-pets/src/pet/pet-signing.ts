@@ -10,6 +10,12 @@ import type { Pet } from './pet.schema';
 // servidor de combate) só precisa da pública. Comprometer um verificador
 // nunca dá poder de forjar uma assinatura nova.
 
+// Golpe como ele viaja: nome e poder, na ordem do slot.
+export type SignedPetMove = {
+  name: string;
+  power: number;
+};
+
 export type SignedPetExport = {
   id: string;
   name: string;
@@ -19,6 +25,7 @@ export type SignedPetExport = {
   speed: number;
   maxHealth: number;
   updatedAt: string;
+  moves: SignedPetMove[];
   signature: string; // base64
 };
 
@@ -27,7 +34,7 @@ export type SignedPetExport = {
 // verificadores (sidecar TypeScript, leitor C++ na Unreal) quebra a
 // verificação silenciosamente — a serialização precisa ser canônica e
 // idêntica dos dois lados.
-function toCanonicalPayload(pet: Pet): string {
+function toCanonicalPayload(pet: Pet, moves: SignedPetMove[]): string {
   const canonical = {
     id: pet.id,
     name: pet.name,
@@ -37,14 +44,34 @@ function toCanonicalPayload(pet: Pet): string {
     speed: pet.speed,
     maxHealth: pet.maxHealth,
     updatedAt: pet.updatedAt.toISOString(),
+    // APÊNDICE, no fim: acrescentar no fim é a única mudança de payload que o
+    // verificador C++ acompanha com uma alteração local, sem reordenar nada
+    // do que já era assinado.
+    //
+    // DP-golpe-03: golpe FORA da assinatura seria o caminho óbvio para
+    // adulterar dano, e a assinatura existe exatamente para isso.
+    moves,
   };
   return JSON.stringify(canonical);
 }
 
+/**
+ * Ordena por slot e devolve só o que é assinado.
+ *
+ * A ordem NÃO pode vir do banco por acaso: o índice do slot é o que viaja no
+ * commit, e uma ordem diferente entre backend e cliente faria o jogador usar
+ * um golpe e o servidor resolver outro.
+ */
+export function toSignedMoves(moves: { slot: number; name: string; power: number }[]): SignedPetMove[] {
+  return [...moves]
+    .sort((left, right) => left.slot - right.slot)
+    .map((move) => ({ name: move.name, power: move.power }));
+}
+
 const privateKey = createPrivateKey({ key: environment.ED25519_PRIVATE_KEY_PEM, format: 'pem' });
 
-export function signPet(pet: Pet): SignedPetExport {
-  const canonicalPayload = toCanonicalPayload(pet);
+export function signPet(pet: Pet, moves: SignedPetMove[] = []): SignedPetExport {
+  const canonicalPayload = toCanonicalPayload(pet, moves);
   const signature = sign(null, Buffer.from(canonicalPayload, 'utf-8'), privateKey);
 
   return {
@@ -56,6 +83,7 @@ export function signPet(pet: Pet): SignedPetExport {
     speed: pet.speed,
     maxHealth: pet.maxHealth,
     updatedAt: pet.updatedAt.toISOString(),
+    moves,
     signature: signature.toString('base64'),
   };
 }

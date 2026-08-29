@@ -8,7 +8,9 @@ import type { MirrorPetRow } from './mirror.schema';
 // Espelha pet-signing.ts (backend) — MESMA serialização canônica dos
 // dois lados, ou a verificação quebra em silêncio (design.md, T9).
 // Nunca precisa da chave privada — só a pública.
-function toCanonicalPayload(pet: Pick<MirrorPetRow, 'id' | 'name' | 'type' | 'attack' | 'defense' | 'speed' | 'maxHealth' | 'updatedAt'>): string {
+function toCanonicalPayload(
+  pet: Pick<MirrorPetRow, 'id' | 'name' | 'type' | 'attack' | 'defense' | 'speed' | 'maxHealth' | 'updatedAt' | 'moves'>,
+): string {
   return JSON.stringify({
     id: pet.id,
     name: pet.name,
@@ -18,6 +20,10 @@ function toCanonicalPayload(pet: Pick<MirrorPetRow, 'id' | 'name' | 'type' | 'at
     speed: pet.speed,
     maxHealth: pet.maxHealth,
     updatedAt: pet.updatedAt,
+    // Golpes no FIM, como no backend. Ausentes viram lista vazia — pet
+    // cadastrado antes dos golpes existirem foi assinado com `moves: []`, e
+    // tratar ausência como outra coisa faria a verificação dele falhar.
+    moves: pet.moves ?? [],
   });
 }
 

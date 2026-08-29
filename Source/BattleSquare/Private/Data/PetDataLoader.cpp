@@ -1,6 +1,9 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Data/PetDataLoader.h"
+#include "Serialization/JsonSerializer.h"
+#include "Serialization/JsonReader.h"
+#include "Dom/JsonObject.h"
 #include "Data/PetCrypto.h"
 #include "HAL/PlatformFileManager.h"
 #include "Misc/FileHelper.h"
@@ -37,15 +40,79 @@ namespace
 		return FPlatformProcess::UserTempDir();
 	}
 
+	/**
+	 * Lê os golpes do JSON já verificado.
+	 *
+	 * Depois da assinatura conferir, e não antes: interpretar dado ainda não
+	 * verificado é dar trabalho a um payload que pode ser lixo. O JSON cru
+	 * continua guardado para remontar o payload — este parse é só para o jogo
+	 * usar os nomes.
+	 */
+	void ParsePetMoves(const FString& Json, TArray<FLoadedPetMove>& OutMoves)
+	{
+		OutMoves.Reset();
+
+		TArray<TSharedPtr<FJsonValue>> Valores;
+		const TSharedRef<TJsonReader<>> Leitor = TJsonReaderFactory<>::Create(Json);
+		if (!FJsonSerializer::Deserialize(Leitor, Valores))
+		{
+			return;
+		}
+
+		for (const TSharedPtr<FJsonValue>& Valor : Valores)
+		{
+			const TSharedPtr<FJsonObject>* Objeto = nullptr;
+			if (!Valor.IsValid() || !Valor->TryGetObject(Objeto))
+			{
+				continue;
+			}
+
+			FLoadedPetMove Golpe;
+			(*Objeto)->TryGetStringField(TEXT("name"), Golpe.Name);
+			(*Objeto)->TryGetNumberField(TEXT("power"), Golpe.Power);
+
+			if (!Golpe.Name.IsEmpty())
+			{
+				OutMoves.Add(Golpe);
+			}
+		}
+	}
+
 	// Serialização canônica — TEM que bater byte a byte com
 	// pet-signing.ts / signature-verifier.ts (mesma ordem de campo).
-	FString BuildCanonicalPayload(const FLoadedPetRecord& Record)
+	FString BuildCanonicalPayload(const FLoadedPetRecord& Record, bool bIncludeMoves)
 	{
+		if (!bIncludeMoves)
+		{
+			// Formato ANTERIOR aos golpes, sem a chave `moves`.
+			//
+			// Pet assinado pelo backend antigo não tem esse campo no payload —
+			// e acrescentá-lo, ainda que vazio, produz um texto diferente do
+			// que foi assinado. A assinatura dele falharia, e o jogo ficaria
+			// sem pet nenhum por causa de um campo que não existia quando ele
+			// foi criado.
+			return FString::Printf(
+				TEXT("{\"id\":\"%s\",\"name\":\"%s\",\"type\":\"%s\",\"attack\":%d,\"defense\":%d,\"speed\":%d,\"maxHealth\":%d,\"updatedAt\":\"%s\"}"),
+				*Record.Id, *Record.Name, *Record.Type,
+				Record.Attack, Record.Defense, Record.Speed, Record.MaxHealth,
+				*Record.UpdatedAt);
+		}
+
 		return FString::Printf(
-			TEXT("{\"id\":\"%s\",\"name\":\"%s\",\"type\":\"%s\",\"attack\":%d,\"defense\":%d,\"speed\":%d,\"maxHealth\":%d,\"updatedAt\":\"%s\"}"),
+			// Golpes no FIM, como em pet-signing.ts. O JSON dos golpes é
+			// repassado COMO VEIO do espelho, sem reserializar: reconstruí-lo
+			// campo a campo aqui arriscaria produzir espaçamento ou ordem
+			// diferentes do que foi assinado, e a verificação falharia sem
+			// ninguém entender por quê — que é exatamente o risco que o
+			// comentário do backend descreve.
+			TEXT("{\"id\":\"%s\",\"name\":\"%s\",\"type\":\"%s\",\"attack\":%d,\"defense\":%d,\"speed\":%d,\"maxHealth\":%d,\"updatedAt\":\"%s\",\"moves\":%s}"),
 			*Record.Id, *Record.Name, *Record.Type,
 			Record.Attack, Record.Defense, Record.Speed, Record.MaxHealth,
-			*Record.UpdatedAt);
+			*Record.UpdatedAt,
+			// Vazio vira "[]", não string vazia: pet cadastrado antes dos
+			// golpes foi assinado com moves:[] , e qualquer outra coisa aqui
+			// invalidaria a assinatura DELE.
+			Record.MovesCanonicalJson.IsEmpty() ? TEXT("[]") : *Record.MovesCanonicalJson);
 	}
 
 	// RAII: apaga o temporário em texto plano mesmo em caminho de erro —
@@ -118,13 +185,32 @@ bool FPetDataLoader::LoadVerifiedPets(
 		return false;
 	}
 
+	// Espelho ANTERIOR aos golpes não tem a coluna `moves`, e o worker cria a
+	// tabela com CREATE TABLE IF NOT EXISTS — então um espelho já em uso não
+	// ganha a coluna sozinho. Recusar aqui deixaria o jogo sem pet nenhum por
+	// causa de um campo que ninguém tinha como ter.
+	//
+	// Aqueles pets foram assinados SEM golpes, e "[]" é exatamente o que a
+	// assinatura deles espera — por isso o caminho antigo continua válido, não
+	// é remendo.
 	sqlite3_stmt* Statement = nullptr;
-	const char* SelectSql = "SELECT id, name, type, attack, defense, speed, maxHealth, updatedAt, signature FROM pets";
-	if (sqlite3_prepare_v2(Database, SelectSql, -1, &Statement, nullptr) != SQLITE_OK)
+	bool bMirrorHasMovesColumn = true;
+
+	const char* SelectWithMoves = "SELECT id, name, type, attack, defense, speed, maxHealth, updatedAt, moves, signature FROM pets";
+	const char* SelectWithoutMoves = "SELECT id, name, type, attack, defense, speed, maxHealth, updatedAt, signature FROM pets";
+
+	if (sqlite3_prepare_v2(Database, SelectWithMoves, -1, &Statement, nullptr) != SQLITE_OK)
 	{
-		UE_LOG(LogTemp, Error, TEXT("PetDataLoader: falha ao preparar a query: %s"), UTF8_TO_TCHAR(sqlite3_errmsg(Database)));
-		sqlite3_close(Database);
-		return false;
+		bMirrorHasMovesColumn = false;
+		UE_LOG(LogTemp, Display,
+			TEXT("PetDataLoader: espelho sem a coluna 'moves' — lendo no formato anterior aos golpes"));
+
+		if (sqlite3_prepare_v2(Database, SelectWithoutMoves, -1, &Statement, nullptr) != SQLITE_OK)
+		{
+			UE_LOG(LogTemp, Error, TEXT("PetDataLoader: falha ao preparar a query: %s"), UTF8_TO_TCHAR(sqlite3_errmsg(Database)));
+			sqlite3_close(Database);
+			return false;
+		}
 	}
 
 	while (sqlite3_step(Statement) == SQLITE_ROW)
@@ -138,13 +224,37 @@ bool FPetDataLoader::LoadVerifiedPets(
 		Record.Speed = sqlite3_column_int(Statement, 5);
 		Record.MaxHealth = sqlite3_column_int(Statement, 6);
 		Record.UpdatedAt = UTF8_TO_TCHAR(reinterpret_cast<const char*>(sqlite3_column_text(Statement, 7)));
-		const FString SignatureBase64 = UTF8_TO_TCHAR(reinterpret_cast<const char*>(sqlite3_column_text(Statement, 8)));
+
+		// Coluna ausente ou nula vira "[]", que é como aquele pet foi assinado.
+		Record.MovesCanonicalJson = FString(TEXT("[]"));
+		if (bMirrorHasMovesColumn)
+		{
+			if (const unsigned char* MovesText = sqlite3_column_text(Statement, 8))
+			{
+				Record.MovesCanonicalJson = UTF8_TO_TCHAR(reinterpret_cast<const char*>(MovesText));
+			}
+			ParsePetMoves(Record.MovesCanonicalJson, Record.Moves);
+		}
+
+		const int32 SignatureColumn = bMirrorHasMovesColumn ? 9 : 8;
+		const FString SignatureBase64 = UTF8_TO_TCHAR(reinterpret_cast<const char*>(sqlite3_column_text(Statement, SignatureColumn)));
 
 		TArray<uint8> SignatureBytes;
 		const bool bSignatureDecoded = FBase64::Decode(SignatureBase64, SignatureBytes);
-		const FString CanonicalPayload = BuildCanonicalPayload(Record);
+		// Aceita os DOIS formatos canônicos conhecidos: com golpes e sem.
+		//
+		// Isto NÃO enfraquece a verificação. Um registro adulterado continua
+		// falhando nos dois, porque forjar assinatura exige a chave privada —
+		// o que muda é que um pet assinado antes dos golpes existirem continua
+		// válido, em vez de ser descartado como violação.
+		//
+		// A tolerância é de MIGRAÇÃO: quando todo pet tiver sido reassinado, o
+		// caminho antigo pode sair.
 		const bool bSignatureValid = bSignatureDecoded
-			&& BattlePetCrypto::VerifyEd25519Signature(CanonicalPayload, SignatureBytes, Ed25519PublicKeyPem);
+			&& (BattlePetCrypto::VerifyEd25519Signature(
+					BuildCanonicalPayload(Record, /*bIncludeMoves=*/true), SignatureBytes, Ed25519PublicKeyPem)
+				|| BattlePetCrypto::VerifyEd25519Signature(
+					BuildCanonicalPayload(Record, /*bIncludeMoves=*/false), SignatureBytes, Ed25519PublicKeyPem));
 
 		if (!bSignatureValid)
 		{

@@ -104,3 +104,28 @@ bool FArenaSurfaceHeightVariesByTerrainTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+// O tabuleiro tem que ficar ACIMA do chão do nível.
+//
+// Medido em 2026-08-29: `Floor_0` de BattleScreen é um plano em Z=-0.5, e a
+// laje de andar tem topo em -4. Sem elevação o tabuleiro nasce enterrado —
+// o mesmo defeito de "existe na lógica, não existe na tela", só que por
+// profundidade em vez de asset faltando.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FArenaSitsAboveLevelGroundTest,
+	"BattleSquare.Battle.Arena.SitsAboveLevelGround",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FArenaSitsAboveLevelGroundTest::RunTest(const FString& Parameters)
+{
+	const ABattleArena* Padrao = GetDefault<ABattleArena>();
+
+	// A água é o ponto mais fundo em que ainda se anda: se ela passa, todo o
+	// resto do tabuleiro passa junto.
+	const float TopoDaAgua = Padrao->BoardElevation
+		+ ABattleArena::GetCellSurfaceHeight(static_cast<uint8>(ECellProperty::Water));
+
+	TestTrue(TEXT("Até a casa mais funda fica acima do chão do nível"), TopoDaAgua > 0.0f);
+
+	return true;
+}

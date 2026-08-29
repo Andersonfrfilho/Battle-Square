@@ -1,7 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 import { authenticate, canWrite } from '../auth/auth.middleware';
-import { signPet } from './pet-signing';
+import { signPet, toSignedMoves } from './pet-signing';
 import * as PetUseCase from './pet.use-case';
 import { createPetSchema, formatValidationErrors, listPetsQuerySchema, updatePetSchema } from './pet.validation';
 
@@ -111,8 +111,11 @@ export async function handleExportPets(request: Request): Promise<Response> {
     return jsonError(400, 'VALIDATION_ERROR', 'Query inválida', formatValidationErrors(parsed.error));
   }
 
-  const { items, total } = await PetUseCase.listPets(parsed.data);
-  const signedItems = items.map((pet) => signPet(pet));
+  const { items, total, movesByPetId } = await PetUseCase.listPets(parsed.data);
+
+  // Golpes entram no payload ASSINADO (DP-golpe-03): fora dela, seriam o
+  // caminho óbvio para adulterar dano.
+  const signedItems = items.map((pet) => signPet(pet, toSignedMoves(movesByPetId.get(pet.id) ?? [])));
 
   return Response.json({
     data: signedItems,

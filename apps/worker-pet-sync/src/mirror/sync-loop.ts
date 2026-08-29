@@ -15,6 +15,9 @@ type ExportedPet = {
   speed: number;
   maxHealth: number;
   updatedAt: string;
+  // Opcional na ENTRADA: um backend antigo não manda o campo, e exigi-lo faria
+  // o sync parar por causa de dado que o outro lado ainda não tem.
+  moves?: { name: string; power: number }[];
   signature: string;
 };
 
@@ -32,13 +35,20 @@ function getLastSyncedTimestamp(db: Database): string | null {
 
 function upsertPet(db: Database, pet: ExportedPet): void {
   db.run(
-    `INSERT INTO pets (id, name, type, attack, defense, speed, maxHealth, updatedAt, signature)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `INSERT INTO pets (id, name, type, attack, defense, speed, maxHealth, updatedAt, moves, signature)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
        name = excluded.name, type = excluded.type, attack = excluded.attack,
        defense = excluded.defense, speed = excluded.speed, maxHealth = excluded.maxHealth,
-       updatedAt = excluded.updatedAt, signature = excluded.signature`,
-    [pet.id, pet.name, pet.type, pet.attack, pet.defense, pet.speed, pet.maxHealth, pet.updatedAt, pet.signature],
+       updatedAt = excluded.updatedAt, moves = excluded.moves, signature = excluded.signature`,
+    [
+      pet.id, pet.name, pet.type, pet.attack, pet.defense, pet.speed, pet.maxHealth, pet.updatedAt,
+      // JSON.stringify do array COMO VEIO: reserializar campo a campo aqui
+      // arriscaria produzir um texto diferente do que foi assinado, e a
+      // verificação falharia sem ninguém entender por quê.
+      JSON.stringify(pet.moves ?? []),
+      pet.signature,
+    ],
   );
 }
 
@@ -72,7 +82,7 @@ export async function runSyncCycle(): Promise<SyncCycleResult> {
 
   await withMirror((db) => {
     for (const pet of exportedPets) {
-      if (!verifyPetSignature(pet)) {
+      if (!verifyPetSignature({ ...pet, moves: pet.moves ?? [] })) {
         rejected += 1;
         console.warn(`[sync-loop] assinatura inválida para o pet ${pet.id} — descartado, NÃO entra no espelho`);
         continue;

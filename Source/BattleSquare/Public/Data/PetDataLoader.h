@@ -9,6 +9,13 @@
 // profundidade contra adulteração pós-sync (PETDB-10, design.md). Vive em
 // BattleSquare, nunca em BattleSim (a fronteira do núcleo, AD-011/AD-012,
 // continua intacta).
+/** Um golpe do pet: nome e poder, na ordem do slot (golpes-por-pet). */
+struct FLoadedPetMove
+{
+	FString Name;
+	int32 Power = 0;
+};
+
 struct FLoadedPetRecord
 {
 	FString Id;
@@ -19,6 +26,19 @@ struct FLoadedPetRecord
 	int32 Speed = 0;
 	int32 MaxHealth = 0;
 	FString UpdatedAt;
+
+	/**
+	 * Até quatro golpes, na ordem do slot.
+	 *
+	 * Chegam pelo espelho como JSON canônico, e são parte do payload ASSINADO
+	 * (DP-golpe-03): golpe fora da assinatura seria o caminho óbvio para
+	 * adulterar dano. Pet cadastrado antes dos golpes existirem chega com a
+	 * lista vazia, e isso é assinatura VÁLIDA — não ausência de dado.
+	 */
+	TArray<FLoadedPetMove> Moves;
+
+	/** O JSON exatamente como veio, para remontar o payload assinado. */
+	FString MovesCanonicalJson;
 };
 
 class BATTLESQUARE_API FPetDataLoader

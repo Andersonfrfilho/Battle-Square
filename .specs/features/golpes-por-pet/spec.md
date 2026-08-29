@@ -52,8 +52,18 @@ erra — e o feed diz isso, como já diz hoje.
 
 ## Fatiamento
 
-**Fatia 1 — backend.** Tabela de golpes, quatro por pet, no payload assinado e
-no espelho. Testável com `bun test`, sem tocar no jogo.
+**Fatia 1 — backend.** ✅ **Feita em 2026-08-29.** Tabela `pet_moves` (quatro por
+pet, slot 0–3 com `CHECK`), golpes no payload assinado, coluna `moves` no
+espelho, e o leitor C++ os carregando.
+
+**O que essa fatia ensinou:** mudar o payload assinado toca **quatro** lugares
+que precisam concordar byte a byte — `pet-signing.ts`, `signature-verifier.ts`,
+`mirror.schema.ts` e `PetDataLoader.cpp`. E há um quinto, invisível: **os pets
+já assinados**. Eles não têm a chave `moves`, então o verificador precisa
+aceitar os DOIS formatos canônicos durante a migração. Isso não enfraquece nada
+— forjar exige a chave privada, e o registro adulterado continua falhando nos
+dois — mas descobri isso pelo teste reprovando com "POSSÍVEL VIOLAÇÃO" em todos
+os pets, que é o sintoma exato de payload divergente.
 
 **Fatia 2 — o jogo lê e oferece.** `FLoadedPetRecord` carrega os golpes; a tela
 mostra quatro botões nomeados no lugar da grade de direção para ataque.

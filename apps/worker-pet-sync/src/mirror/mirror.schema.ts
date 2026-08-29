@@ -20,6 +20,7 @@ export type MirrorPetRow = {
   speed: number;
   maxHealth: number;
   updatedAt: string;
+  moves: { name: string; power: number }[];
   signature: string;
 };
 
@@ -33,6 +34,13 @@ const CREATE_TABLE_SQL = `
     speed INTEGER NOT NULL,
     maxHealth INTEGER NOT NULL,
     updatedAt TEXT NOT NULL,
+    -- Golpes como JSON CANÔNICO, não como tabela separada.
+    --
+    -- O leitor C++ precisa reconstruir o payload assinado byte a byte; guardar
+    -- a serialização pronta evita um join dentro do SQLite só para remontar o
+    -- que já veio pronto do backend — e evita que a ordem se perca no caminho,
+    -- que é o que faria a assinatura falhar.
+    moves TEXT NOT NULL DEFAULT '[]',
     signature TEXT NOT NULL
   );
 `;
@@ -41,6 +49,25 @@ const CREATE_TABLE_SQL = `
 // texto plano, abre com bun:sqlite, devolve o db + uma função de
 // finalização que cifra de volta e apaga o temporário — SEMPRE, mesmo
 // em erro (equivalente ao trap do probe_isolation.sh).
+/**
+ * Acrescenta colunas que o espelho ainda não tem.
+ *
+ * `CREATE TABLE IF NOT EXISTS` NÃO altera tabela existente: sem isto, um
+ * espelho já em uso nunca ganharia a coluna de golpes, e o worker gravaria num
+ * campo inexistente a cada ciclo. Migrar aqui é o que torna a mudança segura
+ * para quem já está rodando.
+ */
+function ensureMovesColumn(db: Database): void {
+  const colunas = db.query('PRAGMA table_info(pets)').all() as { name: string }[];
+  if (colunas.some((coluna) => coluna.name === 'moves')) {
+    return;
+  }
+
+  // Default '[]' e não NULL: pet gravado antes dos golpes foi ASSINADO com
+  // moves:[], e qualquer outro valor invalidaria a assinatura dele.
+  db.run("ALTER TABLE pets ADD COLUMN moves TEXT NOT NULL DEFAULT '[]'");
+}
+
 export async function withMirror<T>(callback: (db: Database) => Promise<T> | T): Promise<T> {
   const { path: tempDir } = resolveTempDirectory();
   const tempPlainPath = join(tempDir, `pet-mirror-${randomUUID()}.sqlite`);
@@ -54,6 +81,7 @@ export async function withMirror<T>(callback: (db: Database) => Promise<T> | T):
 
     const db = new Database(tempPlainPath, { create: true });
     db.exec(CREATE_TABLE_SQL);
+    ensureMovesColumn(db);
 
     try {
       return await callback(db);

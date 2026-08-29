@@ -629,3 +629,17 @@ find "$HOME/Library/Logs/Unreal Engine/BattleSquareEditor" Saved/Logs -newer <ma
 ## Preferences
 
 **Model Guidance Shown:** 2026-08-25 (troca de modelo por fase confirmada pelo usuário via /model sonnet)
+
+### L-042: o mapa tem um chão, e ele fica na frente do que você acabou de construir
+
+**Contexto:** em 2026-08-29, ao dar geometria 3D à arena (chão, moldura e uma laje por casa), tudo compilou, os testes de asset atribuído passaram, e o tabuleiro teria nascido **invisível** — enterrado.
+
+**Medido, não suposto:** `Content/Maps/BattleScreen.umap` carrega `Floor_0`, um plano do template em **Z=-0.5**. A laje de andar foi desenhada com topo em **-4**, porque o pet fica em Z=0 e a laje precisa ficar logo abaixo do pé dele. Quatro unidades abaixo do chão do mapa é quatro unidades de invisibilidade.
+
+**Por que nenhum teste pegaria:** o defeito não é asset faltando (esse já tem teste desde os pets invisíveis) nem lógica errada. É **profundidade** — duas geometrias corretas, uma na frente da outra. A bateria inteira fica verde.
+
+**Como medi sem abrir o editor:** teste de automação descartável que faz `LoadPackage` do mapa, `UWorld::FindWorldInPackage`, e percorre `PersistentLevel->Actors` imprimindo nome, classe, localização e escala. Só Engine/CoreUObject — `UEditorLoadingAndSavingUtils` mora em `UnrealEd`, que o módulo de jogo não linka (e não deve linkar). Custou um ciclo de build e respondeu a pergunta exata.
+
+**Correção:** `ABattleArena::BoardElevation` (120), aplicado com `AddActorWorldOffset` no `BeginPlay`. Erguer o ATOR, não as lajes: `GetCellWorldLocation` deriva da posição dele, então pets, grade desenhada e câmera sobem juntos. E a elevação mora na arena, não nos **três** pontos de spawn (`BattleScreenGameMode`, `BattleSquareGameMode`, `WorldBattleTransitionService`) — três cópias do mesmo número discordam na primeira edição, que é L-032 e L-033 de novo.
+
+**Previne:** ao pôr geometria nova num nível existente, **medir o que já está lá** antes de escolher alturas. O teste que ficou (`Arena.SitsAboveLevelGround`) prende a folga: a casa mais funda, a água, tem que terminar acima de zero.

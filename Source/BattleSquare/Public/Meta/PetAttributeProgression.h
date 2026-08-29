@@ -15,6 +15,15 @@ struct BATTLESQUARE_API FPetAttributeGains
 	int32 SkillProficiency[3] = { 0, 0, 0 };
 
 	bool IsEmpty() const;
+
+	/**
+	 * Soma os ganhos de mais um turno.
+	 *
+	 * Existe porque o traço chega TURNO A TURNO, não de uma vez: aplicar só o
+	 * traço do último turno jogaria fora tudo o que o pet fez na batalha
+	 * inteira, e o atributo só cresceria pelo golpe final.
+	 */
+	void Add(const FPetAttributeGains& Other);
 };
 
 /**

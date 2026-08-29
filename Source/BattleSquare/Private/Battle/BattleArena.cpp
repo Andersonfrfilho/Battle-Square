@@ -792,6 +792,7 @@ void ABattleArena::HandleCoordinatorTurnResolved(const FBattleState& NextState, 
 {
 	CurrentState = NextState;
 	CheckForCapture(Trace);
+	AccumulateAttributeGains(Trace);
 	GrantExperienceIfOwned(Trace);
 	AnnounceBattleFinishedIfEnded(Trace);
 
@@ -1128,6 +1129,81 @@ void ABattleArena::CheckForCapture(const TArray<FBattleEvent>& Trace)
 	}
 }
 
+void ABattleArena::ShowAttributeGains(const FPetPresentationInfo& Presentation,
+	const FOwnedPetInstance& Antes, const FOwnedPetInstance& Depois) const
+{
+	if (AccumulatedAttributeGains.IsEmpty())
+	{
+		// Batalha sem ganho nenhum DIZ isso. O silêncio aqui seria
+		// indistinguível de atributo que não está sendo gravado — e essa
+		// dúvida já custou uma investigação inteira com a XP.
+		FBattleDebugScreen::Show(TEXT("nenhum atributo mudou nesta batalha"),
+			0.0f, FColor::Silver, /*Key=*/950);
+		return;
+	}
+
+	struct FLinhaDeAtributo
+	{
+		FText Rotulo;
+		int32 Antes;
+		int32 Depois;
+	};
+
+	const FLinhaDeAtributo Linhas[] = {
+		{ NSLOCTEXT("PetAttributes", "Musculatura", "Musculatura"),
+		  Antes.Musculature, Depois.Musculature },
+		{ NSLOCTEXT("PetAttributes", "Personalidade", "Personalidade"),
+		  Antes.Personality, Depois.Personality },
+		{ NSLOCTEXT("PetAttributes", "Camuflagem", "Camuflagem"),
+		  Antes.SkillProficiency[FPetAttributeProgression::Camouflage],
+		  Depois.SkillProficiency[FPetAttributeProgression::Camouflage] },
+		{ NSLOCTEXT("PetAttributes", "Voo", "Voo"),
+		  Antes.SkillProficiency[FPetAttributeProgression::Flight],
+		  Depois.SkillProficiency[FPetAttributeProgression::Flight] },
+		{ NSLOCTEXT("PetAttributes", "Subsolo", "Subsolo"),
+		  Antes.SkillProficiency[FPetAttributeProgression::Underground],
+		  Depois.SkillProficiency[FPetAttributeProgression::Underground] },
+	};
+
+	for (const FLinhaDeAtributo& Linha : Linhas)
+	{
+		if (Linha.Antes == Linha.Depois)
+		{
+			continue;
+		}
+
+		// Argumentos NOMEADOS: em alemão o número e o rótulo não caem na
+		// mesma ordem, e posicional obrigaria o tradutor a reordenar o que
+		// não é dele.
+		const FText Texto = FText::Format(
+			NSLOCTEXT("PetAttributes", "AtributoSubiu", "{Pet}: {Atributo} {Antes} → {Depois}"),
+			FFormatNamedArguments{
+				{ TEXT("Pet"), FText::FromString(Presentation.Name) },
+				{ TEXT("Atributo"), Linha.Rotulo },
+				{ TEXT("Antes"), FText::AsNumber(Linha.Antes) },
+				{ TEXT("Depois"), FText::AsNumber(Linha.Depois) },
+			});
+
+		FBattleDebugScreen::Show(Texto.ToString(), 0.0f,
+			Linha.Depois > Linha.Antes ? FColor::Green : FColor::Orange, /*Key=*/-1);
+		FBattleNarrationFeed::Push(Texto,
+			Linha.Depois > Linha.Antes ? FColor::Green : FColor::Orange);
+	}
+}
+
+void ABattleArena::AccumulateAttributeGains(const TArray<FBattleEvent>& Trace)
+{
+	const FPetState* OwnPet = CurrentState.Pets.FindByPredicate(
+		[this](const FPetState& Pet) { return Pet.Side == LocalPlayerSide; });
+	if (!OwnPet)
+	{
+		return;
+	}
+
+	AccumulatedAttributeGains.Add(
+		FPetAttributeProgression::ComputeGains(Trace, OwnPet->PetId));
+}
+
 void ABattleArena::GrantExperienceIfOwned(const TArray<FBattleEvent>& Trace)
 {
 	for (const FBattleEvent& Event : Trace)
@@ -1186,7 +1262,16 @@ void ABattleArena::GrantExperienceIfOwned(const TArray<FBattleEvent>& Trace)
 		}
 
 		FPetProgressionService::GrantExperience(*OwnedInstance, ExperienceAmount);
+
+		// Atributo grava JUNTO da XP, na mesma coleção e no mesmo save. Duas
+		// escritas separadas abririam a janela em que uma acontece e a outra
+		// não, e o pet terminaria a batalha com nível novo e músculo velho.
+		const FOwnedPetInstance AntesDosGanhos = *OwnedInstance;
+		FPetAttributeProgression::Apply(*OwnedInstance, AccumulatedAttributeGains);
+
 		FPetCollectionService::SaveCollection(PetCollectionSlotName, Collection);
+
+		ShowAttributeGains(*Presentation, AntesDosGanhos, *OwnedInstance);
 
 		FBattleDebugScreen::Show(
 			FString::Printf(TEXT("+%d de experiência para %s (total %d)"),
@@ -1312,6 +1397,7 @@ void ABattleArena::ResolveTurnWithCommits(const FTurnCommit& LocalCommit, const 
 	// M1–M4 nunca jogaram uma partida até o fim por uma tela; o caminho local
 	// nunca tinha chegado até aqui.
 	CheckForCapture(Result.Trace);
+	AccumulateAttributeGains(Result.Trace);
 	GrantExperienceIfOwned(Result.Trace);
 
 	// O anúncio do fim ESPERA a reprodução. Anunciando aqui, a transição

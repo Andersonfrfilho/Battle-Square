@@ -10,6 +10,7 @@
 #include "Battle/BattleTracePlayer.h"
 #include "Net/BattleTurnCoordinator.h"
 #include "Data/BattleDataTranslator.h"
+#include "Meta/PetAttributeProgression.h"
 #include "BattleArena.generated.h"
 
 class UCameraComponent;
@@ -463,6 +464,28 @@ private:
 	// em qualquer resultado (vitória/derrota/empate), quantidades
 	// diferentes. Pet ainda não capturado não gera XP fantasma.
 	void GrantExperienceIfOwned(const TArray<FBattleEvent>& Trace);
+
+	/**
+	 * Soma o que o pet do jogador ganhou de atributo NESTE turno.
+	 *
+	 * Chamado a cada turno resolvido, nos dois caminhos (local e rede); a
+	 * gravação acontece uma vez só, junto da XP, no fim da batalha. Somar na
+	 * hora e gravar no fim é o que evita uma escrita de save por turno sem
+	 * perder o que aconteceu nos turnos do meio.
+	 */
+	void AccumulateAttributeGains(const TArray<FBattleEvent>& Trace);
+
+	FPetAttributeGains AccumulatedAttributeGains;
+
+	/**
+	 * Diz na tela o que cresceu, como `Camuflagem 3 → 4`.
+	 *
+	 * Atributo que sobe sem aparecer é atributo que o jogador descobre — se
+	 * descobrir — abrindo o save. O antes e o depois vão os dois: só o número
+	 * final não deixa ver que houve ganho.
+	 */
+	void ShowAttributeGains(const FPetPresentationInfo& Presentation,
+		const FOwnedPetInstance& Antes, const FOwnedPetInstance& Depois) const;
 
 	// Dispara OnBattleFinished se o trace contiver BatalhaEncerrada, no
 	// máximo uma vez por arena.

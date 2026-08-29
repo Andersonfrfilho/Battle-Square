@@ -173,3 +173,72 @@ bool FApplyAccumulatesTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+// O traço chega TURNO A TURNO. Sem somar, o que valeria seria só o último
+// turno — e uma batalha de dez turnos daria o atributo de um.
+//
+// O modo de falhar é silencioso e plausível: o pet ganha ALGUMA coisa, então
+// nada parece quebrado; só o total é que está errado, e ninguém confere um
+// total que nunca viu.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FGainsAccumulateAcrossTurnsTest,
+	"BattleSquare.Meta.AttributeProgression.GainsAccumulateAcrossTurns",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FGainsAccumulateAcrossTurnsTest::RunTest(const FString& Parameters)
+{
+	const TArray<FBattleEvent> PrimeiroTurno = {
+		AttrEvent(EBattleEventType::AtaqueAcertou, /*Ator=*/1, /*Valor=*/30),
+	};
+	const TArray<FBattleEvent> SegundoTurno = {
+		AttrEvent(EBattleEventType::AtaqueAcertou, /*Ator=*/1, /*Valor=*/50),
+	};
+
+	FPetAttributeGains Total;
+	Total.Add(FPetAttributeProgression::ComputeGains(PrimeiroTurno, /*PetId=*/1));
+	Total.Add(FPetAttributeProgression::ComputeGains(SegundoTurno, /*PetId=*/1));
+
+	// 30/10 no primeiro turno e 50/10 no segundo: 3 + 5.
+	TestEqual(TEXT("Musculatura soma os dois turnos"), Total.Musculature, 8);
+	TestEqual(TEXT("Personalidade soma os dois ataques"), Total.Personality, 2);
+	TestFalse(TEXT("Total com ganho não é vazio"), Total.IsEmpty());
+
+	// Somar turno vazio não mexe em nada — turno em que o pet só andou não
+	// pode zerar o que ele já tinha conquistado nos anteriores.
+	FPetAttributeGains Intocado = Total;
+	Intocado.Add(FPetAttributeProgression::ComputeGains({}, /*PetId=*/1));
+	TestEqual(TEXT("Turno sem evento não muda a musculatura"),
+		Intocado.Musculature, Total.Musculature);
+	TestEqual(TEXT("Turno sem evento não muda a personalidade"),
+		Intocado.Personality, Total.Personality);
+
+	return true;
+}
+
+// A soma parcial de dano NÃO se perde no arredondamento entre turnos.
+//
+// 9 de dano por turno, cinco turnos: somando os ganhos dá 0, porque cada
+// turno arredonda 9/10 para zero. É a diferença entre "soma os ganhos" e
+// "soma o dano" — e este teste registra qual das duas está valendo.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FPartialDamageRoundsPerTurnTest,
+	"BattleSquare.Meta.AttributeProgression.PartialDamageRoundsPerTurn",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FPartialDamageRoundsPerTurnTest::RunTest(const FString& Parameters)
+{
+	FPetAttributeGains Total;
+	for (int32 Turno = 0; Turno < 5; ++Turno)
+	{
+		Total.Add(FPetAttributeProgression::ComputeGains(
+			{ AttrEvent(EBattleEventType::AtaqueAcertou, /*Ator=*/1, /*Valor=*/9) },
+			/*PetId=*/1));
+	}
+
+	TestEqual(TEXT("Cada turno arredonda para baixo por conta própria"),
+		Total.Musculature, 0);
+	TestEqual(TEXT("A personalidade, essa, conta os cinco ataques"),
+		Total.Personality, 5);
+
+	return true;
+}

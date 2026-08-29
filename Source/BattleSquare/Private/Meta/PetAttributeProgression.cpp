@@ -45,6 +45,17 @@ bool FPetAttributeGains::IsEmpty() const
 		&& SkillProficiency[0] == 0 && SkillProficiency[1] == 0 && SkillProficiency[2] == 0;
 }
 
+void FPetAttributeGains::Add(const FPetAttributeGains& Other)
+{
+	Musculature += Other.Musculature;
+	Personality += Other.Personality;
+
+	for (int32 Slot = 0; Slot < 3; ++Slot)
+	{
+		SkillProficiency[Slot] += Other.SkillProficiency[Slot];
+	}
+}
+
 FPetAttributeGains FPetAttributeProgression::ComputeGains(const TArray<FBattleEvent>& Trace, uint8 PetId)
 {
 	FPetAttributeGains Gains;

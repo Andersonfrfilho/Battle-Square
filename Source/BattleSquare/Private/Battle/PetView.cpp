@@ -3,7 +3,9 @@
 #include "Battle/PetView.h"
 #include "Battle/BattleTypes.h"
 #include "Components/SceneComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
@@ -35,6 +37,16 @@ namespace PetSilhueta
 	const FVector CaudaEscala = FVector(0.16f, 0.16f, 0.40f);
 	const FVector CaudaLocal = FVector(-34.0f, 0.0f, 44.0f);
 	const FRotator CaudaRotacao = FRotator(30.0f, 0.0f, 0.0f);
+
+	/**
+	 * Onde o personagem de cada tipo é procurado, por convenção de nome:
+	 * /Game/Pets/Characters/SK_Cat.SK_Cat para o tipo "Cat".
+	 */
+	const TCHAR* const PastaDosPersonagens = TEXT("/Game/Pets/Characters/");
+	const TCHAR* const PrefixoDoPersonagem = TEXT("SK_");
+
+	/** Teto de sanidade no nome que vem do espelho, antes de virar caminho. */
+	constexpr int32 TamanhoMaximoDoTipo = 32;
 
 	/** Patas e focinho ficam mais escuros que o corpo, para o contorno aparecer. */
 	constexpr float EscurecimentoDasPatas = 0.55f;
@@ -85,6 +97,7 @@ APetView::APetView()
 	BuildBody();
 	BuildHead();
 	BuildLegs();
+	BuildCharacter();
 	BuildHealthBar();
 
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MaterialBasico(TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
@@ -205,6 +218,18 @@ void APetView::BuildLegs()
 
 		Legs.Add(Pata);
 	}
+}
+
+void APetView::BuildCharacter()
+{
+	CharacterMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh"));
+	CharacterMesh->SetupAttachment(BodyPivot);
+	// Mesmo motivo do corpo: apresentação não empurra ninguém.
+	CharacterMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	// Nasce escondido. Enquanto não houver malha, quem está na tela é a
+	// silhueta — e um componente vazio visível não desenha nada, mas mentiria
+	// para quem lesse o estado.
+	CharacterMesh->SetVisibility(false);
 }
 
 void APetView::BuildHealthBar()
@@ -437,18 +462,79 @@ void APetView::RefreshHealthBar()
 	HealthBarFill->SetVisibility(!bDefeated && Ratio > 0.0f);
 }
 
-void APetView::SetMeshesVisible(bool bVisible)
+bool APetView::HasCharacterMesh() const
+{
+	return CharacterMesh != nullptr && CharacterMesh->GetSkeletalMeshAsset() != nullptr;
+}
+
+FString APetView::CharacterMeshPathForType(const FString& PetType)
+{
+	if (PetType.IsEmpty() || PetType.Len() > PetSilhueta::TamanhoMaximoDoTipo)
+	{
+		return FString();
+	}
+
+	// Peneira por lista de permissão, não por lista de proibição: o tipo vem do
+	// espelho assinado, e caminho montado com texto de fora é travessia de
+	// diretório esperando acontecer. Só letra e dígito viram nome de asset.
+	for (const TCHAR Caractere : PetType)
+	{
+		if (!FChar::IsAlnum(Caractere))
+		{
+			return FString();
+		}
+	}
+
+	return FString::Printf(TEXT("%s%s%s.%s%s"),
+		PetSilhueta::PastaDosPersonagens,
+		PetSilhueta::PrefixoDoPersonagem, *PetType,
+		PetSilhueta::PrefixoDoPersonagem, *PetType);
+}
+
+void APetView::RefreshCharacterMesh()
+{
+	if (!CharacterMesh)
+	{
+		return;
+	}
+
+	const FString Caminho = CharacterMeshPathForType(PetType);
+	if (Caminho.IsEmpty())
+	{
+		return;
+	}
+
+	// Silencioso de propósito: enquanto o pacote de personagens não estiver no
+	// projeto, TODO pet cairia aqui, e um aviso por pet por partida afogaria o
+	// log de quem estiver depurando outra coisa. Quem não tem asset fica com a
+	// silhueta, que é visível — a ausência aparece na tela, não no log.
+	USkeletalMesh* Personagem = LoadObject<USkeletalMesh>(
+		nullptr, *Caminho, nullptr, LOAD_NoWarn | LOAD_Quiet);
+	if (Personagem)
+	{
+		CharacterMesh->SetSkeletalMeshAsset(Personagem);
+	}
+}
+
+void APetView::RefreshVisibility()
 {
 	// Derrotado some do tabuleiro — o núcleo já o tirou da partida. Percorrer
 	// os componentes em vez de listar cada malha à mão evita que uma parte
 	// nova do bicho fique flutuando sozinha no lugar do pet morto.
+	const bool bVestido = HasCharacterMesh();
+
 	TInlineComponentArray<UStaticMeshComponent*> Malhas(this);
 	for (UStaticMeshComponent* Malha : Malhas)
 	{
 		if (Malha != HealthBarBackground && Malha != HealthBarFill)
 		{
-			Malha->SetVisibility(bVisible);
+			Malha->SetVisibility(!bDefeated && !bVestido);
 		}
+	}
+
+	if (CharacterMesh)
+	{
+		CharacterMesh->SetVisibility(!bDefeated && bVestido);
 	}
 }
 
@@ -479,7 +565,7 @@ void APetView::RefreshBodyAppearance()
 	Pintar(TailMesh, CorDoLado * EscurecimentoDasPatas);
 	Pintar(GazeMarker, CorDoFocinho);
 
-	SetMeshesVisible(!bDefeated);
+	RefreshVisibility();
 	RefreshHealthBar();
 }
 
@@ -498,6 +584,7 @@ void APetView::SetInitialState(const FPetState& InitialState, const FPetPresenta
 	// tinha de onde ser adivinhada.
 	PetType = Presentation.Type;
 
+	RefreshCharacterMesh();
 	RefreshCrests();
 	RefreshBodyAppearance();
 }

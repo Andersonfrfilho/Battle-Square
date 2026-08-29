@@ -3,7 +3,9 @@
 #include "Battle/PetView.h"
 #include "Battle/BattleResolver.h"
 #include "Components/SceneComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
 #include "Misc/AutomationTest.h"
 
@@ -336,6 +338,125 @@ bool FPetViewCrestsEmergeFromTheHeadTest::RunTest(const FString& Parameters)
 				PontaParaFora > BaseParaFora);
 		}
 	}
+
+	return true;
+}
+
+// O caminho do personagem sai de CONVENÇÃO, e o nome que vem de fora é
+// peneirado antes de virar caminho.
+//
+// O tipo chega do espelho assinado de pets, que pode ganhar linha nova sem
+// recompilar. Isso é bom para o catálogo e péssimo para concatenar caminho:
+// "../Engine/Alguma" montaria um caminho para fora de /Game/Pets. A peneira é
+// por lista de PERMISSÃO — negar o que se lembra de negar deixa de fora o que
+// não se lembrou.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPetViewCharacterPathFollowsConventionTest,
+	"BattleSquare.PetView.CharacterPathFollowsConvention",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FPetViewCharacterPathFollowsConventionTest::RunTest(const FString& Parameters)
+{
+	TestEqual(TEXT("o gato mora onde a convenção diz"),
+		APetView::CharacterMeshPathForType(TEXT("Cat")),
+		FString(TEXT("/Game/Pets/Characters/SK_Cat.SK_Cat")));
+	TestEqual(TEXT("e o cachorro também, sem tabela em código"),
+		APetView::CharacterMeshPathForType(TEXT("Dog")),
+		FString(TEXT("/Game/Pets/Characters/SK_Dog.SK_Dog")));
+
+	// Cada um destes, aceito, montaria um caminho que não é o que se pediu.
+	const TCHAR* Recusados[] = {
+		TEXT(""),
+		TEXT("../Engine/BasicShapes/Cube"),
+		TEXT("Cat/../../Engine/Cube"),
+		TEXT("Cat Dog"),
+		TEXT("Cat.Cat"),
+		TEXT("/Game/Outro"),
+		TEXT("Cat\\Dog")
+	};
+	for (const TCHAR* Recusado : Recusados)
+	{
+		TestTrue(FString::Printf(TEXT("'%s' não vira caminho"), Recusado),
+			APetView::CharacterMeshPathForType(Recusado).IsEmpty());
+	}
+
+	return true;
+}
+
+// SEM asset de personagem, o pet continua na tela.
+//
+// É a razão de esta emenda existir antes de qualquer download: o pacote pode
+// não chegar, chegar com outro nome, ou falhar ao carregar — e nenhuma dessas
+// coisas pode terminar em pet invisível, que é o defeito que este projeto já
+// viu três vezes (APetView, os inimigos do mundo, o próprio jogador).
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPetViewKeepsSilhouetteWithoutCharacterTest,
+	"BattleSquare.PetView.KeepsSilhouetteWithoutCharacter",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FPetViewKeepsSilhouetteWithoutCharacterTest::RunTest(const FString& Parameters)
+{
+	APetView* View = NewObject<APetView>();
+
+	const FBattleState State = MakePetViewDuelState();
+	FPetPresentationInfo Apresentacao;
+	Apresentacao.Type = TEXT("Cat");
+	View->SetInitialState(State.Pets[0], Apresentacao);
+
+	TestNotNull(TEXT("o componente de personagem existe, pronto para vestir"),
+		View->CharacterMesh.Get());
+	TestFalse(TEXT("mas não há personagem vestido sem asset no projeto"),
+		View->HasCharacterMesh());
+	TestFalse(TEXT("e o componente vazio não aparece"),
+		View->CharacterMesh->IsVisible());
+
+	TestTrue(TEXT("a silhueta segue visível — o pet NÃO some"),
+		View->BodyMesh->IsVisible());
+	TestTrue(TEXT("com cabeça"), View->HeadMesh->IsVisible());
+	TestTrue(TEXT("e com patas"), View->Legs[0]->IsVisible());
+
+	return true;
+}
+
+// COM personagem vestido, a silhueta sai de cena — inteira.
+//
+// Uma peça esquecida visível é um cone saindo da cabeça do gato de verdade.
+// Por isso a varredura é por componente, não por lista à mão: peça nova entra
+// coberta sem ninguém lembrar de vir aqui.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPetViewCharacterReplacesSilhouetteTest,
+	"BattleSquare.PetView.CharacterReplacesSilhouette",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FPetViewCharacterReplacesSilhouetteTest::RunTest(const FString& Parameters)
+{
+	APetView* View = NewObject<APetView>();
+
+	const FBattleState State = MakePetViewDuelState();
+	FPetPresentationInfo Apresentacao;
+	Apresentacao.Type = TEXT("Cat");
+	View->SetInitialState(State.Pets[0], Apresentacao);
+
+	View->CharacterMesh->SetSkeletalMeshAsset(NewObject<USkeletalMesh>());
+	View->RefreshBodyAppearance();
+
+	TestTrue(TEXT("agora há personagem vestido"), View->HasCharacterMesh());
+	TestTrue(TEXT("e é ele que aparece"), View->CharacterMesh->IsVisible());
+
+	TInlineComponentArray<UStaticMeshComponent*> Malhas(View);
+	for (const UStaticMeshComponent* Malha : Malhas)
+	{
+		if (Malha == View->HealthBarBackground || Malha == View->HealthBarFill)
+		{
+			continue;
+		}
+		TestFalse(FString::Printf(
+				TEXT("%s da silhueta sai de cena — senão sobra peça no bicho de verdade"),
+				*Malha->GetName()),
+			Malha->IsVisible());
+	}
+
+	// A barra de vida NÃO é silhueta: ela continua sendo o que diz quanto
+	// falta, e sumir com ela ao vestir o personagem seria perder a leitura
+	// justamente quando a tela fica bonita.
+	TestTrue(TEXT("a barra de vida fica"), View->HealthBarBackground->IsVisible());
 
 	return true;
 }

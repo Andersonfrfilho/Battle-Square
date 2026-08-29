@@ -13,6 +13,8 @@
 class USceneComponent;
 class UStaticMesh;
 class UStaticMeshComponent;
+class USkeletalMesh;
+class USkeletalMeshComponent;
 class UMaterialInstanceDynamic;
 
 // T8 (tasks.md, PRES-11/12/13): lado lógico do pet na apresentação — reage
@@ -114,6 +116,17 @@ public:
 	// Barra de vida: fundo escuro sempre inteiro + preenchimento que encolhe.
 	// Sem o fundo não se sabe quanto FALTA, só quanto sobrou — e é a diferença
 	// entre "estou mal" e "estou quase morto".
+	/**
+	 * O personagem de verdade, quando existe um.
+	 *
+	 * A silhueta de primitivas continua montada por baixo e é ela que aparece
+	 * enquanto não houver malha atribuída aqui. É emenda com queda combinada,
+	 * não substituição: asset que não carrega deixaria o pet invisível, e pet
+	 * invisível é o defeito que este projeto já viu três vezes.
+	 */
+	UPROPERTY(VisibleAnywhere, Category = "Apresentação")
+	TObjectPtr<USkeletalMeshComponent> CharacterMesh;
+
 	UPROPERTY(VisibleAnywhere, Category = "Apresentação")
 	TObjectPtr<UStaticMeshComponent> HealthBarBackground;
 
@@ -129,6 +142,23 @@ public:
 
 	/** Aplica cor do lado, adorno do tipo e estado de derrota. */
 	void RefreshBodyAppearance();
+
+	/** Verdadeiro quando há personagem vestido — e é então que a silhueta sai de cena. */
+	bool HasCharacterMesh() const;
+
+	/**
+	 * Onde mora o personagem de um tipo, POR CONVENÇÃO de nome.
+	 *
+	 * O catálogo de pets é dado assinado que pode ganhar tipo novo sem
+	 * recompilar (ver FPetAppearance::ForType); uma tabela de caminhos em
+	 * código obrigaria a recompilar para cada bicho novo. Com convenção, basta
+	 * o asset entrar com o nome certo.
+	 *
+	 * O tipo vem de fora, então o nome é peneirado antes de virar caminho:
+	 * só letras e dígitos passam. Devolve vazio para o que não passar, e vazio
+	 * significa "fica na silhueta" — nunca um caminho montado com o que veio.
+	 */
+	static FString CharacterMeshPathForType(const FString& PetType);
 
 	/**
 	 * Vira para uma posição do MUNDO, não para uma casa da grade.
@@ -201,10 +231,21 @@ private:
 	void BuildBody();
 	void BuildHead();
 	void BuildLegs();
+	void BuildCharacter();
 	void BuildHealthBar();
 	void RefreshHealthBar();
 	void RefreshCrests();
-	void SetMeshesVisible(bool bVisible);
+
+	/** Carrega o personagem do tipo, se houver um. Sem asset, não mexe em nada. */
+	void RefreshCharacterMesh();
+
+	/**
+	 * Quem aparece: personagem OU silhueta, nunca os dois, nenhum se derrotado.
+	 *
+	 * Uma função só decide isso — duas concordariam até a primeira edição
+	 * (L-032, L-033), e o desacordo aqui é o bicho dentro do bicho.
+	 */
+	void RefreshVisibility();
 
 	/** A malha da engine que desenha cada forma de adorno. */
 	UStaticMesh* CrestMeshFor(EPetCrestShape Shape) const;

@@ -93,7 +93,20 @@ bool ABattleSceneLighting::WorldAlreadyHasSun(const UWorld* World)
 		return false;
 	}
 
+	UWorld* Cena = const_cast<UWorld*>(World);
+
+	// Duas formas de a cena já estar acesa, e as duas contam.
+	//
+	// Procurar só por ADirectionalLight respondia "não" para a luz que ESTE
+	// ator acende, porque ele é um AActor com componente de luz dentro, não o
+	// ator de luz da engine. O mundo aberto acendia o cenário, a arena
+	// perguntava, ouvia não, e acendia um segundo sol em cima do primeiro.
+	if (TActorIterator<ABattleSceneLighting>(Cena))
+	{
+		return true;
+	}
+
 	// Basta o primeiro: a pergunta é "existe sol?", não "quantos?".
-	TActorIterator<ADirectionalLight> Sol(const_cast<UWorld*>(World));
+	TActorIterator<ADirectionalLight> Sol(Cena);
 	return static_cast<bool>(Sol);
 }

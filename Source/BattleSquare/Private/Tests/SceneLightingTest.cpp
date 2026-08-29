@@ -246,3 +246,59 @@ bool FWorldSceneryIsReachableTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+// Nosso próprio sol TAMBÉM é um sol.
+//
+// WorldAlreadyHasSun procurava só por ADirectionalLight — o ATOR de luz da
+// engine. ABattleSceneLighting é um AActor comum com um componente de luz
+// direcional dentro, então não era encontrado: o mundo acendia o cenário no
+// início da partida, a arena perguntava "já tem sol?", ouvia não, e acendia
+// um SEGUNDO. Dois sóis somam intensidade, que é exatamente o defeito que
+// DoesNotDuplicateExistingSun existe para impedir — e ele passava, porque
+// cobria só o caso do ator da engine.
+//
+// A pergunta certa é "esta cena já está acesa?", não "existe um ADirectionalLight?".
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSceneLightingOwnSunCountsTest,
+	"BattleSquare.Environment.SceneLighting.OurOwnSunCountsAsSun",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FSceneLightingOwnSunCountsTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CenaIluminada::CriarMundoDaIluminacao();
+
+	World->SpawnActor<ABattleSceneLighting>();
+
+	TestTrue(TEXT("A cena acesa por nós conta como sol"),
+		ABattleSceneLighting::WorldAlreadyHasSun(World));
+
+	CenaIluminada::DestruirMundoDaIluminacao(World);
+	return true;
+}
+
+// O caminho REAL da partida: o mundo acende, e depois a arena chega.
+//
+// É este que o jogador percorre — o GameMode acende o cenário do mundo
+// aberto, o encontro monta a arena no mesmo mundo, e as duas iluminações
+// conviveriam. Sol dobrado com exposição travada devolve a tela lavada pelo
+// outro lado: branca em vez de azul.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSceneLightingWorldSunSuppressesArenaSunTest,
+	"BattleSquare.Environment.SceneLighting.WorldSunSuppressesArenaSun",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FSceneLightingWorldSunSuppressesArenaSunTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CenaIluminada::CriarMundoDaIluminacao();
+
+	World->SpawnActor<ABattleSceneLighting>();
+
+	ABattleArena* Arena = World->SpawnActor<ABattleArena>();
+	Arena->DispatchBeginPlay();
+
+	TestNull(TEXT("A arena NÃO acende um segundo sol sobre o do mundo"),
+		Arena->GetSceneLighting());
+
+	CenaIluminada::DestruirMundoDaIluminacao(World);
+	return true;
+}

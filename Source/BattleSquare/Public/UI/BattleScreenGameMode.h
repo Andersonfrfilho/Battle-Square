@@ -28,6 +28,17 @@ public:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 
+	/**
+	 * A tela de batalha não tem mundo para percorrer, então ninguém nasce com
+	 * corpo aqui.
+	 *
+	 * O pai resolve DefaultPawnClass a partir de WorldExplorerPawnClassPath em
+	 * InitGame, e a configuração é herdada pela classe filha — por isso a regra
+	 * mora neste funil, que é por onde TODO pawn padrão passa, e não numa
+	 * atribuição no construtor que o InitGame do pai sobrescreveria depois.
+	 */
+	virtual UClass* GetDefaultPawnClassForController_Implementation(AController* InController) override;
+
 	/** Vazio = o primeiro pet do espelho. */
 	UPROPERTY(config, EditDefaultsOnly, Category = "Tela de Batalha")
 	FString PlayerCatalogId;

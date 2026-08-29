@@ -2,6 +2,24 @@
 
 #include "Data/BattleDataTranslator.h"
 
+namespace
+{
+	uint8 TerrainEffectFromName(const FString& Nome)
+	{
+		if (Nome.Equals(TEXT("water"), ESearchCase::IgnoreCase))
+		{
+			return static_cast<uint8>(ECellProperty::Water);
+		}
+		if (Nome.Equals(TEXT("damage"), ESearchCase::IgnoreCase))
+		{
+			return static_cast<uint8>(ECellProperty::Damage);
+		}
+
+		// "none" e qualquer coisa desconhecida caem aqui.
+		return static_cast<uint8>(ECellProperty::None);
+	}
+}
+
 void FBattleDataTranslator::TranslatePet(
 	const FLoadedPetRecord& Source,
 	uint8 PetId,
@@ -58,6 +76,18 @@ void FBattleDataTranslator::TranslatePet(
 		OutBattleState.MovePowers[Indice] = Source.Moves.IsValidIndex(Indice)
 			? Source.Moves[Indice].Power
 			: 0;
+
+		// O TEXTO do backend vira valor do núcleo AQUI, na montagem.
+		//
+		// O núcleo não conhece string (AD-012), e o backend não conhece
+		// ECellProperty — a tradução tem de acontecer em algum lugar, e é este
+		// o lugar que já traduz tipo, atributo e efetividade.
+		//
+		// Efeito desconhecido vira "não muda nada", nunca um valor qualquer:
+		// um erro de digitação no cadastro não pode alagar o tabuleiro.
+		OutBattleState.MoveTerrainEffects[Indice] = Source.Moves.IsValidIndex(Indice)
+			? TerrainEffectFromName(Source.Moves[Indice].TerrainEffect)
+			: static_cast<uint8>(ECellProperty::None);
 	}
 
 }

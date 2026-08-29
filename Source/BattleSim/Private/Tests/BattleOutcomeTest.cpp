@@ -7,7 +7,7 @@
 
 namespace
 {
-	FPetState MakePet(uint8 PetId, uint8 Side, int32 Health, int32 MaxHealth)
+	FPetState MakeOutcomePet(uint8 PetId, uint8 Side, int32 Health, int32 MaxHealth)
 	{
 		FPetState Pet;
 		Pet.PetId = PetId;
@@ -27,8 +27,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FBattleOutcomeBothDeadIsDrawTest::RunTest(const FString& Parameters)
 {
 	FBattleState State;
-	State.Pets.Add(MakePet(1, 0, 0, 50));
-	State.Pets.Add(MakePet(2, 1, 0, 50));
+	State.Pets.Add(MakeOutcomePet(1, 0, 0, 50));
+	State.Pets.Add(MakeOutcomePet(2, 1, 0, 50));
 
 	TArray<FBattleEvent> Trace;
 	BattleOutcome::EvaluateOutcome(State, Trace);
@@ -50,8 +50,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FBattleOutcomeOneSideDeadTheOtherWinsTest::RunTest(const FString& Parameters)
 {
 	FBattleState State;
-	State.Pets.Add(MakePet(1, 0, 0, 50)); // Left morto
-	State.Pets.Add(MakePet(2, 1, 30, 50)); // Right vivo
+	State.Pets.Add(MakeOutcomePet(1, 0, 0, 50)); // Left morto
+	State.Pets.Add(MakeOutcomePet(2, 1, 30, 50)); // Right vivo
 
 	TArray<FBattleEvent> Trace;
 	BattleOutcome::EvaluateOutcome(State, Trace);
@@ -71,8 +71,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FBattleOutcomeBothAliveContinuesTest::RunTest(const FString& Parameters)
 {
 	FBattleState State;
-	State.Pets.Add(MakePet(1, 0, 40, 50));
-	State.Pets.Add(MakePet(2, 1, 40, 50));
+	State.Pets.Add(MakeOutcomePet(1, 0, 40, 50));
+	State.Pets.Add(MakeOutcomePet(2, 1, 40, 50));
 	State.TurnNumber = 3; // bem abaixo do limite
 
 	TArray<FBattleEvent> Trace;
@@ -93,8 +93,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FBattleOutcomeTurnLimitHigherHealthPercentWinsTest::RunTest(const FString& Parameters)
 {
 	FBattleState State;
-	State.Pets.Add(MakePet(1, 0, 40, 50)); // Left: 80%
-	State.Pets.Add(MakePet(2, 1, 10, 50)); // Right: 20%
+	State.Pets.Add(MakeOutcomePet(1, 0, 40, 50)); // Left: 80%
+	State.Pets.Add(MakeOutcomePet(2, 1, 10, 50)); // Right: 20%
 	State.TurnNumber = BattleOutcome::MaxTurns;
 
 	TArray<FBattleEvent> Trace;
@@ -115,8 +115,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FBattleOutcomeTurnLimitEqualPercentIsDrawTest::RunTest(const FString& Parameters)
 {
 	FBattleState State;
-	State.Pets.Add(MakePet(1, 0, 25, 50)); // Left: 50%
-	State.Pets.Add(MakePet(2, 1, 20, 40)); // Right: 50% (denominadores diferentes, mesmo %)
+	State.Pets.Add(MakeOutcomePet(1, 0, 25, 50)); // Left: 50%
+	State.Pets.Add(MakeOutcomePet(2, 1, 20, 40)); // Right: 50% (denominadores diferentes, mesmo %)
 	State.TurnNumber = BattleOutcome::MaxTurns;
 
 	TArray<FBattleEvent> Trace;
@@ -137,8 +137,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FBattleOutcomeIsIdempotentTest::RunTest(const FString& Parameters)
 {
 	FBattleState State;
-	State.Pets.Add(MakePet(1, 0, 0, 50));
-	State.Pets.Add(MakePet(2, 1, 30, 50));
+	State.Pets.Add(MakeOutcomePet(1, 0, 0, 50));
+	State.Pets.Add(MakeOutcomePet(2, 1, 30, 50));
 	State.bBattleEnded = true;
 	State.WinningSide = 1; // já decidido por uma chamada anterior
 

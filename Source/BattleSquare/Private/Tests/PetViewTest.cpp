@@ -2,6 +2,9 @@
 
 #include "Battle/PetView.h"
 #include "Battle/BattleResolver.h"
+#include "Components/SceneComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
 #include "Misc/AutomationTest.h"
 
 namespace
@@ -107,5 +110,144 @@ bool FPetViewHasVisibleBodyTest::RunTest(const FString& Parameters)
 
 	GEngine->DestroyWorldContext(World);
 	World->DestroyWorld(false);
+	return true;
+}
+
+// TODA parte do bicho precisa de malha ATRIBUÍDA.
+//
+// É o padrão que já custou três aparições neste projeto (APetView, os inimigos
+// do mundo, o próprio jogador): componente criado passa em qualquer teste de
+// lógica e não existe na tela. Com a silhueta montada de várias peças, esquecer
+// UMA delas produz um bicho sem cabeça — e nada acusa.
+//
+// O teste varre os componentes em vez de listar cada peça à mão, de propósito:
+// peça nova entra coberta, sem ninguém lembrar de vir aqui.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPetViewSilhouetteHasAssignedMeshesTest,
+	"BattleSquare.PetView.SilhouetteHasAssignedMeshes",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FPetViewSilhouetteHasAssignedMeshesTest::RunTest(const FString& Parameters)
+{
+	const APetView* Padrao = GetDefault<APetView>();
+
+	TInlineComponentArray<UStaticMeshComponent*> Malhas(Padrao);
+	TestTrue(TEXT("a silhueta tem várias peças, não uma bola só"), Malhas.Num() >= 8);
+
+	for (const UStaticMeshComponent* Malha : Malhas)
+	{
+		TestTrue(FString::Printf(TEXT("%s tem malha atribuída — sem isto é invisível"),
+			*Malha->GetName()), Malha->GetStaticMesh() != nullptr);
+	}
+
+	TestEqual(TEXT("quatro patas"), Padrao->Legs.Num(), 4);
+	TestNotNull(TEXT("tem cabeça"), Padrao->HeadMesh.Get());
+	TestNotNull(TEXT("tem cauda"), Padrao->TailMesh.Get());
+	TestNotNull(TEXT("tem adorno esquerdo"), Padrao->CrestLeft.Get());
+	TestNotNull(TEXT("tem adorno direito"), Padrao->CrestRight.Get());
+
+	// O focinho fica À FRENTE da cabeça: é ele que diz para onde o bicho
+	// está virado, e centrado não diria nada.
+	TestTrue(TEXT("o focinho fica à frente da cabeça"),
+		Padrao->GazeMarker->GetRelativeLocation().X > 1.0f);
+
+	// Os adornos são simétricos. Se os dois tivessem o mesmo Y, ficariam um
+	// dentro do outro e o bicho pareceria ter um só.
+	TestTrue(TEXT("os adornos ficam em lados opostos"),
+		Padrao->CrestLeft->GetRelativeLocation().Y * Padrao->CrestRight->GetRelativeLocation().Y < 0.0f);
+
+	return true;
+}
+
+// O tipo do pet chega à silhueta, e o LADO continua mandando na cor do corpo.
+//
+// Saber de quem é o pet vale mais, em combate, do que saber o tipo dele: o tipo
+// entra pelo adorno, acima da linha do corpo, onde continua legível no ângulo
+// do diorama.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPetViewShowsItsTypeTest,
+	"BattleSquare.PetView.ShowsItsType",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FPetViewShowsItsTypeTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
+	FWorldContext& WorldContext = GEngine->CreateNewWorldContext(EWorldType::Game);
+	WorldContext.SetCurrentWorld(World);
+	World->InitializeActorsForPlay(FURL());
+
+	const FBattleState State = MakePetViewDuelState();
+
+	APetView* Fogo = World->SpawnActor<APetView>();
+	FPetPresentationInfo Apresentacao;
+	Apresentacao.PetId = State.Pets[0].PetId;
+	Apresentacao.Name = TEXT("Chaminha");
+	Apresentacao.Type = TEXT("Fogo");
+	Fogo->SetInitialState(State.Pets[0], Apresentacao);
+
+	// O tipo vinha na apresentação e era DESCARTADO: chegava até aqui e não
+	// mudava nada na tela.
+	TestEqual(TEXT("o tipo da apresentação chega ao pet"), Fogo->GetPetType(), FString(TEXT("Fogo")));
+
+	APetView* Agua = World->SpawnActor<APetView>();
+	Apresentacao.PetId = State.Pets[1].PetId;
+	Apresentacao.Type = TEXT("Agua");
+	Agua->SetInitialState(State.Pets[1], Apresentacao);
+
+	TestFalse(TEXT("tipos diferentes não ficam com o mesmo adorno"),
+		Fogo->CrestLeft->GetRelativeScale3D().Equals(Agua->CrestLeft->GetRelativeScale3D(), 0.001f));
+
+	World->DestroyWorld(false);
+	GEngine->DestroyWorldContext(World);
+	return true;
+}
+
+// Olhar para cima levanta A CABEÇA, e virar-se gira O CORPO.
+//
+// Antes havia um cubo solto orbitando a esfera: a "direção do olhar" não era do
+// bicho, era de um adereço. Com o corpo tendo frente, girar precisa girar o
+// corpo — e inclinar precisa NÃO girar, ou o pet deitaria de costas para olhar
+// para o céu.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPetViewTurnsAndTiltsSeparatelyTest,
+	"BattleSquare.PetView.TurnsAndTiltsSeparately",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FPetViewTurnsAndTiltsSeparatelyTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
+	FWorldContext& WorldContext = GEngine->CreateNewWorldContext(EWorldType::Game);
+	WorldContext.SetCurrentWorld(World);
+	World->InitializeActorsForPlay(FURL());
+
+	APetView* Pet = World->SpawnActor<APetView>();
+	Pet->SetActorLocation(FVector::ZeroVector);
+
+	Pet->LookAtLocation(FVector(0.0, 300.0, 0.0));
+	TestTrue(TEXT("o corpo vira para o alvo"),
+		FMath::IsNearlyEqual(Pet->BodyPivot->GetComponentRotation().Yaw, 90.0f, 0.5f));
+
+	// A barra de vida fica FORA do pivô do corpo: girada junto, ela ficaria de
+	// perfil para a câmera e sumiria.
+	TestTrue(TEXT("a barra de vida não gira com o corpo"),
+		FMath::IsNearlyZero(Pet->HealthBarBackground->GetComponentRotation().Yaw, 0.5f));
+
+	const FRotator CorpoAntes = Pet->BodyPivot->GetComponentRotation();
+	Pet->LookUp();
+	TestTrue(TEXT("olhar para cima inclina a cabeça"),
+		Pet->HeadPivot->GetRelativeRotation().Pitch > 1.0f);
+	TestTrue(TEXT("e não deita o corpo"),
+		Pet->BodyPivot->GetComponentRotation().Equals(CorpoAntes, 0.5f));
+
+	Pet->LookDown();
+	TestTrue(TEXT("olhar para baixo abaixa a cabeça"),
+		Pet->HeadPivot->GetRelativeRotation().Pitch < -1.0f);
+
+	// Em cima do outro não há direção: escolher uma daria a impressão de que
+	// o pet se distraiu justamente quando o adversário chegou.
+	const FRotator AntesDaSobreposicao = Pet->BodyPivot->GetComponentRotation();
+	Pet->LookAtLocation(Pet->GetActorLocation());
+	TestTrue(TEXT("alvo em cima dele não gira nada"),
+		Pet->BodyPivot->GetComponentRotation().Equals(AntesDaSobreposicao, 0.01f));
+
+	World->DestroyWorld(false);
+	GEngine->DestroyWorldContext(World);
 	return true;
 }

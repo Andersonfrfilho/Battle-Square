@@ -7,7 +7,7 @@
 
 namespace
 {
-	FPetState MakePet(uint8 PetId, uint8 Side, int32 Health)
+	FPetState MakeResolutionPet(uint8 PetId, uint8 Side, int32 Health)
 	{
 		FPetState Pet;
 		Pet.PetId = PetId;
@@ -27,7 +27,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FBattlePhaseResolutionAppliesAllDamageBeforeDeathCheckTest::RunTest(const FString& Parameters)
 {
 	FBattleState State;
-	State.Pets.Add(MakePet(1, 0, 50));
+	State.Pets.Add(MakeResolutionPet(1, 0, 50));
 	State.Pets[0].PendingDamage = 60; // mais que a vida — deve morrer
 
 	TArray<FBattleEvent> Trace;
@@ -51,8 +51,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FBattlePhaseResolutionMutualKillTest::RunTest(const FString& Parameters)
 {
 	FBattleState State;
-	State.Pets.Add(MakePet(1, 0, 10));
-	State.Pets.Add(MakePet(2, 1, 10));
+	State.Pets.Add(MakeResolutionPet(1, 0, 10));
+	State.Pets.Add(MakeResolutionPet(2, 1, 10));
 	State.Pets[0].PendingDamage = 15; // pet 1 recebeu dano fatal de pet 2
 	State.Pets[1].PendingDamage = 15; // pet 2 recebeu dano fatal de pet 1
 
@@ -81,8 +81,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FBattlePhaseResolutionNoDuplicateDeathEventTest::RunTest(const FString& Parameters)
 {
 	FBattleState State;
-	State.Pets.Add(MakePet(1, 0, 0)); // já morto de um slot anterior
-	State.Pets.Add(MakePet(2, 1, 50));
+	State.Pets.Add(MakeResolutionPet(1, 0, 0)); // já morto de um slot anterior
+	State.Pets.Add(MakeResolutionPet(2, 1, 50));
 
 	TArray<FBattleEvent> Trace;
 	BattlePhases::ApplyResolution(State, 1, Trace);
@@ -106,7 +106,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FBattlePhaseResolutionExpiresPostureTest::RunTest(const FString& Parameters)
 {
 	FBattleState State;
-	State.Pets.Add(MakePet(1, 0, 50));
+	State.Pets.Add(MakeResolutionPet(1, 0, 50));
 	State.Pets[0].PostureFlags = static_cast<uint8>(EBattlePostureFlags::Defending) | static_cast<uint8>(EBattlePostureFlags::Dodging);
 
 	TArray<FBattleEvent> Trace;
@@ -126,7 +126,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FBattlePhaseResolutionNoOpWhenNoPendingDamageTest::RunTest(const FString& Parameters)
 {
 	FBattleState State;
-	State.Pets.Add(MakePet(1, 0, 50));
+	State.Pets.Add(MakeResolutionPet(1, 0, 50));
 
 	TArray<FBattleEvent> Trace;
 	BattlePhases::ApplyResolution(State, 0, Trace);
@@ -146,7 +146,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FBattlePhaseResolutionEventOrderTest::RunTest(const FString& Parameters)
 {
 	FBattleState State;
-	State.Pets.Add(MakePet(1, 0, 5));
+	State.Pets.Add(MakeResolutionPet(1, 0, 5));
 	State.Pets[0].PendingDamage = 10; // vai morrer
 
 	TArray<FBattleEvent> Trace;

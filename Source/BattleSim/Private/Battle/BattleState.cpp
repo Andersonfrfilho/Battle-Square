@@ -49,6 +49,7 @@ uint64 FBattleState::ComputeHash() const
 		for (int32 Indice = 0; Indice < 4; ++Indice)
 		{
 			Hash = CombineBattleHash(Hash, static_cast<uint64>(static_cast<int64>(Pet->MovePowers[Indice])));
+			Hash = CombineBattleHash(Hash, Pet->MoveTerrainEffects[Indice]);
 		}
 
 		Hash = CombineBattleHash(Hash, Pet->PostureFlags);

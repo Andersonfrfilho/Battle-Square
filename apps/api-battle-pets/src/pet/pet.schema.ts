@@ -35,6 +35,14 @@ export const petMoves = pgTable(
     slot: integer('slot').notNull(),
     name: varchar('name', { length: 60 }).notNull(),
     power: integer('power').notNull(),
+    /**
+     * O que o golpe DEIXA na casa que ele acertou.
+     *
+     * 'none' | 'water' | 'damage'. VARCHAR e não ENUM nativo (code-standart.md
+     * §8), e o significado de cada valor vive no núcleo do jogo — o backend
+     * guarda o dado, não a regra.
+     */
+    terrainEffect: varchar('terrain_effect', { length: 16 }).notNull().default('none'),
   },
   (table) => ({
     petSlotUnique: unique('pet_moves_pet_slot_unique').on(table.petId, table.slot),

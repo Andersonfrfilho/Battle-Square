@@ -14,6 +14,9 @@ struct FLoadedPetMove
 {
 	FString Name;
 	int32 Power = 0;
+
+	/** "none" | "water" | "damage" — o que o golpe deixa na casa que acertou. */
+	FString TerrainEffect = TEXT("none");
 };
 
 struct FLoadedPetRecord

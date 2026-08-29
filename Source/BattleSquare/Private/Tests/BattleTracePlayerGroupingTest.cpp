@@ -6,7 +6,7 @@
 
 namespace
 {
-	FBattleState MakeDuelState()
+	FBattleState MakeGroupingDuelState()
 	{
 		FBattleState State;
 		FPetState Left;
@@ -31,7 +31,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FBattleTracePlayerGroupsRealTraceTest::RunTest(const FString& Parameters)
 {
-	const FBattleState State = MakeDuelState();
+	const FBattleState State = MakeGroupingDuelState();
 
 	FTurnCommit LeftCommit;
 	LeftCommit.Actions[0] = { EActionType::Atacar, EBattleDirection::Direita };
@@ -120,7 +120,7 @@ bool FBattleTracePlayerGroupsSimultaneousEventsTogetherTest::RunTest(const FStri
 {
 	// F2 (Postura): os dois lados podem assumir postura no mesmo slot —
 	// cenário real que gera 2 eventos PosturaAssumida, mesmo Slot+Phase.
-	const FBattleState State = MakeDuelState();
+	const FBattleState State = MakeGroupingDuelState();
 
 	FTurnCommit LeftCommit;
 	LeftCommit.Actions[0] = { EActionType::Defender, EBattleDirection::Nenhuma };
@@ -158,7 +158,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FBattleTracePlayerPlayAndSkipTest::RunTest(const FString& Parameters)
 {
-	const FBattleState State = MakeDuelState();
+	const FBattleState State = MakeGroupingDuelState();
 
 	FTurnCommit LeftCommit;
 	LeftCommit.Actions[0] = { EActionType::Atacar, EBattleDirection::Direita };

@@ -7,7 +7,7 @@
 
 namespace
 {
-	FBattleState MakeTwoPetState()
+	FBattleState MakePostureTwoPetState()
 	{
 		FBattleState State;
 
@@ -44,7 +44,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FBattlePhasePostureAssumesFlagsTest::RunTest(const FString& Parameters)
 {
-	FBattleState State = MakeTwoPetState();
+	FBattleState State = MakePostureTwoPetState();
 	TArray<FBattleEvent> Trace;
 
 	BattlePhases::ApplyPostures(State, MakeAction(EActionType::Defender), MakeAction(EActionType::Esquivar), 0, Trace);
@@ -69,7 +69,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FBattlePhasePostureIgnoresNonPostureActionsTest::RunTest(const FString& Parameters)
 {
-	FBattleState State = MakeTwoPetState();
+	FBattleState State = MakePostureTwoPetState();
 	TArray<FBattleEvent> Trace;
 
 	BattlePhases::ApplyPostures(State, MakeAction(EActionType::Atacar), MakeAction(EActionType::Aguardar), 0, Trace);
@@ -92,7 +92,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FBattlePhasePostureDoesNotLeakAcrossSlotsTest::RunTest(const FString& Parameters)
 {
-	FBattleState State = MakeTwoPetState();
+	FBattleState State = MakePostureTwoPetState();
 	TArray<FBattleEvent> TraceSlot0;
 
 	// Slot 0: Left defende.
@@ -121,7 +121,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FBattlePhasePostureSkipsDeadPetTest::RunTest(const FString& Parameters)
 {
-	FBattleState State = MakeTwoPetState();
+	FBattleState State = MakePostureTwoPetState();
 	State.Pets[0].Health = 0; // Left morto
 
 	TArray<FBattleEvent> Trace;

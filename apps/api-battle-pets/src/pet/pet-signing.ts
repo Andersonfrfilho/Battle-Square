@@ -14,6 +14,7 @@ import type { Pet } from './pet.schema';
 export type SignedPetMove = {
   name: string;
   power: number;
+  terrainEffect: string;
 };
 
 export type SignedPetExport = {
@@ -62,10 +63,19 @@ function toCanonicalPayload(pet: Pet, moves: SignedPetMove[]): string {
  * commit, e uma ordem diferente entre backend e cliente faria o jogador usar
  * um golpe e o servidor resolver outro.
  */
-export function toSignedMoves(moves: { slot: number; name: string; power: number }[]): SignedPetMove[] {
+export function toSignedMoves(
+  moves: { slot: number; name: string; power: number; terrainEffect?: string }[],
+): SignedPetMove[] {
   return [...moves]
     .sort((left, right) => left.slot - right.slot)
-    .map((move) => ({ name: move.name, power: move.power }));
+    .map((move) => ({
+      name: move.name,
+      power: move.power,
+      // Ausente vira 'none': golpe cadastrado antes do efeito de terreno
+      // existir não muda a casa, e omitir a chave produziria um payload
+      // diferente do que o verificador espera.
+      terrainEffect: move.terrainEffect ?? 'none',
+    }));
 }
 
 const privateKey = createPrivateKey({ key: environment.ED25519_PRIVATE_KEY_PEM, format: 'pem' });

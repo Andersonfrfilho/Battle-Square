@@ -611,6 +611,14 @@ find "$HOME/Library/Logs/Unreal Engine/BattleSquareEditor" Saved/Logs -newer <ma
 
 **A varredura completa (2026-08-28)** achou 9 classes sem uso em produção, de 64 declaradas. Sete são legítimas: GameModes e pawn referenciados pelo NÍVEL e por config (não por C++), o simulador de balanceamento que é ferramenta de teste, a sonda de rota determinística, e structs internas de um único `.cpp`. **Duas eram reais:** `UBattleResultWidget` (corrigida) e `FTouchMovementInput` (entrada por toque nunca ligada ao explorador — mobile segue bloqueado por B-006/B-007, e ligar sem poder verificar seria entregar trabalho não medido).
 
+### L-042: helper de teste homônimo vira SOBRECARGA em unity build
+
+**Contexto:** ao acrescentar um arquivo de teste em 2026-08-29, a bateria do `BattleSim` caiu de 68 testes para 37, com `Array index out of bounds: 0 into an array of size 0` derrubando o processo no meio. O arquivo novo passava sozinho.
+**A causa:** três arquivos definiam `MakePet` em namespace anônimo, com assinaturas diferentes — `(PetId, Side, Column, Row)`, `(PetId, Side, Health, MaxHealth)` e `(PetId, Side, Health)`. O Unreal compila em **unity build**: vários `.cpp` viram uma unidade de tradução, os namespaces anônimos se fundem, e os homônimos viram **sobrecargas**. `MakePet(1, 0, 0, 0)` no teste de movimento passou a criar um pet com **vida zero** em vez de posição.
+**O que torna isso perigoso:** não há erro de compilação. O defeito era **pré-existente e latente**, e só apareceu quando um arquivo novo mudou o agrupamento do unity build — ou seja, ele podia ter aparecido em qualquer commit futuro, sem relação com a mudança que o revelasse. E o sintoma (índice inválido num teste de movimento) não aponta para a causa (helper de outro arquivo).
+**O que fiz:** dei nome próprio do arquivo a todos os helpers homônimos, e escrevi `Tools/audit_test_helper_names.sh`. A sonda achou na hora uma colisão que eu tinha deixado passar no mesmo trabalho (`Cena`, em dois arquivos) — o que confirma que revisão manual não bastava.
+**Previne:** helper de teste leva nome do que ele monta, não nome genérico. A sonda entrou na lista de verificação do `CLAUDE.md`.
+
 ---
 
 ## Ideias Adiadas

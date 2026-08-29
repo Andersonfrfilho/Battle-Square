@@ -2,6 +2,8 @@
 
 #include "UI/BattleScreenGameMode.h"
 #include "Net/BattleSquarePlayerController.h"
+#include "World/WorldExplorerCharacter.h"
+#include "GameFramework/SpectatorPawn.h"
 #include "Battle/BattleArena.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/Paths.h"
@@ -140,5 +142,45 @@ bool FBattleScreenGameModeUsesDebugCapableControllerTest::RunTest(const FString&
 	TestTrue(TEXT("A tela de batalha usa o controlador com as teclas de depuração"),
 		Padrao->PlayerControllerClass == ABattleSquarePlayerController::StaticClass());
 
+	return true;
+}
+
+// O pawn de exploração do mundo aberto NASCIA na tela de batalha: o
+// construtor de ABattleScreenGameMode dizia em comentário que "nenhum pawn de
+// exploração precisa nascer aqui", mas nada no código impedia — o pai resolve
+// DefaultPawnClass a partir de WorldExplorerPawnClassPath em InitGame, e a
+// classe filha herda a configuração inteira.
+//
+// Na tela isso aparecia como uma cúpula clara na casa do meio, com as patas do
+// pet atravessando: era o corpo esférico do explorador, meio enterrado na
+// laje. Encontrado olhando a tela; o censo de atores no mapa vivo
+// (obj list class=WorldExplorerCharacter) nomeou o culpado.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FBattleScreenGameModeSpawnsNoExplorerPawnTest,
+	"BattleSquare.UI.BattleScreenGameMode.SpawnsNoExplorerPawn",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FBattleScreenGameModeSpawnsNoExplorerPawnTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateScreenTestWorld();
+	ABattleScreenGameMode* GameMode = SpawnConfiguredScreenGameMode(World);
+
+	// Exatamente o estado que o defeito produzia: a configuração herdada do
+	// mundo já apontando para o explorador. A tela tem de recusar assim mesmo
+	// — senão o teste mediria a ausência de configuração, não a regra.
+	GameMode->DefaultPawnClass = AWorldExplorerCharacter::StaticClass();
+
+	UClass* PawnClass = GameMode->GetDefaultPawnClassForController(nullptr);
+
+	TestNotNull(TEXT("a tela de batalha declara alguma classe de pawn"), PawnClass);
+	if (PawnClass)
+	{
+		TestFalse(TEXT("o pawn de exploração do mundo não nasce na tela de batalha"),
+			PawnClass->IsChildOf(AWorldExplorerCharacter::StaticClass()));
+		TestTrue(TEXT("o que nasce é um pawn sem corpo visível"),
+			PawnClass->IsChildOf(ASpectatorPawn::StaticClass()));
+	}
+
+	DestroyScreenTestWorld(World);
 	return true;
 }

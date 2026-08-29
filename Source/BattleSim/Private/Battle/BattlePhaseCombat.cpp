@@ -167,7 +167,7 @@ namespace
 
 	// Declarada antes porque ResolveAttackForSide a chama e ela vem depois.
 	void ApplyHitAgainst(FBattleState& State, FPetState& Attacker, FPetState& Target,
-		bool bIsMagic, int32 MovePower, uint8 SlotIndex, TArray<FBattleEvent>& OutTrace);
+		bool bIsMagic, int32 MovePower, uint8 TerrainEffect, uint8 SlotIndex, TArray<FBattleEvent>& OutTrace);
 
 	FPetState* FindPetById(FBattleState& State, uint8 PetId)
 	{
@@ -221,9 +221,11 @@ namespace
 		// O poder do GOLPE substitui o multiplicador fixo. Poder 0 = pet sem
 		// golpe cadastrado, e aí vale o multiplicador de antes: tratar zero
 		// como poder faria esse pet bater sem dano nenhum.
-		const int32 MovePower = Attacker->GetMovePower(GetMoveIndexFromAction(Action));
+		const uint8 MoveIndex = GetMoveIndexFromAction(Action);
+		const int32 MovePower = Attacker->GetMovePower(MoveIndex);
+		const uint8 TerrainEffect = Attacker->GetMoveTerrainEffect(MoveIndex);
 
-		ApplyHitAgainst(State, *Attacker, *Target, bIsMagic, MovePower, SlotIndex, OutTrace);
+		ApplyHitAgainst(State, *Attacker, *Target, bIsMagic, MovePower, TerrainEffect, SlotIndex, OutTrace);
 	}
 
 	/**
@@ -241,6 +243,7 @@ namespace
 		FPetState& Target,
 		bool bIsMagic,
 		int32 MovePower,
+		uint8 TerrainEffect,
 		uint8 SlotIndex,
 		TArray<FBattleEvent>& OutTrace)
 	{
@@ -289,6 +292,35 @@ namespace
 		TargetPtr->PendingDamage += Damage;
 
 		EmitHit(OutTrace, SlotIndex, *AttackerPtr, *TargetPtr, Damage);
+
+		// O golpe DEIXA algo na casa que acertou.
+		//
+		// Só no ACERTO: terreno mudando num golpe que errou tiraria do jogador
+		// a relação entre causa e efeito, que é o que torna a cadeia
+		// jogável — bater na grama e ver a casa mudar ensina; ver mudar sem
+		// acertar é ruído.
+		if (TerrainEffect != static_cast<uint8>(ECellProperty::None))
+		{
+			const int32 CellIndex = CellLayoutIndex(TargetPtr->Column, TargetPtr->Row);
+			if (State.CellLayout.IsValidIndex(CellIndex)
+				&& State.CellLayout[CellIndex] != static_cast<uint8>(ECellProperty::Blocked))
+			{
+				// Casa BLOQUEADA nunca muda: ela é estrutura da arena, não
+				// superfície. Um golpe que abrisse passagem mudaria o
+				// tabuleiro no meio do turno, e o movimento já foi resolvido.
+				State.CellLayout[CellIndex] = TerrainEffect;
+
+				FBattleEvent Terreno;
+				Terreno.Type = EBattleEventType::TerrenoMudou;
+				Terreno.SlotIndex = SlotIndex;
+				Terreno.Phase = 4;
+				Terreno.ActorId = AttackerPtr->PetId;
+				Terreno.TargetId = TargetPtr->PetId;
+				Terreno.ToCell = PackCell(TargetPtr->Column, TargetPtr->Row);
+				Terreno.Value = static_cast<int32>(TerrainEffect);
+				OutTrace.Add(Terreno);
+			}
+		}
 	}
 }
 
@@ -333,7 +365,9 @@ void BattlePhases::ApplyCombat(
 		// Trombada não é golpe: passa poder 0 para valer o multiplicador
 		// físico padrão. Usar o golpe de alguém aqui faria a colisão ferir
 		// conforme uma escolha que ninguém fez.
-		ApplyHitAgainst(State, *Um, *Outro, /*bIsMagic=*/false, /*MovePower=*/0, SlotIndex, OutTrace);
-		ApplyHitAgainst(State, *Outro, *Um, /*bIsMagic=*/false, /*MovePower=*/0, SlotIndex, OutTrace);
+		ApplyHitAgainst(State, *Um, *Outro, /*bIsMagic=*/false, /*MovePower=*/0,
+			/*TerrainEffect=*/0, SlotIndex, OutTrace);
+		ApplyHitAgainst(State, *Outro, *Um, /*bIsMagic=*/false, /*MovePower=*/0,
+			/*TerrainEffect=*/0, SlotIndex, OutTrace);
 	}
 }

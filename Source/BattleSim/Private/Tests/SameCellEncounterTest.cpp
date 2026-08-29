@@ -27,7 +27,7 @@ namespace
 		return State;
 	}
 
-	FBattleAction Act(EActionType Type, EBattleDirection Direction = EBattleDirection::Nenhuma)
+	FBattleAction EncounterAct(EActionType Type, EBattleDirection Direction = EBattleDirection::Nenhuma)
 	{
 		FBattleAction Action;
 		Action.Type = Type;
@@ -35,7 +35,7 @@ namespace
 		return Action;
 	}
 
-	const FPetState& PetOnSide(const FBattleState& State, uint8 Side)
+	const FPetState& EncounterPetOnSide(const FBattleState& State, uint8 Side)
 	{
 		for (const FPetState& Pet : State.Pets)
 		{
@@ -44,7 +44,7 @@ namespace
 		return State.Pets[0];
 	}
 
-	void RunSlot(FBattleState& State, const FBattleAction& Left, const FBattleAction& Right,
+	void EncounterRunSlot(FBattleState& State, const FBattleAction& Left, const FBattleAction& Right,
 		TArray<FBattleEvent>& Trace, uint8 SlotIndex = 0)
 	{
 		BattlePhases::ApplyPostures(State, Left, Right, SlotIndex, Trace);
@@ -53,7 +53,7 @@ namespace
 		BattlePhases::ApplyResolution(State, SlotIndex, Trace);
 	}
 
-	bool HasEvent(const TArray<FBattleEvent>& Trace, EBattleEventType Type)
+	bool EncounterHasEvent(const TArray<FBattleEvent>& Trace, EBattleEventType Type)
 	{
 		for (const FBattleEvent& Event : Trace)
 		{
@@ -76,13 +76,13 @@ bool FSameCellEncounterBlocksBothTest::RunTest(const FString& Parameters)
 	FBattleState State = MakeDuel(0, 1, 2, 1);
 	TArray<FBattleEvent> Trace;
 
-	RunSlot(State, Act(EActionType::Mover, EBattleDirection::Direita),
-		Act(EActionType::Mover, EBattleDirection::Esquerda), Trace);
+	EncounterRunSlot(State, EncounterAct(EActionType::Mover, EBattleDirection::Direita),
+		EncounterAct(EActionType::Mover, EBattleDirection::Esquerda), Trace);
 
-	TestEqual(TEXT("Esquerdo ficou onde estava"), PetOnSide(State, 0).Column, static_cast<uint8>(0));
-	TestEqual(TEXT("Direito ficou onde estava"), PetOnSide(State, 1).Column, static_cast<uint8>(2));
+	TestEqual(TEXT("Esquerdo ficou onde estava"), EncounterPetOnSide(State, 0).Column, static_cast<uint8>(0));
+	TestEqual(TEXT("Direito ficou onde estava"), EncounterPetOnSide(State, 1).Column, static_cast<uint8>(2));
 	TestTrue(TEXT("O encontro foi registrado"),
-		HasEvent(Trace, EBattleEventType::EncontroNoMesmoPonto));
+		EncounterHasEvent(Trace, EBattleEventType::EncontroNoMesmoPonto));
 	return true;
 }
 
@@ -97,11 +97,11 @@ bool FSameCellEncounterHurtsBothTest::RunTest(const FString& Parameters)
 	FBattleState State = MakeDuel(0, 1, 2, 1);
 	TArray<FBattleEvent> Trace;
 
-	RunSlot(State, Act(EActionType::Mover, EBattleDirection::Direita),
-		Act(EActionType::Mover, EBattleDirection::Esquerda), Trace);
+	EncounterRunSlot(State, EncounterAct(EActionType::Mover, EBattleDirection::Direita),
+		EncounterAct(EActionType::Mover, EBattleDirection::Esquerda), Trace);
 
-	TestTrue(TEXT("Esquerdo se feriu no encontro"), PetOnSide(State, 0).Health < 300);
-	TestTrue(TEXT("Direito se feriu no encontro"), PetOnSide(State, 1).Health < 300);
+	TestTrue(TEXT("Esquerdo se feriu no encontro"), EncounterPetOnSide(State, 0).Health < 300);
+	TestTrue(TEXT("Direito se feriu no encontro"), EncounterPetOnSide(State, 1).Health < 300);
 	return true;
 }
 
@@ -117,11 +117,11 @@ bool FWalkingIntoAStandingOpponentCollidesTest::RunTest(const FString& Parameter
 	FBattleState State = MakeDuel(1, 1, 2, 1);
 	TArray<FBattleEvent> Trace;
 
-	RunSlot(State, Act(EActionType::Mover, EBattleDirection::Direita), Act(EActionType::Aguardar), Trace);
+	EncounterRunSlot(State, EncounterAct(EActionType::Mover, EBattleDirection::Direita), EncounterAct(EActionType::Aguardar), Trace);
 
-	TestEqual(TEXT("Não entrou na casa ocupada"), PetOnSide(State, 0).Column, static_cast<uint8>(1));
-	TestTrue(TEXT("Quem andou se feriu"), PetOnSide(State, 0).Health < 300);
-	TestTrue(TEXT("Quem estava parado também"), PetOnSide(State, 1).Health < 300);
+	TestEqual(TEXT("Não entrou na casa ocupada"), EncounterPetOnSide(State, 0).Column, static_cast<uint8>(1));
+	TestTrue(TEXT("Quem andou se feriu"), EncounterPetOnSide(State, 0).Health < 300);
+	TestTrue(TEXT("Quem estava parado também"), EncounterPetOnSide(State, 1).Health < 300);
 	return true;
 }
 
@@ -140,8 +140,8 @@ bool FEncounterRespectsPosturesTest::RunTest(const FString& Parameters)
 	{
 		FBattleState State = MakeDuel(1, 1, 2, 1);
 		TArray<FBattleEvent> Trace;
-		RunSlot(State, Act(EActionType::Mover, EBattleDirection::Direita), Act(EActionType::Esquivar), Trace);
-		TestEqual(TEXT("Quem esquivou não se feriu"), PetOnSide(State, 1).Health, 300);
+		EncounterRunSlot(State, EncounterAct(EActionType::Mover, EBattleDirection::Direita), EncounterAct(EActionType::Esquivar), Trace);
+		TestEqual(TEXT("Quem esquivou não se feriu"), EncounterPetOnSide(State, 1).Health, 300);
 	}
 
 	// Defendeu: sofre, mas menos que quem não fez nada.
@@ -149,15 +149,15 @@ bool FEncounterRespectsPosturesTest::RunTest(const FString& Parameters)
 	{
 		FBattleState State = MakeDuel(1, 1, 2, 1);
 		TArray<FBattleEvent> Trace;
-		RunSlot(State, Act(EActionType::Mover, EBattleDirection::Direita), Act(EActionType::Defender), Trace);
-		DanoDefendendo = 300 - PetOnSide(State, 1).Health;
+		EncounterRunSlot(State, EncounterAct(EActionType::Mover, EBattleDirection::Direita), EncounterAct(EActionType::Defender), Trace);
+		DanoDefendendo = 300 - EncounterPetOnSide(State, 1).Health;
 		TestTrue(TEXT("Quem defendeu ainda sofre algo"), DanoDefendendo > 0);
 	}
 	{
 		FBattleState State = MakeDuel(1, 1, 2, 1);
 		TArray<FBattleEvent> Trace;
-		RunSlot(State, Act(EActionType::Mover, EBattleDirection::Direita), Act(EActionType::Aguardar), Trace);
-		const int32 DanoParado = 300 - PetOnSide(State, 1).Health;
+		EncounterRunSlot(State, EncounterAct(EActionType::Mover, EBattleDirection::Direita), EncounterAct(EActionType::Aguardar), Trace);
+		const int32 DanoParado = 300 - EncounterPetOnSide(State, 1).Health;
 		TestTrue(TEXT("Defender reduz o dano da trombada"), DanoDefendendo < DanoParado);
 	}
 	return true;
@@ -175,10 +175,10 @@ bool FSwappingCellsIsStillAllowedTest::RunTest(const FString& Parameters)
 	FBattleState State = MakeDuel(1, 1, 2, 1);
 	TArray<FBattleEvent> Trace;
 
-	RunSlot(State, Act(EActionType::Mover, EBattleDirection::Direita),
-		Act(EActionType::Mover, EBattleDirection::Esquerda), Trace);
+	EncounterRunSlot(State, EncounterAct(EActionType::Mover, EBattleDirection::Direita),
+		EncounterAct(EActionType::Mover, EBattleDirection::Esquerda), Trace);
 
-	TestEqual(TEXT("Esquerdo assumiu a casa do outro"), PetOnSide(State, 0).Column, static_cast<uint8>(2));
-	TestEqual(TEXT("Direito assumiu a casa do outro"), PetOnSide(State, 1).Column, static_cast<uint8>(1));
+	TestEqual(TEXT("Esquerdo assumiu a casa do outro"), EncounterPetOnSide(State, 0).Column, static_cast<uint8>(2));
+	TestEqual(TEXT("Direito assumiu a casa do outro"), EncounterPetOnSide(State, 1).Column, static_cast<uint8>(1));
 	return true;
 }

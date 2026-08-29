@@ -13,6 +13,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/SpectatorPawn.h"
 
 ABattleScreenGameMode::ABattleScreenGameMode()
 {
@@ -21,8 +22,6 @@ ABattleScreenGameMode::ABattleScreenGameMode()
 	// elas não existiam — na tela onde o jogador passa o tempo todo.
 	PlayerControllerClass = ABattleSquarePlayerController::StaticClass();
 
-	// A tela de batalha não tem mundo para percorrer: nenhum pawn de
-	// exploração precisa nascer aqui.
 	PrimaryActorTick.bCanEverTick = true;
 	// O pai tica 1x/s (checagem de sala). Aqui a casa do pet precisa
 	// acompanhar o turno, e um segundo de atraso já aparece na tela.
@@ -32,6 +31,13 @@ ABattleScreenGameMode::ABattleScreenGameMode()
 	// medição mais eficiente deste projeto, e ler da tela é mais barato que
 	// abrir o Log de Saída.
 	HUDClass = ABattleDebugHUD::StaticClass();
+}
+
+UClass* ABattleScreenGameMode::GetDefaultPawnClassForController_Implementation(AController* InController)
+{
+	// Sem corpo: o explorador do mundo aberto aparecia como uma cúpula clara
+	// na casa do meio, com as patas do pet atravessando por cima.
+	return ASpectatorPawn::StaticClass();
 }
 
 void ABattleScreenGameMode::BeginPlay()

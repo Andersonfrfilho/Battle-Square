@@ -17,7 +17,7 @@ type ExportedPet = {
   updatedAt: string;
   // Opcional na ENTRADA: um backend antigo não manda o campo, e exigi-lo faria
   // o sync parar por causa de dado que o outro lado ainda não tem.
-  moves?: { name: string; power: number }[];
+  moves?: { name: string; power: number; terrainEffect: string }[];
   signature: string;
 };
 

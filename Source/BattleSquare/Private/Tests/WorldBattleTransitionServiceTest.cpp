@@ -40,7 +40,7 @@ namespace
 		UWorldBattleTransitionService* Service = nullptr;
 	};
 
-	FTransitionFixture MakeFixture(const FTransform& PawnTransform)
+	FTransitionFixture MakeTransitionFixture(const FTransform& PawnTransform)
 	{
 		FTransitionFixture Fixture;
 		Fixture.World = CreateTransitionTestWorld();
@@ -68,7 +68,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FWorldBattleTransitionBeginsAwayFromWorldTest,
 
 bool FWorldBattleTransitionBeginsAwayFromWorldTest::RunTest(const FString& Parameters)
 {
-	FTransitionFixture Fixture = MakeFixture(FTransform(FRotator(0.0, 45.0, 0.0), FVector(1200.0, -800.0, 300.0)));
+	FTransitionFixture Fixture = MakeTransitionFixture(FTransform(FRotator(0.0, 45.0, 0.0), FVector(1200.0, -800.0, 300.0)));
 
 	ABattleArena* Arena = Fixture.Service->BeginTransition(Fixture.Pawn, Fixture.Detection,
 		Fixture.Encounter, ABattleArena::StaticClass());
@@ -92,7 +92,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FWorldBattleTransitionRestoresPawnTest,
 bool FWorldBattleTransitionRestoresPawnTest::RunTest(const FString& Parameters)
 {
 	const FTransform OriginalTransform(FRotator(0.0, 137.0, 0.0), FVector(-3600.0, 900.0, 300.0));
-	FTransitionFixture Fixture = MakeFixture(OriginalTransform);
+	FTransitionFixture Fixture = MakeTransitionFixture(OriginalTransform);
 
 	ABattleArena* Arena = Fixture.Service->BeginTransition(Fixture.Pawn, Fixture.Detection,
 		Fixture.Encounter, ABattleArena::StaticClass());
@@ -121,7 +121,7 @@ bool FWorldBattleTransitionResolvesBeforeReenablingTest::RunTest(const FString& 
 {
 	// Pawn em cima do pet: se a ordem de DP-enc-03 estiver invertida, a
 	// próxima avaliação dispara um segundo encontro pelo mesmo pet.
-	FTransitionFixture Fixture = MakeFixture(FTransform(FVector::ZeroVector));
+	FTransitionFixture Fixture = MakeTransitionFixture(FTransform(FVector::ZeroVector));
 	Fixture.Encounter->SetActorLocation(FVector::ZeroVector);
 	Fixture.Encounter->EncounterRadiusUnits = 500.0f;
 
@@ -149,7 +149,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FWorldBattleTransitionDestroysArenaOnlyAtEndTes
 
 bool FWorldBattleTransitionDestroysArenaOnlyAtEndTest::RunTest(const FString& Parameters)
 {
-	FTransitionFixture Fixture = MakeFixture(FTransform(FVector(500.0, 0.0, 0.0)));
+	FTransitionFixture Fixture = MakeTransitionFixture(FTransform(FVector(500.0, 0.0, 0.0)));
 
 	ABattleArena* Arena = Fixture.Service->BeginTransition(Fixture.Pawn, Fixture.Detection,
 		Fixture.Encounter, ABattleArena::StaticClass());
@@ -172,7 +172,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FWorldBattleTransitionRejectsReentryTest,
 
 bool FWorldBattleTransitionRejectsReentryTest::RunTest(const FString& Parameters)
 {
-	FTransitionFixture Fixture = MakeFixture(FTransform(FVector(500.0, 0.0, 0.0)));
+	FTransitionFixture Fixture = MakeTransitionFixture(FTransform(FVector(500.0, 0.0, 0.0)));
 
 	Fixture.Service->BeginTransition(Fixture.Pawn, Fixture.Detection, Fixture.Encounter, ABattleArena::StaticClass());
 

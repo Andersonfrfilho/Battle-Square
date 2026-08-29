@@ -41,7 +41,7 @@ namespace
 		return { Side0, Side1 };
 	}
 
-	FBattleState MakeTwoPetState()
+	FBattleState MakeGameModeTwoPetState()
 	{
 		FBattleState State;
 		FPetState Side0Pet;
@@ -126,7 +126,7 @@ bool FBattleSquareGameModeAssembleMatchTest::RunTest(const FString& Parameters)
 	GameMode->EnsureRoomRegistry();
 
 	const FString Code = TEXT("TESTE1");
-	GameMode->AssembleMatchForRoom(Code, MakeTwoPetState(), MakeTwoPetPresentations());
+	GameMode->AssembleMatchForRoom(Code, MakeGameModeTwoPetState(), MakeTwoPetPresentations());
 
 	const ABattleSquareGameMode::FActiveMatch* Match = GameMode->GetActiveMatch(Code);
 	if (TestNotNull(TEXT("Partida montada para a sala"), Match))
@@ -169,8 +169,8 @@ bool FBattleSquareGameModeAbandonmentReachesCorrectCoordinatorTest::RunTest(cons
 	GameMode->EnsureRoomRegistry();
 
 	// Duas salas ativas simultaneamente.
-	GameMode->AssembleMatchForRoom(TEXT("SALAA"), MakeTwoPetState(), MakeTwoPetPresentations());
-	GameMode->AssembleMatchForRoom(TEXT("SALAB"), MakeTwoPetState(), MakeTwoPetPresentations());
+	GameMode->AssembleMatchForRoom(TEXT("SALAA"), MakeGameModeTwoPetState(), MakeTwoPetPresentations());
+	GameMode->AssembleMatchForRoom(TEXT("SALAB"), MakeGameModeTwoPetState(), MakeTwoPetPresentations());
 
 	bool bRoomAAbandoned = false;
 	bool bRoomBAbandoned = false;

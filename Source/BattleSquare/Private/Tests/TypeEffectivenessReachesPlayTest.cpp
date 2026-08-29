@@ -9,7 +9,7 @@
 
 namespace
 {
-	FLoadedPetRecord MakeRecord(const FString& Id, const FString& Tipo)
+	FLoadedPetRecord MakeEffectivenessRecord(const FString& Id, const FString& Tipo)
 	{
 		FLoadedPetRecord Record;
 		Record.Id = Id;
@@ -67,8 +67,8 @@ bool FTypeEffectivenessChangesTheAttackTest::RunTest(const FString& Parameters)
 	FTypeEffectivenessTable::LoadFromJson(
 		FPaths::Combine(FPaths::ProjectConfigDir(), TEXT("TypeEffectiveness.json")), Tabela);
 
-	const FLoadedPetRecord Fogo = MakeRecord(TEXT("fogo"), TEXT("Fogo"));
-	const FLoadedPetRecord Planta = MakeRecord(TEXT("planta"), TEXT("Planta"));
+	const FLoadedPetRecord Fogo = MakeEffectivenessRecord(TEXT("fogo"), TEXT("Fogo"));
+	const FLoadedPetRecord Planta = MakeEffectivenessRecord(TEXT("planta"), TEXT("Planta"));
 
 	FPetState EsquerdoState, DireitoState;
 	FPetPresentationInfo EsquerdoInfo, DireitoInfo;
@@ -101,8 +101,8 @@ bool FTypeEffectivenessReachesPresentationTest::RunTest(const FString& Parameter
 	FTypeEffectivenessTable::LoadFromJson(
 		FPaths::Combine(FPaths::ProjectConfigDir(), TEXT("TypeEffectiveness.json")), Tabela);
 
-	const FLoadedPetRecord Fogo = MakeRecord(TEXT("fogo"), TEXT("Fogo"));
-	const FLoadedPetRecord Planta = MakeRecord(TEXT("planta"), TEXT("Planta"));
+	const FLoadedPetRecord Fogo = MakeEffectivenessRecord(TEXT("fogo"), TEXT("Fogo"));
+	const FLoadedPetRecord Planta = MakeEffectivenessRecord(TEXT("planta"), TEXT("Planta"));
 
 	FPetState EsquerdoState, DireitoState;
 	FPetPresentationInfo EsquerdoInfo, DireitoInfo;

@@ -7,7 +7,7 @@
 
 namespace
 {
-	FPetState MakePet(uint8 PetId, uint8 Side, uint8 Column, uint8 Row)
+	FPetState MakeMovementPet(uint8 PetId, uint8 Side, uint8 Column, uint8 Row)
 	{
 		FPetState Pet;
 		Pet.PetId = PetId;
@@ -44,8 +44,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FBattlePhaseMovementOutOfBoundsBlockedTest::RunTest(const FString& Parameters)
 {
 	FBattleState State;
-	State.Pets.Add(MakePet(1, 0, 0, 0)); // canto superior esquerdo
-	State.Pets.Add(MakePet(2, 1, 2, 2));
+	State.Pets.Add(MakeMovementPet(1, 0, 0, 0)); // canto superior esquerdo
+	State.Pets.Add(MakeMovementPet(2, 1, 2, 2));
 
 	TArray<FBattleEvent> Trace;
 	// Left tenta ir para Cima (Row -1) — fora da grade.
@@ -85,8 +85,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FBattlePhaseMovementAllyCollisionIsUnreachableInV1Test::RunTest(const FString& Parameters)
 {
 	FBattleState State;
-	State.Pets.Add(MakePet(1, 0, 0, 1)); // aliado A
-	State.Pets.Add(MakePet(2, 0, 2, 1)); // aliado B
+	State.Pets.Add(MakeMovementPet(1, 0, 0, 1)); // aliado A
+	State.Pets.Add(MakeMovementPet(2, 0, 2, 1)); // aliado B
 
 	TArray<FBattleEvent> Trace;
 	BattlePhases::ApplyMovement(State, MoveAction(EBattleDirection::Direita), WaitAction(), 0, Trace);
@@ -116,8 +116,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FBattlePhaseMovementOpposingSidesCoexistTest::RunTest(const FString& Parameters)
 {
 	FBattleState State;
-	State.Pets.Add(MakePet(1, 0, 0, 1)); // Left em (0,1), vai para (1,1)
-	State.Pets.Add(MakePet(2, 1, 2, 1)); // Right em (2,1), vai para (1,1)
+	State.Pets.Add(MakeMovementPet(1, 0, 0, 1)); // Left em (0,1), vai para (1,1)
+	State.Pets.Add(MakeMovementPet(2, 1, 2, 1)); // Right em (2,1), vai para (1,1)
 
 	TArray<FBattleEvent> Trace;
 	BattlePhases::ApplyMovement(State, MoveAction(EBattleDirection::Direita), MoveAction(EBattleDirection::Esquerda), 0, Trace);
@@ -147,8 +147,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FBattlePhaseMovementSwapIsAllowedTest::RunTest(const FString& Parameters)
 {
 	FBattleState State;
-	State.Pets.Add(MakePet(1, 0, 0, 1)); // Left em (0,1)
-	State.Pets.Add(MakePet(2, 1, 1, 1)); // Right em (1,1)
+	State.Pets.Add(MakeMovementPet(1, 0, 0, 1)); // Left em (0,1)
+	State.Pets.Add(MakeMovementPet(2, 1, 1, 1)); // Right em (1,1)
 
 	TArray<FBattleEvent> Trace;
 	// Left vai para a direita (entra em 1,1); Right vai para a esquerda (entra em 0,1) — troca.
@@ -169,10 +169,10 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FBattlePhaseMovementSkipsDeadPetTest::RunTest(const FString& Parameters)
 {
 	FBattleState State;
-	FPetState DeadPet = MakePet(1, 0, 1, 1);
+	FPetState DeadPet = MakeMovementPet(1, 0, 1, 1);
 	DeadPet.Health = 0;
 	State.Pets.Add(DeadPet);
-	State.Pets.Add(MakePet(2, 1, 2, 2));
+	State.Pets.Add(MakeMovementPet(2, 1, 2, 2));
 
 	TArray<FBattleEvent> Trace;
 	BattlePhases::ApplyMovement(State, MoveAction(EBattleDirection::Direita), WaitAction(), 0, Trace);
@@ -193,8 +193,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FBattlePhaseMovementBlockedCellRejectsMovementTest::RunTest(const FString& Parameters)
 {
 	FBattleState State;
-	State.Pets.Add(MakePet(1, 0, 1, 1));
-	State.Pets.Add(MakePet(2, 1, 0, 0)); // longe, não interfere
+	State.Pets.Add(MakeMovementPet(1, 0, 1, 1));
+	State.Pets.Add(MakeMovementPet(2, 1, 0, 0)); // longe, não interfere
 	State.CellLayout[CellLayoutIndex(2, 1)] = static_cast<uint8>(ECellProperty::Blocked); // casa à direita do Pet 1
 
 	for (int32 Attempt = 0; Attempt < 5; ++Attempt)
@@ -227,8 +227,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FBattlePhaseMovementNeutralArenaNoRegressionTest::RunTest(const FString& Parameters)
 {
 	FBattleState State;
-	State.Pets.Add(MakePet(1, 0, 1, 1));
-	State.Pets.Add(MakePet(2, 1, 2, 2));
+	State.Pets.Add(MakeMovementPet(1, 0, 1, 1));
+	State.Pets.Add(MakeMovementPet(2, 1, 2, 2));
 
 	TArray<FBattleEvent> Trace;
 	BattlePhases::ApplyMovement(State, MoveAction(EBattleDirection::Direita), WaitAction(), 0, Trace);
@@ -248,7 +248,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FBattlePhaseMovementDamageCellAccumulatesPendingDamageTest::RunTest(const FString& Parameters)
 {
 	FBattleState State;
-	State.Pets.Add(MakePet(1, 0, 1, 1));
+	State.Pets.Add(MakeMovementPet(1, 0, 1, 1));
 	State.CellLayout[CellLayoutIndex(1, 1)] = static_cast<uint8>(ECellProperty::Damage);
 
 	TArray<FBattleEvent> Trace;
@@ -269,7 +269,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FBattlePhaseMovementNoDamageCellNoPendingDamageTest::RunTest(const FString& Parameters)
 {
 	FBattleState State;
-	State.Pets.Add(MakePet(1, 0, 1, 1));
+	State.Pets.Add(MakeMovementPet(1, 0, 1, 1));
 
 	TArray<FBattleEvent> Trace;
 	BattlePhases::ApplyMovement(State, WaitAction(), WaitAction(), 0, Trace);

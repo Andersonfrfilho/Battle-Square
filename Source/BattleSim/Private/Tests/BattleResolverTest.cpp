@@ -5,7 +5,7 @@
 
 namespace
 {
-	FBattleState MakeDuelState()
+	FBattleState MakeResolverDuelState()
 	{
 		FBattleState State;
 
@@ -55,7 +55,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FBattleResolverDoesNotMutateInputTest::RunTest(const FString& Parameters)
 {
-	const FBattleState InitialState = MakeDuelState();
+	const FBattleState InitialState = MakeResolverDuelState();
 	const uint64 HashBefore = InitialState.ComputeHash();
 
 	FTurnCommit LeftCommit = MakeCommit(EActionType::Atacar, EBattleDirection::Direita);
@@ -78,7 +78,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FBattleResolverIsDeterministicTest::RunTest(const FString& Parameters)
 {
-	const FBattleState InitialState = MakeDuelState();
+	const FBattleState InitialState = MakeResolverDuelState();
 	const FTurnCommit LeftCommit = MakeCommit(EActionType::Mover, EBattleDirection::Direita, EActionType::Atacar, EBattleDirection::Direita, EActionType::Defender);
 	const FTurnCommit RightCommit = MakeCommit(EActionType::Defender, EBattleDirection::Nenhuma, EActionType::Mover, EBattleDirection::Esquerda, EActionType::Atacar, EBattleDirection::Esquerda);
 
@@ -112,7 +112,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FBattleResolverResolvesThreeSlotsTest::RunTest(const FString& Parameters)
 {
-	const FBattleState InitialState = MakeDuelState();
+	const FBattleState InitialState = MakeResolverDuelState();
 	const FTurnCommit LeftCommit = MakeCommit(EActionType::Aguardar, EBattleDirection::Nenhuma, EActionType::Aguardar, EBattleDirection::Nenhuma, EActionType::Aguardar, EBattleDirection::Nenhuma);
 	const FTurnCommit RightCommit = LeftCommit;
 
@@ -152,7 +152,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FBattleResolverIncompleteCommitDefaultsToWaitTest::RunTest(const FString& Parameters)
 {
-	const FBattleState InitialState = MakeDuelState();
+	const FBattleState InitialState = MakeResolverDuelState();
 
 	FTurnCommit LeftCommit; // nenhuma ação setada — os 3 slots são Aguardar por default
 	FTurnCommit RightCommit;
@@ -186,11 +186,11 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FBattleResolverDeadPetSkipsRemainingSlotsTest::RunTest(const FString& Parameters)
 {
-	// MakeDuelState() posiciona os pets 2 casas de distância (colunas 0 e 2)
+	// MakeResolverDuelState() posiciona os pets 2 casas de distância (colunas 0 e 2)
 	// — de propósito, para os testes de movimento terem espaço. Alcance de
 	// ataque é 1 (adjacente), então este teste precisa dos pets já
 	// adjacentes para que o ataque do slot 0 realmente acerte.
-	FBattleState LowHealthState = MakeDuelState();
+	FBattleState LowHealthState = MakeResolverDuelState();
 	LowHealthState.Pets[1].Column = 1; // Right adjacente a Left (que está em col 0)
 	LowHealthState.Pets[1].Health = 5; // Right quase morto
 	LowHealthState.Pets[1].MaxHealth = 50;

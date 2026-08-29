@@ -34,7 +34,11 @@ enum class EBattleEventType : uint8
 
 	// Skill tentada onde o terreno não permite (submergir fora d'água).
 	// Também no fim, pelo mesmo motivo do anterior.
-	PosturaFalhou
+	PosturaFalhou,
+
+	// Um golpe mudou a casa que acertou (fatia 4). No FIM do enum, pelo mesmo
+	// motivo dos anteriores: os valores existentes entram no hash do traço.
+	TerrenoMudou
 };
 
 // Sentinela para TargetId/ActorId quando não há alvo aplicável

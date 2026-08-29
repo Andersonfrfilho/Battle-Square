@@ -32,7 +32,7 @@ namespace
 		World->DestroyWorld(false);
 	}
 
-	FLoadedPetRecord MakeRecord(const FString& Id, const FString& Name, const FString& Type)
+	FLoadedPetRecord MakeFlowRecord(const FString& Id, const FString& Name, const FString& Type)
 	{
 		FLoadedPetRecord Record;
 		Record.Id = Id;
@@ -48,8 +48,8 @@ namespace
 	FEncounterMatchParams MakeMatchParams()
 	{
 		FEncounterMatchParams Params;
-		Params.AvailablePets.Add(MakeRecord(TEXT("pet-jogador"), TEXT("Jogador"), TEXT("Fogo")));
-		Params.AvailablePets.Add(MakeRecord(TEXT("pet-do-mundo"), TEXT("DoMundo"), TEXT("Agua")));
+		Params.AvailablePets.Add(MakeFlowRecord(TEXT("pet-jogador"), TEXT("Jogador"), TEXT("Fogo")));
+		Params.AvailablePets.Add(MakeFlowRecord(TEXT("pet-do-mundo"), TEXT("DoMundo"), TEXT("Agua")));
 		Params.PlayerCatalogId = TEXT("pet-jogador");
 		// Slot dedicado: nunca poluir o slot de produção em teste.
 		Params.PetCollectionSlotName = TEXT("EncounterFlowTestCollection");

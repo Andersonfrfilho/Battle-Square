@@ -16,7 +16,7 @@ namespace
 		UBattleActionSelectorWidget* Widget = nullptr;
 	};
 
-	FSelectorFixture MakeFixture()
+	FSelectorFixture MakeSelectorFixture()
 	{
 		FSelectorFixture Fixture;
 		Fixture.World = UWorld::CreateWorld(EWorldType::Game, false);
@@ -52,7 +52,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSelectorMirrorsStepTest,
 
 bool FSelectorMirrorsStepTest::RunTest(const FString& Parameters)
 {
-	FSelectorFixture Fixture = MakeFixture();
+	FSelectorFixture Fixture = MakeSelectorFixture();
 
 	TestEqual(TEXT("começa escolhendo o tipo"),
 		Fixture.Widget->CurrentStep, EBattleActionSelectionStep::ChoosingType);
@@ -72,7 +72,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSelectorDirectionlessTypeTest,
 
 bool FSelectorDirectionlessTypeTest::RunTest(const FString& Parameters)
 {
-	FSelectorFixture Fixture = MakeFixture();
+	FSelectorFixture Fixture = MakeSelectorFixture();
 
 	// Defender ignora direção — confirma na hora, sem passar pelo passo 2.
 	TestTrue(TEXT("escolher Defender é aceito"), Fixture.Widget->BeginSelectingType(EActionType::Defender));
@@ -90,7 +90,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSelectorCountsAndCommitsTest,
 
 bool FSelectorCountsAndCommitsTest::RunTest(const FString& Parameters)
 {
-	FSelectorFixture Fixture = MakeFixture();
+	FSelectorFixture Fixture = MakeSelectorFixture();
 
 	for (int32 Index = 0; Index < 3; ++Index)
 	{
@@ -116,7 +116,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSelectorUndoTest,
 
 bool FSelectorUndoTest::RunTest(const FString& Parameters)
 {
-	FSelectorFixture Fixture = MakeFixture();
+	FSelectorFixture Fixture = MakeSelectorFixture();
 
 	Fixture.Widget->BeginSelectingType(EActionType::Defender);
 	Fixture.Widget->BeginSelectingType(EActionType::Esquivar);
@@ -135,7 +135,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSelectorCancelsPendingTest,
 
 bool FSelectorCancelsPendingTest::RunTest(const FString& Parameters)
 {
-	FSelectorFixture Fixture = MakeFixture();
+	FSelectorFixture Fixture = MakeSelectorFixture();
 
 	Fixture.Widget->BeginSelectingType(EActionType::Mover);
 	TestEqual(TEXT("está escolhendo direção"),
@@ -156,7 +156,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSelectorLocksAfterCommitTest,
 
 bool FSelectorLocksAfterCommitTest::RunTest(const FString& Parameters)
 {
-	FSelectorFixture Fixture = MakeFixture();
+	FSelectorFixture Fixture = MakeSelectorFixture();
 
 	for (int32 Index = 0; Index < 3; ++Index)
 	{
@@ -179,7 +179,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSelectorNewTurnReopensQueueTest,
 
 bool FSelectorNewTurnReopensQueueTest::RunTest(const FString& Parameters)
 {
-	FSelectorFixture Fixture = MakeFixture();
+	FSelectorFixture Fixture = MakeSelectorFixture();
 
 	for (int32 Index = 0; Index < 3; ++Index)
 	{

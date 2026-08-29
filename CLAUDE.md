@@ -193,6 +193,7 @@ a consultar em vez de caçar o mais recente.
 ```bash
 ./Tools/audit_determinism.sh && ./Tools/audit_no_recalculation.sh
 ./Tools/audit_localizable_text.sh   # texto do jogador precisa ser coletável
+./Tools/audit_test_helper_names.sh  # L-042: helper homônimo vira sobrecarga em unity build
 ./Tools/probe_isolation.sh
 ./Tools/sync_module_manifest.sh   # L-025: manifesto defasado faz teste novo sumir da contagem
 ```

@@ -71,6 +71,10 @@ namespace
 			(*Objeto)->TryGetStringField(TEXT("name"), Golpe.Name);
 			(*Objeto)->TryGetNumberField(TEXT("power"), Golpe.Power);
 
+			// Ausente continua "none": golpe assinado antes do efeito existir
+			// não muda a casa, e é assim que ele sempre se comportou.
+			(*Objeto)->TryGetStringField(TEXT("terrainEffect"), Golpe.TerrainEffect);
+
 			if (!Golpe.Name.IsEmpty())
 			{
 				OutMoves.Add(Golpe);

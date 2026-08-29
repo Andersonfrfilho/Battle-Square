@@ -20,7 +20,7 @@ export type MirrorPetRow = {
   speed: number;
   maxHealth: number;
   updatedAt: string;
-  moves: { name: string; power: number }[];
+  moves: { name: string; power: number; terrainEffect: string }[];
   signature: string;
 };
 

@@ -83,6 +83,21 @@ struct FPetState
 	UPROPERTY()
 	int32 MovePowers[4] = { 0, 0, 0, 0 };
 
+	/**
+	 * O que cada golpe DEIXA na casa que acertou, como ECellProperty.
+	 *
+	 * `None` significa "não muda nada" — que é o mesmo valor de uma casa
+	 * neutra, e isso é proposital: um golpe sem efeito não pode ser
+	 * confundido com um golpe que neutraliza a casa.
+	 */
+	UPROPERTY()
+	uint8 MoveTerrainEffects[4] = { 0, 0, 0, 0 };
+
+	uint8 GetMoveTerrainEffect(uint8 MoveIndex) const
+	{
+		return MoveIndex < 4 ? MoveTerrainEffects[MoveIndex] : 0;
+	}
+
 	/** Poder do golpe naquele índice, ou 0 fora da faixa. */
 	int32 GetMovePower(uint8 MoveIndex) const
 	{

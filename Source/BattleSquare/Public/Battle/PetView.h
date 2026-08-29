@@ -6,10 +6,12 @@
 #include "GameFramework/Actor.h"
 #include "Battle/BattleState.h"
 #include "Battle/BattleEvent.h"
+#include "Battle/PetAppearance.h"
 #include "Data/BattleDataTranslator.h"
 #include "PetView.generated.h"
 
 class USceneComponent;
+class UStaticMesh;
 class UStaticMeshComponent;
 class UMaterialInstanceDynamic;
 
@@ -51,12 +53,9 @@ public:
 	UFUNCTION(BlueprintPure)
 	uint8 GetPetId() const { return PetId; }
 
-	/**
-	 * Corpo de placeholder. Até 2026-08-26 este ator não tinha componente
-	 * visual NENHUM — nem RootComponent — e por isso era invisível e ficava
-	 * na origem (AActor sem raiz ignora SetActorLocation em silêncio, o mesmo
-	 * modo de falha de L-018). A batalha acontecia com o tabuleiro vazio.
-	 */
+	/** O tipo que veio da apresentação. É ele que escolhe adorno e cor de acento. */
+	const FString& GetPetType() const { return PetType; }
+
 	/**
 	 * Raiz separada da malha DE PROPÓSITO. Quando o BodyMesh era a própria
 	 * raiz, o deslocamento vertical que o tira de dentro do piso era a
@@ -66,17 +65,55 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Apresentação")
 	TObjectPtr<USceneComponent> BodyRoot;
 
+	/**
+	 * Tudo o que é BICHO pendura aqui, e só isto gira para encarar o
+	 * adversário. A barra de vida fica de fora, na raiz: ela precisa
+	 * continuar de frente para a câmera para permanecer legível.
+	 */
+	UPROPERTY(VisibleAnywhere, Category = "Apresentação")
+	TObjectPtr<USceneComponent> BodyPivot;
+
 	UPROPERTY(VisibleAnywhere, Category = "Apresentação")
 	TObjectPtr<UStaticMeshComponent> BodyMesh;
+
+	/**
+	 * A cabeça inclina sozinha, sem levar o corpo junto. Olhar para cima é
+	 * levantar a cabeça; virar o bicho inteiro para o céu o deitaria de
+	 * costas.
+	 */
+	UPROPERTY(VisibleAnywhere, Category = "Apresentação")
+	TObjectPtr<USceneComponent> HeadPivot;
+
+	UPROPERTY(VisibleAnywhere, Category = "Apresentação")
+	TObjectPtr<UStaticMeshComponent> HeadMesh;
+
+	// A esfera não tinha frente: girá-la não se via, e por isso a marca do
+	// olhar orbitava o corpo como um cubo solto. Com cabeça, a frente existe
+	// — a marca virou o FOCINHO, que já é onde se olha para saber para onde
+	// o bicho está virado.
+	UPROPERTY(VisibleAnywhere, Category = "Apresentação")
+	TObjectPtr<UStaticMeshComponent> GazeMarker;
+
+	/** Adorno do TIPO: chama, barbatana, folha ou orelha (FPetAppearance). */
+	UPROPERTY(VisibleAnywhere, Category = "Apresentação")
+	TObjectPtr<UStaticMeshComponent> CrestLeft;
+
+	UPROPERTY(VisibleAnywhere, Category = "Apresentação")
+	TObjectPtr<UStaticMeshComponent> CrestRight;
+
+	UPROPERTY(VisibleAnywhere, Category = "Apresentação")
+	TObjectPtr<UStaticMeshComponent> TailMesh;
+
+	/**
+	 * Quatro patas. Sem elas o corpo é uma bola pousada, e o pet parece
+	 * flutuar mesmo assentado na casa certa — foi o que a esfera fazia.
+	 */
+	UPROPERTY(VisibleAnywhere, Category = "Apresentação")
+	TArray<TObjectPtr<UStaticMeshComponent>> Legs;
 
 	// Barra de vida: fundo escuro sempre inteiro + preenchimento que encolhe.
 	// Sem o fundo não se sabe quanto FALTA, só quanto sobrou — e é a diferença
 	// entre "estou mal" e "estou quase morto".
-	// A esfera não tem frente: girá-la não se vê. Sem uma marca, "olhar para o
-	// outro" não existe na tela, por mais correta que a rotação esteja.
-	UPROPERTY(VisibleAnywhere, Category = "Apresentação")
-	TObjectPtr<UStaticMeshComponent> GazeMarker;
-
 	UPROPERTY(VisibleAnywhere, Category = "Apresentação")
 	TObjectPtr<UStaticMeshComponent> HealthBarBackground;
 
@@ -90,11 +127,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Apresentação")
 	FLinearColor OpponentSideColor = FLinearColor(0.95f, 0.25f, 0.20f);
 
-	/** Aplica a cor do lado e o estado de derrota ao corpo. */
+	/** Aplica cor do lado, adorno do tipo e estado de derrota. */
 	void RefreshBodyAppearance();
 
-	/** Vira o pet para uma casa da grade. A barra de vida NÃO acompanha: ela
-	 *  precisa continuar de frente para a câmera para permanecer legível. */
 	/**
 	 * Vira para uma posição do MUNDO, não para uma casa da grade.
 	 *
@@ -122,8 +157,19 @@ public:
 	void LookDown();
 	void LoseSightOfTarget();
 
+	uint8 GetSide() const { return Side; }
+
 private:
+	void BuildBody();
+	void BuildHead();
+	void BuildLegs();
+	void BuildHealthBar();
 	void RefreshHealthBar();
+	void RefreshCrests();
+	void SetMeshesVisible(bool bVisible);
+
+	/** A malha da engine que desenha cada forma de adorno. */
+	UStaticMesh* CrestMeshFor(EPetCrestShape Shape) const;
 
 	static constexpr float CubeSizeUnits = 100.0f;
 	static constexpr float BarWidthScale = 0.9f;
@@ -137,32 +183,47 @@ private:
 	// Maior que a espessura do cubo (BarDepthScale * CubeSizeUnits = 4uu):
 	// separação menor que isso deixa faces no mesmo plano, e é o que piscava.
 	static constexpr float BarFrontOffsetUnits = 6.0f;
-	static constexpr float GazeMarkerScale = 0.18f;
 
 	// Um pouco mais curto que o passo da reprodução (0,45s), para o pet chegar
 	// antes do evento seguinte em vez de arrastar por cima dele.
 	static constexpr float GlideSeconds = 0.30f;
-	static constexpr float BodyScale = 0.7f;
-	static constexpr float SphereRadiusUnits = 50.0f;
 
-public:
+	// A silhueta cabe numa casa de 150uu com folga: o bicho ocupa a casa sem
+	// encostar na vizinha, e a laje continua sendo lida como casa.
+	static constexpr float LegHeightUnits = 20.0f;
+	static constexpr float BodyCenterUnits = 44.0f;
+	static constexpr float HeadForwardUnits = 30.0f;
+	static constexpr float HeadCenterUnits = 58.0f;
+	static constexpr float HeadPitchDegrees = 30.0f;
 
-	uint8 GetSide() const { return Side; }
-
-private:
 	UPROPERTY()
 	uint8 PetId = 0;
 
 	UPROPERTY()
 	uint8 Side = 0;
 
+	UPROPERTY()
+	FString PetType;
+
+	// Guardadas no CDO para a silhueta poder trocar de adorno em tempo de
+	// execução: o tipo só é conhecido em SetInitialState, e ConstructorHelpers
+	// só funciona no construtor.
+	UPROPERTY()
+	TObjectPtr<UStaticMesh> SphereAsset;
+
+	UPROPERTY()
+	TObjectPtr<UStaticMesh> CubeAsset;
+
+	UPROPERTY()
+	TObjectPtr<UStaticMesh> ConeAsset;
+
+	UPROPERTY()
+	TObjectPtr<UStaticMesh> CylinderAsset;
+
 	FVector GlideStart = FVector::ZeroVector;
 	FVector GlideTarget = FVector::ZeroVector;
 	float GlideElapsed = 0.0f;
 	bool bIsGliding = false;
-
-	UPROPERTY()
-	TObjectPtr<UMaterialInstanceDynamic> BodyMaterial;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> HealthBarFillMaterial;

@@ -1,6 +1,6 @@
 # Escala de Pets e Skills — Especificação
 
-**Status:** Draft — aguarda aprovação
+**Status:** Concluída e verificada por teste (status corrigido em 29/08/2026 — a linha dizia "Draft" enquanto a feature já rodava)
 **Depende de:** Combate Núcleo (concluído), Backend de Dados de Pet (concluído). Primeira feature de M3 — ver `.specs/project/OBJECTIVE.md` para onde este marco se encaixa no roadmap inteiro.
 
 ---

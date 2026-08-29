@@ -138,17 +138,17 @@ equilíbrio é sua, e só se toma jogando.
 
 ## Fatiamento
 
-**Fatia 1 — os três atributos existem, crescem e APARECEM.** Sem trancar nada.
+**Fatia 1 ✅ (29/08/2026, `57f2587`) — os três atributos existem, crescem e APARECEM.** Sem trancar nada.
 Entrega a progressão e o retorno na tela, e responde sozinha a pergunta que
 decide o resto: **ver o pet mudar é interessante?**
 
-**Fatia 2 — requisito assinado no golpe** (`requiresAttribute`,
+**Fatia 2 ✅ (29/08/2026, `7e7c6a3`) — requisito assinado no golpe** (`requiresAttribute`,
 `requiresValue`), a mesma cadeia de cinco lugares das fatias anteriores.
 
-**Fatia 3 — a tela mostra o golpe trancado com o requisito**, e anuncia quando
+**Fatia 3 ✅ (29/08/2026, `1dce9d9`) — a tela mostra o golpe trancado com o requisito**, e anuncia quando
 ele abre.
 
-**Fatia 4 — atributo alto muda a resolução**: esquiva por reflexo e golpe
+**Fatia 4 ✅ (29/08/2026, `5b8782e`) — atributo alto muda a resolução**: esquiva por reflexo e golpe
 constante, sorteados pelo gerador do estado e narrados. Por último de propósito:
 ela acrescenta acaso ao combate, e acaso só deve entrar depois que o atributo já
 significa alguma coisa visível para o jogador.
@@ -190,6 +190,24 @@ campo e volta depois.
 >
 > Não decido isso sozinho: é escolha de produto, e ela define se treino
 > funciona offline.
+
+**DECIDIDO PROVISORIAMENTE em 29/08/2026 (`0e4ec04`): só avança com o jogo
+aberto.** O tempo é o intervalo entre duas passagens do temporizador do mundo,
+nunca `FDateTime::Now`. Adiantar o relógio da máquina não adianta o treino, e
+treinar não exige conta nem rede.
+
+Escolhi essa por ser a **reversível**: `FTrainingFieldRules` recebe o tempo
+pronto e não sabe de onde ele veio, então trocar para relógio de servidor mexe
+em `ABattleSquareGameMode::TickTrainingFields` e em mais nada. A decisão
+continua sendo sua — o que está feito é a metade que não a impede.
+
+O custo, dito por extenso: **não avança com o jogo fechado**, que é justamente
+o "deixa lá e volta" que a sua frase original pedia. Se isso importar mais que
+a independência de rede, a troca é barata e o lugar está marcado.
+
+**O NÚMERO É CHUTE:** seis segundos por ponto. Curto de propósito — o que
+precisa ser respondido primeiro é se ir até o campo é interessante, não se a
+espera é longa o bastante. Ajustar é editar `SecondsPerPoint`.
 
 **DP-atr-11 — O jogador tem HABILIDADES DE TREINO, e nunca todas.** O número é
 limitado de propósito: ninguém fica completo, e a escolha produz um

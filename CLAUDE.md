@@ -53,6 +53,15 @@ de medição mais eficiente que este projeto tem; **facilite o trabalho dele.**
 | **Indicador de fase** | `reproduzindo fase 3 de 11`, que desfaz a impressão de "fez tudo de uma vez" |
 | **Painel de texto** | o que cada lado escolheu e onde cada pet terminou |
 | **Skills do pet** | `SUAS SKILLS — Voar`, com botão só para o que ele tem. Skill que não aparece na tela não é característica de ninguém |
+| **Golpe trancado** | `🔒 Explosão (exige Musculatura 12)` — botão visível e inerte. Sumir com ele diria "não existe"; dizer o requisito diz "ainda vou ter" |
+
+### O que fica visível no MUNDO (não só na batalha)
+
+| Recurso | Para que serve |
+|---|---|
+| **Painel do mundo** (chaves 740+) | seu pet, nível, os cinco atributos, e quantos adversários há — com a **cor** amarelando quando o mais perto se aproxima. Quem anda não acompanha número; percebe cor |
+| **Campos de treino** | cinco clareiras coloridas, uma por atributo, com barra de progresso ao entrar. Dão **destino** ao mapa — antes ele só servia para achar inimigo |
+| **Sol e mata** | `ABattleSceneLighting` + `AForestBackdrop`, os MESMOS da arena. Sem o sol, a engine ilumina com o ambiente azul padrão |
 
 ### O painel, e por que ele é copiável
 

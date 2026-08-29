@@ -1,6 +1,6 @@
 # Coleção e Captura — Especificação
 
-**Status:** Draft — aguarda aprovação
+**Status:** Concluída e verificada por teste (status corrigido em 29/08/2026 — a linha dizia "Draft" enquanto a feature já rodava)
 **Depende de:** Combate Núcleo, Backend de Dados de Pet, Combate Online (todos concluídos). Primeira feature de M4 — ver `.specs/project/OBJECTIVE.md`.
 
 ---

@@ -1,6 +1,6 @@
 # Interface de Batalha — Especificação
 
-**Status:** Draft — aguarda aprovação
+**Status:** Concluída e verificada por teste (status corrigido em 29/08/2026 — a linha dizia "Draft" enquanto a feature já rodava)
 **Depende de:** M1–M4 (o combate inteiro já funciona por código). Paga a dívida que `apresentacao-combate` deixou explícita em **DP-08**.
 
 ---

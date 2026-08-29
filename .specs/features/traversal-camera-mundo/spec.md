@@ -1,6 +1,6 @@
 # Traversal e Câmera de Mundo — Especificação
 
-**Status:** Draft — aguarda aprovação
+**Status:** Concluída e verificada por teste (status corrigido em 29/08/2026 — a linha dizia "Draft" enquanto a feature já rodava)
 **Depende de:** Streaming de Mundo e Encontros e Transição para Batalha (as duas primeiras features de M5, ✅ concluídas). Terceira e última feature de M5.
 
 ---

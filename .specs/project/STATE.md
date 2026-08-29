@@ -684,3 +684,27 @@ find "$HOME/Library/Logs/Unreal Engine/BattleSquareEditor" Saved/Logs -newer <ma
 **O que fiz:** dei ao cachorro orelha caída e acento próprio, mapeei a forma nova para a malha, escrevi `TellsDogFromCat`, e fixei `PlayerCatalogId`/`OpponentCatalogId` no `DefaultGame.ini` para a tela abrir **gato contra cachorro**. Os outros três tipos seguem sem prova visual: não há pet deles no espelho.
 
 **Previne:** ao fechar uma tabela de variação, perguntar **qual dado de produção cai em cada ramo**. Ramo sem dado é ramo que só existe no teste — e é assim que se descobre, um mês depois, que ele nunca funcionou.
+
+### L-046: teste que some não faz a contagem cair
+
+**Contexto:** ao fechar a fatia 1 dos atributos, a bateria deu **299 testes, 299 sucessos** — e os dois testes que eu tinha acabado de escrever não existiam nela. A contagem era **idêntica** à da rodada anterior.
+
+**A causa:** o manifesto de módulo estava defasado (L-025), então o editor carregou o `.dylib` antigo. Nenhum teste falhou; os novos simplesmente nunca se registraram.
+
+**Por que quase passou:** eu esperava que um teste faltando fizesse a contagem *cair*. Ela não cai — o conjunto que roda é o do binário velho, coerente consigo mesmo. Contagem estável é o que se vê quando o build novo não chegou, e é indistinguível de "nada mudou".
+
+**O que fiz:** procurei os testes **pelo nome** em vez de conferir o total; sincronizei o manifesto; a bateria passou a 301.
+
+**Previne:** depois de escrever teste novo, verificar que **o nome dele aparece no log** — o total não responde essa pergunta. E rodar `sync_module_manifest.sh` **antes** da bateria, não depois de suspeitar.
+
+### L-047: o padrão vale para a camada errada, não só para o valor errado
+
+**Contexto:** na fatia 4 (acaso no combate), pus o padrão de ±20% de variação de dano **dentro do `BattleSim`**, derivando a faixa da agressividade do atacante. Três testes caíram: `DirectionalAttackHits`, `MagicIgnoresDodge`, `DefendReducesMagicDamageToo`.
+
+**O que eu quase fiz:** afrouxar os três para aceitar uma faixa em vez de um valor exato. Eles são justamente os que **fixam a fórmula de dano** — a coisa que `audit_no_recalculation.sh` existe para proteger.
+
+**A causa real:** o padrão estava na camada errada. Todo `FPetState` construído à mão — ou seja, **todo estado de teste** — passou a ter dano imprevisível, porque o núcleo aplicava a variação a quem nunca pediu.
+
+**O que fiz:** o núcleo passou a receber **porcentagens prontas** (`ReflexDodgePercent`, `DamageVariancePercent`), ambas nascendo em ZERO, que é ausência de acaso. O ±20% padrão mora na tradução do pet, junto de `MovePowers` e pelo mesmo princípio. Os tetos continuam recortados **dentro** do núcleo: amarra de jogo não é acordo entre camadas, e um estado vindo da rede não pode passar por cima dela.
+
+**Previne:** quando um teste antigo cai por causa de um padrão novo, perguntar **de quem é esse padrão** antes de mudar o teste. Padrão que atinge quem não pediu está na camada errada — e enfraquecer o teste esconde isso em vez de resolver.

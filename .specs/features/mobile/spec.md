@@ -1,6 +1,6 @@
 # Mobile — Especificação
 
-**Status:** Draft — aguarda aprovação
+**Status:** Entregue o que não depende de aparelho; compilar e medir está BLOQUEADO por B-006/B-007 (componentes de engine ausentes). Status corrigido em 29/08/2026
 **Depende de:** M5 concluído (o mundo aberto é o maior consumidor de recurso do jogo, e é dele que sai o teto de hardware). Primeira feature de M6.
 
 ---

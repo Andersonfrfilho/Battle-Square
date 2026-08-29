@@ -1,6 +1,6 @@
 # Níveis, Experiência e Evolução — Especificação
 
-**Status:** Draft — aguarda aprovação
+**Status:** Concluída e verificada por teste (status corrigido em 29/08/2026 — a linha dizia "Draft" enquanto a feature já rodava)
 **Depende de:** Coleção e Captura (concluída). Segunda e última feature planejada de M4 — ver `.specs/project/OBJECTIVE.md`.
 
 ---

@@ -1,6 +1,6 @@
 # Sala e Pareamento Simples — Especificação
 
-**Status:** Draft — aguarda aprovação
+**Status:** Concluída e verificada por teste (status corrigido em 29/08/2026 — a linha dizia "Draft" enquanto a feature já rodava)
 **Depende de:** Combate Online (concluído) — esta feature é o que finalmente coloca dois jogadores reais no MESMO `ABattleArena`. Sem ela, `UBattleTurnCoordinator`/`UBattleNetCommitComponent` existem e são testados, mas nada no jogo os invoca de verdade: não há `AGameModeBase`, `APlayerController` nem `APawn` — a sessão de rede não existe ainda (ver `.specs/project/STATE.md`, blocker B-004 é sobre o *binário* do servidor; esta lacuna é sobre a *sessão de jogo em cima dele*, e é ortogonal).
 
 ---

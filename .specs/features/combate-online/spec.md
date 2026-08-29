@@ -1,6 +1,6 @@
 # Combate Online — Especificação
 
-**Status:** Draft — aguarda aprovação
+**Status:** Concluída e verificada por teste (status corrigido em 29/08/2026 — a linha dizia "Draft" enquanto a feature já rodava)
 **Depende de:** Combate Núcleo (concluído), Backend de Dados de Pet (concluído), Apresentação do Combate (concluída) — esta feature substitui o `FDumbOpponentAI` local por um oponente humano real, sem tocar no núcleo determinístico nem na apresentação.
 
 ---

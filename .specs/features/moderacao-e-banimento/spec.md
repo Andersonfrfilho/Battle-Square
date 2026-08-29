@@ -1,6 +1,6 @@
 # Moderação e Banimento — Especificação
 
-**Status:** Draft — aguarda aprovação
+**Status:** Concluída e verificada por teste (status corrigido em 29/08/2026 — a linha dizia "Draft" enquanto a feature já rodava)
 **Depende de:** Conta de Jogador (primeira feature de M7, ✅ concluída) — banir exige saber quem reconhecer amanhã. Segunda e última feature de M7.
 
 ---

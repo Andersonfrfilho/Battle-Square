@@ -1,6 +1,6 @@
 # Encontros e Transição para Batalha — Especificação
 
-**Status:** Draft — aguarda aprovação
+**Status:** Concluída e verificada por teste (status corrigido em 29/08/2026 — a linha dizia "Draft" enquanto a feature já rodava)
 **Depende de:** Streaming de Mundo (primeira feature de M5, ✅ concluída) — existe um nível com World Partition e um pawn que se move nele. Depende também de M1–M4: `ABattleArena`, `UBattleTurnCoordinator`, `FPetCollectionService` (captura) e `FPetProgressionService` (XP) já existem e já funcionam.
 
 ---

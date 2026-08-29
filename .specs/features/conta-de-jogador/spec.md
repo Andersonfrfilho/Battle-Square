@@ -1,6 +1,6 @@
 # Conta de Jogador — Especificação
 
-**Status:** Draft — aguarda aprovação
+**Status:** Concluída e verificada por teste (status corrigido em 29/08/2026 — a linha dizia "Draft" enquanto a feature já rodava)
 **Depende de:** `apps/api-battle-pets` (backend de dados de pet, M4) — a conta nasce no mesmo serviço, que já tem Bun + Drizzle + Postgres, autenticação por token e validação Zod na fronteira. Primeira feature de M7.
 
 ---

@@ -1,6 +1,6 @@
 # Streaming de Mundo — Especificação
 
-**Status:** Draft — aguarda aprovação
+**Status:** Concluída e verificada por teste (status corrigido em 29/08/2026 — a linha dizia "Draft" enquanto a feature já rodava)
 **Depende de:** M1–M4 concluídos, gate B-001 (go/no-go de M5) decidido pelo usuário. Primeira feature de M5 — ver `.specs/project/OBJECTIVE.md`.
 
 ---

@@ -1,6 +1,6 @@
 # Arenas Variadas — Especificação
 
-**Status:** Draft — aguarda aprovação
+**Status:** Concluída e verificada por teste (status corrigido em 29/08/2026 — a linha dizia "Draft" enquanto a feature já rodava)
 **Depende de:** Combate Núcleo (concluído), Escala de Pets e Skills (concluído). Segunda e última feature planejada de M3 — ver `.specs/project/OBJECTIVE.md`.
 
 ---

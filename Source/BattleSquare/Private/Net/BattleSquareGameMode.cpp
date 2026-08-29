@@ -22,6 +22,7 @@
 #include "World/WorldTrainingField.h"
 #include "World/TrainingFieldRules.h"
 #include "Meta/PetMoveRequirements.h"
+#include "Meta/TrainerSpecialtyRules.h"
 #include "World/EncounterDetectionComponent.h"
 #include "World/EncounterMatchAssembler.h"
 #include "Battle/BattleArena.h"
@@ -624,15 +625,18 @@ void ABattleSquareGameMode::TickTrainingFields()
 		// passos para fora e voltou não pode perder o que já tinha ganhado, ou
 		// ficar parado passaria a render mais que se mover pelo mundo.
 		FBattleDebugScreen::Show(TEXT(""), 0.0f, FColor::White, /*Key=*/745);
+		FBattleDebugScreen::Show(TEXT(""), 0.0f, FColor::White, /*Key=*/746);
 		return;
 	}
 
+	// DP-atr-09: o estudo do dono MULTIPLICA, nunca substitui. O treinador
+	// especialista faz o MESMO treino render mais; ele nunca treina no lugar
+	// do pet.
+	const bool bEspecialista = FTrainerSpecialtyRules::IsSpecialistIn(
+		CachedTrainer, Dentro->TrainedAttribute);
+
 	const int32 Pontos = FTrainingFieldRules::PointsForTime(
-		WorldStatusRefreshSeconds,
-		// O estudo do dono ainda não existe: quando existir, entra AQUI, e a
-		// regra de rendimento já sabe multiplicar (DP-atr-09).
-		/*bOwnerIsSpecialist=*/false,
-		TrainingCarrySeconds);
+		WorldStatusRefreshSeconds, bEspecialista, TrainingCarrySeconds);
 
 	if (Pontos > 0)
 	{
@@ -662,11 +666,34 @@ void ABattleSquareGameMode::TickTrainingFields()
 		FMath::RoundToInt((TrainingCarrySeconds / FTrainingFieldRules::SecondsPerPoint) * 100.0f),
 		0, 100);
 
+	const FString Atributo =
+		FPetMoveRequirements::GetAttributeLabel(Dentro->TrainedAttribute).ToString();
+
 	FBattleDebugScreen::Show(
-		FString::Printf(TEXT("treinando %s — %d%% do próximo ponto"),
-			*FPetMoveRequirements::GetAttributeLabel(Dentro->TrainedAttribute).ToString(),
-			PorCento),
+		FString::Printf(TEXT("treinando %s — %d%% do próximo ponto%s"),
+			*Atributo, PorCento,
+			bEspecialista ? TEXT(" (especialista: +50%)") : TEXT("")),
 		0.0f, FColor::Green, /*Key=*/745);
+
+	// O que se PODE fazer aqui aparece junto do que está acontecendo. Uma
+	// especialidade que o jogador só descobre lendo código é uma escolha que
+	// ele nunca faz — e a escassez que a torna interessante vira só ausência.
+	if (!bEspecialista)
+	{
+		const int32 Vagas = FTrainerSpecialtyRules::FreeSlots(CachedTrainer);
+		FBattleDebugScreen::Show(
+			Vagas > 0
+				? FString::Printf(
+					TEXT("você pode se especializar em %s — %d vaga(s), e a escolha NÃO se desfaz (bs.Especializar)"),
+					*Atributo, Vagas)
+				: FString::Printf(
+					TEXT("sem vagas de especialidade — as suas já estão escolhidas")),
+			0.0f, Vagas > 0 ? FColor::Yellow : FColor::Silver, /*Key=*/746);
+	}
+	else
+	{
+		FBattleDebugScreen::Show(TEXT(""), 0.0f, FColor::White, /*Key=*/746);
+	}
 }
 
 void ABattleSquareGameMode::ReloadOwnedPetSnapshot()
@@ -690,6 +717,51 @@ void ABattleSquareGameMode::ReloadOwnedPetSnapshot()
 	{
 		CachedOwnedPet = *Meu;
 	}
+
+	CachedTrainer = FPetCollectionService::LoadTrainerProfile(PetCollectionSlotName);
+}
+
+bool ABattleSquareGameMode::LearnSpecialtyOfCurrentField()
+{
+	UWorld* World = GetWorld();
+	const APawn* Jogador = World && World->GetFirstPlayerController()
+		? World->GetFirstPlayerController()->GetPawn() : nullptr;
+	if (!Jogador)
+	{
+		return false;
+	}
+
+	for (TActorIterator<AWorldTrainingField> It(World); It; ++It)
+	{
+		if (!IsValid(*It) || !It->IsInside(Jogador->GetActorLocation()))
+		{
+			continue;
+		}
+
+		if (!FTrainerSpecialtyRules::TryLearn(CachedTrainer, It->TrainedAttribute))
+		{
+			// A RECUSA diz o motivo. "Nada aconteceu" é indistinguível de
+			// defeito, e aqui há três motivos diferentes para nada acontecer.
+			FBattleDebugScreen::Show(
+				FTrainerSpecialtyRules::IsSpecialistIn(CachedTrainer, It->TrainedAttribute)
+					? TEXT("você já é especialista neste atributo")
+					: TEXT("sem vagas de especialidade — as suas já estão escolhidas"),
+				8.0f, FColor::Orange, /*Key=*/-1);
+			return false;
+		}
+
+		FPetCollectionService::SaveTrainerProfile(PetCollectionSlotName, CachedTrainer);
+
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("AGORA VOCÊ É ESPECIALISTA EM %s — treino aqui rende +50%%"),
+				*FPetMoveRequirements::GetAttributeLabel(It->TrainedAttribute).ToString()),
+			10.0f, FColor::Green, /*Key=*/-1);
+		return true;
+	}
+
+	FBattleDebugScreen::Show(TEXT("você não está num campo de treino"),
+		6.0f, FColor::Orange, /*Key=*/-1);
+	return false;
 }
 
 void ABattleSquareGameMode::RefreshWorldStatus()
@@ -945,3 +1017,24 @@ void ABattleSquareGameMode::MaintainEncounterPopulation()
 		FString::Printf(TEXT("%d encontro(s) reposto(s) — o mundo não acaba"), Faltam),
 		8.0f, FColor::Green, /*Key=*/721);
 }
+
+// A especialidade é DELIBERADA: nada nela acontece por estar parado no lugar.
+// Fora do Shipping por compilação, como o resto das ferramentas de
+// desenvolvimento — quando houver barra no mundo, o botão substitui isto.
+#if !UE_BUILD_SHIPPING
+namespace
+{
+	FAutoConsoleCommandWithWorldAndArgs GEspecializarCommand(
+		TEXT("bs.Especializar"),
+		TEXT("Vira especialista no atributo do campo de treino em que você está. NÃO se desfaz."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(
+			[](const TArray<FString>&, UWorld* World)
+			{
+				if (ABattleSquareGameMode* GameMode =
+					World ? World->GetAuthGameMode<ABattleSquareGameMode>() : nullptr)
+				{
+					GameMode->LearnSpecialtyOfCurrentField();
+				}
+			}));
+}
+#endif // !UE_BUILD_SHIPPING

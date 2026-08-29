@@ -708,3 +708,15 @@ find "$HOME/Library/Logs/Unreal Engine/BattleSquareEditor" Saved/Logs -newer <ma
 **O que fiz:** o núcleo passou a receber **porcentagens prontas** (`ReflexDodgePercent`, `DamageVariancePercent`), ambas nascendo em ZERO, que é ausência de acaso. O ±20% padrão mora na tradução do pet, junto de `MovePowers` e pelo mesmo princípio. Os tetos continuam recortados **dentro** do núcleo: amarra de jogo não é acordo entre camadas, e um estado vindo da rede não pode passar por cima dela.
 
 **Previne:** quando um teste antigo cai por causa de um padrão novo, perguntar **de quem é esse padrão** antes de mudar o teste. Padrão que atinge quem não pediu está na camada errada — e enfraquecer o teste esconde isso em vez de resolver.
+
+### L-048: gravação que monta o save do zero apaga a metade que não é dela
+
+**Contexto:** o perfil do treinador (especialidades) foi para o MESMO `USaveGame` da coleção de pets — decisão certa, porque dois arquivos dessincronizam e "treinador sem coleção" é um estado que nada no jogo sabe interpretar.
+
+**O defeito que isso quase criou:** `FPetCollectionService::SaveCollection` monta um `UPetCollectionSaveGame` **novo** e grava por cima do slot. Ela nunca precisou reler nada, porque o save só tinha pets. Com o treinador dentro, **cada ganho de experiência apagaria as especialidades** — uma escolha que não se refaz, sumindo sem nada indicar quando nem por quê.
+
+**Por que nenhum teste pegaria:** os testes de treino gravam o treinador e releem o treinador; os de coleção gravam pets e releem pets. Cada metade passa sozinha. Só **cruzando** as duas gravações o defeito aparece.
+
+**O que fiz:** as duas funções passaram a reler a metade que não é delas, e `SavingOneHalfKeepsTheOther` grava especialidade → grava coleção → confere que a especialidade sobreviveu, e o contrário.
+
+**Previne:** ao acrescentar um campo a um `USaveGame` já existente, procurar **toda** função que monta esse save do zero. E ao juntar dois dados num arquivo, o teste que importa é o que **cruza** os caminhos de escrita — nunca os dois testes separados, que continuam verdes enquanto um apaga o outro.

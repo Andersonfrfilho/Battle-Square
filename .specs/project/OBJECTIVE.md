@@ -14,8 +14,18 @@ pelo mundo, encontrar um inimigo que anda, cair numa arena com botões, escolher
 ações que o pet sabe fazer, ver o que aconteceu narrado em português, vencer,
 ganhar experiência, e voltar a um mundo que se repõe.
 
-**246 testes** (181 BattleSquare + 65 BattleSim), quatro sondas, Editor e
-Shipping compilando.
+**347 testes**, cinco sondas, Editor e Shipping compilando (medido em
+29/08/2026).
+
+**Atualização de 29/08/2026 — M8, Atributos e Treino.** O laço deixou de ser
+só "andar, lutar, ganhar XP": o pet tem atributos que crescem pelo uso, golpes
+que exigem esses atributos, e o mundo tem CAMPOS DE TREINO — cinco clareiras
+coloridas que dão destino ao mapa. O treinador ganhou especialidades escassas,
+que multiplicam o treino sem substituir o pet.
+
+O que isso muda no item 1 abaixo: as regras novas nasceram já visíveis, e a
+varredura de classe sem chamador (59 públicas, 6 sem uso, todas justificadas)
+não achou nenhuma L-041 nova.
 
 O que mudou o método em 2026-08-27/28: **quatro recursos completos e testados
 estavam inalcançáveis** porque ninguém os chamava (L-041). A varredura que os
@@ -95,6 +105,20 @@ confundidos com pendência:
 poder verificar seria entregar trabalho não medido.
 
 ---
+
+## O que falta agora (29/08/2026)
+
+**Só o que não é meu.** O item 1 segue esgotado do meu lado, o item 4 é
+bloqueio de infraestrutura, e sobram dois:
+
+- **Item 2 — os oito roteiros verificáveis.** Nenhum foi rodado. É o único
+  caminho para o que teste nenhum decide, e agora há bem mais a olhar: sol e
+  mata no mundo, painel do mundo, campos de treino, golpe trancado, esquiva por
+  reflexo. **Nada disso foi visto na tela** — só verificado por build e teste,
+  que é exatamente o que deixou três atores invisíveis passarem aqui.
+- **Item 3 — as decisões.** Além das oito antigas, M8 acrescentou duas: se o
+  treino avança offline (DP-atr-10) e se dá para trocar de especialidade
+  (DP-atr-11). As duas estão implementadas na metade REVERSÍVEL, de propósito.
 
 ## Critério de "acabou"
 

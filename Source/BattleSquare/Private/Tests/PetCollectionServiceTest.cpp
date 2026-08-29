@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Meta/PetCollectionService.h"
+#include "Meta/TrainerSpecialtyRules.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/AutomationTest.h"
 
@@ -82,6 +83,52 @@ bool FPetCollectionServicePersistsAcrossLoadCycleTest::RunTest(const FString& Pa
 	const bool bDuplicateCapture = FPetCollectionService::CaptureIfNew(TestSlotName, MakeInstance(TEXT("id-agua-1"), TEXT("Gotinha"), TEXT("Agua")));
 	TestFalse(TEXT("Captura real repetida não duplica"), bDuplicateCapture);
 	TestEqual(TEXT("Coleção continua com 1 instância após tentativa duplicada"), FPetCollectionService::LoadCollection(TestSlotName).Num(), 1);
+
+	CleanupTestSlot();
+	return true;
+}
+
+// GRAVAR A COLEÇÃO NÃO APAGA O TREINADOR, e vice-versa.
+//
+// As duas funções montam um save NOVO e gravam por cima do slot. Sem cada uma
+// reler a metade que não é dela, ganhar experiência apagaria as especialidades
+// — uma escolha que não se refaz, sumindo sem nada indicar quando nem por quê.
+//
+// Foi o defeito que este commit quase introduziu, e ele não apareceria em
+// nenhum teste de treino: só cruzando as duas gravações.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSavingOneHalfKeepsTheOtherTest,
+	"BattleSquare.Meta.PetCollectionService.SavingOneHalfKeepsTheOther",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FSavingOneHalfKeepsTheOtherTest::RunTest(const FString& Parameters)
+{
+	CleanupTestSlot();
+
+	FPetCollectionService::CaptureIfNew(TestSlotName,
+		MakeInstance(TEXT("id-fogo-1"), TEXT("Faísca"), TEXT("Fogo")));
+
+	FTrainerProfile Perfil;
+	Perfil.Specialties.Add(TEXT("flight"));
+	FPetCollectionService::SaveTrainerProfile(TestSlotName, Perfil);
+
+	// Gravar o TREINADOR manteve a coleção.
+	TestEqual(TEXT("O pet sobreviveu à gravação do treinador"),
+		FPetCollectionService::LoadCollection(TestSlotName).Num(), 1);
+
+	// Agora o caminho que a batalha percorre: mexer num pet e salvar tudo.
+	TArray<FOwnedPetInstance> Colecao = FPetCollectionService::LoadCollection(TestSlotName);
+	Colecao[0].Experience += 50;
+	FPetCollectionService::SaveCollection(TestSlotName, Colecao);
+
+	const FTrainerProfile Recarregado = FPetCollectionService::LoadTrainerProfile(TestSlotName);
+	TestEqual(TEXT("A especialidade sobreviveu à gravação da coleção"),
+		Recarregado.Specialties.Num(), 1);
+	TestEqual(TEXT("E é a mesma"),
+		Recarregado.Specialties.Num() == 1 ? Recarregado.Specialties[0] : FString(),
+		FString(TEXT("flight")));
+	TestEqual(TEXT("E a experiência foi gravada"),
+		FPetCollectionService::LoadCollection(TestSlotName)[0].Experience, 50);
 
 	CleanupTestSlot();
 	return true;

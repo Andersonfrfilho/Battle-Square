@@ -149,6 +149,24 @@ veio. Agora se joga por tela, sem depender do mundo aberto.
 
 ---
 
+## M8 — Atributos e Treino (2026-08-29)
+
+Nasceu de uma correção do usuário: *"todos os pets podem evoluir skills e
+personalidade e musculatura que ficam gravados como atributos, isso desbloqueia
+a escolha de ataques e magias que dependem desses atributos"*.
+
+**Tamanho de campo variável** — ✅ CONCLUÍDO (`55d4685`) — a grade sai do 3x3 fixo, entra no hash, e a casa inicial passa a ser DERIVADA (lado 0 na primeira coluna, lado 1 na última, ambos na linha do meio).
+**Desbloqueio de golpes** — ✅ CONCLUÍDO, quatro fatias — atributos que crescem e aparecem; requisito assinado no golpe; golpe trancado com o requisito na tela; e atributo alto mudando a resolução (esquiva por reflexo, golpe constante).
+**Mundo com cara de lugar** — ✅ CONCLUÍDO (`60834f3`) — sol e mata no mundo aberto, reusando o cenário da arena; painel do mundo com pet, atributos e distância do adversário mais próximo.
+**Campos de treino** — ✅ CONCLUÍDO (`0e4ec04`) — cinco clareiras coloridas, uma por atributo, que dão DESTINO ao mapa.
+**Estudo do dono** — ✅ CONCLUÍDO — o treinador tem especialidades, limitadas a duas de cinco, que multiplicam o rendimento do treino sem substituir o pet.
+
+**Duas decisões seguem do usuário, e estão marcadas na spec:** se o treino
+avança offline (DP-atr-10, hoje "só com o jogo aberto"), e se dá para trocar de
+especialidade (DP-atr-11, hoje não).
+
+---
+
 ## Considerações Futuras
 
 - Pixel Streaming como demo jogável por link (não como canal de distribuição)
@@ -165,5 +183,5 @@ precisam de resposta antes de virar código.
 | Ideia | Spec | Por que ainda não virou código |
 |---|---|---|
 | **Clima no campo** | `.specs/features/clima-no-campo/` | O núcleo não pode consultar clima durante a batalha — replay e rede divergiriam. Precisa entrar como parâmetro da montagem, e há 9 perguntas em aberto (fonte, offline, justiça em ranqueada) |
-| **Desbloqueio de golpes** | `.specs/features/desbloqueio-de-golpes/` | Cruza dado ASSINADO (golpe) com estado LOCAL (nível): quem decide o desbloqueio decide o próprio dano. Três desenhos possíveis, e a escolha depende de conta obrigatória e de ranqueada existirem |
+| ~~**Desbloqueio de golpes**~~ | `.specs/features/desbloqueio-de-golpes/` | ✅ **CONCLUÍDO em 2026-08-29**, quatro fatias (`57f2587`, `7e7c6a3`, `1dce9d9`, `5b8782e`). O impasse se resolveu pelo requisito viajar DENTRO da assinatura: quem decide o desbloqueio não decide mais o próprio dano |
 | **Captura, roubo e treinador** | `.specs/features/captura-roubo-e-treinador/` | O jogo não tem o conceito de DONO. Sem ele, "sem dono", "selvagem" e "roubar" não têm como ser distinguidos |

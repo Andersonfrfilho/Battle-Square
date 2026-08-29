@@ -10,6 +10,7 @@
 #include "Net/BattleTurnCoordinator.h"
 #include "Battle/BattleArena.h"
 #include "Data/BattleDataTranslator.h"
+#include "Meta/PetCollectionSaveGame.h"
 #include "BattleSquareGameMode.generated.h"
 
 class ABattleSquarePlayerController;
@@ -150,6 +151,18 @@ public:
 
 	FTimerHandle TrainingTimer;
 	float TrainingCarrySeconds = 0.0f;
+	FTrainerProfile CachedTrainer;
+
+public:
+	/**
+	 * Vira especialista no atributo do campo em que você está.
+	 *
+	 * Ato DELIBERADO, nunca automático: a especialidade é escassa e a escolha
+	 * não se desfaz, então gastá-la por estar parado no lugar errado seria
+	 * punição por acidente. Exposto por console (`bs.Especializar`) porque
+	 * clicar exigiria uma barra no mundo que ainda não existe.
+	 */
+	bool LearnSpecialtyOfCurrentField();
 
 	/** Raio em que os campos nascem em volta do ponto de partida. */
 	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
@@ -169,7 +182,6 @@ public:
 	 */
 	void MaintainEncounterPopulation();
 
-private:
 	void SpawnOneEncounter(const FVector& Centro, FRandomStream& Sorteio, int32 SementeDoPasseio);
 
 	FTimerHandle EncounterPopulationTimer;

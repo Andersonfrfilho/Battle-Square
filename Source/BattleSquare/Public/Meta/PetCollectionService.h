@@ -32,4 +32,15 @@ public:
 	// modificada por inteiro (ex.: XP concedido a uma instância
 	// existente) — diferente de CaptureIfNew, que só adiciona.
 	static void SaveCollection(const FString& SlotName, const TArray<FOwnedPetInstance>& Collection);
+
+	/**
+	 * O perfil do treinador, no MESMO slot da coleção.
+	 *
+	 * As duas gravações preservam a outra metade: montar o save do zero e
+	 * gravar por cima é o que faria salvar experiência apagar as
+	 * especialidades — uma escolha que não se refaz, sumindo sem aviso.
+	 */
+	static FTrainerProfile LoadTrainerProfile(const FString& SlotName);
+
+	static void SaveTrainerProfile(const FString& SlotName, const FTrainerProfile& Profile);
 };

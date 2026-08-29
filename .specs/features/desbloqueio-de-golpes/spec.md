@@ -221,6 +221,29 @@ identidade — e é o que impede que dois treinadores veteranos sejam idênticos
 > de graça faz a especialização não significar nada. O meio (trocar com custo,
 > ou perdendo progresso) é o que costuma funcionar, mas é decisão sua.
 
+**IMPLEMENTADO em 29/08/2026 sem a troca**, e a escolha do "sem" é deliberada:
+é a metade REVERSÍVEL. Dar a troca depois é acrescentar; tirá-la depois seria
+retirar algo que o jogador já usou. A decisão de produto segue aberta.
+
+**Teto: DUAS de cinco atributos.** Com cinco não haveria escolha nenhuma, e o
+"nunca completo" que a decisão pediu deixaria de valer.
+
+Três recusas que não gastam vaga, todas com teste: já ser especialista naquilo,
+não ter vaga, e **atributo com nome desconhecido** — queimar uma das duas num
+nome escrito errado seria punição permanente por erro de cadastro, e a vaga não
+volta.
+
+Aprender é ato DELIBERADO (`bs.Especializar`), nunca automático por estar
+parado no campo: a especialidade é escassa e não se desfaz, então gastá-la por
+acidente é o pior resultado possível.
+
+**Um defeito que quase entrou, e o teste que o impede:** `SaveCollection` monta
+um save NOVO e grava por cima do slot. Com o perfil do treinador no mesmo
+arquivo, cada ganho de experiência apagaria as especialidades — uma escolha que
+não se refaz, sumindo sem nada indicar quando nem por quê. As duas gravações
+agora releem a metade que não é delas, e `SavingOneHalfKeepsTheOther` cruza os
+dois caminhos. Nenhum teste de treino sozinho pegaria isso.
+
 **DP-atr-09 (PROPOSTA) — Estudo do dono MULTIPLICA, não substitui.** O
 treinador que estudou faz o mesmo treino render mais; ele nunca treina no lugar
 do pet. Assim o estudo tem valor sem tornar o pet irrelevante, e um jogador

@@ -63,6 +63,29 @@ struct FOwnedPetInstance
 	int32 SkillProficiency[3] = { 0, 0, 0 };
 };
 
+/**
+ * O TREINADOR — a primeira coisa do jogo que pertence ao JOGADOR, e não a um pet.
+ *
+ * Atravessa a coleção inteira e sobrevive à troca de pet favorito. É o que
+ * impede que dois treinadores veteranos sejam idênticos.
+ */
+USTRUCT()
+struct BATTLESQUARE_API FTrainerProfile
+{
+	GENERATED_BODY()
+
+	/**
+	 * Em que atributos este treinador é especialista.
+	 *
+	 * LIMITADO de propósito (DP-atr-11): ninguém fica completo, e a escassez
+	 * é o que transforma a escolha em identidade. Mesmo vocabulário do
+	 * requisito de golpe e do campo de treino — uma terceira lista de nomes
+	 * produziria uma especialidade que não casa com campo nenhum.
+	 */
+	UPROPERTY()
+	TArray<FString> Specialties;
+};
+
 UCLASS()
 class BATTLESQUARE_API UPetCollectionSaveGame : public USaveGame
 {
@@ -71,4 +94,15 @@ class BATTLESQUARE_API UPetCollectionSaveGame : public USaveGame
 public:
 	UPROPERTY()
 	TArray<FOwnedPetInstance> OwnedPets;
+
+	/**
+	 * No MESMO save da coleção, e não num arquivo à parte: dois arquivos
+	 * dessincronizam, e um treinador sem coleção (ou o contrário) é um estado
+	 * que nada no jogo sabe interpretar.
+	 *
+	 * Save gravado antes disto existir carrega com o perfil vazio, que é
+	 * "nenhuma especialidade" — o comportamento de antes desta feature.
+	 */
+	UPROPERTY()
+	FTrainerProfile Trainer;
 };

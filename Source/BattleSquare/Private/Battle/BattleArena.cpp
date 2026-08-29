@@ -14,11 +14,51 @@
 
 DEFINE_LOG_CATEGORY(LogBattleArena);
 #include "Camera/CameraComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
+#include "Materials/MaterialInterface.h"
+#include "UObject/ConstructorHelpers.h"
 #include "Battle/TacticalOpponentAI.h"
 #include "Battle/BattleResolver.h"
 #include "Battle/BattleOutcome.h"
 #include "Meta/PetCollectionService.h"
 #include "Meta/PetProgressionService.h"
+
+namespace ArenaGeometria
+{
+	/** Aresta do cubo da engine. Toda escala abaixo é fração disto. */
+	constexpr float CuboDaEngine = 100.0f;
+
+	/**
+	 * Fundo comum de todas as lajes. A altura por terreno mexe no TOPO, nunca
+	 * no fundo: fundos diferentes deixariam o tabuleiro vazado por baixo, que
+	 * é justamente o ângulo da câmera do diorama.
+	 */
+	constexpr float FundoDoTabuleiro = -80.0f;
+
+	/**
+	 * Topo da laje por terreno. Neutro fica logo ABAIXO de zero para o pet
+	 * não afundar; água afunda de verdade (é onde se submerge) e casa
+	 * bloqueada sobe, porque ninguém pisa nela.
+	 */
+	constexpr float SuperficieNeutra = -4.0f;
+	constexpr float SuperficieDaAgua = -22.0f;
+	constexpr float SuperficieBloqueada = 22.0f;
+
+	/** Vão entre lajes: sem ele o tabuleiro vira uma placa lisa só. */
+	constexpr float ProporcaoDaLaje = 0.94f;
+
+	constexpr float EspessuraDaMoldura = 26.0f;
+	constexpr float TopoDaMoldura = 10.0f;
+	constexpr float EspessuraDoChao = 24.0f;
+	constexpr float MargemDoChao = 95.0f;
+
+	constexpr int32 LadoDaGrade = 3;
+	constexpr int32 VigasDaMoldura = 4;
+
+	/** A linha desenhada assenta ESTE tanto acima da superfície da laje. */
+	constexpr float FolgaDaGradeDesenhada = 4.0f;
+}
 
 ABattleArena::ABattleArena()
 {
@@ -41,6 +81,207 @@ ABattleArena::ABattleArena()
 	ArenaCamera->SetRelativeRotation(FRotator(-38.0f, 0.0f, 0.0f));
 	ArenaCamera->FieldOfView = 45.0f;
 	ArenaCamera->AspectRatio = 16.0f / 9.0f;
+
+	BuildArenaGeometry();
+}
+
+float ABattleArena::GetCellSurfaceHeight(uint8 CellProperty)
+{
+	switch (static_cast<ECellProperty>(CellProperty))
+	{
+	case ECellProperty::Water:
+		return ArenaGeometria::SuperficieDaAgua;
+	case ECellProperty::Blocked:
+		return ArenaGeometria::SuperficieBloqueada;
+	default:
+		return ArenaGeometria::SuperficieNeutra;
+	}
+}
+
+void ABattleArena::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// Erguer o ator INTEIRO: GetCellWorldLocation deriva da posição dele, então
+	// pets, grade desenhada e câmera sobem juntos. Erguer só as lajes deixaria
+	// os pets flutuando no antigo plano zero.
+	AddActorWorldOffset(FVector(0.0f, 0.0f, BoardElevation));
+
+	RefreshTileVisuals();
+}
+
+void ABattleArena::BuildArenaGeometry()
+{
+	using namespace ArenaGeometria;
+
+	// Conteúdo da engine, não vendorizado — mesmo princípio de AD-019.
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CuboDaArena(TEXT("/Engine/BasicShapes/Cube.Cube"));
+
+	// Caminhos dos materiais autorados em /Game/Arena/Materials. Soft: o CDO
+	// não carrega textura nenhuma no boot do módulo, e o editor continua
+	// podendo trocar a paleta sem recompilar.
+	FloorMaterial = TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/Arena/Materials/MI_ArenaFloor.MI_ArenaFloor")));
+	FrameMaterial = TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/Arena/Materials/MI_ArenaFrame.MI_ArenaFrame")));
+	NeutralTileMaterial = TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/Arena/Materials/MI_Tile_Neutral.MI_Tile_Neutral")));
+	WaterTileMaterial = TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/Arena/Materials/MI_Tile_Water.MI_Tile_Water")));
+	DamageTileMaterial = TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/Arena/Materials/MI_Tile_Damage.MI_Tile_Damage")));
+	BuffTileMaterial = TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/Arena/Materials/MI_Tile_Buff.MI_Tile_Buff")));
+	BlockedTileMaterial = TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/Arena/Materials/MI_Tile_Blocked.MI_Tile_Blocked")));
+
+	const float MeioTabuleiro = CellSize * (static_cast<float>(LadoDaGrade) * 0.5f);
+
+	ArenaFloorMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ArenaFloor"));
+	ArenaFloorMesh->SetupAttachment(ArenaRoot);
+	// Sem colisão em nada do tabuleiro: quem decide onde o pet está é o
+	// núcleo. Geometria que empurra seria uma segunda fonte de verdade.
+	ArenaFloorMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	const float LarguraDoChao = (MeioTabuleiro + MargemDoChao) * 2.0f;
+	ArenaFloorMesh->SetRelativeScale3D(FVector(LarguraDoChao / CuboDaEngine,
+		LarguraDoChao / CuboDaEngine, EspessuraDoChao / CuboDaEngine));
+	ArenaFloorMesh->SetRelativeLocation(FVector(0.0f, 0.0f, FundoDoTabuleiro - EspessuraDoChao * 0.5f));
+
+	const float CentroDaViga = MeioTabuleiro + EspessuraDaMoldura * 0.5f;
+	const float ComprimentoDaViga = MeioTabuleiro * 2.0f + EspessuraDaMoldura * 2.0f;
+	const float AlturaDaViga = TopoDaMoldura - FundoDoTabuleiro;
+	const float CentroZDaViga = (TopoDaMoldura + FundoDoTabuleiro) * 0.5f;
+
+	const FVector PosicoesDasVigas[VigasDaMoldura] = {
+		FVector(CentroDaViga, 0.0f, CentroZDaViga),
+		FVector(-CentroDaViga, 0.0f, CentroZDaViga),
+		FVector(0.0f, CentroDaViga, CentroZDaViga),
+		FVector(0.0f, -CentroDaViga, CentroZDaViga),
+	};
+	const FVector EscalasDasVigas[VigasDaMoldura] = {
+		FVector(EspessuraDaMoldura / CuboDaEngine, ComprimentoDaViga / CuboDaEngine, AlturaDaViga / CuboDaEngine),
+		FVector(EspessuraDaMoldura / CuboDaEngine, ComprimentoDaViga / CuboDaEngine, AlturaDaViga / CuboDaEngine),
+		FVector(ComprimentoDaViga / CuboDaEngine, EspessuraDaMoldura / CuboDaEngine, AlturaDaViga / CuboDaEngine),
+		FVector(ComprimentoDaViga / CuboDaEngine, EspessuraDaMoldura / CuboDaEngine, AlturaDaViga / CuboDaEngine),
+	};
+
+	ArenaFrameMeshes.Reset();
+	for (int32 Indice = 0; Indice < VigasDaMoldura; ++Indice)
+	{
+		UStaticMeshComponent* Viga = CreateDefaultSubobject<UStaticMeshComponent>(
+			FName(*FString::Printf(TEXT("ArenaFrame_%d"), Indice)));
+		Viga->SetupAttachment(ArenaRoot);
+		Viga->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Viga->SetRelativeLocation(PosicoesDasVigas[Indice]);
+		Viga->SetRelativeScale3D(EscalasDasVigas[Indice]);
+		ArenaFrameMeshes.Add(Viga);
+	}
+
+	const float LadoDaLaje = CellSize * ProporcaoDaLaje;
+
+	CellTileMeshes.Reset();
+	for (int32 Linha = 0; Linha < LadoDaGrade; ++Linha)
+	{
+		for (int32 Coluna = 0; Coluna < LadoDaGrade; ++Coluna)
+		{
+			UStaticMeshComponent* Laje = CreateDefaultSubobject<UStaticMeshComponent>(
+				FName(*FString::Printf(TEXT("CellTile_%d_%d"), Coluna, Linha)));
+			Laje->SetupAttachment(ArenaRoot);
+			Laje->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+			// Mesmo mapeamento de eixos de GetCellWorldLocation, e pelo mesmo
+			// motivo: linha é o eixo vertical da tela, coluna o horizontal.
+			const float DeslocamentoX = -(static_cast<float>(Linha) - 1.0f) * CellSize;
+			const float DeslocamentoY = (static_cast<float>(Coluna) - 1.0f) * CellSize;
+
+			const float Espessura = SuperficieNeutra - FundoDoTabuleiro;
+			Laje->SetRelativeScale3D(FVector(LadoDaLaje / CuboDaEngine,
+				LadoDaLaje / CuboDaEngine, Espessura / CuboDaEngine));
+			Laje->SetRelativeLocation(FVector(DeslocamentoX, DeslocamentoY,
+				(SuperficieNeutra + FundoDoTabuleiro) * 0.5f));
+
+			CellTileMeshes.Add(Laje);
+		}
+	}
+
+	// A malha é atribuída AQUI, no construtor. Componente criado sem asset
+	// passa em todo teste de lógica e não existe na tela — foi assim três
+	// vezes neste projeto (pets, inimigos do mundo, o próprio jogador).
+	if (CuboDaArena.Succeeded())
+	{
+		ArenaFloorMesh->SetStaticMesh(CuboDaArena.Object);
+		for (UStaticMeshComponent* Viga : ArenaFrameMeshes)
+		{
+			Viga->SetStaticMesh(CuboDaArena.Object);
+		}
+		for (UStaticMeshComponent* Laje : CellTileMeshes)
+		{
+			Laje->SetStaticMesh(CuboDaArena.Object);
+		}
+	}
+}
+
+UMaterialInterface* ABattleArena::ResolveTileMaterial(uint8 CellProperty) const
+{
+	switch (static_cast<ECellProperty>(CellProperty))
+	{
+	case ECellProperty::Water:
+		return WaterTileMaterial.LoadSynchronous();
+	case ECellProperty::Damage:
+		return DamageTileMaterial.LoadSynchronous();
+	case ECellProperty::Buff:
+		return BuffTileMaterial.LoadSynchronous();
+	case ECellProperty::Blocked:
+		return BlockedTileMaterial.LoadSynchronous();
+	default:
+		return NeutralTileMaterial.LoadSynchronous();
+	}
+}
+
+void ABattleArena::RefreshTileVisuals()
+{
+	using namespace ArenaGeometria;
+
+	if (UMaterialInterface* MaterialDoChao = FloorMaterial.LoadSynchronous())
+	{
+		ArenaFloorMesh->SetMaterial(0, MaterialDoChao);
+	}
+
+	if (UMaterialInterface* MaterialDaMoldura = FrameMaterial.LoadSynchronous())
+	{
+		for (UStaticMeshComponent* Viga : ArenaFrameMeshes)
+		{
+			Viga->SetMaterial(0, MaterialDaMoldura);
+		}
+	}
+
+	const float LadoDaLaje = CellSize * ProporcaoDaLaje;
+
+	for (int32 Linha = 0; Linha < LadoDaGrade; ++Linha)
+	{
+		for (int32 Coluna = 0; Coluna < LadoDaGrade; ++Coluna)
+		{
+			const int32 Indice = CellLayoutIndex(Coluna, Linha);
+			if (!CellTileMeshes.IsValidIndex(Indice) || !CellTileMeshes[Indice])
+			{
+				continue;
+			}
+
+			const uint8 Propriedade = CurrentState.CellLayout.IsValidIndex(Indice)
+				? CurrentState.CellLayout[Indice]
+				: static_cast<uint8>(ECellProperty::None);
+
+			const float Superficie = GetCellSurfaceHeight(Propriedade);
+			const float Espessura = Superficie - FundoDoTabuleiro;
+
+			UStaticMeshComponent* Laje = CellTileMeshes[Indice];
+			Laje->SetRelativeScale3D(FVector(LadoDaLaje / CuboDaEngine,
+				LadoDaLaje / CuboDaEngine, Espessura / CuboDaEngine));
+
+			const FVector PosicaoAtual = Laje->GetRelativeLocation();
+			Laje->SetRelativeLocation(FVector(PosicaoAtual.X, PosicaoAtual.Y,
+				(Superficie + FundoDoTabuleiro) * 0.5f));
+
+			if (UMaterialInterface* MaterialDaLaje = ResolveTileMaterial(Propriedade))
+			{
+				Laje->SetMaterial(0, MaterialDaLaje);
+			}
+		}
+	}
 }
 
 FVector ABattleArena::GetCellWorldLocation(uint8 Column, uint8 Row) const
@@ -147,6 +388,10 @@ bool ABattleArena::BeginBattle(const FBattleState& InitialState, const TArray<FP
 	// do estado montado para saber onde os pets estão. Por isso ela própria
 	// recusa layouts que bloqueiem casa inicial.
 	ApplyArenaLayoutIfNeeded();
+
+	// Depois do layout, nunca antes: é ele que diz qual casa é água, dano ou
+	// pedra, e a laje só sabe a própria altura sabendo o terreno.
+	RefreshTileVisuals();
 
 	SpawnPetViews(CurrentState, Presentations);
 
@@ -968,7 +1213,14 @@ void ABattleArena::DrawDebugGrid() const
 			// decide o turno, e o terreno decide o seguinte.
 			const FColor CorDaCasa = Ocupantes.IsEmpty() ? CorDoTerreno : FColor::Yellow;
 
-			DrawDebugBox(GetWorld(), Centro, FVector(HalfCell, HalfCell, 2.0f),
+			// A linha assenta em cima da LAJE, não no plano zero. Mesma função
+			// que dimensionou a laje (L-032/L-033): com dois números, a água
+			// afundaria a laje e deixaria o contorno boiando no ar.
+			const FVector CentroNaSuperficie = Centro
+				+ FVector(0.0f, 0.0f, ABattleArena::GetCellSurfaceHeight(Propriedade)
+					+ ArenaGeometria::FolgaDaGradeDesenhada);
+
+			DrawDebugBox(GetWorld(), CentroNaSuperficie, FVector(HalfCell, HalfCell, 2.0f),
 				CorDaCasa, /*bPersistent=*/false, /*LifeTime=*/-1.0f, /*DepthPriority=*/0, /*Thickness=*/2.0f);
 
 			// Casa de terreno ganha um plano sólido: contorno sozinho some
@@ -976,12 +1228,12 @@ void ABattleArena::DrawDebugGrid() const
 			// se procura a água.
 			if (Propriedade != static_cast<uint8>(ECellProperty::None))
 			{
-				DrawDebugSolidBox(GetWorld(), Centro, FVector(HalfCell * 0.85f, HalfCell * 0.85f, 1.0f),
+				DrawDebugSolidBox(GetWorld(), CentroNaSuperficie, FVector(HalfCell * 0.85f, HalfCell * 0.85f, 1.0f),
 					FColor(CorDoTerreno.R, CorDoTerreno.G, CorDoTerreno.B, 90),
 					/*bPersistent=*/false, /*LifeTime=*/-1.0f);
 			}
 
-			DrawDebugString(GetWorld(), Centro + FVector(0.0f, 0.0f, 10.0f),
+			DrawDebugString(GetWorld(), CentroNaSuperficie + FVector(0.0f, 0.0f, 10.0f),
 				FString::Printf(TEXT("(%d,%d)%s%s"), Column, Row, *NomeDaCasa, *Ocupantes),
 				nullptr, CorDaCasa, /*Duration=*/0.0f, /*bDrawShadow=*/true, /*FontScale=*/1.1f);
 		}

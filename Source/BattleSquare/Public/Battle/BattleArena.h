@@ -47,6 +47,59 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Grade")
 	TSoftObjectPtr<UMaterialInterface> GridMaterial;
 
+	/**
+	 * Materiais da arena — instâncias reais em /Game/Arena/Materials, nunca
+	 * cor solta no código. Trocar a paleta é editar o asset, e a laje já sabe
+	 * qual delas é a dela.
+	 */
+	/**
+	 * Altura em que o tabuleiro assenta acima do chão do nível.
+	 *
+	 * O mapa traz um plano de chão em Z=-0.5 (herança do template), e a laje
+	 * de andar tem topo em -4: sem erguer, o tabuleiro inteiro fica ENTERRADO
+	 * sob esse plano e não existe na tela. Erguer aqui, e não nos três pontos
+	 * de spawn, porque três cópias do mesmo número discordam na primeira
+	 * edição (L-032/L-033).
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "Arena")
+	float BoardElevation = 120.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Arena|Materiais")
+	TSoftObjectPtr<UMaterialInterface> FloorMaterial;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Arena|Materiais")
+	TSoftObjectPtr<UMaterialInterface> FrameMaterial;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Arena|Materiais")
+	TSoftObjectPtr<UMaterialInterface> NeutralTileMaterial;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Arena|Materiais")
+	TSoftObjectPtr<UMaterialInterface> WaterTileMaterial;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Arena|Materiais")
+	TSoftObjectPtr<UMaterialInterface> DamageTileMaterial;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Arena|Materiais")
+	TSoftObjectPtr<UMaterialInterface> BuffTileMaterial;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Arena|Materiais")
+	TSoftObjectPtr<UMaterialInterface> BlockedTileMaterial;
+
+	/**
+	 * Altura da SUPERFÍCIE da casa, por terreno.
+	 *
+	 * Fonte única (L-032/L-033): a laje 3D se dimensiona por aqui e a grade
+	 * desenhada se ERGUE por aqui. Fossem dois números, água afundaria a laje
+	 * e deixaria a linha boiando no ar na primeira vez que alguém editasse um
+	 * dos dois.
+	 */
+	static float GetCellSurfaceHeight(uint8 CellProperty);
+
+	/** Malhas da arena, para o teste que exige asset atribuído em todas. */
+	const TArray<TObjectPtr<UStaticMeshComponent>>& GetCellTileMeshes() const { return CellTileMeshes; }
+	const TArray<TObjectPtr<UStaticMeshComponent>>& GetArenaFrameMeshes() const { return ArenaFrameMeshes; }
+	UStaticMeshComponent* GetArenaFloorMesh() const { return ArenaFloorMesh; }
+
 	// Centro (em espaço de mundo) da casa (Column, Row), Column/Row em [0,2].
 	UFUNCTION(BlueprintPure)
 	FVector GetCellWorldLocation(uint8 Column, uint8 Row) const;
@@ -137,6 +190,16 @@ protected:
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UCameraComponent> ArenaCamera;
+
+	/** O tabuleiro em si: chão, moldura e uma laje por casa. */
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UStaticMeshComponent> ArenaFloorMesh;
+
+	UPROPERTY(VisibleAnywhere)
+	TArray<TObjectPtr<UStaticMeshComponent>> ArenaFrameMeshes;
+
+	UPROPERTY(VisibleAnywhere)
+	TArray<TObjectPtr<UStaticMeshComponent>> CellTileMeshes;
 
 private:
 	UPROPERTY()
@@ -300,6 +363,20 @@ private:
 	 * de explicação. Só desenha com bs.ShowBattleDebug ligado.
 	 */
 	void DrawDebugGrid() const;
+
+	/**
+	 * Pinta a arena assim que o nível sobe, sem esperar batalha. Aberto no
+	 * editor, o tabuleiro precisa existir antes de alguém apertar jogar.
+	 */
+	virtual void BeginPlay() override;
+
+	/** Monta chão, moldura e lajes no construtor, com malha e material já atribuídos. */
+	void BuildArenaGeometry();
+
+	/** Põe cada laje na altura e no material do terreno que aquela casa virou. */
+	void RefreshTileVisuals();
+
+	UMaterialInterface* ResolveTileMaterial(uint8 CellProperty) const;
 
 	// A rodada seguinte só abre quando a reprodução do trace termina: abrir
 	// antes deixaria o jogador escolhendo o próximo turno enquanto o anterior

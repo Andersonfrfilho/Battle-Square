@@ -242,3 +242,117 @@ bool FPartialDamageRoundsPerTurnTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+// A PERSONALIDADE é um eixo, e ele se parte na tradução: o lado agressivo vira
+// constância de golpe, o cauteloso soma ao reflexo. Um pet no meio não ganha
+// nem uma coisa nem outra — é o que faz o extremo valer.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FPersonalityAxisSplitsIntoTwoNumbersTest,
+	"BattleSquare.Meta.AttributeProgression.PersonalityAxisSplitsIntoTwoNumbers",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FPersonalityAxisSplitsIntoTwoNumbersTest::RunTest(const FString& Parameters)
+{
+	FOwnedPetInstance Agressivo;
+	Agressivo.Personality = 20;
+
+	FPetState EstadoAgressivo;
+	FPetAttributeProgression::ApplyToBattleState(Agressivo, EstadoAgressivo);
+	TestEqual(TEXT("O agressivo bate mais constante — faixa estreitada de 20 para 10"),
+		EstadoAgressivo.DamageVariancePercent, 10);
+	TestEqual(TEXT("E não ganha esquiva nenhuma com isso"),
+		EstadoAgressivo.ReflexDodgePercent, 0);
+
+	FOwnedPetInstance Cauteloso;
+	Cauteloso.Personality = -20;
+
+	FPetState EstadoCauteloso;
+	FPetAttributeProgression::ApplyToBattleState(Cauteloso, EstadoCauteloso);
+	TestEqual(TEXT("Cautela 20 vira 5% de esquiva por reflexo"),
+		EstadoCauteloso.ReflexDodgePercent, 5);
+	TestEqual(TEXT("E ele bate na faixa CHEIA — cautela não dá constância"),
+		EstadoCauteloso.DamageVariancePercent, 20);
+
+	FOwnedPetInstance NoMeio;
+	FPetState EstadoDoMeio;
+	FPetAttributeProgression::ApplyToBattleState(NoMeio, EstadoDoMeio);
+	TestEqual(TEXT("No meio do eixo, sem esquiva"), EstadoDoMeio.ReflexDodgePercent, 0);
+	TestEqual(TEXT("No meio do eixo, faixa cheia"), EstadoDoMeio.DamageVariancePercent, 20);
+
+	// O TETO da esquiva (DP-atr-07) é a amarra que impede atributo alto de
+	// virar imunidade. Sem ele, cautela 400 daria 100% de esquiva.
+	FOwnedPetInstance Extremo;
+	Extremo.Personality = -400;
+
+	FPetState EstadoExtremo;
+	FPetAttributeProgression::ApplyToBattleState(Extremo, EstadoExtremo);
+	TestEqual(TEXT("A esquiva por reflexo tem teto"), EstadoExtremo.ReflexDodgePercent, 25);
+
+	// E o PISO da variação: dano perfeitamente previsível apagaria o acaso
+	// que a fatia inteira existe para introduzir.
+	FOwnedPetInstance MuitoAgressivo;
+	MuitoAgressivo.Personality = 400;
+
+	FPetState EstadoMuitoAgressivo;
+	FPetAttributeProgression::ApplyToBattleState(MuitoAgressivo, EstadoMuitoAgressivo);
+	TestEqual(TEXT("A variação tem piso — nunca chega a zero"),
+		EstadoMuitoAgressivo.DamageVariancePercent, 5);
+
+	return true;
+}
+
+// As TRÊS proficiências somam para o reflexo, em vez de valer a maior.
+//
+// Quem treinou um pouco de cada se defende melhor que quem só sabe voar — e é
+// isso que dá razão para variar as posturas em vez de repetir a favorita.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FEverySkillFeedsReflexesTest,
+	"BattleSquare.Meta.AttributeProgression.EverySkillFeedsReflexes",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FEverySkillFeedsReflexesTest::RunTest(const FString& Parameters)
+{
+	FOwnedPetInstance Variado;
+	Variado.SkillProficiency[FPetAttributeProgression::Camouflage] = 5;
+	Variado.SkillProficiency[FPetAttributeProgression::Flight] = 5;
+	Variado.SkillProficiency[FPetAttributeProgression::Underground] = 6;
+
+	// 5+5+6 = 16 de reflexo, e 16/4 = 4% de esquiva.
+	FPetState EstadoVariado;
+	FPetAttributeProgression::ApplyToBattleState(Variado, EstadoVariado);
+	TestEqual(TEXT("As três somam: 16 de reflexo vira 4%"),
+		EstadoVariado.ReflexDodgePercent, 4);
+
+	FOwnedPetInstance Especialista;
+	Especialista.SkillProficiency[FPetAttributeProgression::Flight] = 8;
+
+	FPetState EstadoEspecialista;
+	FPetAttributeProgression::ApplyToBattleState(Especialista, EstadoEspecialista);
+	TestTrue(TEXT("Especialista de 8 fica ATRÁS do variado de 16"),
+		EstadoEspecialista.ReflexDodgePercent < EstadoVariado.ReflexDodgePercent);
+
+	// A esquiva é GROSSEIRA de propósito: um ponto a cada 4 de reflexo. Dois
+	// pets separados por um único ponto esquivam igual, e isso é desejável —
+	// diferença mínima de treino não deveria decidir partida. Está escrito
+	// aqui porque a primeira versão deste teste comparou 8 contra 9, viu os
+	// dois em 2% e pareceu defeito.
+	FOwnedPetInstance QuaseIgual;
+	QuaseIgual.SkillProficiency[FPetAttributeProgression::Flight] = 9;
+
+	FPetState EstadoQuaseIgual;
+	FPetAttributeProgression::ApplyToBattleState(QuaseIgual, EstadoQuaseIgual);
+	TestEqual(TEXT("8 e 9 de reflexo dão a MESMA esquiva — a escala é grossa"),
+		EstadoQuaseIgual.ReflexDodgePercent, EstadoEspecialista.ReflexDodgePercent);
+
+	// Cautela SOMA à prática — os dois caminhos levam ao mesmo reflexo.
+	FOwnedPetInstance CautelosoEPraticante;
+	CautelosoEPraticante.Personality = -5;
+	CautelosoEPraticante.SkillProficiency[FPetAttributeProgression::Camouflage] = 5;
+
+	// 5 de prática + 5 de cautela = 10 de reflexo, e 10/4 = 2%.
+	FPetState EstadoSomado;
+	FPetAttributeProgression::ApplyToBattleState(CautelosoEPraticante, EstadoSomado);
+	TestEqual(TEXT("Cautela e prática somam"), EstadoSomado.ReflexDodgePercent, 2);
+
+	return true;
+}

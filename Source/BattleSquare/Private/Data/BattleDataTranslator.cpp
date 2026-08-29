@@ -2,6 +2,8 @@
 
 #include "Data/BattleDataTranslator.h"
 
+#include "Battle/BattleArenaConstants.h"
+
 namespace
 {
 	uint8 TerrainEffectFromName(const FString& Nome)
@@ -34,6 +36,13 @@ void FBattleDataTranslator::TranslatePet(
 	OutBattleState = FPetState();
 	OutBattleState.PetId = PetId;
 	OutBattleState.Side = Side;
+	// O ±20% "por padrão" da spec mora AQUI, e não no núcleo: um FPetState
+	// montado à mão — que é todo estado de teste — precisa continuar
+	// resolvendo dano exato, senão a fórmula perde os testes que a protegem.
+	// Todo pet que passa por esta tradução ganha a faixa cheia; quem tem
+	// agressividade a estreita depois, em ApplyToBattleState.
+	OutBattleState.DamageVariancePercent = BattleArenaConstants::DamageVarianceBasePercent;
+
 	OutBattleState.Column = Column;
 	OutBattleState.Row = Row;
 	OutBattleState.Attack = Source.Attack;

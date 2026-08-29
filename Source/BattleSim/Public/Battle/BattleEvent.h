@@ -38,7 +38,13 @@ enum class EBattleEventType : uint8
 
 	// Um golpe mudou a casa que acertou (fatia 4). No FIM do enum, pelo mesmo
 	// motivo dos anteriores: os valores existentes entram no hash do traço.
-	TerrenoMudou
+	TerrenoMudou,
+
+	// Esquiva que o pet NÃO declarou: saiu do reflexo dele (fatia 4). Evento
+	// próprio, e não `Esquivou` reaproveitado, porque a diferença é o que o
+	// jogador precisa entender — uma foi decisão dele, a outra foi atributo.
+	// No FIM do enum, pelo mesmo motivo dos anteriores.
+	EsquivouPorReflexo
 };
 
 // Sentinela para TargetId/ActorId quando não há alvo aplicável

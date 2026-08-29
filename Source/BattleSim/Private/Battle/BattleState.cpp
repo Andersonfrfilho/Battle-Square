@@ -43,6 +43,8 @@ uint64 FBattleState::ComputeHash() const
 		Hash = CombineBattleHash(Hash, static_cast<uint64>(static_cast<int64>(Pet->Attack)));
 		Hash = CombineBattleHash(Hash, static_cast<uint64>(static_cast<int64>(Pet->Defense)));
 		Hash = CombineBattleHash(Hash, static_cast<uint64>(static_cast<int64>(Pet->Speed)));
+		Hash = CombineBattleHash(Hash, static_cast<uint64>(static_cast<int64>(Pet->ReflexDodgePercent)));
+		Hash = CombineBattleHash(Hash, static_cast<uint64>(static_cast<int64>(Pet->DamageVariancePercent)));
 		// Os poderes entram no hash: eles decidem dano, e estado que decide
 		// resultado tem de estar no hash, senão duas partidas com golpes
 		// diferentes teriam a mesma assinatura.

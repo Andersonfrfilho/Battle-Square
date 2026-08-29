@@ -6,6 +6,7 @@
 #include "Meta/PetCollectionSaveGame.h"
 
 struct FBattleEvent;
+struct FPetState;
 
 /** Quanto cada atributo mudou numa batalha — para somar e para MOSTRAR. */
 struct BATTLESQUARE_API FPetAttributeGains
@@ -51,4 +52,20 @@ public:
 	static FPetAttributeGains ComputeGains(const TArray<FBattleEvent>& Trace, uint8 PetId);
 
 	static void Apply(FOwnedPetInstance& Instance, const FPetAttributeGains& Gains);
+
+	/**
+	 * Traduz os atributos gravados para os DOIS números que o núcleo usa
+	 * (FPetState::Reflexes e ::Aggression).
+	 *
+	 * A tradução mora aqui, fora do BattleSim, pelo mesmo motivo de
+	 * MovePowers: o núcleo resolve, não interpreta. Ajustar o equilíbrio da
+	 * agressividade não pode exigir tocar no núcleo determinístico — e se
+	 * exigisse, cada ajuste arriscaria o replay.
+	 *
+	 * A PERSONALIDADE é um eixo, e ele se parte aqui: o lado agressivo vira
+	 * constância de golpe, o lado cauteloso soma ao reflexo. Um pet no meio do
+	 * eixo não ganha nem uma coisa nem outra, que é o que faz o extremo
+	 * valer.
+	 */
+	static void ApplyToBattleState(const FOwnedPetInstance& Instance, FPetState& OutState);
 };

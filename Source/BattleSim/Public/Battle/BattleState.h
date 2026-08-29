@@ -69,6 +69,33 @@ struct FPetState
 	int32 Speed = 0;
 
 	/**
+	 * Acaso do combate, já em PORCENTAGEM pronta — não em atributo.
+	 *
+	 * O núcleo recebe "esquiva 12%" e "varia 8% para cada lado", nunca
+	 * "reflexo 50" e "agressividade 30". A conversão de atributo para chance
+	 * mora na MONTAGEM (FPetAttributeProgression::ApplyToBattleState), junto
+	 * de MovePowers e pelo mesmo motivo: o núcleo resolve, não interpreta —
+	 * e ajustar o equilíbrio não pode exigir tocar no que precisa continuar
+	 * determinístico.
+	 *
+	 * ZERO nos dois é ausência de acaso, e é o padrão de propósito: um
+	 * FPetState montado à mão resolve exatamente como antes desta feature.
+	 * O padrão de ±20% do jogo é aplicado por quem traduz o pet, não por
+	 * quem resolve o turno — senão toda batalha construída em teste teria
+	 * dano imprevisível, e a fórmula de dano perderia os testes que a
+	 * protegem.
+	 *
+	 * O núcleo ainda RECORTA os dois nos tetos (DP-atr-07): a amarra que
+	 * impede o número de decidir mais que a decisão não pode morar num lugar
+	 * que a montagem consiga passar por cima.
+	 */
+	UPROPERTY()
+	int32 ReflexDodgePercent = 0;
+
+	UPROPERTY()
+	int32 DamageVariancePercent = 0;
+
+	/**
 	 * Poder de cada golpe, em PORCENTAGEM de dano (100 = neutro).
 	 *
 	 * Está no estado do núcleo, e não numa tabela consultada de fora, porque a

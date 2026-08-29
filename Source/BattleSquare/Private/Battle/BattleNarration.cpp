@@ -39,6 +39,16 @@ FText FBattleNarration::Describe(const FBattleEvent& Event, const FString& Actor
 	case EBattleEventType::Esquivou:
 		return FText::Format(LOCTEXT("Esquivou", "{Actor} esquivou"), Args);
 
+	// DP-atr-08: todo sorteio que muda o resultado é NARRADO. Dano que some
+	// sem explicação parece defeito, e este projeto já gastou rodadas com o
+	// jogador achando que a regra estava quebrada quando ela funcionava.
+	//
+	// Frase DIFERENTE da esquiva declarada de propósito: uma foi decisão do
+	// jogador, a outra foi o atributo agindo sozinho, e confundir as duas
+	// ensinaria a lição errada sobre o que a escolha dele fez.
+	case EBattleEventType::EsquivouPorReflexo:
+		return FText::Format(LOCTEXT("EsquivouPorReflexo", "{Actor} desviou por reflexo"), Args);
+
 	case EBattleEventType::Defendeu:
 		return FText::Format(LOCTEXT("Defendeu", "{Actor} defendeu o golpe"), Args);
 

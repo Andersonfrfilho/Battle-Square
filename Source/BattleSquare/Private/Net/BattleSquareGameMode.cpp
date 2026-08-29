@@ -14,6 +14,7 @@
 #include "Data/PetDataLoader.h"
 #include "Meta/PetCollectionService.h"
 #include "Meta/PetProgressionService.h"
+#include "Meta/PetAttributeProgression.h"
 #include "World/WorldEncounterFlow.h"
 #include "World/EncounterDetectionComponent.h"
 #include "World/EncounterMatchAssembler.h"
@@ -312,6 +313,11 @@ void ABattleSquareGameMode::ApplyOwnedPetProgressionBonus(const FString& SlotNam
 	}
 
 	FPetProgressionService::ApplyLevelBonus(PetState, FPetProgressionService::GetLevel(*OwnedInstance));
+
+	// Reflexo e agressividade entram JUNTO do bônus de nível: os dois vêm da
+	// mesma instância da coleção, e separá-los abriria a chance de um pet
+	// entrar na batalha com o nível novo e os atributos velhos.
+	FPetAttributeProgression::ApplyToBattleState(*OwnedInstance, PetState);
 }
 
 void ABattleSquareGameMode::HandleRoomReady(const FString& Code)

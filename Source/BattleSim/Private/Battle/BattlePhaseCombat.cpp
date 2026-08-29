@@ -142,6 +142,37 @@ namespace
 		OutTrace.Add(Event);
 	}
 
+	void EmitReflexDodge(TArray<FBattleEvent>& OutTrace, uint8 SlotIndex, const FPetState& Attacker, const FPetState& Target)
+	{
+		FBattleEvent Event;
+		Event.Type = EBattleEventType::EsquivouPorReflexo;
+		Event.SlotIndex = SlotIndex;
+		Event.Phase = 4; // F4
+		Event.ActorId = Target.PetId; // quem desviou é o sujeito do evento
+		Event.TargetId = Attacker.PetId;
+		OutTrace.Add(Event);
+	}
+
+	/**
+	 * Os tetos, aplicados AQUI mesmo que a montagem já os tenha respeitado.
+	 *
+	 * DP-atr-07 é uma amarra do jogo, não uma convenção entre camadas: se ela
+	 * morasse só na montagem, bastaria um erro lá — ou um estado vindo da
+	 * rede — para atributo alto virar imunidade. Recortar duas vezes custa uma
+	 * comparação; confiar custa a partida.
+	 */
+	int32 ClampedReflexDodgePercent(const FPetState& Target)
+	{
+		return FMath::Clamp(Target.ReflexDodgePercent, 0,
+			BattleArenaConstants::ReflexDodgeMaxPercent);
+	}
+
+	int32 ClampedDamageVariancePercent(const FPetState& Attacker)
+	{
+		return FMath::Clamp(Attacker.DamageVariancePercent, 0,
+			BattleArenaConstants::DamageVarianceBasePercent);
+	}
+
 	void EmitHit(TArray<FBattleEvent>& OutTrace, uint8 SlotIndex, const FPetState& Attacker, const FPetState& Target, int32 Damage)
 	{
 		FBattleEvent Event;
@@ -265,6 +296,27 @@ namespace
 			return;
 		}
 
+		// Esquiva por REFLEXO: sem ter gastado a ação em Esquivar.
+		//
+		// Só contra FÍSICO, pela mesma razão da declarada: magia já ignora
+		// esquiva (BTL-10), e ignorar as duas tornaria magia obrigatória.
+		//
+		// O sorteio sai do gerador DO ESTADO (DP-atr-06). Qualquer outra
+		// fonte faria o replay divergir, e numa partida em rede os dois lados
+		// resolveriam diferente — o defeito mais caro que este projeto pode
+		// ter. É também por isso que ele só é consultado DEPOIS de todas as
+		// recusas determinísticas: sortear antes gastaria um número da
+		// sequência num caso já decidido, e o hash divergiria por nada.
+		if (!bIsMagic)
+		{
+			const int32 ChanceDeReflexo = ClampedReflexDodgePercent(*TargetPtr);
+			if (ChanceDeReflexo > 0 && State.Random.NextRange(1, 100) <= ChanceDeReflexo)
+			{
+				EmitReflexDodge(OutTrace, SlotIndex, *AttackerPtr, *TargetPtr);
+				return;
+			}
+		}
+
 		// Poder do golpe manda; sem golpe, o multiplicador padrão do tipo de
 		// ação. Assim um pet legado continua lutando como antes.
 		int32 Multiplier = MovePower > 0
@@ -275,7 +327,22 @@ namespace
 			Multiplier = (Multiplier * ExposedInTheAirDamagePercent) / 100;
 		}
 
-		const int32 Damage = ComputeDamage(*AttackerPtr, *TargetPtr, Multiplier, State);
+		const int32 DanoBase = ComputeDamage(*AttackerPtr, *TargetPtr, Multiplier, State);
+
+		// A variação é aplicada ao dano JÁ calculado, e não ao multiplicador:
+		// no multiplicador ela se misturaria ao bônus de casa e à efetividade
+		// de tipo, e o mesmo sorteio pesaria diferente conforme o terreno.
+		// Faixa ZERO não sorteia. Sortear em [0,0] devolveria sempre zero e
+		// pareceria inofensivo, mas gastaria um número da sequência — e o
+		// hash de um pet sem acaso passaria a depender de quantos ataques
+		// aconteceram antes dele.
+		const int32 Faixa = ClampedDamageVariancePercent(*AttackerPtr);
+		const int32 Damage = Faixa > 0
+			// Mínimo de 1 depois da variação, como na fórmula base: um golpe
+			// que acerta nunca vira zero de dano — seria indistinguível de
+			// erro para quem está olhando.
+			? FMath::Max(1, (DanoBase * (100 + State.Random.NextRange(-Faixa, Faixa))) / 100)
+			: DanoBase;
 
 		// Acumula — NÃO aplica. F5 (T8) aplica tudo de uma vez (BTL-07).
 		TargetPtr->PendingDamage += Damage;

@@ -3,6 +3,7 @@
 #include "Meta/PetAttributeProgression.h"
 
 #include "Battle/BattleEvent.h"
+#include "Battle/BattleArenaConstants.h"
 #include "Battle/BattleState.h"
 
 namespace
@@ -103,6 +104,38 @@ FPetAttributeGains FPetAttributeProgression::ComputeGains(const TArray<FBattleEv
 
 	Gains.Musculature = DamageDealt / DamagePerMusclePoint;
 	return Gains;
+}
+
+void FPetAttributeProgression::ApplyToBattleState(const FOwnedPetInstance& Instance, FPetState& OutState)
+{
+	// Reflexo vem da PRÁTICA de se esconder — as três proficiências somadas —
+	// mais a cautela, que é o lado negativo do eixo de personalidade.
+	//
+	// Somar as três, e não pegar a maior, é deliberado: quem treinou um pouco
+	// de cada se defende melhor que quem só sabe voar, e é o que dá razão para
+	// variar as posturas em vez de repetir a favorita.
+	int32 Reflexo = 0;
+	for (int32 Slot = 0; Slot < 3; ++Slot)
+	{
+		Reflexo += Instance.SkillProficiency[Slot];
+	}
+	Reflexo += FMath::Max(0, -Instance.Personality);
+
+	Reflexo = FMath::Max(0, Reflexo);
+
+	// Atributo vira PORCENTAGEM aqui, não no núcleo: o BattleSim recebe uma
+	// chance pronta e nunca precisa saber o que é proficiência.
+	OutState.ReflexDodgePercent = FMath::Min(
+		Reflexo / BattleArenaConstants::ReflexDodgeDivisor,
+		BattleArenaConstants::ReflexDodgeMaxPercent);
+
+	// A agressividade ESTREITA a faixa padrão; nunca sobe o dano médio.
+	const int32 Agressividade = FMath::Max(0, Instance.Personality);
+	const int32 Estreitamento = Agressividade / BattleArenaConstants::AggressionPerVariancePoint;
+	OutState.DamageVariancePercent = FMath::Clamp(
+		BattleArenaConstants::DamageVarianceBasePercent - Estreitamento,
+		BattleArenaConstants::DamageVarianceFloorPercent,
+		BattleArenaConstants::DamageVarianceBasePercent);
 }
 
 void FPetAttributeProgression::Apply(FOwnedPetInstance& Instance, const FPetAttributeGains& Gains)

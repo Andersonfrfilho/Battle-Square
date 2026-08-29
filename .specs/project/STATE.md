@@ -217,7 +217,17 @@ O caminho de leitura NÃO é o servidor de combate chamando o backend remoto a c
 **Basta resolver:** B-006 + B-006b (caminho iOS) **ou** B-007 (caminho Android). Não são necessários os dois.
 **Parentesco com B-004:** mesma categoria — a engine instalada pelo Launcher não traz tudo que o roadmap pede, e a descoberta só acontece quando se tenta.
 
-### B-009: botões de skill no WBP exigem o plugin de edição
+### B-009: botões de skill no WBP — ✅ RESOLVIDO em 2026-08-29
+
+O plugin voltou a estar disponível numa sessão seguinte, e os três botões foram criados: `Button_Camuflar`, `Button_Voar` e `Button_Submergir`, na mesma linha dos outros tipos, com rótulo e marcados como variável — que é o que faz o `BindWidgetOptional` do C++ encontrá-los.
+
+**O obstáculo real não era o plugin, era o NOME.** `AddWidget` recusa criar um widget cujo nome já existe, e o `BindWidgetOptional` do C++ já reservava os três nomes na classe. A saída foi criar com nome temporário e renomear — o `RenameWidget` aceita o nome reservado justamente porque ele pertence à variável que o widget vai preencher.
+
+**Uma tentativa parcial deixou lixo**, e isso vale registrar: a primeira execução criou `Tmp_Camuflar` e falhou no rename por parâmetro errado, deixando dois órfãos e um `Button_Camuflar` sem rótulo. Refiz o script de forma **idempotente** — conferindo a árvore antes de cada passo — em vez de repetir e duplicar. Script que mexe em asset precisa poder rodar duas vezes.
+
+**Registro original do bloqueio:**
+
+### B-009 (histórico): botões de skill no WBP exigem o plugin de edição
 
 **O quê:** `WBP_BattleActionSelector` não tem botões para Camuflar, Voar e Submergir. O C++ já os espera por `BindWidgetOptional` (`Button_Camuflar`, `Button_Voar`, `Button_Submergir`) — criá-los com esses nomes basta, e eles se ligam sozinhos.
 **Por que está bloqueado:** editar o asset exige o plugin `unreal-mcp`, indisponível na sessão em que as skills foram criadas. Editar `.uasset` por fora não é opção.

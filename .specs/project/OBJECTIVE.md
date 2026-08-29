@@ -25,7 +25,7 @@ achou virou rotina.
 
 ## O que falta, em ordem
 
-### 1. Tornar visível o que já funciona
+### 1. Tornar visível o que já funciona — ✅ ESGOTADO do meu lado (2026-08-29)
 
 O padrão mais caro deste projeto é regra que existe e não aparece. Cada item
 abaixo é regra pronta, testada, invisível:
@@ -34,11 +34,8 @@ abaixo é regra pronta, testada, invisível:
   efetivo!" e "Não é muito efetivo...". O número vem da montagem
   (`FPetPresentationInfo::EffectivenessPercent`) — o MESMO que multiplicou o
   ataque, não um recálculo.
-- **Skills no `WBP`.** ⛔ **BLOQUEADO — B-009.** Camuflar/voar/submergir só
-  existem na barra em C++ e no teclado. O widget do jogador 1 não tem botões, e
-  criá-los exige o plugin de edição do Unreal, indisponível nesta sessão. O C++
-  já os espera por `BindWidgetOptional` (`Button_Camuflar`, `Button_Voar`,
-  `Button_Submergir`): basta criá-los com esses nomes e eles funcionam sozinhos.
+- ~~**Skills no `WBP`.**~~ ✅ **Feito em 2026-08-29 (B-009 resolvido).** Os três
+  botões existem no widget, com rótulo e ligados às variáveis do C++.
 - ~~**Tipos dos pets.**~~ ✅ **Feito em 2026-08-28.** O painel diz
   `Faísca [Fogo] x Brisa [Planta] (você tem VANTAGEM de tipo)` **antes da
   primeira escolha**, e cada linha de estado mostra nome e tipo em vez de

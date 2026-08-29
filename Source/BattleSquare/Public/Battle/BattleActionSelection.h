@@ -33,7 +33,20 @@ struct FBattlePendingActionSelection
 // confirmam de imediato (PRES-01, critérios 1 e 2). Classificação de UI
 // — o núcleo (BattleSim) não tem esse conceito, cada fase só olha o
 // campo Direction quando faz sentido para ela.
+/**
+ * Só MOVER precisa de direção.
+ *
+ * Atacar e Magia precisavam, e deixaram de precisar em 2026-08-29
+ * (DP-golpe-05): o alvo é o adjacente, escolhido sozinho. O que elas pedem
+ * agora é QUAL GOLPE — outro passo, com outra pergunta.
+ */
 FORCEINLINE bool BattleActionRequiresDirection(EActionType Type)
 {
-	return Type == EActionType::Mover || Type == EActionType::Atacar || Type == EActionType::Magia;
+	return Type == EActionType::Mover;
+}
+
+/** Atacar e Magia pedem o golpe (DP-golpe-04). */
+FORCEINLINE bool BattleActionRequiresMove(EActionType Type)
+{
+	return Type == EActionType::Atacar || Type == EActionType::Magia;
 }

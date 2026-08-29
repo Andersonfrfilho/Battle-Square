@@ -40,12 +40,17 @@ namespace
 	}
 }
 
-// A queixa concreta do usuário: o oponente atacava sem olhar onde ele estava.
-// Ataque numa direção sem ninguém é ERRO GARANTIDO pelo resolvedor — não é
-// estratégia arriscada, é jogar o slot fora.
+// Este teste nasceu de uma queixa concreta: o oponente atacava sem olhar onde
+// o jogador estava, e ataque em direção vazia era erro garantido.
+//
+// Em 2026-08-29, DP-golpe-05 tirou da direção o poder de decidir o alvo — o
+// golpe acerta o adjacente, e "direção errada" deixou de existir. A queixa
+// original não pode mais acontecer, e o teste passou a guardar o que a
+// substituiu: o ÍNDICE DO GOLPE precisa ser válido, senão a IA escolheria um
+// golpe que o pet não tem.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FTacticalOpponentNeverAttacksEmptyAirTest,
-	"BattleSquare.Battle.TacticalOpponentAI.NeverAttacksEmptyAir",
+	"BattleSquare.Battle.TacticalOpponentAI.PicksValidMoveIndex",
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
 
 bool FTacticalOpponentNeverAttacksEmptyAirTest::RunTest(const FString& Parameters)
@@ -60,15 +65,18 @@ bool FTacticalOpponentNeverAttacksEmptyAirTest::RunTest(const FString& Parameter
 
 		const FTurnCommit Commit = FTacticalOpponentAI::GenerateCommit(State, /*Side=*/1, Random);
 
-		// Só o primeiro slot é verificável a partir do estado inicial: depois
-		// dele a IA pode ter se movido, e conferir os seguintes exigiria
-		// reimplementar a simulação aqui — segunda fonte de verdade.
-		const FBattleAction& First = Commit.Actions[0];
-		if (IsAttack(First))
+		for (int32 Slot = 0; Slot < FTurnCommit::ActionsPerTurn; ++Slot)
 		{
-			TestEqual(TEXT("Ataque aponta para o inimigo"),
-				static_cast<uint8>(First.Direction),
-				static_cast<uint8>(EBattleDirection::Esquerda));
+			const FBattleAction& Acao = Commit.Actions[Slot];
+			if (!IsAttack(Acao))
+			{
+				continue;
+			}
+
+			// O byte da direção carrega o índice do golpe (DP-golpe-04): fora
+			// da faixa, o resolvedor usaria um golpe que não existe.
+			TestTrue(TEXT("Índice de golpe dentro da faixa"),
+				static_cast<uint8>(Acao.Direction) < BattleMovesPerPet);
 		}
 	}
 

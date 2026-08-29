@@ -119,7 +119,7 @@ bool FBattleArenaFullTurnEndToEndTest::RunTest(const FString& Parameters)
 	const FBattleState StateBeforeCommit = Arena->GetCurrentState();
 
 	Arena->PlayerActionQueue->BeginSelectingType(EActionType::Atacar);
-	Arena->PlayerActionQueue->ConfirmDirection(EBattleDirection::Direita);
+	Arena->PlayerActionQueue->ConfirmMove(0);
 	Arena->PlayerActionQueue->BeginSelectingType(EActionType::Defender);
 	Arena->PlayerActionQueue->BeginSelectingType(EActionType::Aguardar);
 	TestEqual(TEXT("3 ações confirmadas antes de commitar"), Arena->PlayerActionQueue->GetConfirmedActionCount(), 3);
@@ -209,7 +209,7 @@ bool FBattleArenaNetworkedOpponentBypassesAITest::RunTest(const FString& Paramet
 	Arena->ConfigureNetworkedOpponent(Coordinator);
 
 	Arena->PlayerActionQueue->BeginSelectingType(EActionType::Atacar);
-	Arena->PlayerActionQueue->ConfirmDirection(EBattleDirection::Direita);
+	Arena->PlayerActionQueue->ConfirmMove(0);
 	Arena->PlayerActionQueue->BeginSelectingType(EActionType::Defender);
 	Arena->PlayerActionQueue->BeginSelectingType(EActionType::Aguardar);
 	Arena->PlayerActionQueue->Commit();
@@ -351,7 +351,7 @@ bool FBattleArenaVictoryCapturesOpponentPetTest::RunTest(const FString& Paramete
 	Arena->ConfigureNetworkedOpponent(Coordinator);
 
 	Arena->PlayerActionQueue->BeginSelectingType(EActionType::Magia);
-	Arena->PlayerActionQueue->ConfirmDirection(EBattleDirection::Direita);
+	Arena->PlayerActionQueue->ConfirmMove(0);
 	Arena->PlayerActionQueue->BeginSelectingType(EActionType::Aguardar);
 	Arena->PlayerActionQueue->BeginSelectingType(EActionType::Aguardar);
 	Arena->PlayerActionQueue->Commit(); // dispara HandlePlayerCommitted -> ServerCoordinator->SubmitCommit(0, ...)
@@ -462,7 +462,7 @@ bool FBattleArenaVictoryGrantsExperienceToOwnPetTest::RunTest(const FString& Par
 	Arena->ConfigureNetworkedOpponent(Coordinator);
 
 	Arena->PlayerActionQueue->BeginSelectingType(EActionType::Magia);
-	Arena->PlayerActionQueue->ConfirmDirection(EBattleDirection::Direita);
+	Arena->PlayerActionQueue->ConfirmMove(0);
 	Arena->PlayerActionQueue->BeginSelectingType(EActionType::Aguardar);
 	Arena->PlayerActionQueue->BeginSelectingType(EActionType::Aguardar);
 	Arena->PlayerActionQueue->Commit();

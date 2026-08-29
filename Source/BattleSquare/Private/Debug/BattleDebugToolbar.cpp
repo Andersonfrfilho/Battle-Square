@@ -125,6 +125,41 @@ namespace
 		return Arena->GetAvailableActionsForSide(Arena->GetSideBeingChosen()).Contains(Tipo);
 	}
 
+	/**
+	 * Nome do golpe no slot, ou o número quando o pet não tem nome para ele.
+	 *
+	 * Pet cadastrado antes dos golpes existirem chega sem nenhum — mostrar
+	 * "golpe 1" é honesto; esconder o botão faria o jogador achar que perdeu a
+	 * ação de atacar.
+	 */
+	FText PlayerMoveLabel(int32 Slot)
+	{
+		const ABattleArena* Arena = FindArena();
+		if (!Arena)
+		{
+			return FText::AsNumber(Slot + 1);
+		}
+
+		const TArray<FString> Nomes = Arena->GetMoveNamesForSide(Arena->GetSideBeingChosen());
+		return Nomes.IsValidIndex(Slot)
+			? FText::FromString(Nomes[Slot])
+			: FText::FromString(FString::Printf(TEXT("golpe %d"), Slot + 1));
+	}
+
+	void ChoosePlayerMove(int32 Slot)
+	{
+		ABattleArena* Arena = FindArena();
+		if (!Arena || !Arena->PlayerActionQueue)
+		{
+			return;
+		}
+
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("clique: golpe %d"), Slot + 1), 10.0f, FColor::Cyan, -1);
+
+		Arena->PlayerActionQueue->ConfirmMove(Slot);
+	}
+
 	FText PlayerOneSkillsHeader()
 	{
 		const ABattleArena* Arena = FindArena();
@@ -203,6 +238,33 @@ void FBattleDebugToolbar::Show(UWorld* World)
 	GToolbarWorld = World;
 
 	TSharedRef<SVerticalBox> Coluna = SNew(SVerticalBox);
+
+	// GOLPES — a escolha do turno desde DP-golpe-05.
+	//
+	// Aparecem sempre, e não só depois de clicar em Atacar: a tela precisa
+	// dizer o que o pet SABE fazer antes de a pessoa decidir atacar, senão a
+	// escolha do golpe vira surpresa depois do compromisso.
+	Coluna->AddSlot().AutoHeight().Padding(2.0f)
+	[
+		SNew(STextBlock)
+		.Text(FText::FromString(TEXT("── GOLPES (escolha o tipo antes) ──")))
+		.ColorAndOpacity(FSlateColor(FLinearColor(1.0f, 0.85f, 0.3f)))
+	];
+
+	TSharedRef<SHorizontalBox> LinhaGolpes = SNew(SHorizontalBox);
+	for (int32 Slot = 0; Slot < 4; ++Slot)
+	{
+		LinhaGolpes->AddSlot().AutoWidth().Padding(1.0f)
+		[
+			SNew(SButton)
+			.ContentPadding(FMargin(8.0f, 4.0f))
+			.OnClicked_Lambda([Slot]() { ChoosePlayerMove(Slot); return FReply::Handled(); })
+			[
+				SNew(STextBlock).Text_Lambda([Slot]() { return PlayerMoveLabel(Slot); })
+			]
+		];
+	}
+	Coluna->AddSlot().AutoHeight().Padding(2.0f, 0.0f, 2.0f, 8.0f)[ LinhaGolpes ];
 
 	// SUAS SKILLS — só as que o SEU pet tem.
 	//

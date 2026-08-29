@@ -36,6 +36,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Battle|ActionSelector")
 	bool ConfirmDirection(EBattleDirection Direction);
 
+	/** Passo 2 de Atacar/Magia: qual golpe (0–3). */
+	UFUNCTION(BlueprintCallable, Category = "Battle|UI")
+	bool ConfirmMove(int32 MoveIndex);
+
 	UFUNCTION(BlueprintCallable, Category = "Battle|ActionSelector")
 	bool CancelPendingSelection();
 

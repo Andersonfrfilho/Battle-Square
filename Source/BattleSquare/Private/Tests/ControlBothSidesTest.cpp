@@ -54,9 +54,17 @@ namespace
 			for (int32 Slot = 0; Slot < 3; ++Slot)
 			{
 				Arena->PlayerActionQueue->BeginSelectingType(Type);
+
+				// Desde DP-golpe-05 o ataque confirma por GOLPE, não por
+				// direção: mover ainda pergunta para onde, atacar pergunta
+				// qual.
 				if (BattleActionRequiresDirection(Type))
 				{
 					Arena->PlayerActionQueue->ConfirmDirection(Direction);
+				}
+				else if (BattleActionRequiresMove(Type))
+				{
+					Arena->PlayerActionQueue->ConfirmMove(0);
 				}
 			}
 			Arena->PlayerActionQueue->Commit();

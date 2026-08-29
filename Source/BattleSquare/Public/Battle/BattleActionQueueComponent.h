@@ -51,6 +51,16 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Battle|ActionQueue")
 	bool ConfirmDirection(EBattleDirection Direction);
 
+	/**
+	 * Passo 2 para Atacar/Magia: qual golpe (0–3).
+	 *
+	 * Separado de ConfirmDirection de propósito. Os dois gravam no MESMO byte
+	 * (DP-golpe-04), e uma função só faria o chamador escolher o significado —
+	 * que é exatamente como se troca direção por golpe sem perceber.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Battle|ActionQueue")
+	bool ConfirmMove(int32 MoveIndex);
+
 	// Volta do passo 2 para o passo 1, sem alterar ações já confirmadas.
 	UFUNCTION(BlueprintCallable, Category = "Battle|ActionQueue")
 	bool CancelPendingSelection();

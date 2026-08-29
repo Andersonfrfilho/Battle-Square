@@ -134,6 +134,34 @@ FORCEINLINE EBattleDirection GetDirectionTowards(int32 DeltaColumn, int32 DeltaR
 	return EBattleDirection::Nenhuma;
 }
 
+// DP-golpe-04: o SEGUNDO BYTE de FBattleAction significa coisas diferentes
+// conforme o tipo — direção para Mover, ÍNDICE DO GOLPE (0–3) para Atacar e
+// Magia.
+//
+// Ele já era 2 bytes, e esse tamanho é a base do custo de rede do commit
+// (BattleSim.tasks.md, T1). Um campo novo cresceria o commit de todo turno de
+// toda partida para carregar informação que cabe num byte já reservado.
+//
+// As duas funções abaixo existem para que ninguém precise fazer o cast à mão:
+// `static_cast<uint8>(Action.Direction)` espalhado pelo código seria a receita
+// para alguém tratar índice como direção.
+constexpr uint8 BattleMovesPerPet = 4;
+
+FORCEINLINE uint8 GetMoveIndexFromAction(const FBattleAction& Action)
+{
+	const uint8 Bruto = static_cast<uint8>(Action.Direction);
+	return Bruto < BattleMovesPerPet ? Bruto : 0;
+}
+
+FORCEINLINE FBattleAction MakeMoveAction(EActionType Type, uint8 MoveIndex)
+{
+	FBattleAction Action;
+	Action.Type = Type;
+	Action.Direction = static_cast<EBattleDirection>(
+		MoveIndex < BattleMovesPerPet ? MoveIndex : 0);
+	return Action;
+}
+
 FORCEINLINE bool IsInsideGrid(int32 Column, int32 Row, int32 GridSize = 3)
 {
 	return Column >= 0 && Column < GridSize && Row >= 0 && Row < GridSize;

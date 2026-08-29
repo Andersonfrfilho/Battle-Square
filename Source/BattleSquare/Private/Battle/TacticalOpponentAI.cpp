@@ -65,6 +65,23 @@ namespace
 		return Action;
 	}
 
+	/**
+	 * Ataque com um golpe SORTEADO entre os quatro.
+	 *
+	 * Desde DP-golpe-05 a direção não decide o alvo, então mirar deixou de
+	 * fazer sentido para a IA. Sortear o golpe mantém a variação que o commit
+	 * às cegas exige — um oponente que usa sempre o golpe 0 é decorado na
+	 * segunda partida.
+	 *
+	 * Escolher o MELHOR golpe exigiria conhecer o poder de cada um, que só a
+	 * montagem tem; isso é trabalho da fatia 3, quando cada golpe ganhar
+	 * efeito próprio.
+	 */
+	FBattleAction MakeAttackAction(EActionType Type, FBattleRandom& Random)
+	{
+		return MakeMoveAction(Type, static_cast<uint8>(Random.NextRange(0, BattleMovesPerPet - 1)));
+	}
+
 	bool PodeUsar(const TArray<EActionType>& Disponiveis, EActionType Tipo)
 	{
 		// Vazio = sem restrição: comportamento de antes das skills por pet.
@@ -214,17 +231,9 @@ FTurnCommit FTacticalOpponentAI::GenerateCommit(const FBattleState& State, uint8
 			continue;
 		}
 
-		const EBattleDirection Towards = GetDirectionTowards(EnemyColumn - Column, EnemyRow - Row);
-
-		// Coabitando a mesma casa: o resolvedor acha o alvo sem direção, mas
-		// uma direção qualquer mantém a ação bem formada.
-		const EBattleDirection AttackDirection = Towards != EBattleDirection::Nenhuma
-			? Towards
-			: EBattleDirection::Cima;
-
 		const bool bUseMagic = Random.NextRange(0, 99) < MagicOverAttackPercent;
-		Commit.Actions[Slot] = MakeAction(
-			bUseMagic ? EActionType::Magia : EActionType::Atacar, AttackDirection);
+		Commit.Actions[Slot] = MakeAttackAction(
+			bUseMagic ? EActionType::Magia : EActionType::Atacar, Random);
 	}
 
 	return Commit;

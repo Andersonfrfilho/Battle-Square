@@ -38,6 +38,15 @@ void FBattleDataTranslator::TranslatePet(
 	// crash. Registro de conteúdo é trabalho futuro (M3).
 	const FName TagName(*FString::Printf(TEXT("Pet.Type.%s"), *Source.Type));
 	OutPresentation.TypeTag = FGameplayTag::RequestGameplayTag(TagName, /*ErrorIfNotFound=*/false);
+	// Golpes: nome, na ordem em que vieram assinados. A ordem É o índice que
+	// viaja no commit (DP-golpe-04) — reordenar aqui faria o jogador escolher
+	// um golpe e o resolvedor usar outro.
+	OutPresentation.MoveNames.Reset();
+	for (const FLoadedPetMove& Move : Source.Moves)
+	{
+		OutPresentation.MoveNames.Add(Move.Name);
+	}
+
 }
 
 void FBattleDataTranslator::TranslateMatchup(

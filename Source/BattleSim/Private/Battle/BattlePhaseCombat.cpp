@@ -52,26 +52,50 @@ namespace
 	// própria casa se houver oponente coabitando (zero-alcance/melee).
 	// A própria casa é checada primeiro: se o oponente já está em cima de
 	// você, não faz sentido a direção decidir se ele é alvo ou não.
-	FPetState* ResolveTarget(FBattleState& State, const FPetState& Attacker, EBattleDirection Direction)
+	/**
+	 * Alvo do ataque: o adversário ADJACENTE, escolhido sozinho.
+	 *
+	 * A direção deixou de decidir o alvo em 2026-08-29 (DP-golpe-05). Ela
+	 * existia porque o commit é às cegas — mirar era apostar onde o inimigo
+	 * VAI estar — mas respondia a pergunta errada: num 3x3 com um oponente,
+	 * "onde" quase sempre é "nele", e a decisão virava cerimônia com chance de
+	 * acertar o vazio. O que se escolhe agora é QUAL GOLPE.
+	 *
+	 * A busca por oponente COABITANDO a própria casa saiu daqui com a inversão
+	 * do DP-02: F3 impede que dois pets terminem no mesmo ponto.
+	 *
+	 * Empate é resolvido pelo MENOR PetId, e não pela ordem do array: ordem de
+	 * contêiner não é determinismo, e com mais de um pet por lado (M3+) isso
+	 * decidiria a batalha por acaso de inserção.
+	 */
+	FPetState* ResolveTarget(FBattleState& State, const FPetState& Attacker)
 	{
-		// A busca por oponente COABITANDO a própria casa vivia aqui e foi
-		// removida com a inversão do DP-02 (2026-08-27): F3 agora impede que
-		// dois pets terminem no mesmo ponto, então o caso não acontece mais.
-		// Mantê-la seria uma segunda verdade sobre coabitação, e cópias
-		// concordam até a primeira edição.
+		FPetState* Escolhido = nullptr;
 
-		int8 DeltaColumn = 0;
-		int8 DeltaRow = 0;
-		GetDirectionDelta(Direction, DeltaColumn, DeltaRow);
-
-		const int32 TargetColumn = static_cast<int32>(Attacker.Column) + DeltaColumn;
-		const int32 TargetRow = static_cast<int32>(Attacker.Row) + DeltaRow;
-		if (!IsInsideGrid(TargetColumn, TargetRow))
+		for (FPetState& Candidato : State.Pets)
 		{
-			return nullptr;
+			if (Candidato.Side == Attacker.Side || !Candidato.IsAlive())
+			{
+				continue;
+			}
+
+			const int32 DistanciaColuna = FMath::Abs(
+				static_cast<int32>(Candidato.Column) - static_cast<int32>(Attacker.Column));
+			const int32 DistanciaLinha = FMath::Abs(
+				static_cast<int32>(Candidato.Row) - static_cast<int32>(Attacker.Row));
+
+			if (DistanciaColuna > 1 || DistanciaLinha > 1)
+			{
+				continue;
+			}
+
+			if (!Escolhido || Candidato.PetId < Escolhido->PetId)
+			{
+				Escolhido = &Candidato;
+			}
 		}
 
-		return FindLivingOpponentAtCell(State, Attacker.Side, TargetColumn, TargetRow);
+		return Escolhido;
 	}
 
 	bool IsOnBuffCell(const FPetState& Pet, const TArray<uint8>& CellLayout)
@@ -185,7 +209,7 @@ namespace
 			return;
 		}
 
-		FPetState* Target = ResolveTarget(State, *Attacker, Action.Direction);
+		FPetState* Target = ResolveTarget(State, *Attacker);
 		if (!Target)
 		{
 			EmitMiss(OutTrace, SlotIndex, *Attacker);

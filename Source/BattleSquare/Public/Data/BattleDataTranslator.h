@@ -60,6 +60,16 @@ struct FPetPresentationInfo
 	 */
 	UPROPERTY()
 	int32 EffectivenessPercent = 100;
+
+	/**
+	 * Nomes dos golpes, na ordem do slot (até quatro).
+	 *
+	 * Só o nome atravessa: o poder vive no dado assinado e é a MONTAGEM quem o
+	 * usa. Levar poder até a tela convidaria alguém a recalcular dano ali, que
+	 * é o que `audit_no_recalculation.sh` proíbe.
+	 */
+	UPROPERTY()
+	TArray<FString> MoveNames;
 };
 
 class BATTLESQUARE_API FBattleDataTranslator

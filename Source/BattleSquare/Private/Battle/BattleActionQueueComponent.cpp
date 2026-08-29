@@ -15,7 +15,10 @@ bool UBattleActionQueueComponent::BeginSelectingType(EActionType Type)
 		return false;
 	}
 
-	if (BattleActionRequiresDirection(Type))
+	// Mover pede direção; Atacar e Magia pedem GOLPE. Os dois abrem o mesmo
+	// passo 2 — o que muda é a pergunta que a tela faz, e qual função
+	// confirma.
+	if (BattleActionRequiresDirection(Type) || BattleActionRequiresMove(Type))
 	{
 		// Passo 2 — ainda não entra na fila, só registra a intenção.
 		Pending.Step = EBattleActionSelectionStep::ChoosingDirection;
@@ -37,6 +40,13 @@ bool UBattleActionQueueComponent::BeginSelectingType(EActionType Type)
 bool UBattleActionQueueComponent::ConfirmDirection(EBattleDirection Direction)
 {
 	if (bCommitted || Pending.Step != EBattleActionSelectionStep::ChoosingDirection)
+	{
+		return false;
+	}
+
+	// Ataque não se confirma por direção desde DP-golpe-05: aceitar aqui
+	// gravaria uma direção no byte que o resolvedor lê como índice de golpe.
+	if (!BattleActionRequiresDirection(Pending.SelectedType))
 	{
 		return false;
 	}
@@ -149,4 +159,30 @@ bool UBattleActionQueueComponent::IsActionAvailable(EActionType Type) const
 	// Vazio = sem restrição. É o que mantém intacta toda batalha que não
 	// configura skills, em vez de deixá-las sem ação nenhuma.
 	return AvailableActions.IsEmpty() || AvailableActions.Contains(Type);
+}
+
+bool UBattleActionQueueComponent::ConfirmMove(int32 MoveIndex)
+{
+	if (bCommitted || Pending.Step != EBattleActionSelectionStep::ChoosingDirection)
+	{
+		return false;
+	}
+
+	if (!BattleActionRequiresMove(Pending.SelectedType))
+	{
+		return false;
+	}
+
+	// Índice fora da faixa é RECUSADO, não corrigido para zero: aceitar
+	// silenciosamente faria o jogador executar um golpe que não escolheu.
+	if (MoveIndex < 0 || MoveIndex >= BattleMovesPerPet)
+	{
+		return false;
+	}
+
+	ConfirmedActions.Add(MakeMoveAction(Pending.SelectedType, static_cast<uint8>(MoveIndex)));
+	Pending = FBattlePendingActionSelection();
+
+	OnQueueChanged.Broadcast();
+	return true;
 }

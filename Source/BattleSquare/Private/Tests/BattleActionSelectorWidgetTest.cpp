@@ -94,8 +94,10 @@ bool FSelectorCountsAndCommitsTest::RunTest(const FString& Parameters)
 
 	for (int32 Index = 0; Index < 3; ++Index)
 	{
+		// Atacar confirma por GOLPE desde DP-golpe-05; direção ficou só para
+		// Mover.
 		Fixture.Widget->BeginSelectingType(EActionType::Atacar);
-		Fixture.Widget->ConfirmDirection(EBattleDirection::Cima);
+		Fixture.Widget->ConfirmMove(Index);
 	}
 
 	TestEqual(TEXT("três ações confirmadas"), Fixture.Widget->ConfirmedActionCount, 3);

@@ -77,9 +77,16 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FBattlePhaseCombatMissTest::RunTest(const FString& Parameters)
 {
+	// CANTOS OPOSTOS, não centro contra canto.
+	//
+	// Antes o atacante ficava no centro (1,1) e o alvo em (0,0) — que é
+	// ADJACENTE. Ele só errava porque a direção apontava para outro lado. Com
+	// o alvo automático (DP-golpe-05, 2026-08-29) isso passou a acertar, e o
+	// teste media a direção, não o alcance. Num 3x3, tudo é adjacente ao
+	// centro: para estar fora de alcance de verdade, é preciso ir aos cantos.
 	FBattleState State;
-	State.Pets.Add(MakeCombatant(1, 0, 1, 1, 20, 5));
-	State.Pets.Add(MakeCombatant(2, 1, 0, 0, 10, 5)); // longe, fora de alcance
+	State.Pets.Add(MakeCombatant(1, 0, 0, 0, 20, 5));
+	State.Pets.Add(MakeCombatant(2, 1, 2, 2, 10, 5)); // duas casas: fora de alcance
 
 	TArray<FBattleEvent> Trace;
 	BattlePhases::ApplyCombat(State, Attack(EBattleDirection::Direita), Wait(), 0, Trace);
@@ -206,18 +213,21 @@ bool FBattlePhaseCombatMinimumDamageTest::RunTest(const FString& Parameters)
 	return true;
 }
 
-// DP-02 INVERTIDA em 2026-08-27: não há mais coabitação, e o atalho que
-// tratava o coabitante como alvo válido saiu de ResolveTarget.
+// Este teste já foi convertido DUAS vezes, e o histórico importa:
 //
-// Este teste afirmava aquele atalho. Convertido no lugar, e não apagado: quem
-// ler o histórico precisa achar a regra nova onde a antiga morava. Ele agora
-// guarda a REMOÇÃO — se alguém reintroduzir o caso especial, isto reprova.
+// 1. Nasceu afirmando que o oponente coabitando era alvo válido.
+// 2. Em 2026-08-27, DP-02 aboliu a coabitação, e ele passou a guardar a
+//    REMOÇÃO daquele caso especial — atacar com direção errada errava.
+// 3. Em 2026-08-29, DP-golpe-05 tirou da direção o poder de decidir o alvo. A
+//    direção deixou de importar para ataque, então "direção errada" deixou de
+//    ser um conceito.
 //
-// O estado abaixo é construído à mão porque F3 não o produz mais; é justamente
-// esse o ponto.
+// Ele agora guarda a regra vigente: o alvo é o ADJACENTE, e a direção é
+// ignorada. Convertido no lugar de novo — apagar transformaria duas inversões
+// de regra em ausência silenciosa.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FBattlePhaseCombatCoabitingOpponentIsValidTargetTest,
-	"BattleSim.Phase.Combat.CoabitingOpponentIsNoLongerASpecialCase",
+	"BattleSim.Phase.Combat.DirectionNoLongerDecidesTheTarget",
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
 
 bool FBattlePhaseCombatCoabitingOpponentIsValidTargetTest::RunTest(const FString& Parameters)
@@ -227,13 +237,13 @@ bool FBattlePhaseCombatCoabitingOpponentIsValidTargetTest::RunTest(const FString
 	State.Pets.Add(MakeCombatant(2, 1, 1, 1, 10, 5)); // MESMA célula — coabitando
 
 	TArray<FBattleEvent> Trace;
-	// A direção volta a ser o que decide: ninguém está "em cima" de ninguém.
+	// Direção que aponta para o vazio: o golpe acerta assim mesmo, porque o
+	// alvo é escolhido pela ADJACÊNCIA, não pela mira.
 	BattlePhases::ApplyCombat(State, Attack(EBattleDirection::Cima), Wait(), 0, Trace);
 
-	TestTrue(TEXT("Sem alvo na direção apontada, o ataque erra"),
-		Trace[0].Type == EBattleEventType::AtaqueErrou);
-	TestEqual(TEXT("Nenhum dano de graça por estar na mesma casa"),
-		State.Pets[1].PendingDamage, 0);
+	TestTrue(TEXT("A direção não impede o acerto"),
+		Trace[0].Type == EBattleEventType::AtaqueAcertou);
+	TestTrue(TEXT("E o dano vai para o adjacente"), State.Pets[1].PendingDamage > 0);
 
 	return true;
 }

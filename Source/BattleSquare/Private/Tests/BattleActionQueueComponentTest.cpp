@@ -79,15 +79,37 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FBattleActionQueueConfirmDirectionAddsActionTest::RunTest(const FString& Parameters)
 {
+	// MOVER confirma por direção — este é o caso que sobrou depois de
+	// DP-golpe-05, e o teste passou a exercitá-lo em vez de Atacar.
 	UBattleActionQueueComponent* Queue = MakeQueue();
-	Queue->BeginSelectingType(EActionType::Atacar);
+	Queue->BeginSelectingType(EActionType::Mover);
 	TestTrue(TEXT("ConfirmDirection no passo certo funciona"), Queue->ConfirmDirection(EBattleDirection::Direita));
 	TestEqual(TEXT("1 ação confirmada"), Queue->GetConfirmedActionCount(), 1);
 	TestTrue(TEXT("Volta para ChoosingType"), Queue->GetCurrentStep() == EBattleActionSelectionStep::ChoosingType);
 
 	const FTurnCommit Commit = Queue->BuildCommit();
-	TestTrue(TEXT("Ação 0 é Atacar"), Commit.Actions[0].Type == EActionType::Atacar);
+	TestTrue(TEXT("Ação 0 é Mover"), Commit.Actions[0].Type == EActionType::Mover);
 	TestTrue(TEXT("Direção é Direita"), Commit.Actions[0].Direction == EBattleDirection::Direita);
+
+	// E ATACAR recusa direção: aceitar gravaria uma direção no byte que o
+	// resolvedor lê como índice de golpe, e o jogador executaria um golpe que
+	// não escolheu.
+	UBattleActionQueueComponent* Ataque = MakeQueue();
+	Ataque->BeginSelectingType(EActionType::Atacar);
+	TestFalse(TEXT("Atacar não confirma por direção"),
+		Ataque->ConfirmDirection(EBattleDirection::Direita));
+	TestTrue(TEXT("Mas confirma por golpe"), Ataque->ConfirmMove(2));
+
+	const FTurnCommit AtaqueCommit = Ataque->BuildCommit();
+	TestEqual(TEXT("O índice do golpe viaja no commit"),
+		static_cast<int32>(GetMoveIndexFromAction(AtaqueCommit.Actions[0])), 2);
+
+	// Fora da faixa é RECUSADO, não corrigido para zero.
+	UBattleActionQueueComponent* ForaDaFaixa = MakeQueue();
+	ForaDaFaixa->BeginSelectingType(EActionType::Atacar);
+	TestFalse(TEXT("Golpe 4 não existe"), ForaDaFaixa->ConfirmMove(4));
+	TestFalse(TEXT("Golpe negativo também não"), ForaDaFaixa->ConfirmMove(-1));
+	TestEqual(TEXT("E nada foi confirmado"), ForaDaFaixa->GetConfirmedActionCount(), 0);
 
 	return true;
 }
@@ -188,7 +210,7 @@ bool FBattleActionQueueBuildCommitFeedsRealResolverTest::RunTest(const FString& 
 {
 	UBattleActionQueueComponent* LeftQueue = MakeQueue();
 	LeftQueue->BeginSelectingType(EActionType::Atacar);
-	LeftQueue->ConfirmDirection(EBattleDirection::Direita);
+	LeftQueue->ConfirmMove(0);
 	LeftQueue->Commit();
 
 	UBattleActionQueueComponent* RightQueue = MakeQueue();

@@ -65,8 +65,19 @@ aceitar os DOIS formatos canônicos durante a migração. Isso não enfraquece n
 dois — mas descobri isso pelo teste reprovando com "POSSÍVEL VIOLAÇÃO" em todos
 os pets, que é o sintoma exato de payload divergente.
 
-**Fatia 2 — o jogo lê e oferece.** `FLoadedPetRecord` carrega os golpes; a tela
-mostra quatro botões nomeados no lugar da grade de direção para ataque.
+**Fatia 2 — o jogo lê e oferece.** ✅ **Feita em 2026-08-29.** O alvo é
+automático, `BattleActionRequiresDirection` ficou só para `Mover`, e a barra
+mostra quatro botões com os NOMES dos golpes daquele pet.
+
+**O que essa fatia custou:** onze testes reprovaram, e nenhum estava errado —
+todos afirmavam que a direção decide o alvo, que é a regra que acabou de mudar.
+Um deles foi convertido pela **terceira** vez (coabitação → remoção do caso
+especial → direção não decide), e o histórico ficou escrito nele.
+
+Um achado no caminho: um teste dizia que o alvo em (0,0) estava "fora de
+alcance" do atacante em (1,1). Ele é **adjacente** — só errava porque a direção
+apontava para outro lado. Num 3x3, **tudo é adjacente ao centro**, então testar
+alcance exige cantos opostos.
 
 **Fatia 3 — efeito próprio por golpe** (dano, tipo, e o que faz com o terreno).
 É aqui que "fogo na grama" acontece.

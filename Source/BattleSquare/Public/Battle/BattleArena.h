@@ -286,6 +286,9 @@ public:
 	/** Tipo do pet, ou "?" se desconhecido — nunca vazio. */
 	FString GetPresentationTypeForPet(uint8 PetId) const;
 
+	/** Nomes dos golpes do pet daquele lado, na ordem do slot. */
+	TArray<FString> GetMoveNamesForSide(uint8 Side) const;
+
 private:
 	void ResolveTurnWithCommits(const FTurnCommit& LocalCommit, const FTurnCommit& OpponentCommit);
 

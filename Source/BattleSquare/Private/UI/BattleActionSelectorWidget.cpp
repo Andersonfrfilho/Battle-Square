@@ -41,6 +41,13 @@ bool UBattleActionSelectorWidget::ConfirmDirection(EBattleDirection Direction)
 	return BoundQueue ? BoundQueue->ConfirmDirection(Direction) : false;
 }
 
+bool UBattleActionSelectorWidget::ConfirmMove(int32 MoveIndex)
+{
+	// Encaminha, como todo o resto da tela (DP-ui-01). Quem recusa índice fora
+	// da faixa é o componente.
+	return BoundQueue ? BoundQueue->ConfirmMove(MoveIndex) : false;
+}
+
 bool UBattleActionSelectorWidget::CancelPendingSelection()
 {
 	return BoundQueue ? BoundQueue->CancelPendingSelection() : false;

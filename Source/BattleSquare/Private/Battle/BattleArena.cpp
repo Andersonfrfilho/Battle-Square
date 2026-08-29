@@ -1293,6 +1293,19 @@ FString ABattleArena::GetPresentationNameForPet(uint8 PetId) const
 	return Presentation ? Presentation->Name : FString();
 }
 
+TArray<FString> ABattleArena::GetMoveNamesForSide(uint8 Side) const
+{
+	const FPetState* Pet = CurrentState.Pets.FindByPredicate(
+		[Side](const FPetState& Candidate) { return Candidate.Side == Side; });
+	if (!Pet)
+	{
+		return {};
+	}
+
+	const FPetPresentationInfo* Presentation = PresentationsByPetId.Find(Pet->PetId);
+	return Presentation ? Presentation->MoveNames : TArray<FString>();
+}
+
 FString ABattleArena::GetPresentationTypeForPet(uint8 PetId) const
 {
 	const FPetPresentationInfo* Presentation = PresentationsByPetId.Find(PetId);

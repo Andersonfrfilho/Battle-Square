@@ -1,6 +1,6 @@
 # Desbloqueio de Golpes
 
-**Status:** PROPOSTA — aguarda decisão. Pedida pelo usuário em 2026-08-29.
+**Status:** Aprovado para execução (2026-08-29). Decisões do usuário abaixo.
 
 ## O pedido
 
@@ -77,17 +77,70 @@ Desbloquear por nível sozinho é só esperar. Três formas de dar decisão:
 o jogo enquanto recompensa, e é o que aproveita o terreno mutável que acabou de
 existir.
 
-## Perguntas que precisam de resposta
+---
 
-1. **A + B + C:** qual desenho? (recomendo C)
-2. Quantos golpes o pet começa com — **um** ou dois? Um faz o segundo
+## Decisões do usuário (2026-08-29)
+
+**DP-desb-01 — O desbloqueio é da ESPÉCIE.** Liberou em um Faísca, liberou em
+todo Faísca. Capturar outro da mesma espécie já vem com o que você conquistou.
+
+> **Consequência que aceito registrar:** a captura perde valor como fonte de
+> golpe. Ela passa a valer por atributo, nível e o próprio ato de completar a
+> coleção — o que é coerente, mas é uma troca real, não um detalhe. Se depois
+> parecer que capturar ficou sem graça, esta é a decisão a revisitar primeiro.
+
+**DP-desb-02 — A SKILL sobe de nível com o uso, e é ela que desbloqueia.** Não
+é o nível do pet que abre golpe: é a proficiência na skill (camuflar, voar,
+submergir). Quem camufla muito destrava os golpes de camuflagem.
+
+Isso amarra os dois sistemas mais novos do jogo: **a skill que você usa
+determina os golpes que você ganha**. E resolve o que a proposta original tinha
+de fraco — desbloqueio por nível é só esperar; por uso, é jogar de um jeito.
+
+**DP-desb-03 — O requisito de cada golpe é DADO ASSINADO** (desenho C). O
+backend assina, junto do golpe, qual skill e qual nível ele exige. O cliente
+compara com a proficiência local e libera — o *critério* nunca é regra do save.
+
+## O que a decisão exige que seja resolvido
+
+**Proficiência sobe com uso EFETIVO, não com repetição.** "Camuflou 50 vezes"
+convida a gastar turnos camuflando contra um bot parado. O ganho precisa vir de
+uso que fez diferença — camuflar que de fato evitou um golpe, submergir que
+aconteceu na água. Caso contrário o desbloqueio recompensa moer, não jogar.
+
+**Proficiência é estado local**, como o nível. Vale a mesma ressalva do
+desenho C: save editado pode mentir a proficiência, e isso não abre buraco
+novo — é o mesmo que já vale para atributo por nível. Ranqueada, se existir,
+precisa da checagem no servidor.
+
+**O jogador precisa VER a proficiência subir.** Uma barra que não aparece é uma
+recompensa que ninguém percebe recebendo — e este projeto já pagou caro por
+regra invisível. Ao fim da batalha: `Camuflagem 3 → 4` e, quando abrir,
+`GOLPE NOVO: Névoa`.
+
+## Fatiamento
+
+**Fatia 1 — proficiência por espécie e skill**, subindo com uso efetivo,
+guardada na coleção e VISÍVEL ao fim da batalha. Sem desbloquear nada ainda:
+entrega a progressão e o retorno na tela, que é o que dá sentido ao resto.
+
+**Fatia 2 — requisito assinado no golpe** (`unlockSkill`, `unlockLevel`), com a
+mesma cadeia de cinco lugares das fatias anteriores.
+
+**Fatia 3 — o golpe trancado não aparece**, e destrava com anúncio.
+
+A ordem importa: a fatia 1 é jogável sozinha e responde a pergunta que decide
+tudo — **subir proficiência é divertido?** Se não for, trancar golpe atrás dela
+só piora.
+
+## Perguntas ainda abertas
+
+1. Quantos golpes o pet começa com — **um** ou dois? Um faz o primeiro
    desbloqueio ser marcante; dois evitam que o começo seja monótono.
-3. **Golpe desbloqueado é para o PET ou para a espécie?** Se for para a
-   espécie, capturar outro Faísca já vem pronto — e a captura perde peso.
-4. Perder um golpe ao escolher outro (forma 1) é **definitivo** ou refazível?
-   Definitivo dá peso à escolha e frustra quem errou sem saber.
-5. Vale em **ranqueada**? Se sim, o desenho C precisa da checagem no servidor
+2. Vale em **ranqueada**? Se sim, a fatia 2 precisa da checagem no servidor
    antes de a ranqueada existir.
+3. A proficiência tem **teto**? Sem teto, ela vira número que só cresce; com
+   teto, o jogador sabe quando terminou aquela skill.
 
 ## Fora de escopo
 

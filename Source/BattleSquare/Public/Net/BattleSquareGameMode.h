@@ -125,6 +125,41 @@ public:
 	float WorldStatusRefreshSeconds = 0.5f;
 
 	/**
+	 * Cria os campos de treino em volta do ponto de partida.
+	 *
+	 * Um por atributo, em círculo: o jogador vê as cinco clareiras coloridas
+	 * de onde nasce e escolhe para onde ir. Espalhá-los sem que nenhum seja
+	 * visível do início transformaria a escolha em busca ao acaso.
+	 */
+	void SpawnTrainingFields();
+
+	/**
+	 * Acumula o treino de quem está DENTRO de um campo.
+	 *
+	 * O tempo é o do JOGO ABERTO — o delta entre duas passagens deste
+	 * temporizador — e não o relógio do sistema. É de propósito, e é a metade
+	 * da decisão que ainda é sua (DP-atr-10): adiantar o relógio da máquina
+	 * não adianta este treino, e nenhuma conta ou rede é exigida para treinar.
+	 * O custo é o outro lado: não avança com o jogo fechado.
+	 *
+	 * Trocar para relógio de servidor depois mexe SÓ nesta função — a regra de
+	 * rendimento (FTrainingFieldRules) já recebe o tempo pronto e não sabe de
+	 * onde ele veio.
+	 */
+	void TickTrainingFields();
+
+	FTimerHandle TrainingTimer;
+	float TrainingCarrySeconds = 0.0f;
+
+	/** Raio em que os campos nascem em volta do ponto de partida. */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
+	float TrainingFieldRingRadiusUnits = 1800.0f;
+
+	/** Zero desliga os campos de treino. */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
+	bool bSpawnTrainingFields = true;
+
+	/**
 	 * Repõe a população: tira de cena os derrotados e cria novos até o alvo.
 	 *
 	 * Sem isto o mundo ACABA — com um número fixo, seis batalhas esvaziavam o

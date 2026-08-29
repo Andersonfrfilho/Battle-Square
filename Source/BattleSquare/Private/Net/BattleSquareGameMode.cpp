@@ -19,6 +19,9 @@
 #include "Environment/ForestBackdrop.h"
 #include "Environment/SceneLighting.h"
 #include "World/WorldStatusReadout.h"
+#include "World/WorldTrainingField.h"
+#include "World/TrainingFieldRules.h"
+#include "Meta/PetMoveRequirements.h"
 #include "World/EncounterDetectionComponent.h"
 #include "World/EncounterMatchAssembler.h"
 #include "Battle/BattleArena.h"
@@ -210,11 +213,19 @@ FString ABattleSquareGameMode::SetUpWorldEncounterFlow()
 	SpawnWorldScenery();
 	SpawnRoamingEncounters();
 
+	SpawnTrainingFields();
+
 	ReloadOwnedPetSnapshot();
 	if (WorldStatusRefreshSeconds > 0.0f)
 	{
 		World->GetTimerManager().SetTimer(WorldStatusTimer, this,
 			&ABattleSquareGameMode::RefreshWorldStatus,
+			WorldStatusRefreshSeconds, /*bLoop=*/true);
+
+		// O treino usa o MESMO passo do painel: o jogador vê o número subir
+		// no instante em que ele sobe, e não meio segundo depois.
+		World->GetTimerManager().SetTimer(TrainingTimer, this,
+			&ABattleSquareGameMode::TickTrainingFields,
 			WorldStatusRefreshSeconds, /*bLoop=*/true);
 	}
 	return FString();
@@ -531,6 +542,131 @@ void ABattleSquareGameMode::TearDownBattleUi()
 	}
 
 	FBattleDebugToolbar::Hide();
+}
+
+void ABattleSquareGameMode::SpawnTrainingFields()
+{
+	UWorld* World = GetWorld();
+	if (!World || !bSpawnTrainingFields)
+	{
+		return;
+	}
+
+	// Campo colocado à mão manda — mesmo critério dos encontros e da mata.
+	if (TActorIterator<AWorldTrainingField>(World))
+	{
+		return;
+	}
+
+	const APawn* Jogador = World->GetFirstPlayerController()
+		? World->GetFirstPlayerController()->GetPawn() : nullptr;
+	const FVector Centro = Jogador ? Jogador->GetActorLocation() : FVector::ZeroVector;
+
+	// Os cinco atributos que existem, na mesma grafia do requisito de golpe.
+	const TCHAR* Atributos[] = {
+		TEXT("musculature"), TEXT("personality"),
+		TEXT("camouflage"), TEXT("flight"), TEXT("underground"),
+	};
+	constexpr int32 Quantos = UE_ARRAY_COUNT(Atributos);
+
+	for (int32 Indice = 0; Indice < Quantos; ++Indice)
+	{
+		const float Angulo = (2.0f * PI * static_cast<float>(Indice)) / static_cast<float>(Quantos);
+		const FVector Onde = Centro + FVector(
+			FMath::Cos(Angulo) * TrainingFieldRingRadiusUnits,
+			FMath::Sin(Angulo) * TrainingFieldRingRadiusUnits,
+			0.0f);
+
+		FActorSpawnParameters Parametros;
+		Parametros.ObjectFlags |= RF_Transient;
+
+		AWorldTrainingField* Campo = World->SpawnActor<AWorldTrainingField>(
+			AWorldTrainingField::StaticClass(), Onde, FRotator::ZeroRotator, Parametros);
+		if (Campo)
+		{
+			Campo->TrainedAttribute = Atributos[Indice];
+		}
+	}
+
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("%d campos de treino em volta de você"), Quantos),
+		0.0f, FColor::Green, /*Key=*/722);
+}
+
+void ABattleSquareGameMode::TickTrainingFields()
+{
+	UWorld* World = GetWorld();
+	if (!World || !bHasCachedOwnedPet)
+	{
+		return;
+	}
+
+	const APawn* Jogador = World->GetFirstPlayerController()
+		? World->GetFirstPlayerController()->GetPawn() : nullptr;
+	if (!Jogador)
+	{
+		return;
+	}
+
+	const AWorldTrainingField* Dentro = nullptr;
+	for (TActorIterator<AWorldTrainingField> It(World); It; ++It)
+	{
+		if (IsValid(*It) && It->IsInside(Jogador->GetActorLocation()))
+		{
+			Dentro = *It;
+			break;
+		}
+	}
+
+	if (!Dentro)
+	{
+		// Sair do campo NÃO zera o resto acumulado: o jogador que deu dois
+		// passos para fora e voltou não pode perder o que já tinha ganhado, ou
+		// ficar parado passaria a render mais que se mover pelo mundo.
+		FBattleDebugScreen::Show(TEXT(""), 0.0f, FColor::White, /*Key=*/745);
+		return;
+	}
+
+	const int32 Pontos = FTrainingFieldRules::PointsForTime(
+		WorldStatusRefreshSeconds,
+		// O estudo do dono ainda não existe: quando existir, entra AQUI, e a
+		// regra de rendimento já sabe multiplicar (DP-atr-09).
+		/*bOwnerIsSpecialist=*/false,
+		TrainingCarrySeconds);
+
+	if (Pontos > 0)
+	{
+		TArray<FOwnedPetInstance> Colecao =
+			FPetCollectionService::LoadCollection(PetCollectionSlotName);
+		FOwnedPetInstance* Instancia = Colecao.FindByPredicate(
+			[this](const FOwnedPetInstance& Item)
+			{
+				return Item.CatalogId == CachedOwnedPet.CatalogId;
+			});
+
+		if (Instancia)
+		{
+			FTrainingFieldRules::ApplyPoints(Dentro->TrainedAttribute, Pontos, *Instancia);
+			FPetCollectionService::SaveCollection(PetCollectionSlotName, Colecao);
+
+			// O retrato do painel vem junto: sem reler, o número treinado só
+			// apareceria depois da próxima batalha.
+			CachedOwnedPet = *Instancia;
+		}
+	}
+
+	// A BARRA aparece sempre que se está no campo, mesmo sem ponto fechado:
+	// treino que só dá sinal a cada seis segundos parece treino que não
+	// começou, e o jogador sai antes de ver acontecer.
+	const int32 PorCento = FMath::Clamp(
+		FMath::RoundToInt((TrainingCarrySeconds / FTrainingFieldRules::SecondsPerPoint) * 100.0f),
+		0, 100);
+
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("treinando %s — %d%% do próximo ponto"),
+			*FPetMoveRequirements::GetAttributeLabel(Dentro->TrainedAttribute).ToString(),
+			PorCento),
+		0.0f, FColor::Green, /*Key=*/745);
 }
 
 void ABattleSquareGameMode::ReloadOwnedPetSnapshot()

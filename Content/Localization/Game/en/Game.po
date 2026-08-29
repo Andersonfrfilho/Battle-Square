@@ -4,8 +4,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Game\n"
-"POT-Creation-Date: 2026-08-29 21:15\n"
-"PO-Revision-Date: 2026-08-29 21:15\n"
+"POT-Creation-Date: 2026-08-29 22:42\n"
+"PO-Revision-Date: 2026-08-29 22:42\n"
 "Language-Team: \n"
 "Language: en\n"
 "MIME-Version: 1.0\n"
@@ -161,36 +161,36 @@ msgid "Ações: 0 de 3 — escolha o tipo"
 msgstr ""
 
 #. Key:	AtributoSubiu
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1241)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1241)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1238)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1238)
 msgctxt "PetAttributes,AtributoSubiu"
 msgid "{Pet}: {Atributo} {Antes} → {Depois}"
 msgstr ""
 
 #. Key:	GolpeDesbloqueado
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1274)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1274)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1271)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1271)
 msgctxt "PetAttributes,GolpeDesbloqueado"
 msgid "{Pet} desbloqueou {Golpe}!"
 msgstr ""
 
 #. Key:	GolpeUsado
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1774)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1774)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1771)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1771)
 msgctxt "BattleNarration,GolpeUsado"
 msgid "— usou {Move}"
 msgstr ""
 
 #. Key:	SuperEfetivo
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1787)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1787)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1784)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1784)
 msgctxt "BattleNarration,SuperEfetivo"
 msgid "É super efetivo!"
 msgstr ""
 
 #. Key:	PoucoEfetivo
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1793)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1793)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1790)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1790)
 msgctxt "BattleNarration,PoucoEfetivo"
 msgid "Não é muito efetivo..."
 msgstr ""
@@ -417,5 +417,47 @@ msgstr ""
 #: Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(175)
 msgctxt "BattleUI,StatusComLado"
 msgid "{0}\n{1}"
+msgstr ""
+
+#. Key:	SemPet
+#. SourceLocation:	Source/BattleSquare/Private/World/WorldStatusReadout.cpp(29)
+#: Source/BattleSquare/Private/World/WorldStatusReadout.cpp(29)
+msgctxt "WorldStatus,SemPet"
+msgid "Você ainda não tem pet na coleção"
+msgstr ""
+
+#. Key:	SeuPet
+#. SourceLocation:	Source/BattleSquare/Private/World/WorldStatusReadout.cpp(36)
+#: Source/BattleSquare/Private/World/WorldStatusReadout.cpp(36)
+msgctxt "WorldStatus,SeuPet"
+msgid "{Pet} — nível {Nivel} ({Experiencia} de experiência)"
+msgstr ""
+
+#. Key:	SeusAtributos
+#. SourceLocation:	Source/BattleSquare/Private/World/WorldStatusReadout.cpp(46)
+#: Source/BattleSquare/Private/World/WorldStatusReadout.cpp(46)
+msgctxt "WorldStatus,SeusAtributos"
+msgid "{Musculatura} {ValorMusculatura} · {Personalidade} {ValorPersonalidade} · {Camuflagem} {ValorCamuflagem} · {Voo} {ValorVoo} · {Subsolo} {ValorSubsolo}"
+msgstr ""
+
+#. Key:	MundoVazio
+#. SourceLocation:	Source/BattleSquare/Private/World/WorldStatusReadout.cpp(63)
+#: Source/BattleSquare/Private/World/WorldStatusReadout.cpp(63)
+msgctxt "WorldStatus,MundoVazio"
+msgid "Nenhum adversário por perto"
+msgstr ""
+
+#. Key:	AdversariosSemDistancia
+#. SourceLocation:	Source/BattleSquare/Private/World/WorldStatusReadout.cpp(72)
+#: Source/BattleSquare/Private/World/WorldStatusReadout.cpp(72)
+msgctxt "WorldStatus,AdversariosSemDistancia"
+msgid "{Quantos} adversário(s) no mundo"
+msgstr ""
+
+#. Key:	Adversarios
+#. SourceLocation:	Source/BattleSquare/Private/World/WorldStatusReadout.cpp(82)
+#: Source/BattleSquare/Private/World/WorldStatusReadout.cpp(82)
+msgctxt "WorldStatus,Adversarios"
+msgid "{Quantos} adversário(s) — o mais perto a {Metros} m"
 msgstr ""
 

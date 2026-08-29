@@ -153,6 +153,52 @@ constante, sorteados pelo gerador do estado e narrados. Por último de propósit
 ela acrescenta acaso ao combate, e acaso só deve entrar depois que o atributo já
 significa alguma coisa visível para o jogador.
 
+## Onde o treino acontece (usuário, 2026-08-29)
+
+> "temos campos de treinamento para as coisas, e também o dono do pet pode
+> estudar para treinar os pets"
+
+Duas camadas novas, e elas mudam de onde vem a progressão:
+
+**Campo de treinamento** — lugares no mundo que treinam um atributo específico.
+Isso dá **destino** ao mundo aberto: hoje ele só serve para encontrar inimigos,
+e caminhar até um lugar por um motivo é o que separa mapa de corredor.
+
+**O dono estuda** — o treinador tem progressão própria, e ela melhora o que ele
+consegue treinar. É a primeira coisa no jogo que pertence ao JOGADOR e não a um
+pet: ela atravessa a coleção inteira e sobrevive à troca de pet favorito.
+
+### O que isso resolve, e o que abre
+
+**Resolve** o problema mais chato de progressão por uso: sem campo de treino, o
+único jeito de subir musculatura é batalhar, e batalhar contra um bot parado é
+moagem. Com campo, o jogador escolhe **investir tempo** num atributo.
+
+**Abre** uma pergunta de ritmo que precisa de resposta antes de virar código:
+treinar é **instantâneo** (chegou, treinou, subiu), **por tempo** (deixa lá e
+volta), ou **por desafio** (o campo propõe algo que precisa ser cumprido)?
+Instantâneo vira clicar num poste; por tempo vira esperar; por desafio é o
+único que é jogo — e é o mais caro.
+
+**DP-atr-09 (PROPOSTA) — Estudo do dono MULTIPLICA, não substitui.** O
+treinador que estudou faz o mesmo treino render mais; ele nunca treina no lugar
+do pet. Assim o estudo tem valor sem tornar o pet irrelevante, e um jogador
+novo não fica travado atrás de uma barra que ele nem sabia que existia.
+
+## Decidido por mim, na falta de resposta
+
+**Skill é POR SKILL, não um número só.** O pet tem proficiência separada em
+camuflagem, voo e subsolo. Foi o que escolhi quando perguntei e a resposta foi
+"pode seguir".
+
+Razão: "evoluir skills" está no plural, e a versão separada é a única em que
+**voar muito destrava golpe aéreo, e não golpe de camuflagem** — que é o que
+torna o caminho do jogador legível no pet dele. O custo é três números em vez
+de um, e três números são baratos.
+
+Se a intenção era um atributo de técnica geral, isto se colapsa em um campo e
+eu refaço — mas prefiro registrar a escolha a deixá-la implícita.
+
 ## Perguntas abertas
 
 1. **Personalidade: eixo ou traço nomeado?** (proponho eixo)
@@ -163,6 +209,9 @@ significa alguma coisa visível para o jogador.
 4. O pet começa com quantos golpes ao alcance — **um** ou dois?
 5. Os números da fatia 4 (25% de esquiva, ±20% a ±5% de variação) são chute meu
    — servem de começo, e só o jogo diz se estão certos.
+6. **Campo de treinamento: instantâneo, por tempo, ou por desafio?** Só o
+   terceiro é jogo, e é o mais caro.
+7. O estudo do dono tem **custo** (tempo, item, dinheiro) ou é só acúmulo?
 
 ---
 

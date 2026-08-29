@@ -174,11 +174,34 @@ pet: ela atravessa a coleção inteira e sobrevive à troca de pet favorito.
 único jeito de subir musculatura é batalhar, e batalhar contra um bot parado é
 moagem. Com campo, o jogador escolhe **investir tempo** num atributo.
 
-**Abre** uma pergunta de ritmo que precisa de resposta antes de virar código:
-treinar é **instantâneo** (chegou, treinou, subiu), **por tempo** (deixa lá e
-volta), ou **por desafio** (o campo propõe algo que precisa ser cumprido)?
-Instantâneo vira clicar num poste; por tempo vira esperar; por desafio é o
-único que é jogo — e é o mais caro.
+**DP-atr-10 — Treino é POR TEMPO** (decidido pelo usuário). Deixa o pet no
+campo e volta depois.
+
+> **A armadilha, e ela é séria:** este é o primeiro sistema do jogo que depende
+> do RELÓGIO. O núcleo é deliberadamente sem relógio (AD-004), e isso continua
+> valendo — mas o treino por tempo abre uma pergunta que não tem resposta boa
+> no cliente: **adiantar o relógio do sistema adianta o treino.**
+>
+> As saídas honestas são duas, e as duas custam:
+> - **Relógio do servidor.** Imune, mas exige conta e rede para treinar — e
+>   você acabou de tornar a conta obrigatória, então esse custo já está pago.
+> - **Só avança com o jogo aberto.** Imune a relógio, mas troca "deixa lá e
+>   volta" por "deixa o jogo ligado", que é pior para quem joga no celular.
+>
+> Não decido isso sozinho: é escolha de produto, e ela define se treino
+> funciona offline.
+
+**DP-atr-11 — O jogador tem HABILIDADES DE TREINO, e nunca todas.** O número é
+limitado de propósito: ninguém fica completo, e a escolha produz um
+**especialista** cujo treino naquelas áreas rende mais.
+
+Isso espelha no jogador o que os atributos fazem no pet — escassez virando
+identidade — e é o que impede que dois treinadores veteranos sejam idênticos.
+
+> **Pergunta que decide o peso disso:** dá para **trocar** de especialidade?
+> Nunca poder trocar transforma um erro de novato em punição permanente; trocar
+> de graça faz a especialização não significar nada. O meio (trocar com custo,
+> ou perdendo progresso) é o que costuma funcionar, mas é decisão sua.
 
 **DP-atr-09 (PROPOSTA) — Estudo do dono MULTIPLICA, não substitui.** O
 treinador que estudou faz o mesmo treino render mais; ele nunca treina no lugar
@@ -209,9 +232,11 @@ eu refaço — mas prefiro registrar a escolha a deixá-la implícita.
 4. O pet começa com quantos golpes ao alcance — **um** ou dois?
 5. Os números da fatia 4 (25% de esquiva, ±20% a ±5% de variação) são chute meu
    — servem de começo, e só o jogo diz se estão certos.
-6. **Campo de treinamento: instantâneo, por tempo, ou por desafio?** Só o
-   terceiro é jogo, e é o mais caro.
-7. O estudo do dono tem **custo** (tempo, item, dinheiro) ou é só acúmulo?
+6. **Treino por tempo avança offline?** Relógio do servidor (exige rede) ou só
+   com o jogo aberto (exige o jogo ligado). Sem escolher, adiantar o relógio do
+   sistema adianta o treino.
+7. **Dá para trocar de especialidade de treino?** Nunca, de graça, ou com custo?
+8. O estudo do dono tem **custo** (tempo, item, dinheiro) ou é só acúmulo?
 
 ---
 

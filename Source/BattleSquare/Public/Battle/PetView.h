@@ -7,6 +7,7 @@
 #include "Battle/BattleState.h"
 #include "Battle/BattleEvent.h"
 #include "Battle/PetAppearance.h"
+#include "Battle/PetMorphology.h"
 #include "Data/BattleDataTranslator.h"
 #include "PetView.generated.h"
 
@@ -190,27 +191,15 @@ public:
 	uint8 GetSide() const { return Side; }
 
 	/**
-	 * Z da face de BAIXO do corpo na posição de uma pata.
+	 * O PLANO DO CORPO deste pet — proporções, encaixes e tom.
 	 *
-	 * O corpo é um elipsoide: a barriga sobe conforme se afasta do centro, e
-	 * a pata não fica no centro. Por isso este valor não é "o fundo do corpo".
+	 * A geometria da silhueta morava aqui em acessores estáticos; ela mudou
+	 * de casa quando o corpo deixou de ser um só. Manter cópias nos dois
+	 * lugares as faria concordar até a primeira edição (L-032, L-033), e o
+	 * desacordo apareceria como a pata furando a barriga de um bicho e
+	 * flutuando na de outro.
 	 */
-	static float BodyUnderSurfaceAtLegUnits();
-
-	/**
-	 * Altura da pata — DERIVADA da barriga, não escolhida.
-	 *
-	 * Com 20uu fixos as patas paravam ~7uu abaixo da barriga, e na tela o
-	 * corpo pairava sobre quatro tocos soltos. Número fixo não acompanha
-	 * mudança de escala do corpo; este acompanha.
-	 */
-	static float LegHeightUnits();
-
-	/** Ponto mais baixo do corpo — no centro, onde a barriga desce mais. */
-	static float BodyLowestPointUnits();
-
-	/** Raio da cabeça. É nele que o adorno assenta. */
-	static float HeadRadiusUnits();
+	const FPetMorphology& GetMorphology() const { return Morphology; }
 
 	/** Quanto o adorno entra na cabeça, para não sobrar costura entre os dois. */
 	static float CrestEmbedUnits();
@@ -225,7 +214,7 @@ public:
 	 * isso não é orelha, é uma mancha clara na testa — e o adorno é justamente
 	 * quem diz o TIPO do pet, então o tipo deixava de ser dito.
 	 */
-	static FVector CrestRelativeLocation(const FPetAppearance& Appearance, float LateralSign);
+	static FVector CrestRelativeLocation(const FPetMorphology& Morphology, float LateralSign);
 
 private:
 	void BuildBody();
@@ -235,6 +224,16 @@ private:
 	void BuildHealthBar();
 	void RefreshHealthBar();
 	void RefreshCrests();
+
+	/**
+	 * Reaplica o plano do corpo em TODOS os componentes da silhueta.
+	 *
+	 * O construtor monta o bicho neutro, porque o id do pet só é conhecido em
+	 * SetInitialState. É aqui que o bicho vira ELE — e é uma função só, pelo
+	 * mesmo motivo de RefreshVisibility: montar num lugar e remodelar noutro
+	 * daria duas silhuetas discordando.
+	 */
+	void ApplyMorphology();
 
 	/** Carrega o personagem do tipo, se houver um. Sem asset, não mexe em nada. */
 	void RefreshCharacterMesh();
@@ -253,7 +252,6 @@ private:
 	static constexpr float CubeSizeUnits = 100.0f;
 	static constexpr float BarWidthScale = 0.9f;
 	static constexpr float BarHeightScale = 0.09f;
-	static constexpr float BarHeightUnits = 105.0f;
 	static constexpr float BarDepthScale = 0.04f;
 
 	// Menor que o fundo, para ele virar moldura e as bordas NÃO coincidirem.
@@ -267,12 +265,15 @@ private:
 	// antes do evento seguinte em vez de arrastar por cima dele.
 	static constexpr float GlideSeconds = 0.30f;
 
-	// A silhueta cabe numa casa de 150uu com folga: o bicho ocupa a casa sem
-	// encostar na vizinha, e a laje continua sendo lida como casa.
-	static constexpr float BodyCenterUnits = 44.0f;
-	static constexpr float HeadForwardUnits = 30.0f;
-	static constexpr float HeadCenterUnits = 58.0f;
 	static constexpr float HeadPitchDegrees = 30.0f;
+
+	/**
+	 * O corpo deste pet. Nasce neutro e vira ELE em SetInitialState.
+	 *
+	 * Não é UPROPERTY porque não é USTRUCT: é dado puro de apresentação,
+	 * derivado do CatalogId, e refeito sempre que o estado inicial chega.
+	 */
+	FPetMorphology Morphology;
 
 	UPROPERTY()
 	uint8 PetId = 0;

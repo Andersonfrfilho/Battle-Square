@@ -15,6 +15,7 @@
 class UCameraComponent;
 class UStaticMeshComponent;
 class UMaterialInterface;
+class AForestBackdrop;
 
 // T9 (tasks.md, PRES-06/07/08): scaffold da cena de combate — câmera fixa
 // enquadrando a grade 3x3, spawn de APetView a partir do estado inicial.
@@ -128,6 +129,19 @@ public:
 	/** Material herdado do mundo, ou nulo quando a arena usa a paleta própria. */
 	UMaterialInterface* GetAdoptedFloorMaterial() const { return AdoptedFloorMaterial; }
 
+	/**
+	 * A mata que veste o entorno, ou nulo antes de BeginPlay.
+	 *
+	 * A arena não desenha cenário: ela diz onde o tabuleiro está e de que
+	 * tamanho é a casa, e a mata se espalha a partir disso. Fossem os raios
+	 * calculados aqui, o cenário viraria regra de arena (DP-ui-01).
+	 */
+	AForestBackdrop* GetForestBackdrop() const { return ForestBackdrop; }
+
+	/** Semente da mata — a mesma arena dá a mesma floresta, sempre. */
+	UPROPERTY(EditDefaultsOnly, Category = "Arena")
+	int32 ForestSeed = 20260829;
+
 	/** Malhas da arena, para o teste que exige asset atribuído em todas. */
 	const TArray<TObjectPtr<UStaticMeshComponent>>& GetCellTileMeshes() const { return CellTileMeshes; }
 	const TArray<TObjectPtr<UStaticMeshComponent>>& GetArenaFrameMeshes() const { return ArenaFrameMeshes; }
@@ -227,6 +241,12 @@ protected:
 	/** O tabuleiro em si: chão, moldura e uma laje por casa. */
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UStaticMeshComponent> ArenaFloorMesh;
+
+	UPROPERTY()
+	TObjectPtr<AForestBackdrop> ForestBackdrop;
+
+	/** Planta a mata em volta, uma vez, quando a arena entra em cena. */
+	void SpawnForestBackdrop();
 
 	/** Chão emprestado pelo mundo (AdoptAmbienceFromWorldLocation). */
 	UPROPERTY()

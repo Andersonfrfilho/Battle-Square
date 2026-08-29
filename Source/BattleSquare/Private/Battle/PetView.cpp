@@ -121,15 +121,15 @@ void APetView::BuildBody()
 	// está. Um corpo que empurra outro seria uma segunda fonte de verdade.
 	BodyMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	BodyMesh->SetStaticMesh(SphereAsset);
-	BodyMesh->SetRelativeScale3D(CorpoEscala);
-	BodyMesh->SetRelativeLocation(FVector(0.0f, 0.0f, BodyCenterUnits));
+	BodyMesh->SetRelativeScale3D(Morphology.BodyScale);
+	BodyMesh->SetRelativeLocation(FVector(0.0f, 0.0f, Morphology.BodyCenterUnits));
 
 	TailMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TailMesh"));
 	TailMesh->SetupAttachment(BodyPivot);
 	TailMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	TailMesh->SetStaticMesh(ConeAsset);
-	TailMesh->SetRelativeScale3D(CaudaEscala);
-	TailMesh->SetRelativeLocationAndRotation(CaudaLocal, CaudaRotacao);
+	TailMesh->SetRelativeScale3D(Morphology.TailScale);
+	TailMesh->SetRelativeLocationAndRotation(Morphology.TailLocation, Morphology.TailRotation);
 }
 
 void APetView::BuildHead()
@@ -138,20 +138,21 @@ void APetView::BuildHead()
 
 	HeadPivot = CreateDefaultSubobject<USceneComponent>(TEXT("HeadPivot"));
 	HeadPivot->SetupAttachment(BodyPivot);
-	HeadPivot->SetRelativeLocation(FVector(HeadForwardUnits, 0.0f, HeadCenterUnits));
+	HeadPivot->SetRelativeLocation(
+		FVector(Morphology.HeadForwardUnits, 0.0f, Morphology.HeadCenterUnits));
 
 	HeadMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HeadMesh"));
 	HeadMesh->SetupAttachment(HeadPivot);
 	HeadMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	HeadMesh->SetStaticMesh(SphereAsset);
-	HeadMesh->SetRelativeScale3D(FVector(CabecaEscala));
+	HeadMesh->SetRelativeScale3D(FVector(Morphology.HeadScale));
 
 	GazeMarker = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GazeMarker"));
 	GazeMarker->SetupAttachment(HeadPivot);
 	GazeMarker->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GazeMarker->SetStaticMesh(SphereAsset);
-	GazeMarker->SetRelativeScale3D(FVector(FocinhoEscala));
-	GazeMarker->SetRelativeLocation(FocinhoLocal);
+	GazeMarker->SetRelativeScale3D(FVector(Morphology.SnoutScale));
+	GazeMarker->SetRelativeLocation(Morphology.SnoutLocation);
 
 	CrestLeft = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CrestLeft"));
 	CrestLeft->SetupAttachment(HeadPivot);
@@ -164,34 +165,6 @@ void APetView::BuildHead()
 	CrestRight->SetStaticMesh(ConeAsset);
 
 	RefreshCrests();
-}
-
-float APetView::BodyUnderSurfaceAtLegUnits()
-{
-	using namespace PetSilhueta;
-
-	// As primitivas da engine têm 100uu de lado/diâmetro: o semieixo é
-	// metade disso vezes a escala.
-	const float SemiEixoX = CorpoEscala.X * CubeSizeUnits * 0.5f;
-	const float SemiEixoY = CorpoEscala.Y * CubeSizeUnits * 0.5f;
-	const float SemiEixoZ = CorpoEscala.Z * CubeSizeUnits * 0.5f;
-
-	const float Normalizado = FMath::Square(PataAfastamentoX / SemiEixoX)
-		+ FMath::Square(PataAfastamentoY / SemiEixoY);
-
-	const float Queda = SemiEixoZ * FMath::Sqrt(FMath::Max(0.0f, 1.0f - Normalizado));
-	return BodyCenterUnits - Queda;
-}
-
-float APetView::BodyLowestPointUnits()
-{
-	using namespace PetSilhueta;
-	return BodyCenterUnits - CorpoEscala.Z * CubeSizeUnits * 0.5f;
-}
-
-float APetView::LegHeightUnits()
-{
-	return BodyUnderSurfaceAtLegUnits() + PetSilhueta::EncaixeDaPataNoCorpo;
 }
 
 void APetView::BuildLegs()
@@ -209,11 +182,12 @@ void APetView::BuildLegs()
 		Pata->SetupAttachment(BodyPivot);
 		Pata->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		Pata->SetStaticMesh(CylinderAsset);
-		const float Altura = LegHeightUnits();
-		Pata->SetRelativeScale3D(FVector(PataEspessura, PataEspessura, Altura / CubeSizeUnits));
+		const float Altura = Morphology.LegHeightUnits();
+		Pata->SetRelativeScale3D(FVector(
+			Morphology.LegThicknessScale, Morphology.LegThicknessScale, Altura / CubeSizeUnits));
 
-		const float Frente = (Indice < 2) ? PataAfastamentoX : -PataAfastamentoX;
-		const float Lado = (Indice % 2 == 0) ? -PataAfastamentoY : PataAfastamentoY;
+		const float Frente = (Indice < 2) ? Morphology.LegSpreadXUnits : -Morphology.LegSpreadXUnits;
+		const float Lado = (Indice % 2 == 0) ? -Morphology.LegSpreadYUnits : Morphology.LegSpreadYUnits;
 		Pata->SetRelativeLocation(FVector(Frente, Lado, Altura * 0.5f));
 
 		Legs.Add(Pata);
@@ -248,7 +222,7 @@ void APetView::BuildHealthBar()
 	// A câmera olha ao longo de +X, então a barra é FINA em X, larga em Y
 	// e baixa em Z. Escala em cima do cubo de 100uu da engine.
 	HealthBarBackground->SetRelativeScale3D(FVector(BarDepthScale, BarWidthScale, BarHeightScale));
-	HealthBarBackground->SetRelativeLocation(FVector(0.0f, 0.0f, BarHeightUnits));
+	HealthBarBackground->SetRelativeLocation(FVector(0.0f, 0.0f, Morphology.CrownUnits()));
 
 	// O preenchimento fica INTEIRAMENTE à frente do fundo, e mais baixo.
 	//
@@ -257,7 +231,8 @@ void APetView::BuildHealthBar()
 	// desenhar — é o piscar. Com a separação maior que a espessura, nenhuma
 	// face coincide. Sendo mais baixo, o fundo ainda vira moldura, e a
 	// borda de cima (onde o piscar aparecia) deixa de ser compartilhada.
-	HealthBarFill->SetRelativeLocation(FVector(-BarFrontOffsetUnits, 0.0f, BarHeightUnits));
+	HealthBarFill->SetRelativeLocation(
+		FVector(-BarFrontOffsetUnits, 0.0f, Morphology.CrownUnits()));
 }
 
 UStaticMesh* APetView::CrestMeshFor(EPetCrestShape Shape) const
@@ -273,11 +248,6 @@ UStaticMesh* APetView::CrestMeshFor(EPetCrestShape Shape) const
 		default:
 			return ConeAsset;
 	}
-}
-
-float APetView::HeadRadiusUnits()
-{
-	return PetSilhueta::CabecaEscala * CubeSizeUnits * 0.5f;
 }
 
 float APetView::CrestEmbedUnits()
@@ -298,12 +268,12 @@ FRotator APetView::CrestRotationForSide(const FRotator& CrestRotation, float Lat
 	return FRotator(CrestRotation.Pitch, CrestRotation.Yaw, -LateralSign * CrestRotation.Roll);
 }
 
-FVector APetView::CrestRelativeLocation(const FPetAppearance& Appearance, float LateralSign)
+FVector APetView::CrestRelativeLocation(const FPetMorphology& Morphology, float LateralSign)
 {
 	using namespace PetSilhueta;
 
-	const FRotator Rotacao = CrestRotationForSide(Appearance.CrestRotation, LateralSign);
-	const float MeiaAltura = Appearance.CrestScale.Z * CubeSizeUnits * 0.5f;
+	const FRotator Rotacao = CrestRotationForSide(Morphology.CrestRotation, LateralSign);
+	const float MeiaAltura = Morphology.CrestScale.Z * CubeSizeUnits * 0.5f;
 	const FVector DaBaseAoCentro = Rotacao.RotateVector(FVector(0.0f, 0.0f, MeiaAltura));
 
 	// O ponto de encaixe é achado pela DIREÇÃO na esfera, não por um Z: a
@@ -311,7 +281,7 @@ FVector APetView::CrestRelativeLocation(const FPetAppearance& Appearance, float 
 	// que o tipo pedir. Foi o Z fixo que enterrou o cone de 26uu na testa.
 	const FVector Direcao =
 		FVector(0.0f, LateralSign * AdornoAfastamentoY, AdornoAlturaZ).GetSafeNormal();
-	const FVector Base = Direcao * (HeadRadiusUnits() - EncaixeDoAdornoNaCabeca);
+	const FVector Base = Direcao * (Morphology.HeadRadiusUnits() - EncaixeDoAdornoNaCabeca);
 
 	return Base + DaBaseAoCentro;
 }
@@ -330,15 +300,18 @@ void APetView::RefreshCrests()
 
 	CrestLeft->SetStaticMesh(Malha);
 	CrestRight->SetStaticMesh(Malha);
-	CrestLeft->SetRelativeScale3D(Aparencia.CrestScale);
-	CrestRight->SetRelativeScale3D(Aparencia.CrestScale);
+	// A FORMA continua vindo do tipo — é ela que diz o tipo na tela. O
+	// TAMANHO e o tombo vêm do corpo deste bicho: decoração varia, informação
+	// não.
+	CrestLeft->SetRelativeScale3D(Morphology.CrestScale);
+	CrestRight->SetRelativeScale3D(Morphology.CrestScale);
 
 	CrestLeft->SetRelativeLocationAndRotation(
-		CrestRelativeLocation(Aparencia, -1.0f),
-		CrestRotationForSide(Aparencia.CrestRotation, -1.0f));
+		CrestRelativeLocation(Morphology, -1.0f),
+		CrestRotationForSide(Morphology.CrestRotation, -1.0f));
 	CrestRight->SetRelativeLocationAndRotation(
-		CrestRelativeLocation(Aparencia, 1.0f),
-		CrestRotationForSide(Aparencia.CrestRotation, 1.0f));
+		CrestRelativeLocation(Morphology, 1.0f),
+		CrestRotationForSide(Morphology.CrestRotation, 1.0f));
 }
 
 void APetView::LookAtLocation(const FVector& TargetLocation)
@@ -444,7 +417,8 @@ void APetView::RefreshHealthBar()
 	// esquerda, que é como uma barra de vida se lê.
 	const float FullWidthUnits = BarWidthScale * CubeSizeUnits;
 	HealthBarFill->SetRelativeLocation(
-		FVector(-BarFrontOffsetUnits, -(FullWidthUnits * (1.0f - Ratio)) * 0.5f, BarHeightUnits));
+		FVector(-BarFrontOffsetUnits, -(FullWidthUnits * (1.0f - Ratio)) * 0.5f,
+			Morphology.CrownUnits()));
 
 	if (HealthBarFillMaterial)
 	{
@@ -557,8 +531,8 @@ void APetView::RefreshBodyAppearance()
 		Pintar(Pata, CorDoLado * EscurecimentoDasPatas);
 	}
 
-	Pintar(CrestLeft, Aparencia.AccentColor);
-	Pintar(CrestRight, Aparencia.AccentColor);
+	Pintar(CrestLeft, Morphology.AccentColor);
+	Pintar(CrestRight, Morphology.AccentColor);
 	// A cauda usa a cor do LADO, não a de acento: branca sobre um corpo azul
 	// ela lia como uma asa colada, uma peça de outro bicho. O tipo continua
 	// sendo dito pelos adornos, que é onde se olha para saber o tipo.
@@ -567,6 +541,62 @@ void APetView::RefreshBodyAppearance()
 
 	RefreshVisibility();
 	RefreshHealthBar();
+}
+
+/**
+ * Remodela a silhueta inteira segundo o plano do corpo.
+ *
+ * O construtor não pode fazer isto: o id do pet só existe quando o estado
+ * inicial chega. Sem esta passagem, o gerador rodaria e o bicho na tela
+ * continuaria o neutro — geração que ninguém vê é geração que não aconteceu.
+ */
+void APetView::ApplyMorphology()
+{
+	if (!BodyMesh)
+	{
+		return;
+	}
+
+	BodyMesh->SetRelativeScale3D(Morphology.BodyScale);
+	BodyMesh->SetRelativeLocation(FVector(0.0f, 0.0f, Morphology.BodyCenterUnits));
+
+	if (TailMesh)
+	{
+		TailMesh->SetRelativeScale3D(Morphology.TailScale);
+		TailMesh->SetRelativeLocationAndRotation(Morphology.TailLocation, Morphology.TailRotation);
+	}
+
+	if (HeadPivot)
+	{
+		HeadPivot->SetRelativeLocation(
+			FVector(Morphology.HeadForwardUnits, 0.0f, Morphology.HeadCenterUnits));
+	}
+	if (HeadMesh)
+	{
+		HeadMesh->SetRelativeScale3D(FVector(Morphology.HeadScale));
+	}
+	if (GazeMarker)
+	{
+		GazeMarker->SetRelativeScale3D(FVector(Morphology.SnoutScale));
+		GazeMarker->SetRelativeLocation(Morphology.SnoutLocation);
+	}
+
+	const float Altura = Morphology.LegHeightUnits();
+	for (int32 Indice = 0; Indice < Legs.Num(); ++Indice)
+	{
+		UStaticMeshComponent* Pata = Legs[Indice];
+		if (!Pata)
+		{
+			continue;
+		}
+
+		Pata->SetRelativeScale3D(FVector(
+			Morphology.LegThicknessScale, Morphology.LegThicknessScale, Altura / CubeSizeUnits));
+
+		const float Frente = (Indice < 2) ? Morphology.LegSpreadXUnits : -Morphology.LegSpreadXUnits;
+		const float Lado = (Indice % 2 == 0) ? -Morphology.LegSpreadYUnits : Morphology.LegSpreadYUnits;
+		Pata->SetRelativeLocation(FVector(Frente, Lado, Altura * 0.5f));
+	}
 }
 
 void APetView::SetInitialState(const FPetState& InitialState, const FPetPresentationInfo& Presentation)
@@ -583,6 +613,13 @@ void APetView::SetInitialState(const FPetState& InitialState, const FPetPresenta
 	// diferentes ficavam idênticos na tela, e a skill que só um deles tem não
 	// tinha de onde ser adivinhada.
 	PetType = Presentation.Type;
+
+	// O corpo é gerado a partir do id de CATÁLOGO, não do PetId da partida:
+	// dentro de uma batalha o PetId é só 1 ou 2, e semear por ele daria os
+	// mesmos dois bichos em toda batalha do jogo.
+	Morphology = FPetMorphology::FromSeed(
+		Presentation.CatalogId, FPetAppearance::ForType(PetType));
+	ApplyMorphology();
 
 	RefreshCharacterMesh();
 	RefreshCrests();

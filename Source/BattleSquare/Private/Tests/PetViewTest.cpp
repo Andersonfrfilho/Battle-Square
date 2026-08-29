@@ -268,7 +268,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPetViewLegsReachTheBodyTest,
 bool FPetViewLegsReachTheBodyTest::RunTest(const FString& Parameters)
 {
 	const APetView* Padrao = GetDefault<APetView>();
-	const float Barriga = APetView::BodyUnderSurfaceAtLegUnits();
+	const FPetMorphology& Corpo = Padrao->GetMorphology();
+	const float Barriga = Corpo.BodyUnderSurfaceAtLegUnits();
 
 	TestEqual(TEXT("quatro patas"), Padrao->Legs.Num(), 4);
 
@@ -290,7 +291,7 @@ bool FPetViewLegsReachTheBodyTest::RunTest(const FString& Parameters)
 	// corpo. Se estes dois valores coincidissem, o cálculo teria virado
 	// "fundo do corpo" e o vão voltaria na próxima mudança de escala.
 	TestTrue(TEXT("a barriga sob a pata é mais alta que o fundo do corpo"),
-		Barriga > APetView::BodyLowestPointUnits() + 1.0f);
+		Barriga > Corpo.BodyLowestPointUnits() + 1.0f);
 
 	return true;
 }
@@ -304,18 +305,20 @@ bool FPetViewCrestsEmergeFromTheHeadTest::RunTest(const FString& Parameters)
 	// Os quatro tipos, porque cada um tem escala e inclinação próprias e o
 	// adorno mais tombado é justamente o que mais afundava.
 	const TArray<FString> Tipos = {TEXT("Cat"), TEXT("Fogo"), TEXT("Agua"), TEXT("Planta")};
-	const float Raio = APetView::HeadRadiusUnits();
 	const float Encaixe = APetView::CrestEmbedUnits();
 
 	for (const FString& Tipo : Tipos)
 	{
 		const FPetAppearance Aparencia = FPetAppearance::ForType(Tipo);
+		// Semente vazia é o corpo neutro: as medidas abaixo são as de sempre.
+		const FPetMorphology Corpo = FPetMorphology::FromSeed(FString(), Aparencia);
+		const float Raio = Corpo.HeadRadiusUnits();
 
 		for (const float Lado : {-1.0f, 1.0f})
 		{
-			const FVector Centro = APetView::CrestRelativeLocation(Aparencia, Lado);
-			const FRotator Rotacao = APetView::CrestRotationForSide(Aparencia.CrestRotation, Lado);
-			const float MeiaAltura = Aparencia.CrestScale.Z * 100.0f * 0.5f;
+			const FVector Centro = APetView::CrestRelativeLocation(Corpo, Lado);
+			const FRotator Rotacao = APetView::CrestRotationForSide(Corpo.CrestRotation, Lado);
+			const float MeiaAltura = Corpo.CrestScale.Z * 100.0f * 0.5f;
 			const FVector DaBaseAoCentro = Rotacao.RotateVector(FVector(0.0f, 0.0f, MeiaAltura));
 
 			const float Base = (Centro - DaBaseAoCentro).Size();
@@ -336,6 +339,55 @@ bool FPetViewCrestsEmergeFromTheHeadTest::RunTest(const FString& Parameters)
 					TEXT("%s lado %.0f: o adorno tomba para FORA (base %.1f, ponta %.1f)"),
 					*Tipo, Lado, BaseParaFora, PontaParaFora),
 				PontaParaFora > BaseParaFora);
+		}
+	}
+
+	return true;
+}
+
+// O adorno agora se assenta numa cabeça que MUDA de tamanho a cada bicho. O
+// teste acima prende a geometria no corpo neutro; este prende o que o gerador
+// pode quebrar: cabeça maior tem de levar o adorno junto.
+//
+// A afirmação é a base encostada, e não a ponta, porque a base é exata por
+// construção — ela sai do raio da cabeça — enquanto a ponta depende do tombo,
+// que o gerador varia de propósito.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPetViewCrestsFollowTheGeneratedHeadTest,
+	"BattleSquare.PetView.CrestsFollowTheGeneratedHead",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FPetViewCrestsFollowTheGeneratedHeadTest::RunTest(const FString& Parameters)
+{
+	const TArray<FString> Tipos = {TEXT("Cat"), TEXT("Fogo"), TEXT("Agua"), TEXT("Planta")};
+	const float Encaixe = APetView::CrestEmbedUnits();
+
+	for (int32 Indice = 0; Indice < 60; ++Indice)
+	{
+		const FString& Tipo = Tipos[Indice % Tipos.Num()];
+		const FPetAppearance Aparencia = FPetAppearance::ForType(Tipo);
+		const FString Semente = FString::Printf(
+			TEXT("%08x-4f04-4fb1-8588-e572a2aa%04x"), Indice * 2654435761u, Indice);
+
+		for (const EPetGrowthStage Fase :
+			{EPetGrowthStage::Filhote, EPetGrowthStage::Adulto, EPetGrowthStage::Evoluido})
+		{
+			const FPetMorphology Corpo = FPetMorphology::FromSeed(Semente, Aparencia, Fase);
+			const float Raio = Corpo.HeadRadiusUnits();
+
+			for (const float Lado : {-1.0f, 1.0f})
+			{
+				const FVector Centro = APetView::CrestRelativeLocation(Corpo, Lado);
+				const FRotator Rotacao = APetView::CrestRotationForSide(Corpo.CrestRotation, Lado);
+				const float MeiaAltura = Corpo.CrestScale.Z * 100.0f * 0.5f;
+				const FVector DaBaseAoCentro = Rotacao.RotateVector(FVector(0.0f, 0.0f, MeiaAltura));
+
+				const float Base = (Centro - DaBaseAoCentro).Size();
+
+				TestTrue(FString::Printf(
+						TEXT("%s semente %d: a base acompanha a cabeça (base %.2f, raio %.2f)"),
+						*Tipo, Indice, Base, Raio),
+					FMath::IsNearlyEqual(Base, Raio - Encaixe, 0.05f));
+			}
 		}
 	}
 

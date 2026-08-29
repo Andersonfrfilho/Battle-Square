@@ -2,6 +2,8 @@
 
 #include "Battle/PetMorphology.h"
 
+#include "Battle/DeterministicSpread.h"
+
 #include "Battle/PetAppearance.h"
 
 namespace
@@ -52,39 +54,25 @@ namespace
 		Tom = 5
 	};
 
-	/** FNV-1a: hash puro, sem estado, sem relógio, igual em toda máquina. */
+	/**
+	 * A semeadura mora em BattleSpread: a mata do cenário sorteia com a
+	 * MESMA função, e duas cópias de um hash concordam só até a primeira
+	 * edição de uma delas.
+	 */
 	uint32 SemearPor(const FString& Semente)
 	{
-		uint32 Hash = 2166136261u;
-		for (const TCHAR Caractere : Semente)
-		{
-			Hash ^= static_cast<uint32>(Caractere);
-			Hash *= 16777619u;
-		}
-		return Hash;
-	}
-
-	/** Finalizador do murmur3: espalha os bits para o fluxo não ter padrão. */
-	uint32 Espalhar(uint32 Valor)
-	{
-		Valor ^= Valor >> 16;
-		Valor *= 0x85EBCA6Bu;
-		Valor ^= Valor >> 13;
-		Valor *= 0xC2B2AE35u;
-		Valor ^= Valor >> 16;
-		return Valor;
+		return BattleSpread::SeedFromText(Semente);
 	}
 
 	/** O traço, entre 0 e 1. */
 	float Traco(uint32 Semente, ETraco Qual)
 	{
-		const uint32 Fluxo = Espalhar(Semente ^ (static_cast<uint32>(Qual) * 0x9E3779B9u));
-		return static_cast<float>(Fluxo >> 8) / static_cast<float>(1u << 24);
+		return BattleSpread::Fraction(Semente, static_cast<int32>(Qual));
 	}
 
 	float Entre(float Minimo, float Maximo, float Fracao)
 	{
-		return Minimo + (Maximo - Minimo) * Fracao;
+		return BattleSpread::Between(Minimo, Maximo, Fracao);
 	}
 
 	/**
@@ -231,7 +219,12 @@ FPetMorphology FPetMorphology::FromSeed(
 	const float Pescoco = Traco(Semente, ETraco::Pescoco);
 	const float CabecaPedida = Entre(0.28f, 0.46f, Robustez)
 		* Entre(1.06f, 0.86f, Pescoco)
-		* Entre(1.50f, 0.88f, Idade)
+		// Neotenia é a cabeça grande em RELAÇÃO ao corpo, não cabeça que
+		// diminui: com 0.88 aqui o adulto tinha cabeça maior que a do
+		// evoluído em unidades, e o adorno — que tem teto no raio dela —
+		// encolhia ao evoluir. A proporção continua caindo (1.50 para 1.00);
+		// o tamanho absoluto agora só sobe.
+		* Entre(1.50f, 1.00f, Idade)
 		* TamanhoGeral;
 
 	// E nunca maior que o tronco que a carrega — senão vira boneco de mola.

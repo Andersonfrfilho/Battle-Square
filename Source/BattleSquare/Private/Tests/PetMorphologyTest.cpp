@@ -210,7 +210,10 @@ bool FPetMorphologyIsDeterministicTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("perna igual"), Segundo.LegClearanceUnits, Primeiro.LegClearanceUnits);
 		TestEqual(TEXT("cauda igual"), Segundo.TailScale, Primeiro.TailScale);
 		TestEqual(TEXT("adorno igual"), Segundo.CrestScale, Primeiro.CrestScale);
-		TestTrue(TEXT("tom igual"), Segundo.AccentColor.Equals(Primeiro.AccentColor, 0.0f));
+		// Igualdade EXATA, e por operador: FLinearColor::Equals compara com "<"
+		// estrito contra a tolerância, então tolerância zero recusa até a cor
+		// comparada consigo mesma.
+		TestTrue(TEXT("tom igual"), Segundo.AccentColor == Primeiro.AccentColor);
 	}
 
 	return true;
@@ -383,6 +386,15 @@ bool FPetMorphologyGrowsWithoutBecomingAnotherPetTest::RunTest(const FString& Pa
 			|| Adulto.CrestScale.GetAbsMax() > Evoluido.CrestScale.GetAbsMax())
 		{
 			AddError(FString::Printf(TEXT("o adorno encolheu com a idade em %s"), *Onde));
+			return false;
+		}
+		// A cabeça cai em PROPORÇÃO ao corpo e cresce em UNIDADES. Foi ela
+		// encolhendo em unidades que fez o adorno encolher junto: quem tem teto
+		// no raio da cabeça herda o que acontecer com ele.
+		if (Filhote.HeadRadiusUnits() > Adulto.HeadRadiusUnits()
+			|| Adulto.HeadRadiusUnits() > Evoluido.HeadRadiusUnits())
+		{
+			AddError(FString::Printf(TEXT("a cabeça encolheu com a idade em %s"), *Onde));
 			return false;
 		}
 

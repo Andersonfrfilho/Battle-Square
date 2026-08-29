@@ -1,6 +1,8 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Battle/BattleArena.h"
+
+#include "Environment/ForestBackdrop.h"
 #include "UI/BattleResultWidget.h"
 #include "Blueprint/UserWidget.h"
 #include "Misc/Paths.h"
@@ -83,9 +85,19 @@ ABattleArena::ABattleArena()
 	// (DP-09 — tilt-shift/câmera fixa só nesta cena). Valores calibrados
 	// para uma grade 3x3 de CellSize padrão; escala junto se CellSize
 	// mudar via BeginPlay/ajuste de instância.
-	ArenaCamera->SetRelativeLocation(FVector(-600.0f, 0.0f, 500.0f));
-	ArenaCamera->SetRelativeRotation(FRotator(-38.0f, 0.0f, 0.0f));
-	ArenaCamera->FieldOfView = 45.0f;
+	//
+	// Recuada, erguida e MENOS mergulhada do que era (-38, 45mm): com o
+	// mergulho antigo o quadro inteiro era tabuleiro, e o que estivesse
+	// atrás dele subia para fora do topo da tela. Não havia lugar onde um
+	// fundo pudesse existir — daí "não tem fundo".
+	//
+	// Aqui o tabuleiro ocupa a faixa de baixo e sobra quadro para a mata.
+	// O horizonte continua fora: enquadrar 3x3 legível E horizonte exige uma
+	// câmera tão rasa que as casas ficam de perfil, e a leitura da grade é
+	// regra, não decoração.
+	ArenaCamera->SetRelativeLocation(FVector(-880.0f, 0.0f, 620.0f));
+	ArenaCamera->SetRelativeRotation(FRotator(-26.0f, 0.0f, 0.0f));
+	ArenaCamera->FieldOfView = 58.0f;
 	ArenaCamera->AspectRatio = 16.0f / 9.0f;
 
 	BuildArenaGeometry();
@@ -114,6 +126,42 @@ void ABattleArena::BeginPlay()
 	AddActorWorldOffset(FVector(0.0f, 0.0f, BoardElevation));
 
 	RefreshTileVisuals();
+	SpawnForestBackdrop();
+}
+
+void ABattleArena::SpawnForestBackdrop()
+{
+	UWorld* World = GetWorld();
+	if (!World || ForestBackdrop)
+	{
+		return;
+	}
+
+	// Ao NÍVEL do chão, não ao do tabuleiro: a arena foi erguida
+	// BoardElevation acima do plano do mundo, e a mata cresce no plano.
+	// Descer aqui deriva do mesmo número que ergueu — dois valores
+	// discordariam na primeira edição (L-032/L-033).
+	const FVector ChaoDaMata = GetActorLocation() - FVector(0.0f, 0.0f, BoardElevation);
+
+	FActorSpawnParameters Parametros;
+	Parametros.Owner = this;
+	ForestBackdrop = World->SpawnActor<AForestBackdrop>(
+		AForestBackdrop::StaticClass(), ChaoDaMata, FRotator::ZeroRotator, Parametros);
+	if (!ForestBackdrop)
+	{
+		return;
+	}
+
+	const FVector CameraLocal = ArenaCamera ? ArenaCamera->GetRelativeLocation() : FVector::ZeroVector;
+	ForestBackdrop->BuildForest(CellSize, static_cast<uint32>(ForestSeed),
+		FVector2D(CameraLocal.X, CameraLocal.Y));
+
+	// Painel de desenvolvimento, não texto de jogador: FString aqui é a
+	// mesma escolha das outras linhas de diagnóstico, e some no Shipping.
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("cenario: mata de floresta com %d elementos"),
+			ForestBackdrop->GetPlantedCount()),
+		0.0f, FColor::Green, /*Key=*/21);
 }
 
 void ABattleArena::BuildArenaGeometry()
@@ -388,6 +436,17 @@ void ABattleArena::SpawnPetViews(const FBattleState& InitialState, const TArray<
 
 		View->SetInitialState(Pet, *Presentation);
 		SpawnedPetViews.Add(View);
+
+		// Dois bichos gerados podem sair parecidos por acaso, e olhar não
+		// distingue "o gerador não variou" de "variou pouco desta vez". A
+		// linha diz os números, então uma partida responde qual dos dois é.
+		const FPetMorphology& Corpo = View->GetMorphology();
+		FBattleDebugScreen::Show(
+			FString::Printf(
+				TEXT("corpo %d: tronco %.2fx%.2fx%.2f  perna %.0f  cabeca %.2f  cauda %.2f"),
+				Pet.PetId, Corpo.BodyScale.X, Corpo.BodyScale.Y, Corpo.BodyScale.Z,
+				Corpo.LegClearanceUnits, Corpo.HeadScale, Corpo.TailScale.Z),
+			0.0f, FColor::Cyan, /*Key=*/30 + Pet.PetId);
 	}
 	// Os pets já nascem olhando um para o outro.
 	RefreshGazes();

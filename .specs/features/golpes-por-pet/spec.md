@@ -79,8 +79,24 @@ alcance" do atacante em (1,1). Ele é **adjacente** — só errava porque a dire
 apontava para outro lado. Num 3x3, **tudo é adjacente ao centro**, então testar
 alcance exige cantos opostos.
 
-**Fatia 3 — efeito próprio por golpe** (dano, tipo, e o que faz com o terreno).
-É aqui que "fogo na grama" acontece.
+**Fatia 3 — o golpe DECIDE o dano.** ✅ **Feita em 2026-08-29.** O poder do
+golpe substitui o multiplicador fixo, e o nome dele aparece no feed logo depois
+do acerto.
+
+O poder mora em `FPetState`, e não numa tabela consultada de fora: o commit
+carrega só o ÍNDICE (DP-golpe-04), e índice sem poder não resolve nada.
+Consultar durante a batalha quebraria a fronteira que mantém o núcleo
+verificável. Ele entra no HASH, porque estado que decide resultado precisa
+estar na assinatura.
+
+**Poder 0 = pet sem golpe**, e o combate cai no multiplicador de antes.
+Tratá-lo como poder faria todo pet legado bater sem dano nenhum — e o espelho
+está cheio deles enquanto a migração não termina.
+
+**Fatia 4 — o golpe muda o TERRENO.** É onde "fogo na grama vira nuvem"
+acontece, e ela precisa de um campo novo por golpe (efeito de terreno) no
+payload assinado — a mesma cadeia de cinco lugares da fatia 1. Ver
+`.specs/features/clima-no-campo/`, que já tem o desenho e as perguntas.
 
 ## Fora de escopo
 

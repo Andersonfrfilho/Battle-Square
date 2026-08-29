@@ -68,6 +68,27 @@ struct FPetState
 	UPROPERTY()
 	int32 Speed = 0;
 
+	/**
+	 * Poder de cada golpe, em PORCENTAGEM de dano (100 = neutro).
+	 *
+	 * Está no estado do núcleo, e não numa tabela consultada de fora, porque a
+	 * resolução precisa dele: o commit carrega só o ÍNDICE do golpe
+	 * (DP-golpe-04), e um índice sem poder não resolve nada. Consultar de fora
+	 * durante a batalha quebraria a fronteira que mantém o núcleo verificável.
+	 *
+	 * ZERO significa "pet sem golpe cadastrado", e o combate cai no
+	 * multiplicador padrão — o comportamento de antes dos golpes. Tratar zero
+	 * como poder faria esse pet bater sem dano nenhum.
+	 */
+	UPROPERTY()
+	int32 MovePowers[4] = { 0, 0, 0, 0 };
+
+	/** Poder do golpe naquele índice, ou 0 fora da faixa. */
+	int32 GetMovePower(uint8 MoveIndex) const
+	{
+		return MoveIndex < 4 ? MovePowers[MoveIndex] : 0;
+	}
+
 	UPROPERTY()
 	uint8 PostureFlags = 0; // EBattlePostureFlags empacotado
 

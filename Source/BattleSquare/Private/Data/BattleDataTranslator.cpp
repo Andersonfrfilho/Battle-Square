@@ -47,6 +47,19 @@ void FBattleDataTranslator::TranslatePet(
 		OutPresentation.MoveNames.Add(Move.Name);
 	}
 
+	// O PODER vai para o núcleo, o NOME fica na apresentação.
+	//
+	// Separados de propósito: o núcleo precisa do poder para resolver dano e
+	// não pode conhecer texto (AD-012); a tela precisa do nome e não pode
+	// recalcular dano (audit_no_recalculation.sh). Cada lado recebe o que usa,
+	// e nada além.
+	for (int32 Indice = 0; Indice < 4; ++Indice)
+	{
+		OutBattleState.MovePowers[Indice] = Source.Moves.IsValidIndex(Indice)
+			? Source.Moves[Indice].Power
+			: 0;
+	}
+
 }
 
 void FBattleDataTranslator::TranslateMatchup(

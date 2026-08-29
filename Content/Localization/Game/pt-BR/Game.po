@@ -4,8 +4,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Game\n"
-"POT-Creation-Date: 2026-08-28 04:21\n"
-"PO-Revision-Date: 2026-08-28 04:21\n"
+"POT-Creation-Date: 2026-08-29 14:12\n"
+"PO-Revision-Date: 2026-08-29 14:12\n"
 "Language-Team: \n"
 "Language: pt-BR\n"
 "MIME-Version: 1.0\n"
@@ -47,6 +47,13 @@ msgstr "↘"
 msgctxt ",548B418CBD4374ABD93D27B61FFC5BE4"
 msgid "↙"
 msgstr "↙"
+
+#. Key:	60B2B295F64F184E59BD538857AA9441
+#. SourceLocation:	/Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Camuflar_Label.Text
+#: /Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Camuflar_Label.Text
+msgctxt ",60B2B295F64F184E59BD538857AA9441"
+msgid "Camuflar"
+msgstr "Camuflar"
 
 #. Key:	998650104C4E853312D66DAD41AC5C29
 #. SourceLocation:	/Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Cancelar_Label.Text
@@ -132,6 +139,20 @@ msgctxt ",248771E4F74877BF68284DB4D803BAD5"
 msgid "Mover"
 msgstr "Mover"
 
+#. Key:	3C875F15454BB14D1E651F963590B7AB
+#. SourceLocation:	/Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Submergir_Label.Text
+#: /Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Submergir_Label.Text
+msgctxt ",3C875F15454BB14D1E651F963590B7AB"
+msgid "Submergir"
+msgstr "Submergir"
+
+#. Key:	89B79D259A498C84CDFBE1AB9C5594AF
+#. SourceLocation:	/Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Voar_Label.Text
+#: /Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Button_Voar_Label.Text
+msgctxt ",89B79D259A498C84CDFBE1AB9C5594AF"
+msgid "Voar"
+msgstr "Voar"
+
 #. Key:	4F03AD8C7C4EC3933D6517B4C8B9430F
 #. SourceLocation:	/Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Text_Status.Text
 #: /Game/UI/WBP_BattleActionSelector.WBP_BattleActionSelector_C:WidgetTree.Text_Status.Text
@@ -139,16 +160,23 @@ msgctxt ",4F03AD8C7C4EC3933D6517B4C8B9430F"
 msgid "Ações: 0 de 3 — escolha o tipo"
 msgstr "Ações: 0 de 3 — escolha o tipo"
 
+#. Key:	GolpeUsado
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1374)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1374)
+msgctxt "BattleNarration,GolpeUsado"
+msgid "— usou {Move}"
+msgstr "— usou {Move}"
+
 #. Key:	SuperEfetivo
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(985)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(985)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1387)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1387)
 msgctxt "BattleNarration,SuperEfetivo"
 msgid "É super efetivo!"
 msgstr "É super efetivo!"
 
 #. Key:	PoucoEfetivo
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(991)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(991)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1393)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1393)
 msgctxt "BattleNarration,PoucoEfetivo"
 msgid "Não é muito efetivo..."
 msgstr "Não é muito efetivo..."
@@ -287,29 +315,29 @@ msgid "{Actor} se moveu"
 msgstr "{Actor} se moveu"
 
 #. Key:	Committed
-#. SourceLocation:	Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(157)
-#: Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(157)
+#. SourceLocation:	Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(164)
+#: Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(164)
 msgctxt "BattleUI,Committed"
 msgid "Turno fechado — aguardando o oponente"
 msgstr "Turno fechado — aguardando o oponente"
 
 #. Key:	ChooseDirection
-#. SourceLocation:	Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(159)
-#: Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(159)
+#. SourceLocation:	Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(166)
+#: Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(166)
 msgctxt "BattleUI,ChooseDirection"
 msgid "Escolha a direção"
 msgstr "Escolha a direção"
 
 #. Key:	ChooseType
-#. SourceLocation:	Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(160)
-#: Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(160)
+#. SourceLocation:	Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(167)
+#: Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(167)
 msgctxt "BattleUI,ChooseType"
 msgid "Ações: {0} de 3 — escolha o tipo"
 msgstr "Ações: {0} de 3 — escolha o tipo"
 
 #. Key:	StatusComLado
-#. SourceLocation:	Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(168)
-#: Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(168)
+#. SourceLocation:	Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(175)
+#: Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(175)
 msgctxt "BattleUI,StatusComLado"
 msgid "{0}\n{1}"
 msgstr "{0}\n{1}"

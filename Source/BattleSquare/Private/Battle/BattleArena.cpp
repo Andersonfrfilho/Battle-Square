@@ -17,6 +17,8 @@ DEFINE_LOG_CATEGORY(LogBattleArena);
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInterface.h"
+#include "Components/PrimitiveComponent.h"
+#include "CollisionQueryParams.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Battle/TacticalOpponentAI.h"
 #include "Battle/BattleResolver.h"
@@ -58,6 +60,10 @@ namespace ArenaGeometria
 
 	/** A linha desenhada assenta ESTE tanto acima da superfície da laje. */
 	constexpr float FolgaDaGradeDesenhada = 4.0f;
+
+	/** De onde e até onde a sonda procura o chão do mundo sob o encontro. */
+	constexpr float AlturaDaSondaDeChao = 200.0f;
+	constexpr float AlcanceDaSondaDeChao = 5000.0f;
 }
 
 ABattleArena::ABattleArena()
@@ -236,7 +242,12 @@ void ABattleArena::RefreshTileVisuals()
 {
 	using namespace ArenaGeometria;
 
-	if (UMaterialInterface* MaterialDoChao = FloorMaterial.LoadSynchronous())
+	// O que o mundo emprestou vem primeiro: a arena que nasce de um encontro
+	// deve parecer o lugar onde ele aconteceu, não um cenário à parte.
+	UMaterialInterface* MaterialDoChao = AdoptedFloorMaterial
+		? AdoptedFloorMaterial.Get()
+		: FloorMaterial.LoadSynchronous();
+	if (MaterialDoChao)
 	{
 		ArenaFloorMesh->SetMaterial(0, MaterialDoChao);
 	}
@@ -261,9 +272,8 @@ void ABattleArena::RefreshTileVisuals()
 				continue;
 			}
 
-			const uint8 Propriedade = CurrentState.CellLayout.IsValidIndex(Indice)
-				? CurrentState.CellLayout[Indice]
-				: static_cast<uint8>(ECellProperty::None);
+			const uint8 Propriedade = GetCellProperty(
+				static_cast<uint8>(Coluna), static_cast<uint8>(Linha));
 
 			const float Superficie = GetCellSurfaceHeight(Propriedade);
 			const float Espessura = Superficie - FundoDoTabuleiro;
@@ -292,7 +302,65 @@ FVector ABattleArena::GetCellWorldLocation(uint8 Column, uint8 Row) const
 	// se viu jogando. Linha vira o eixo vertical da tela, coluna o horizontal.
 	const float OffsetX = -(static_cast<float>(Row) - 1.0f) * CellSize;
 	const float OffsetY = (static_cast<float>(Column) - 1.0f) * CellSize;
-	return GetActorLocation() + FVector(OffsetX, OffsetY, 0.0f);
+
+	// O Z vem do TERRENO, não do plano do ator. Enquanto esta função devolvia
+	// zero, a laje tinha relevo e o pet não: sobre a água ele ficava no ar, e
+	// sobre a pedra, enterrado nela. A altura já tinha dona
+	// (GetCellSurfaceHeight) — faltava esta função perguntar a ela.
+	return GetActorLocation() + FVector(OffsetX, OffsetY, GetCellSurfaceHeightAt(Column, Row));
+}
+
+uint8 ABattleArena::GetCellProperty(uint8 Column, uint8 Row) const
+{
+	const int32 Indice = CellLayoutIndex(Column, Row);
+	return CurrentState.CellLayout.IsValidIndex(Indice)
+		? CurrentState.CellLayout[Indice]
+		: static_cast<uint8>(ECellProperty::None);
+}
+
+float ABattleArena::GetCellSurfaceHeightAt(uint8 Column, uint8 Row) const
+{
+	return GetCellSurfaceHeight(GetCellProperty(Column, Row));
+}
+
+bool ABattleArena::AdoptAmbienceFromWorldLocation(const FVector& WorldLocation)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return false;
+	}
+
+	const FVector Alto = WorldLocation + FVector(0.0f, 0.0f, ArenaGeometria::AlturaDaSondaDeChao);
+	const FVector Baixo = WorldLocation - FVector(0.0f, 0.0f, ArenaGeometria::AlcanceDaSondaDeChao);
+
+	FHitResult Chao;
+	FCollisionQueryParams Consulta(SCENE_QUERY_STAT(ArenaAmbience), /*bTraceComplex=*/false, this);
+	if (!World->LineTraceSingleByChannel(Chao, Alto, Baixo, ECC_Visibility, Consulta))
+	{
+		FBattleDebugScreen::Show(TEXT("ambiente: sem chão sob o encontro — paleta própria"),
+			0.0f, FColor::Silver, /*Key=*/20);
+		return false;
+	}
+
+	const UPrimitiveComponent* Terreno = Chao.GetComponent();
+	UMaterialInterface* MaterialDoLugar = Terreno ? Terreno->GetMaterial(0) : nullptr;
+	if (!MaterialDoLugar)
+	{
+		FBattleDebugScreen::Show(TEXT("ambiente: chão sem material — paleta própria"),
+			0.0f, FColor::Silver, /*Key=*/20);
+		return false;
+	}
+
+	AdoptedFloorMaterial = MaterialDoLugar;
+	RefreshTileVisuals();
+
+	// Sem esta linha, "a arena parece o mundo" é opinião: ninguém distingue
+	// adoção bem-sucedida de coincidência de paleta olhando a tela.
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("ambiente: chão herdado do mundo (%s)"), *MaterialDoLugar->GetName()),
+		0.0f, FColor::Green, /*Key=*/20);
+	return true;
 }
 
 void ABattleArena::SpawnPetViews(const FBattleState& InitialState, const TArray<FPetPresentationInfo>& Presentations)
@@ -1013,6 +1081,9 @@ void ABattleArena::ResolveTurnWithCommits(const FTurnCommit& LocalCommit, const 
 	const FTurnCommit& LeftCommit = bPlayerIsLeft ? LocalCommit : OpponentCommit;
 	const FTurnCommit& RightCommit = bPlayerIsLeft ? OpponentCommit : LocalCommit;
 
+	LastCommitBySide[0] = LeftCommit;
+	LastCommitBySide[1] = RightCommit;
+
 	FBattleResolveResult Result = FBattleResolver::ResolveTurn(CurrentState, LeftCommit, RightCommit);
 	// ResolveTurn nunca decide vitória/derrota por design (BattleOutcome.h:
 	// "separação deliberada") — quem chama precisa avaliar depois. Achado
@@ -1180,9 +1251,7 @@ void ABattleArena::DrawDebugGrid() const
 			// nada disso aparecia. Uma regra que depende do terreno numa grade
 			// que não mostra o terreno é uma regra que o jogador só descobre
 			// perdendo.
-			const uint8 Propriedade = CurrentState.CellLayout.IsValidIndex(CellLayoutIndex(Column, Row))
-				? CurrentState.CellLayout[CellLayoutIndex(Column, Row)]
-				: static_cast<uint8>(ECellProperty::None);
+			const uint8 Propriedade = GetCellProperty(Column, Row);
 
 			FString NomeDaCasa;
 			FColor CorDoTerreno = FColor(80, 80, 80);
@@ -1213,12 +1282,12 @@ void ABattleArena::DrawDebugGrid() const
 			// decide o turno, e o terreno decide o seguinte.
 			const FColor CorDaCasa = Ocupantes.IsEmpty() ? CorDoTerreno : FColor::Yellow;
 
-			// A linha assenta em cima da LAJE, não no plano zero. Mesma função
-			// que dimensionou a laje (L-032/L-033): com dois números, a água
-			// afundaria a laje e deixaria o contorno boiando no ar.
+			// Centro já vem NA superfície da casa — a altura mora em
+			// GetCellWorldLocation, e a linha só acrescenta a folga para não
+			// brigar com a face da laje. Somá-la aqui outra vez punha o
+			// contorno ao dobro da altura do terreno.
 			const FVector CentroNaSuperficie = Centro
-				+ FVector(0.0f, 0.0f, ABattleArena::GetCellSurfaceHeight(Propriedade)
-					+ ArenaGeometria::FolgaDaGradeDesenhada);
+				+ FVector(0.0f, 0.0f, ArenaGeometria::FolgaDaGradeDesenhada);
 
 			DrawDebugBox(GetWorld(), CentroNaSuperficie, FVector(HalfCell, HalfCell, 2.0f),
 				CorDaCasa, /*bPersistent=*/false, /*LifeTime=*/-1.0f, /*DepthPriority=*/0, /*Thickness=*/2.0f);
@@ -1238,6 +1307,29 @@ void ABattleArena::DrawDebugGrid() const
 				nullptr, CorDaCasa, /*Duration=*/0.0f, /*bDrawShadow=*/true, /*FontScale=*/1.1f);
 		}
 	}
+}
+
+FString ABattleArena::FindMoveNameForEvent(const FBattleEvent& Event) const
+{
+	const FPetState* Pet = CurrentState.Pets.FindByPredicate(
+		[&Event](const FPetState& Candidate) { return Candidate.PetId == Event.ActorId; });
+	if (!Pet || Pet->Side > 1 || Event.SlotIndex >= FTurnCommit::ActionsPerTurn)
+	{
+		return FString();
+	}
+
+	const FBattleAction& Acao = LastCommitBySide[Pet->Side].Actions[Event.SlotIndex];
+	if (!BattleActionRequiresMove(Acao.Type))
+	{
+		return FString();
+	}
+
+	const TArray<FString> Nomes = GetMoveNamesForSide(Pet->Side);
+	const uint8 Indice = GetMoveIndexFromAction(Acao);
+
+	// Pet sem nome cadastrado para aquele slot não ganha linha: "usou golpe 2"
+	// não diz mais que o silêncio, e ainda ocupa espaço no feed.
+	return Nomes.IsValidIndex(Indice) ? Nomes[Indice] : FString();
 }
 
 void ABattleArena::NarrateEvent(const FBattleEvent& Event)
@@ -1267,6 +1359,23 @@ void ABattleArena::NarrateEvent(const FBattleEvent& Event)
 	}
 
 	FBattleNarrationFeed::Push(Frase, Cor);
+
+	// O NOME do golpe que caiu, logo depois do acerto.
+	//
+	// Sem isto, escolher entre quatro golpes é escolher entre quatro nomes que
+	// nunca reaparecem: o jogador não tem como ligar a escolha ao resultado, e
+	// a decisão da fatia 2 não ensina nada.
+	if (Event.Type == EBattleEventType::AtaqueAcertou && Actor)
+	{
+		const FString NomeDoGolpe = FindMoveNameForEvent(Event);
+		if (!NomeDoGolpe.IsEmpty())
+		{
+			FBattleNarrationFeed::Push(
+				FText::Format(NSLOCTEXT("BattleNarration", "GolpeUsado", "— usou {Move}"),
+					FFormatNamedArguments{ { TEXT("Move"), FText::FromString(NomeDoGolpe) } }),
+				Cor);
+		}
+	}
 
 	// Efetividade só faz sentido no golpe que ACERTOU: dizê-la num erro ou num
 	// movimento seria ruído, e o jogador aprende associando ao dano que veio.

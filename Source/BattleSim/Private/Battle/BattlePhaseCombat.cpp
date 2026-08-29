@@ -167,7 +167,7 @@ namespace
 
 	// Declarada antes porque ResolveAttackForSide a chama e ela vem depois.
 	void ApplyHitAgainst(FBattleState& State, FPetState& Attacker, FPetState& Target,
-		bool bIsMagic, uint8 SlotIndex, TArray<FBattleEvent>& OutTrace);
+		bool bIsMagic, int32 MovePower, uint8 SlotIndex, TArray<FBattleEvent>& OutTrace);
 
 	FPetState* FindPetById(FBattleState& State, uint8 PetId)
 	{
@@ -217,7 +217,13 @@ namespace
 		}
 
 		const bool bIsMagic = (Action.Type == EActionType::Magia);
-		ApplyHitAgainst(State, *Attacker, *Target, bIsMagic, SlotIndex, OutTrace);
+
+		// O poder do GOLPE substitui o multiplicador fixo. Poder 0 = pet sem
+		// golpe cadastrado, e aí vale o multiplicador de antes: tratar zero
+		// como poder faria esse pet bater sem dano nenhum.
+		const int32 MovePower = Attacker->GetMovePower(GetMoveIndexFromAction(Action));
+
+		ApplyHitAgainst(State, *Attacker, *Target, bIsMagic, MovePower, SlotIndex, OutTrace);
 	}
 
 	/**
@@ -234,6 +240,7 @@ namespace
 		FPetState& Attacker,
 		FPetState& Target,
 		bool bIsMagic,
+		int32 MovePower,
 		uint8 SlotIndex,
 		TArray<FBattleEvent>& OutTrace)
 	{
@@ -266,7 +273,11 @@ namespace
 			return;
 		}
 
-		int32 Multiplier = bIsMagic ? MagicDamageMultiplierPercent : AttackDamageMultiplierPercent;
+		// Poder do golpe manda; sem golpe, o multiplicador padrão do tipo de
+		// ação. Assim um pet legado continua lutando como antes.
+		int32 Multiplier = MovePower > 0
+			? MovePower
+			: (bIsMagic ? MagicDamageMultiplierPercent : AttackDamageMultiplierPercent);
 		if (bIsMagic && HasPosture(*TargetPtr, EBattlePostureFlags::Flying))
 		{
 			Multiplier = (Multiplier * ExposedInTheAirDamagePercent) / 100;
@@ -319,7 +330,10 @@ void BattlePhases::ApplyCombat(
 
 		// Trombada é FÍSICA nos dois sentidos: quem esquivou escapa, quem
 		// defendeu amortece — exatamente as ações que já estavam registradas.
-		ApplyHitAgainst(State, *Um, *Outro, /*bIsMagic=*/false, SlotIndex, OutTrace);
-		ApplyHitAgainst(State, *Outro, *Um, /*bIsMagic=*/false, SlotIndex, OutTrace);
+		// Trombada não é golpe: passa poder 0 para valer o multiplicador
+		// físico padrão. Usar o golpe de alguém aqui faria a colisão ferir
+		// conforme uma escolha que ninguém fez.
+		ApplyHitAgainst(State, *Um, *Outro, /*bIsMagic=*/false, /*MovePower=*/0, SlotIndex, OutTrace);
+		ApplyHitAgainst(State, *Outro, *Um, /*bIsMagic=*/false, /*MovePower=*/0, SlotIndex, OutTrace);
 	}
 }

@@ -42,6 +42,12 @@ ABattleArena* UWorldBattleTransitionService::BeginTransition(AActor* WorldPawn,
 	ActiveArena = Arena;
 	bIsTransitionActive = true;
 
+	// A arena veste o lugar de onde o jogador veio. Ela nasce a um milhão de
+	// unidades dali (DP-enc-03): luz, céu e névoa são globais e já a alcançam,
+	// mas o chão não — e sem isto a batalha parecia acontecer noutro mundo.
+	// Recusa é aceitável: fica a paleta autorada.
+	Arena->AdoptAmbienceFromWorldLocation(CapturedPawnTransform.GetLocation());
+
 	Detection->SetDetectionEnabled(false);
 	Arena->OnBattleFinished.AddUObject(this, &UWorldBattleTransitionService::HandleBattleFinished);
 	SetViewTarget(Arena);

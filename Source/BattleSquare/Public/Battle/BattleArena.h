@@ -95,6 +95,39 @@ public:
 	 */
 	static float GetCellSurfaceHeight(uint8 CellProperty);
 
+	/** O que a casa É, ou None enquanto não houver layout montado. */
+	uint8 GetCellProperty(uint8 Column, uint8 Row) const;
+
+	/**
+	 * Altura da superfície DAQUELA casa — a que o pé do pet encosta.
+	 *
+	 * GetCellSurfaceHeight sozinha só sabe traduzir um terreno em altura;
+	 * quem sabe QUAL terreno está na casa é o estado. Sem este par, quem
+	 * posiciona um pet tem de repetir a consulta ao layout, e foi assim que
+	 * a laje ganhou relevo e o pet continuou no plano zero.
+	 */
+	float GetCellSurfaceHeightAt(uint8 Column, uint8 Row) const;
+
+	/**
+	 * Veste a arena com o ambiente do lugar onde o encontro aconteceu.
+	 *
+	 * A arena nasce a um milhão de unidades do mundo (DP-enc-03), fora de
+	 * qualquer célula de World Partition: luz direcional, céu e névoa são
+	 * globais e já a alcançam, mas o CHÃO não — e é o chão que denuncia que
+	 * a batalha se passa noutro lugar. Sonda o terreno sob o encontro e
+	 * empresta o material dele ao chão da arena.
+	 *
+	 * As LAJES não adotam nada: elas dizem o que cada casa é (água, dano,
+	 * bônus), e essa leitura é regra de jogo, não decoração.
+	 *
+	 * Devolve false quando não há chão sondável ou ele não tem material —
+	 * e aí a paleta autorada continua valendo. Degrada, não quebra.
+	 */
+	bool AdoptAmbienceFromWorldLocation(const FVector& WorldLocation);
+
+	/** Material herdado do mundo, ou nulo quando a arena usa a paleta própria. */
+	UMaterialInterface* GetAdoptedFloorMaterial() const { return AdoptedFloorMaterial; }
+
 	/** Malhas da arena, para o teste que exige asset atribuído em todas. */
 	const TArray<TObjectPtr<UStaticMeshComponent>>& GetCellTileMeshes() const { return CellTileMeshes; }
 	const TArray<TObjectPtr<UStaticMeshComponent>>& GetArenaFrameMeshes() const { return ArenaFrameMeshes; }
@@ -195,6 +228,10 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UStaticMeshComponent> ArenaFloorMesh;
 
+	/** Chão emprestado pelo mundo (AdoptAmbienceFromWorldLocation). */
+	UPROPERTY()
+	TObjectPtr<UMaterialInterface> AdoptedFloorMaterial;
+
 	UPROPERTY(VisibleAnywhere)
 	TArray<TObjectPtr<UStaticMeshComponent>> ArenaFrameMeshes;
 
@@ -235,6 +272,9 @@ private:
 
 	/** Traduz o evento para o feed de produto (DP-leg-02: traduz, não decide). */
 	void NarrateEvent(const FBattleEvent& Event);
+
+	/** Nome do golpe usado no slot deste evento, ou vazio se não houver. */
+	FString FindMoveNameForEvent(const FBattleEvent& Event) const;
 
 	/** Cada pet vivo passa a olhar para o adversário vivo. */
 	void RefreshGazes();
@@ -317,6 +357,14 @@ private:
 
 	// Traço do turno que ENCERROU a batalha, guardado até a reprodução acabar.
 	TArray<FBattleEvent> PendingEndOfBattleTrace;
+
+	// Commits do turno em reprodução, para a narração saber QUAL golpe caiu.
+	//
+	// O evento do núcleo não carrega o índice do golpe, e forçá-lo num campo
+	// livre (FromCell) seria dar dois significados ao mesmo byte — o tipo de
+	// economia que produz defeito calado. A arena já tem os commits: basta
+	// guardá-los enquanto o traço é reproduzido.
+	FTurnCommit LastCommitBySide[2];
 
 	uint8 FindPostureFlagsForPet(uint8 PetId) const;
 

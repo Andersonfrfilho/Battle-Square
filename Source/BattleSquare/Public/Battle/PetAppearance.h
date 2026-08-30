@@ -37,7 +37,7 @@ enum class EPetCrestShape : uint8
 /**
  * Como um pet de cada TIPO se parece.
  *
- * O tipo decide a skill (Config/PetSkills.json, DP-skill-01) e a vantagem
+ * O tipo decide a skill (Config/PetTypes.json, DP-skill-01) e a vantagem
  * (Config/TypeEffectiveness.json) — e até aqui não decidia nada na tela.
  * Um pet cujo tipo só existe no texto do painel obriga o jogador a decorar
  * de quem é cada esfera.

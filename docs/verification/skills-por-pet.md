@@ -5,13 +5,25 @@
 Os testes provam que o catálogo carrega, que a fila recusa e que a IA respeita.
 O que eles não decidem: **a diferença entre pets se SENTE jogando?**
 
-## Skills de hoje (`Config/PetSkills.json`)
+## Skills de hoje (`Config/PetTypes.json`)
 
-| Tipo | Skill própria |
+A skill é do **ELEMENTO**, não da escola — voar, submergir e camuflar são
+coisas do corpo, e o corpo é feito do elemento. Então `Natural/Fogo` e
+`Psiquica/Fogo` voam pelo mesmo motivo.
+
+| Elemento | Skill própria |
 |---|---|
 | Fogo | voar |
 | Agua | submergir — **exige casa de água** |
 | Planta | camuflar |
+| Terra | nenhuma — ver abaixo |
+
+**Terra não tem skill, e a ausência é declarada.** O que ela quer é *escavar*:
+a mesma postura de subsolo que submergir usa, exigindo pedra em vez de água.
+Não entrou porque o requisito de terreno mora no CÓDIGO do núcleo, e torná-lo
+dado da skill é mecânica nova, com spec e teste próprios.
+
+Sem skill **não é sem ação**: os seis universais são de todo pet.
 
 Uma por tipo, de propósito: identidade só existe quando há diferença, e duas
 por tipo já começam a diluir isso. Os seis tipos de ação universais

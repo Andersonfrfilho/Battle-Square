@@ -1,6 +1,8 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
+#include "Balance/PetSkillCatalog.h"
 #include "Balance/PetTypeCatalog.h"
+#include "HAL/PlatformFileManager.h"
 #include "Balance/PetTypeIdentity.h"
 #include "Battle/PetAppearance.h"
 #include "Misc/AutomationTest.h"
@@ -192,6 +194,63 @@ bool FShippedTypeCatalogLoadsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("'Magico' ainda resolve"),
 		Catalogo.ResolveLegacyName(TEXT("Magico"), Escola, Elemento));
 	TestEqual(TEXT("E vira Psiquica"), Escola, FString(TEXT("Psiquica")));
+
+	return true;
+}
+
+// UMA lista de elementos, e só uma.
+//
+// As skills viviam num arquivo à parte que repetia os nomes dos elementos —
+// a segunda cópia da mesma lista. Cópias concordam até a primeira edição, e
+// aqui a discordância seria um elemento existindo para a COR e não para a
+// SKILL: o pet aparece certo e não sabe fazer nada, sem nada apontando a causa.
+//
+// Este teste falha se alguém recriar o arquivo separado, e é de propósito: a
+// duplicação volta por conveniência, não por decisão.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSkillsComeFromTheOneTypeCatalogTest,
+	"BattleSquare.Balance.PetTypeCatalog.SkillsComeFromTheOneCatalog",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FSkillsComeFromTheOneTypeCatalogTest::RunTest(const FString& Parameters)
+{
+	// O arquivo separado NÃO existe mais. Se voltar, há duas listas de novo.
+	TestFalse(TEXT("Config/PetSkills.json não existe — a lista é uma só"),
+		FPlatformFileManager::Get().GetPlatformFile().FileExists(
+			*FPaths::Combine(FPaths::ProjectConfigDir(), TEXT("PetSkills.json"))));
+
+	FPetTypeCatalog Tipos;
+	if (!FPetTypeCatalog::LoadFromJson(
+		FPaths::Combine(FPaths::ProjectConfigDir(), TEXT("PetTypes.json")), Tipos))
+	{
+		AddError(TEXT("Config/PetTypes.json não carregou"));
+		return false;
+	}
+
+	const FPetSkillCatalog Skills = FPetSkillCatalog::FromTypeCatalog(Tipos);
+
+	// As três skills do núcleo chegam pelos elementos que as declaram.
+	TestTrue(TEXT("Fogo voa"),
+		Skills.GetSkillsForType(TEXT("Natural/Fogo")).Contains(EActionType::Voar));
+	TestTrue(TEXT("Água submerge"),
+		Skills.GetSkillsForType(TEXT("Natural/Agua")).Contains(EActionType::Submergir));
+	TestTrue(TEXT("Planta camufla"),
+		Skills.GetSkillsForType(TEXT("Fisica/Planta")).Contains(EActionType::Camuflar));
+
+	// A skill é do ELEMENTO, não da escola: dois pets de fogo voam pelo mesmo
+	// motivo, que é serem os dois de fogo.
+	TestEqual(TEXT("Psiquica/Fogo tem a mesma skill de Natural/Fogo"),
+		Skills.GetSkillsForType(TEXT("Psiquica/Fogo")).Num(),
+		Skills.GetSkillsForType(TEXT("Natural/Fogo")).Num());
+
+	// E Terra segue sem skill própria — a ausência é declarada, não esquecida.
+	TestEqual(TEXT("Terra não tem skill"),
+		Skills.GetSkillsForType(TEXT("Fisica/Terra")).Num(), 0);
+
+	// Sem skill NÃO é sem ação: os seis universais são de todo pet.
+	TestTrue(TEXT("Mas continua com as ações universais"),
+		Skills.GetAvailableActionsForType(TEXT("Fisica/Terra")).Num()
+			== FPetSkillCatalog::GetUniversalActions().Num());
 
 	return true;
 }

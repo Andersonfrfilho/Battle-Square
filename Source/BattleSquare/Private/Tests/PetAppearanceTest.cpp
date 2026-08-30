@@ -16,7 +16,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FPetAppearanceDistinguishesTypesTest::RunTest(const FString& Parameters)
 {
-	// Os três elementos que Config/PetSkills.json usa para dar skill.
+	// Os três elementos que Config/PetTypes.json usa para dar skill.
 	const FPetAppearance Fogo = FPetAppearance::ForType(TEXT("Fogo"));
 	const FPetAppearance Agua = FPetAppearance::ForType(TEXT("Agua"));
 	const FPetAppearance Planta = FPetAppearance::ForType(TEXT("Planta"));

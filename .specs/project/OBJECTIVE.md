@@ -53,19 +53,22 @@ abaixo é regra pronta, testada, invisível:
 
 ### 2. Verificar o que ninguém verificou
 
-**Onze roteiros nunca rodados.** Testes headless não decidem nada do que está
+**Doze roteiros nunca rodados.** Testes headless não decidem nada do que está
 neles: eles existem justamente para o que só uma pessoa jogando responde.
 
 Ordem por valor, do mais decisivo:
 
-1. `encontros-transicao-batalha.md` — o laço completo, ENC-10 a ENC-12
-2. `skills-por-pet.md` — a identidade do pet se sente?
-3. `esconderijos.md` — as três trocas são distintas?
-4. `legibilidade-do-combate.md` — a narração explica a jogada?
-5. `arenas-variadas-jogabilidade.md` — a arena parece justa?
-6. `escala-pets-skills-balanceamento.md` — a efetividade parece certa?
-7. `traversal-camera-mundo.md`, `streaming-de-mundo.md`
-8. `apresentacao-combate-visual.md`, `combate-online-rede.md`, `mobile.md`
+1. **`atributos-treino-e-mundo.md`** — M8 inteiro, escrito em 29/08/2026. É o
+   mais decisivo AGORA: cobre tudo o que nunca foi visto na tela, e a pergunta
+   que a feature existia para responder (*ver o pet mudar é interessante?*)
+2. `encontros-transicao-batalha.md` — o laço completo, ENC-10 a ENC-12
+3. `skills-por-pet.md` — a identidade do pet se sente?
+4. `esconderijos.md` — as três trocas são distintas?
+5. `legibilidade-do-combate.md` — a narração explica a jogada?
+6. `arenas-variadas-jogabilidade.md` — a arena parece justa?
+7. `escala-pets-skills-balanceamento.md` — a efetividade parece certa?
+8. `traversal-camera-mundo.md`, `streaming-de-mundo.md`
+9. `apresentacao-combate-visual.md`, `combate-online-rede.md`, `mobile.md`
 
 Os três últimos exigem infraestrutura (dois processos, aparelho) e seguem
 bloqueados.
@@ -111,7 +114,9 @@ poder verificar seria entregar trabalho não medido.
 **Só o que não é meu.** O item 1 segue esgotado do meu lado, o item 4 é
 bloqueio de infraestrutura, e sobram dois:
 
-- **Item 2 — os oito roteiros verificáveis.** Nenhum foi rodado. É o único
+- **Item 2 — os NOVE roteiros verificáveis.** Nenhum foi rodado. O de M8
+  (`atributos-treino-e-mundo.md`) é novo e é o mais decisivo: 40 itens, e o
+  julgamento de três números que são chute meu. É o único
   caminho para o que teste nenhum decide, e agora há bem mais a olhar: sol e
   mata no mundo, painel do mundo, campos de treino, golpe trancado, esquiva por
   reflexo. **Nada disso foi visto na tela** — só verificado por build e teste,

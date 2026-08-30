@@ -2,6 +2,7 @@
 
 #include "Battle/BattleArena.h"
 #include "Components/DirectionalLightComponent.h"
+#include "Components/ExponentialHeightFogComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
 #include "Components/PostProcessComponent.h"
 #include "Components/SkyLightComponent.h"
@@ -118,8 +119,15 @@ bool FSceneLightingIsSpawnedByArenaTest::RunTest(const FString& Parameters)
 	return true;
 }
 
-// Dois sóis somam intensidade e devolvem a cena lavada pelo outro caminho.
-// BattleScreen.umap TEM sol próprio (DirectionalLight_0), e é ela que manda.
+// Dois sóis somam intensidade e devolvem a cena lavada pelo outro caminho —
+// mas quem sai é o sol DO MAPA, não o nosso.
+//
+// Este teste já existiu afirmando o contrário: que a arena não acendia nada
+// quando o mapa tinha sol. A tela mostrou o preço disso — o painel dizia "o
+// mapa ja tem sol, luz por codigo dispensada" e o azul claro continuava,
+// porque junto com o sol ia embora a TRAVA DE EXPOSIÇÃO, que não é assunto
+// de sol nenhum. Um único `if` respondia a duas perguntas diferentes, e a
+// segunda ficava inalcançável.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSceneLightingDoesNotDuplicateSunTest,
 	"BattleSquare.Environment.SceneLighting.DoesNotDuplicateExistingSun",
@@ -129,7 +137,7 @@ bool FSceneLightingDoesNotDuplicateSunTest::RunTest(const FString& Parameters)
 {
 	UWorld* World = CenaIluminada::CriarMundoDaIluminacao();
 
-	World->SpawnActor<ADirectionalLight>(
+	ADirectionalLight* SolDoMapa = World->SpawnActor<ADirectionalLight>(
 		ADirectionalLight::StaticClass(), FVector::ZeroVector, FRotator(-45.0f, 0.0f, 0.0f));
 
 	TestTrue(TEXT("O mundo já tem sol"), ABattleSceneLighting::WorldAlreadyHasSun(World));
@@ -137,7 +145,113 @@ bool FSceneLightingDoesNotDuplicateSunTest::RunTest(const FString& Parameters)
 	ABattleArena* Arena = World->SpawnActor<ABattleArena>();
 	Arena->DispatchBeginPlay();
 
-	TestNull(TEXT("E a arena NÃO acendeu um segundo"), Arena->GetSceneLighting());
+	TestNotNull(TEXT("A arena acende a própria cena mesmo assim"), Arena->GetSceneLighting());
+
+	// Um sol aceso, não dois: o do mapa se cala.
+	if (SolDoMapa && SolDoMapa->GetLightComponent())
+	{
+		TestFalse(TEXT("E o sol do mapa fica apagado"),
+			SolDoMapa->GetLightComponent()->IsVisible());
+	}
+
+	CenaIluminada::DestruirMundoDaIluminacao(World);
+	return true;
+}
+
+// O que estava na tela do usuário, reproduzido.
+//
+// O mapa da batalha traz sol, céu e névoa próprios. Enquanto isso dispensava
+// o ator inteiro, a exposição continuava automática: a engine reabria o
+// diafragma, o quadro estourava, e sobrava o azul claro do ambiente com todo
+// elemento da mata lavado em marrom claro. Cor no lugar certo do asset não
+// aparece na tela se a exposição não for a nossa.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSceneLightingExposureReachesMapWithSunTest,
+	"BattleSquare.Environment.SceneLighting.ExposureAppliesEvenWhenMapHasItsOwnSun",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FSceneLightingExposureReachesMapWithSunTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CenaIluminada::CriarMundoDaIluminacao();
+
+	World->SpawnActor<ADirectionalLight>(
+		ADirectionalLight::StaticClass(), FVector::ZeroVector, FRotator(-45.0f, 0.0f, 0.0f));
+
+	ABattleArena* Arena = World->SpawnActor<ABattleArena>();
+	Arena->DispatchBeginPlay();
+
+	const ABattleSceneLighting* Cena = Arena->GetSceneLighting();
+	if (!TestNotNull(TEXT("A cena da arena existe"), Cena))
+	{
+		CenaIluminada::DestruirMundoDaIluminacao(World);
+		return false;
+	}
+
+	const UPostProcessComponent* Exposicao = Cena->GetSceneExposure();
+	if (TestNotNull(TEXT("E ela traz a exposição junto"), Exposicao))
+	{
+		TestTrue(TEXT("Travada, mesmo num mapa que já tinha sol"),
+			static_cast<bool>(Exposicao->Settings.bOverride_AutoExposureMinBrightness));
+	}
+
+	CenaIluminada::DestruirMundoDaIluminacao(World);
+	return true;
+}
+
+// Céu e névoa do mapa pintam o quadro inteiro, e o sol não é o único culpado.
+//
+// "Somente ele para o campo e todos os elementos de florestas com o marrom
+// bem claro": o azul e o marrom claro vêm do ambiente do nível somado ao
+// nosso. Apagar só o sol do mapa deixaria metade do defeito de pé.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSceneLightingSilencesMapAmbientTest,
+	"BattleSquare.Environment.SceneLighting.SilencesSkyAndFogAuthoredInTheMap",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FSceneLightingSilencesMapAmbientTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CenaIluminada::CriarMundoDaIluminacao();
+
+	AActor* AmbienteDoMapa = World->SpawnActor<AActor>();
+	USceneComponent* Raiz = NewObject<USceneComponent>(AmbienteDoMapa);
+	AmbienteDoMapa->SetRootComponent(Raiz);
+	Raiz->RegisterComponent();
+
+	USkyLightComponent* CeuDoMapa = NewObject<USkyLightComponent>(AmbienteDoMapa);
+	CeuDoMapa->SetupAttachment(Raiz);
+	CeuDoMapa->RegisterComponent();
+
+	UExponentialHeightFogComponent* NevoaDoMapa =
+		NewObject<UExponentialHeightFogComponent>(AmbienteDoMapa);
+	NevoaDoMapa->SetupAttachment(Raiz);
+	NevoaDoMapa->RegisterComponent();
+
+	const int32 Caladas = ABattleSceneLighting::DimLightingAuthoredInMap(World);
+
+	TestTrue(TEXT("Calou pelo menos o céu e a névoa"), Caladas >= 2);
+	TestFalse(TEXT("O céu do mapa fica apagado"), CeuDoMapa->IsVisible());
+	TestFalse(TEXT("A névoa do mapa também"), NevoaDoMapa->IsVisible());
+
+	CenaIluminada::DestruirMundoDaIluminacao(World);
+	return true;
+}
+
+// A nossa própria luz nunca entra na conta do que se apaga.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSceneLightingNeverDimsItselfTest,
+	"BattleSquare.Environment.SceneLighting.NeverDimsItsOwnLights",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FSceneLightingNeverDimsItselfTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CenaIluminada::CriarMundoDaIluminacao();
+
+	ABattleSceneLighting* Nossa = World->SpawnActor<ABattleSceneLighting>();
+
+	ABattleSceneLighting::DimLightingAuthoredInMap(World);
+
+	TestTrue(TEXT("O nosso sol continua aceso"), Nossa->GetSunLight()->IsVisible());
+	TestTrue(TEXT("O nosso céu também"), Nossa->GetSkyLight()->IsVisible());
 
 	CenaIluminada::DestruirMundoDaIluminacao(World);
 	return true;
@@ -179,6 +293,13 @@ bool FSceneLightingExposureIsFixedTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Piso e teto no mesmo valor — exposição travada"),
 		Exposicao->Settings.AutoExposureMinBrightness,
 		Exposicao->Settings.AutoExposureMaxBrightness, 0.001f);
+
+	// Travar o piso e o teto e deixar o realce padrão da engine de pé é
+	// travar em cima de um ponto de exposição que ninguém pediu.
+	TestTrue(TEXT("O realce de exposição é nosso"),
+		static_cast<bool>(Exposicao->Settings.bOverride_AutoExposureBias));
+	TestEqual(TEXT("E ele é zero — nada somado por fora"),
+		Exposicao->Settings.AutoExposureBias, 0.0f, 0.001f);
 
 	return true;
 }
@@ -284,7 +405,7 @@ bool FSceneLightingOwnSunCountsTest::RunTest(const FString& Parameters)
 // outro lado: branca em vez de azul.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSceneLightingWorldSunSuppressesArenaSunTest,
-	"BattleSquare.Environment.SceneLighting.WorldSunSuppressesArenaSun",
+	"BattleSquare.Environment.SceneLighting.OurOwnLightingSuppressesArenaLighting",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FSceneLightingWorldSunSuppressesArenaSunTest::RunTest(const FString& Parameters)

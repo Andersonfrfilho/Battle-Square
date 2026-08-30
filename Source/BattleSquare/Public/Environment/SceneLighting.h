@@ -45,8 +45,28 @@ public:
 	 */
 	UPostProcessComponent* GetSceneExposure() const { return SceneExposure; }
 
-	/** Verdadeiro quando o mundo já tem um sol próprio e este ator é dispensável. */
+	/** Verdadeiro quando o mundo já tem um sol qualquer — dele ou nosso. */
 	static bool WorldAlreadyHasSun(const UWorld* World);
+
+	/**
+	 * Verdadeiro quando a cena já está acesa por ESTE ator, em outra instância.
+	 *
+	 * Pergunta diferente de `WorldAlreadyHasSun`, e é a diferença que importa:
+	 * o mapa ter sol próprio dispensa o nosso SOL, mas não dispensa a trava de
+	 * exposição, que é regra de cena e não de luz. Enquanto as duas perguntas
+	 * eram uma só, o mapa com sol próprio descartava o ator inteiro e a tela
+	 * continuava lavada de azul, por mais que o sol fosse ajustado.
+	 */
+	static bool WorldAlreadyLitByUs(const UWorld* World);
+
+	/**
+	 * Apaga a iluminação que veio no mapa e devolve quantos componentes calou.
+	 *
+	 * Na arena a luz é a nossa: somar o sol do mapa ao nosso dá duas vezes a
+	 * mesma cena, e o céu e a névoa que o autor do nível deixou são justamente
+	 * o que tinge tudo de azul claro. Não toca em nenhum componente deste ator.
+	 */
+	static int32 DimLightingAuthoredInMap(UWorld* World);
 
 private:
 	UPROPERTY()

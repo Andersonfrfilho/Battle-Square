@@ -223,18 +223,24 @@ void ABattleArena::SpawnSceneLighting()
 		return;
 	}
 
-	// Mapa que já tem sol próprio manda: dois sóis somam intensidade e
-	// devolvem a cena lavada por outro caminho.
-	if (ABattleSceneLighting::WorldAlreadyHasSun(World))
+	// Cena já acesa por NÓS manda — é a mesma paleta e a mesma trava de
+	// exposição, e um segundo ator só somaria sol. É o caso do mundo aberto,
+	// onde o GameMode acende antes de a arena existir.
+	if (ABattleSceneLighting::WorldAlreadyLitByUs(World))
 	{
 		// Dizer QUAL caminho foi tomado: sem esta linha, cena lavada e cena
 		// com dois sóis são indistinguíveis na tela, e a investigação começa
 		// pela hipótese errada.
 		FBattleDebugScreen::Show(
-			TEXT("cenario: o mapa ja tem sol — luz por codigo dispensada"),
+			TEXT("cenario: a cena ja esta acesa por nos — nada a acender"),
 			0.0f, FColor::Yellow, /*Key=*/22);
 		return;
 	}
+
+	// Sol do MAPA não manda. Ele era quem lavava a tela: somado ao nosso, com
+	// o céu e a névoa que vieram no nível, o quadro inteiro estoura e sobra o
+	// azul claro do ambiente. Na arena, a luz é a nossa.
+	const int32 LuzesDoMapaCaladas = ABattleSceneLighting::DimLightingAuthoredInMap(World);
 
 	FActorSpawnParameters Parametros;
 	Parametros.Owner = this;
@@ -242,7 +248,9 @@ void ABattleArena::SpawnSceneLighting()
 		ABattleSceneLighting::StaticClass(), GetActorLocation(), FRotator::ZeroRotator, Parametros);
 
 	FBattleDebugScreen::Show(
-		TEXT("cenario: sol e ceu acesos por codigo (o mapa nao tem luz)"),
+		FString::Printf(
+			TEXT("cenario: sol, ceu e exposicao por codigo (%d luz(es) do mapa calada(s))"),
+			LuzesDoMapaCaladas),
 		0.0f, FColor::Yellow, /*Key=*/22);
 }
 

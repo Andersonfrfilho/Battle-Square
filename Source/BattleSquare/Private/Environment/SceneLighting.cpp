@@ -3,6 +3,8 @@
 #include "Environment/SceneLighting.h"
 
 #include "Components/DirectionalLightComponent.h"
+#include "Components/ExponentialHeightFogComponent.h"
+#include "Components/LightComponentBase.h"
 #include "Components/SkyLightComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
 #include "Components/PostProcessComponent.h"
@@ -41,6 +43,9 @@ namespace LuzDaCena
 	 * cinza-azulado, o que fazia toda medição de cor mentir.
 	 */
 	constexpr float ExposicaoFixa = 1.0f;
+
+	/** Nenhum ponto de exposição somado por fora — ver o construtor. */
+	constexpr float SemRealceExtra = 0.0f;
 }
 
 ABattleSceneLighting::ABattleSceneLighting()
@@ -84,6 +89,15 @@ ABattleSceneLighting::ABattleSceneLighting()
 	SceneExposure->Settings.AutoExposureMinBrightness = ExposicaoFixa;
 	SceneExposure->Settings.bOverride_AutoExposureMaxBrightness = true;
 	SceneExposure->Settings.AutoExposureMaxBrightness = ExposicaoFixa;
+
+	// Sem realce escondido em cima da trava.
+	//
+	// O padrão da engine soma um ponto de exposição ao que a medição decidiu.
+	// Travar o piso e o teto e deixar esse ponto de pé é travar no lugar
+	// errado — e um ponto é justamente a diferença entre a cor do asset e o
+	// tom lavado que apareceu na tela.
+	SceneExposure->Settings.bOverride_AutoExposureBias = true;
+	SceneExposure->Settings.AutoExposureBias = SemRealceExtra;
 }
 
 bool ABattleSceneLighting::WorldAlreadyHasSun(const UWorld* World)
@@ -109,4 +123,54 @@ bool ABattleSceneLighting::WorldAlreadyHasSun(const UWorld* World)
 	// Basta o primeiro: a pergunta é "existe sol?", não "quantos?".
 	TActorIterator<ADirectionalLight> Sol(Cena);
 	return static_cast<bool>(Sol);
+}
+
+bool ABattleSceneLighting::WorldAlreadyLitByUs(const UWorld* World)
+{
+	if (!World)
+	{
+		return false;
+	}
+
+	return static_cast<bool>(
+		TActorIterator<ABattleSceneLighting>(const_cast<UWorld*>(World)));
+}
+
+int32 ABattleSceneLighting::DimLightingAuthoredInMap(UWorld* World)
+{
+	if (!World)
+	{
+		return 0;
+	}
+
+	int32 Caladas = 0;
+	for (TActorIterator<AActor> Ator(World); Ator; ++Ator)
+	{
+		// A nossa própria luz nunca entra na conta: apagá-la deixaria a cena no
+		// escuro exatamente no quadro em que ela acabou de nascer.
+		if (Ator->IsA<ABattleSceneLighting>())
+		{
+			continue;
+		}
+
+		TArray<USceneComponent*> Componentes;
+		Ator->GetComponents<USceneComponent>(Componentes);
+		for (USceneComponent* Componente : Componentes)
+		{
+			// Luz, céu e névoa: os três pintam o quadro inteiro, e é a soma
+			// deles com a nossa luz que devolve o branco-azulado.
+			const bool bPintaACena =
+				Componente->IsA<ULightComponentBase>()
+				|| Componente->IsA<USkyAtmosphereComponent>()
+				|| Componente->IsA<UExponentialHeightFogComponent>();
+
+			if (bPintaACena && Componente->IsVisible())
+			{
+				Componente->SetVisibility(false);
+				++Caladas;
+			}
+		}
+	}
+
+	return Caladas;
 }

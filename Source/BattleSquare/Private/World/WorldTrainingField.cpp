@@ -65,11 +65,21 @@ FLinearColor AWorldTrainingField::ColorForAttribute(const FString& Attribute)
 {
 	// Uma cor por atributo, e sempre a MESMA: o jogador aprende o lugar pela
 	// cor antes de chegar perto o bastante para ler qualquer texto.
-	if (Attribute == TEXT("musculature")) { return FLinearColor(0.85f, 0.20f, 0.15f); }
-	if (Attribute == TEXT("personality")) { return FLinearColor(0.90f, 0.65f, 0.10f); }
-	if (Attribute == TEXT("camouflage"))  { return FLinearColor(0.20f, 0.70f, 0.25f); }
-	if (Attribute == TEXT("flight"))      { return FLinearColor(0.35f, 0.65f, 0.95f); }
-	if (Attribute == TEXT("underground")) { return FLinearColor(0.55f, 0.35f, 0.20f); }
+	//
+	// CRIATURA É VIVA, TERRENO É TERRA. Estas cinco são deliberadamente
+	// apagadas, e a regra vale para todo campo futuro: um pet e o chão em que
+	// ele pisa podem partilhar a matiz — o que os separa é que um está vivo.
+	//
+	// A primeira versão não obedecia a isso, e o resultado era concreto: o
+	// verde da camuflagem (#33B240) e o do pet de Planta (#33C740) ficavam a
+	// cinco pontos de distância, e um pet de Planta parado no disco de
+	// camuflagem virava duas coisas da mesma cor querendo dizer coisas
+	// diferentes. O mesmo com o azul do voo contra o do pet de Água.
+	if (Attribute == TEXT("musculature")) { return FLinearColor(0.549f, 0.290f, 0.259f); }
+	if (Attribute == TEXT("personality")) { return FLinearColor(0.612f, 0.518f, 0.259f); }
+	if (Attribute == TEXT("camouflage"))  { return FLinearColor(0.310f, 0.478f, 0.322f); }
+	if (Attribute == TEXT("flight"))      { return FLinearColor(0.369f, 0.494f, 0.588f); }
+	if (Attribute == TEXT("underground")) { return FLinearColor(0.420f, 0.325f, 0.251f); }
 
 	// Cinza para o desconhecido, em vez de uma cor bonita qualquer: campo mal
 	// configurado precisa PARECER mal configurado.

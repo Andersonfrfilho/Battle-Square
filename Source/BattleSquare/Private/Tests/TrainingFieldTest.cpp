@@ -3,6 +3,8 @@
 #include "Meta/PetAttributeProgression.h"
 #include "Meta/PetMoveRequirements.h"
 #include "Misc/AutomationTest.h"
+#include "Balance/PetTypeCatalog.h"
+#include "Misc/Paths.h"
 #include "World/TrainingFieldRules.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -182,5 +184,56 @@ bool FTrainingFieldIgnoresHeightTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("Um passo além está fora"), Campo->IsInside(FVector(401.0f, 0.0f, 0.0f)));
 
 	Mundo->DestroyWorld(false);
+	return true;
+}
+
+// CRIATURA É VIVA, TERRENO É TERRA — e isto é medível, não opinião.
+//
+// A primeira paleta dos campos não obedecia à regra, e o resultado era
+// concreto: o verde da camuflagem ficava a cinco pontos do verde do pet de
+// Planta. Um pet parado no próprio campo virava duas coisas da mesma cor
+// dizendo coisas diferentes.
+//
+// O teste compara SATURAÇÃO: todo campo precisa ser mais apagado que o
+// elemento mais apagado do elenco de criaturas. Assim a regra sobrevive ao
+// próximo campo e ao próximo elemento, em vez de proteger só os cinco de hoje.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FTerrainIsAlwaysDullerThanCreaturesTest,
+	"BattleSquare.World.Training.TerrainIsAlwaysDullerThanCreatures",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FTerrainIsAlwaysDullerThanCreaturesTest::RunTest(const FString& Parameters)
+{
+	FPetTypeCatalog Tipos;
+	const FString Caminho = FPaths::Combine(FPaths::ProjectConfigDir(), TEXT("PetTypes.json"));
+	if (!FPetTypeCatalog::LoadFromJson(Caminho, Tipos))
+	{
+		AddError(TEXT("Config/PetTypes.json não carregou"));
+		return false;
+	}
+
+	float SaturacaoMinimaDeCriatura = 1.0f;
+	for (const FPetElementDefinition& Elemento : Tipos.GetElements())
+	{
+		SaturacaoMinimaDeCriatura = FMath::Min(
+			SaturacaoMinimaDeCriatura, Elemento.Color.LinearRGBToHSV().G);
+	}
+
+	const TCHAR* Atributos[] = {
+		TEXT("musculature"), TEXT("personality"),
+		TEXT("camouflage"), TEXT("flight"), TEXT("underground"),
+	};
+
+	for (const TCHAR* Atributo : Atributos)
+	{
+		const float SaturacaoDoCampo =
+			AWorldTrainingField::ColorForAttribute(Atributo).LinearRGBToHSV().G;
+
+		TestTrue(
+			*FString::Printf(TEXT("O campo de %s (sat %.2f) é mais apagado que qualquer criatura (mín %.2f)"),
+				Atributo, SaturacaoDoCampo, SaturacaoMinimaDeCriatura),
+			SaturacaoDoCampo < SaturacaoMinimaDeCriatura);
+	}
+
 	return true;
 }

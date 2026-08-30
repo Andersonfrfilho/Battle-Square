@@ -1,8 +1,10 @@
-# Roteiro de verificação — Atributos, Treino e o Mundo (M8)
+# Roteiro de verificação — Atributos, Treino, Tipos e o Mundo (M8)
 
 **Status:** **não verificado ainda.**
+**Atualizado em 30/08/2026** com os tipos de dois eixos, a magia de atributo e
+a paleta corrigida — três seções novas ao fim (TIPO, MAGIA, PALETA).
 
-Cobre tudo o que M8 acrescentou em 2026-08-29. Os testes provam que os números
+Cobre tudo o que M8 acrescentou em 2026-08-29 e 30. Os testes provam que os números
 somam, que a fila recusa e que o hash muda. O que eles **não** decidem, e por
 isso este roteiro existe:
 
@@ -132,6 +134,77 @@ de foco nem da área de transferência. É o caminho para me mandar o resultado.
       lento?
 
 ---
+
+---
+
+## TIPO-01 — Escola e elemento se leem na tela
+
+O tipo virou um par: `Natural/Fogo`, `Fisica/Terra`, `Psiquica/Agua`. A
+**silhueta** diz a escola (malha) e o **elemento** (tombo); a **cor** diz o
+elemento de novo, como canal rápido.
+
+- [ ] Os dez pets do catálogo aparecem com adornos **visivelmente diferentes**
+      entre escolas: cristal angular (Física), chama alta (Natural), orbe
+      pequeno (Psíquica).
+- [ ] **A pergunta que decide o desenho:** dois pets da MESMA escola e
+      elementos diferentes — por exemplo `Natural/Fogo` contra `Natural/Agua` —
+      dá para distinguir **sem olhar a cor**? O tombo do adorno deveria bastar
+      (fogo ereto, água deitada).
+      *Se não der, o canal de silhueta falhou e a cor está carregando sozinha —
+      que é exatamente o que dois testes reprovaram em 30/08.*
+- [ ] Um pet de `Fisica/Terra` (Estalagmite) e um de `Psiquica/Fogo`
+      (Alfarrábio) não se confundem em nada.
+- [ ] O painel de abertura ainda diz o tipo e a vantagem antes da primeira
+      escolha.
+- [ ] Julgamento: **sete tipos são demais para ler no meio de um turno?**
+
+## TIPO-02 — O Mágico deixou de ser especial
+
+Ele tinha 150% contra os três tipos naturais de uma vez. Agora o eixo da escola
+é suave (120/80) e o do elemento é o alto (150/50).
+
+- [ ] Alfarrábio (`Psiquica/Fogo`) contra Faísca (`Natural/Fogo`) mostra
+      vantagem **modesta** — não o "super efetivo" de antes.
+- [ ] Alfarrábio contra Zunido (`Fisica/Planta`) mostra **desvantagem**.
+- [ ] Julgamento: o Mágico ainda parece forte demais? Ele é frágil de
+      propósito (30 de defesa, 90 de vida) — a compensação é essa.
+
+## MAGIA-01 — Magia que muda atributo
+
+A escola psíquica muda a luta em vez de encerrá-la. Golpes de efeito batem
+fraco de propósito: `Concentração` tem 35 de poder contra os 150 de um
+`Colapso`.
+
+- [ ] Usar `Concentração` (Vigília) escreve no feed
+      `Vigília concentrou-se: ataque +40%`.
+- [ ] E o **ataque seguinte causa visivelmente mais dano** que sem ela.
+      *É a ligação inteira: sem isso o bônus é um número guardado que não
+      aparece em lugar nenhum.*
+- [ ] `Peso da Mente` escreve `enfraqueceu X: velocidade −35%` — frase de
+      **enfraquecer**, não a mesma de subir.
+- [ ] `Fissura Arcana` (Alfarrábio) derruba a defesa, e o `Grimório` seguinte
+      dói mais.
+- [ ] Ao fim do turno, aparece `ataque voltou ao normal`. **Não pode sumir
+      calado.**
+- [ ] Usar a mesma magia duas vezes no turno **não dobra** o bônus.
+- [ ] O mesmo golpe usado como **Atacar** (e não Magia) não aplica efeito
+      nenhum.
+- [ ] Julgamento: gastar um slot para mudar atributo **vale a pena**, ou é
+      sempre melhor bater? Se for sempre melhor bater, a escola psíquica não
+      existe na prática — e os números precisam mudar.
+
+## PALETA-01 — Criatura é viva, terreno é terra
+
+Corrigido em 30/08: os campos de treino ficaram **dessaturados** para não
+disputarem com os pets.
+
+- [ ] Um pet de **Planta** parado no disco de **camuflagem** se destaca dele.
+      *Antes eram dois verdes a cinco pontos de distância.*
+- [ ] Um pet de **Água** sobre o disco de **voo**: idem.
+- [ ] Os cinco discos continuam **distinguíveis entre si** depois de
+      apagados — perder saturação não pode ter custado a diferença entre eles.
+- [ ] Julgamento: o mundo ficou **sóbrio demais**? A troca foi deliberada —
+      os pets são a coisa mais viva na tela — mas o preço é real.
 
 ## Como me devolver o resultado
 

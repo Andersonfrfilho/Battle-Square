@@ -72,6 +72,34 @@ namespace PaletaDoCenario
 	/** Gelo do cume: branco frio, nunca puro — branco puro estoura na tela. */
 	const FLinearColor BrancoDoGelo(0.878f, 0.914f, 0.949f);
 
+	/**
+	 * A encosta em que se anda: cinza de perto, um passo mais escuro que a
+	 * pedra solta, para a trilha ter contra o que se destacar.
+	 */
+	const FLinearColor CinzaDaEncosta(0.263f, 0.271f, 0.286f);
+
+	/**
+	 * Terra batida da trilha.
+	 *
+	 * A diferença que importa aqui é de LUMINÂNCIA, não de matiz: contra a
+	 * encosta em 0,27 esta terra está perto de 0,44, e é isso que faz o
+	 * caminho aparecer de longe. Trocar por um marrom escuro "mais natural"
+	 * some com a trilha e devolve a montanha à condição de parede.
+	 */
+	const FLinearColor TerraDaTrilha(0.514f, 0.388f, 0.243f);
+
+	/** Rocha da caverna: o mais escuro da paleta, porque é dentro. */
+	const FLinearColor CinzaDaCaverna(0.114f, 0.118f, 0.129f);
+
+	/**
+	 * Chão da caverna.
+	 *
+	 * Claro o bastante para o corredor se separar da parede — num labirinto
+	 * sem essa separação, quem entra não enxerga a próxima curva e o labirinto
+	 * deixa de ser percorrível para virar tela preta.
+	 */
+	const FLinearColor ChaoDaCaverna(0.353f, 0.310f, 0.259f);
+
 	// Acentos: pontos pequenos, saturados, que só funcionam porque o resto
 	// do quadro é dessaturado.
 
@@ -160,6 +188,18 @@ FLinearColor ScenaryPalette::ColorFor(EScenaryRole Role, FName MaterialSlot)
 
 	case EScenaryRole::MountainSnow:
 		return BrancoDoGelo;
+
+	case EScenaryRole::ClimbableRock:
+		return CinzaDaEncosta;
+
+	case EScenaryRole::MountainTrail:
+		return TerraDaTrilha;
+
+	case EScenaryRole::CaveRock:
+		return CinzaDaCaverna;
+
+	case EScenaryRole::CaveFloor:
+		return ChaoDaCaverna;
 	}
 
 	return VerdeDaMata;

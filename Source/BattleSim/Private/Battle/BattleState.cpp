@@ -77,6 +77,7 @@ uint64 FBattleState::ComputeHash() const
 		Hash = CombineBattleHash(Hash, TerrainDryDelay[Indice]);
 	}
 
+	Hash = CombineBattleHash(Hash, Humidity);
 	Hash = CombineBattleHash(Hash, GridColumns);
 	Hash = CombineBattleHash(Hash, GridRows);
 

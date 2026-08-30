@@ -283,6 +283,32 @@ FORCEINLINE uint8 WetterOf(uint8 A, uint8 B)
 inline constexpr int32 MudSlipChancePercent = 33;
 inline constexpr int32 MudSlowChancePercent = 33;
 
+/**
+ * A LAMA precisa de MUITA ÁGUA e de CLIMA ÚMIDO. Sem as duas, a poça seca.
+ *
+ * Isto é o que impede o tabuleiro inteiro de virar lama numa partida longa: a
+ * poça solta — a que sobrou de um gelo derretendo em terra seca — evapora e
+ * acabou. Lama é o chão encharcado de quem tem água por perto, não o destino
+ * de toda gota que cai.
+ *
+ * A "muita água" é medida do PRÓPRIO tabuleiro, e não declarada à parte: uma
+ * arena com rio produz lama, uma clareira seca não, e ninguém precisa manter
+ * um segundo número em sincronia com o mapa que está ali.
+ */
+inline constexpr int32 MudMinHumidity = 60;
+inline constexpr int32 MudWetCellsNumerator = 1;
+inline constexpr int32 MudWetCellsDenominator = 5;
+inline constexpr int32 MudMinWetCells = 2;
+
+/**
+ * Umidade padrão: a MATA, que é onde a arena e o mundo aberto se passam.
+ *
+ * Acima do limiar de propósito. Um padrão seco deixaria a lama existir só
+ * depois de alguém lembrar de configurar o clima — e recurso testado que
+ * ninguém alcança é o defeito que este projeto já registrou mais de uma vez.
+ */
+inline constexpr uint8 BattleDefaultHumidity = 70;
+
 /** Quanto a lama tira da velocidade de quem atravessa devagar. */
 inline constexpr int32 MudSlowPercent = 50;
 

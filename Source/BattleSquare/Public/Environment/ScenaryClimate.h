@@ -76,6 +76,20 @@ namespace ScenaryClimate
 	BATTLESQUARE_API float SnowCapFraction(EScenaryClimate Climate, float PeakMeters);
 
 	/**
+	 * Umidade do lugar, 0 a 100 — o que decide se poça vira LAMA ou seca.
+	 *
+	 * Inteiro, e não float como o resto deste arquivo, porque este número
+	 * atravessa para dentro do BattleSim: lá não entra float (AD-004), e um
+	 * arredondamento na fronteira seria determinismo dependendo de quem
+	 * converteu.
+	 *
+	 * Mora AQUI, ao lado da temperatura, porque é a mesma pergunta sobre o
+	 * mesmo lugar. Numa segunda casa, o deserto acabaria úmido em alguma
+	 * tela e seco em outra.
+	 */
+	BATTLESQUARE_API int32 HumidityPercent(EScenaryClimate Climate);
+
+	/**
 	 * O clima pelo nome escrito — `Temperate`, `Cold`, `Mild`, `Desert`.
 	 *
 	 * Nome desconhecido cai em `Temperate`, que é o bioma que a mata já usa:

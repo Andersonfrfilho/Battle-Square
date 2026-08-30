@@ -163,9 +163,7 @@ void BattlePhases::ApplyResolution(
 		const uint8 Embaixo = State.CellRevertsTo.IsValidIndex(Indice)
 			? State.CellRevertsTo[Indice]
 			: static_cast<uint8>(ECellProperty::None);
-		const uint8 Seco = Atual < 16
-			? State.TerrainDriesTo[Atual]
-			: static_cast<uint8>(ECellProperty::None);
+		const uint8 Seco = State.NextTerrainWhenDrying(Atual);
 
 		// O MAIS MOLHADO dos dois vence, e é o que salva o rio.
 		//

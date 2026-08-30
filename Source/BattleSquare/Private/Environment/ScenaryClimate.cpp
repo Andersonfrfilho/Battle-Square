@@ -86,3 +86,24 @@ EScenaryClimate ScenaryClimate::ConfiguredClimate()
 
 	return EScenaryClimate::Temperate;
 }
+
+int32 ScenaryClimate::HumidityPercent(EScenaryClimate Climate)
+{
+	switch (Climate)
+	{
+		// A mata encharca: é onde a lama existe, e é o clima da arena e do
+		// mundo aberto hoje. Abaixo do limiar aqui, a lama seria regra testada
+		// que nenhum jogador alcança.
+		case EScenaryClimate::Temperate: return 70;
+
+		// Serra fria: ar frio segura pouca água. Congela, mas não enlameia.
+		case EScenaryClimate::Cold:      return 40;
+
+		case EScenaryClimate::Mild:      return 55;
+
+		// Deserto: a poça evapora antes de encharcar coisa alguma.
+		case EScenaryClimate::Desert:    return 10;
+	}
+
+	return 50;
+}

@@ -641,6 +641,13 @@ void ABattleSquareGameMode::HandleRoomReady(const FString& Code)
 	InitialState.Pets.Add(Side1Pet);
 	InitialState.PlaceDuelistsAtStartingCells();
 
+	// A UMIDADE do lugar entra no estado: é ela que decide se a poça vira lama
+	// ou seca. Vem do mesmo clima que põe neve na serra — dois números
+	// diferentes sobre o mesmo lugar, e não duas ideias de clima.
+	InitialState.Humidity = static_cast<uint8>(FMath::Clamp(
+		ScenaryClimate::HumidityPercent(ScenaryClimate::ConfiguredClimate()), 0, 100));
+
+
 
 	TArray<FPetPresentationInfo> Presentations;
 	Presentations.Add(Side0Presentation);

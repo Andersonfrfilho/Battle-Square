@@ -378,6 +378,14 @@ bool FCadeiaDeSecagemTest::RunTest(const FString&)
 	// continuar vivo depois da jogada: uma ação de gelo deixa rastro por
 	// vários slots, em vez de piscar e sumir.
 	FBattleState Estado = TerrenoQuePassaTeste::CampoVazio();
+
+	// COM RIO: a cadeia só chega à lama onde há água em quantidade e clima
+	// úmido. Num campo seco a poça evapora, e é isso que impede o tabuleiro
+	// inteiro de virar lama — quem verifica esse outro caminho é
+	// FPocaSozinhaSecaSemVirarLama.
+	Estado.CellLayout[Estado.CellIndex(0, 0)] = static_cast<uint8>(ECellProperty::Water);
+	Estado.CellLayout[Estado.CellIndex(0, 2)] = static_cast<uint8>(ECellProperty::Water);
+
 	const int32 Casa = Estado.CellIndex(1, 1);
 	Estado.SetTemporaryTerrain(1, 1, static_cast<uint8>(ECellProperty::Ice), 1);
 
@@ -555,6 +563,86 @@ bool FChaoComumNaoConsomeSorteioTest::RunTest(const FString&)
 	BattlePhases::ApplyMovement(Estado, Andar, Nada, 0, Traco);
 
 	TestEqual(TEXT("O gerador não andou"), Estado.Random.State, AntesDoPasso);
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPocaSozinhaSecaSemVirarLamaTest,
+	"BattleSim.Terrain.Temporary.PocaSozinhaSecaSemVirarLama",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FPocaSozinhaSecaSemVirarLamaTest::RunTest(const FString&)
+{
+	// Uma gota não encharca nada. A poça que sobrou de um gelo derretendo em
+	// terra seca EVAPORA — e é isto que impede o tabuleiro inteiro de virar
+	// lama numa partida longa.
+	FBattleState Estado = TerrenoQuePassaTeste::CampoVazio();
+	const int32 Casa = Estado.CellIndex(1, 1);
+
+	TestFalse(TEXT("Sem água por perto, o lugar não produz lama"),
+		Estado.WouldFormMud());
+
+	Estado.SetTemporaryTerrain(1, 1, static_cast<uint8>(ECellProperty::ShallowWater), 1);
+
+	TArray<FBattleEvent> Traco;
+	for (uint8 Slot = 0; Slot < 6; ++Slot)
+	{
+		BattlePhases::ApplyResolution(Estado, Slot, Traco);
+	}
+
+	TestEqual(TEXT("A poça secou de vez"), Estado.CellLayout[Casa],
+		static_cast<uint8>(ECellProperty::None));
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FComRioPertoAPocaViraLamaTest,
+	"BattleSim.Terrain.Temporary.ComRioPertoAPocaViraLama",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FComRioPertoAPocaViraLamaTest::RunTest(const FString&)
+{
+	// Com água em quantidade E clima úmido, o chão encharca. É a arena de rio
+	// que produz lama, não a clareira seca.
+	FBattleState Estado = TerrenoQuePassaTeste::CampoVazio();
+	Estado.CellLayout[Estado.CellIndex(0, 0)] = static_cast<uint8>(ECellProperty::Water);
+	Estado.CellLayout[Estado.CellIndex(0, 1)] = static_cast<uint8>(ECellProperty::Water);
+	Estado.CellLayout[Estado.CellIndex(0, 2)] = static_cast<uint8>(ECellProperty::Water);
+
+	TestTrue(TEXT("Mata com rio produz lama"), Estado.WouldFormMud());
+
+	const int32 Casa = Estado.CellIndex(2, 1);
+	Estado.SetTemporaryTerrain(2, 1, static_cast<uint8>(ECellProperty::ShallowWater), 1);
+
+	TArray<FBattleEvent> Traco;
+	uint8 Slot = 0;
+	while (Estado.CellLayout[Casa] == static_cast<uint8>(ECellProperty::ShallowWater)
+		&& Slot < 12)
+	{
+		BattlePhases::ApplyResolution(Estado, Slot++, Traco);
+	}
+
+	TestEqual(TEXT("A poça virou lama"), Estado.CellLayout[Casa],
+		static_cast<uint8>(ECellProperty::Mud));
+
+	// E o MESMO tabuleiro no deserto seca. É a metade que o usuário pediu:
+	// sem clima úmido não há lama, por mais água que haja.
+	FBattleState NoDeserto = TerrenoQuePassaTeste::CampoVazio();
+	NoDeserto.CellLayout = Estado.CellLayout;
+	NoDeserto.CellLayout[Casa] = static_cast<uint8>(ECellProperty::ShallowWater);
+	NoDeserto.Humidity = 10;
+
+	TestFalse(TEXT("Deserto não produz lama nem com rio"), NoDeserto.WouldFormMud());
+	TestEqual(TEXT("E a poça seca de vez"),
+		NoDeserto.NextTerrainWhenDrying(static_cast<uint8>(ECellProperty::ShallowWater)),
+		static_cast<uint8>(ECellProperty::None));
+
+	// A umidade decide resultado, então entra no hash.
+	FBattleState Umido = TerrenoQuePassaTeste::CampoVazio();
+	FBattleState Seco = TerrenoQuePassaTeste::CampoVazio();
+	Seco.Humidity = 10;
+	TestNotEqual(TEXT("Umidades diferentes, hashes diferentes"),
+		Umido.ComputeHash(), Seco.ComputeHash());
 
 	return true;
 }

@@ -45,7 +45,31 @@ enum class EScenaryRole : uint8
 	MountainRock,
 
 	/** O gelo do cume. */
-	MountainSnow
+	MountainSnow,
+
+	/**
+	 * A encosta da montanha em que se PODE andar — a que fica na ilha.
+	 *
+	 * Separada de `MountainRock` pelo mesmo motivo que aquela se separou de
+	 * `Rock`: a serra do horizonte é fundo, e esta é chão. Fundo e chão com a
+	 * mesma cor fazem a montanha perto parecer recorte de cartaz.
+	 */
+	ClimbableRock,
+
+	/**
+	 * A trilha que sobe a encosta.
+	 *
+	 * É a única cor deste arquivo cuja função é ser ACHADA. Terra batida
+	 * clara contra rocha escura: quem chega na base precisa ver por onde se
+	 * sobe antes de encostar na montanha, senão a montanha lê como parede.
+	 */
+	MountainTrail,
+
+	/** A rocha de dentro da caverna — mais escura que tudo, porque é dentro. */
+	CaveRock,
+
+	/** O chão da caverna, claro o bastante para o corredor se ler. */
+	CaveFloor
 };
 
 /**

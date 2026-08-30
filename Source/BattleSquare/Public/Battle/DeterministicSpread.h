@@ -54,6 +54,24 @@ namespace BattleSpread
 		return static_cast<float>(Fluxo >> 8) / static_cast<float>(1u << 24);
 	}
 
+	/**
+	 * Um inteiro em [0, Teto) do mesmo fluxo.
+	 *
+	 * Existe porque escolha não é medida: converter `Fraction` em índice por
+	 * multiplicação e truncamento erra na borda (1.0 vira o índice que não
+	 * existe), e labirinto com uma direção a menos deixa de ser labirinto.
+	 */
+	inline int32 Below(uint32 Semente, int32 Indice, int32 Teto)
+	{
+		if (Teto <= 1)
+		{
+			return 0;
+		}
+
+		const uint32 Fluxo = Scatter(Semente ^ (static_cast<uint32>(Indice) * 0x9E3779B9u));
+		return static_cast<int32>(Fluxo % static_cast<uint32>(Teto));
+	}
+
 	/** Interpola dentro da faixa — o par natural de Fraction. */
 	inline float Between(float Minimo, float Maximo, float Fracao)
 	{

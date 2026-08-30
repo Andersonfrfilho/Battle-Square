@@ -429,6 +429,76 @@ struct FBattleState
 	UPROPERTY()
 	uint8 TerrainDryDelay[16] = { 0 };
 
+	/**
+	 * Umidade do lugar, 0 a 100. Quem a decide é a MONTAGEM, a partir do
+	 * clima do cenário.
+	 *
+	 * Entra como número, e não como o `EScenaryClimate` que já existe, porque
+	 * aquele mora no BattleSquare e faz conta com float — e float aqui quebra
+	 * o determinismo em silêncio (AD-004). O núcleo guarda o efeito; a camada
+	 * de fora guarda o significado.
+	 */
+	UPROPERTY()
+	uint8 Humidity = BattleDefaultHumidity;
+
+	/** Quantas casas do tabuleiro têm água, de qualquer fundura. */
+	int32 CountWetCells() const
+	{
+		int32 Molhadas = 0;
+		for (uint8 Casa : CellLayout)
+		{
+			if (IsAnyWater(Casa))
+			{
+				++Molhadas;
+			}
+		}
+		return Molhadas;
+	}
+
+	/**
+	 * Este lugar produz LAMA, ou a poça simplesmente seca?
+	 *
+	 * Precisa das duas coisas: clima úmido e água em quantidade. Uma poça
+	 * solta em plena mata evapora — lama é chão encharcado, e uma gota não
+	 * encharca nada.
+	 */
+	bool WouldFormMud() const
+	{
+		if (Humidity < MudMinHumidity)
+		{
+			return false;
+		}
+
+		const int32 Casas = CellLayout.Num();
+		const int32 Exigido = FMath::Max(MudMinWetCells,
+			(Casas * MudWetCellsNumerator) / MudWetCellsDenominator);
+		return CountWetCells() >= Exigido;
+	}
+
+	/**
+	 * No que este terreno se transforma ao secar.
+	 *
+	 * A tabela manda, MENOS quando ela aponta para lama num lugar que não
+	 * produz lama — aí a casa seca de vez. Um lugar só para essa pergunta
+	 * porque a alternativa é a fase de encerramento consultar clima e contar
+	 * água por conta própria, e regra que mora onde é usada vira duas cópias
+	 * na segunda vez que alguém precisar dela.
+	 */
+	uint8 NextTerrainWhenDrying(uint8 Current) const
+	{
+		if (Current >= 16)
+		{
+			return static_cast<uint8>(ECellProperty::None);
+		}
+
+		const uint8 Alvo = TerrainDriesTo[Current];
+		if (Alvo == static_cast<uint8>(ECellProperty::Mud) && !WouldFormMud())
+		{
+			return static_cast<uint8>(ECellProperty::None);
+		}
+		return Alvo;
+	}
+
 	/** Este chão faz ALGUMA coisa com quem sai dele? */
 	bool TerrainAffectsDeparture(uint8 CellProperty) const
 	{

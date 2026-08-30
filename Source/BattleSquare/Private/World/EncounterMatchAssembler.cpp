@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "World/EncounterMatchAssembler.h"
+#include "Environment/ScenaryClimate.h"
 #include "Misc/Paths.h"
 #include "Balance/TypeEffectivenessTable.h"
 #include "Net/BattleSquareGameMode.h"
@@ -63,6 +64,13 @@ bool FEncounterMatchAssembler::AssembleFromEncounter(const FEncounterMatchParams
 	OutInitialState.Pets.Add(PlayerPet);
 	OutInitialState.Pets.Add(EncounterPet);
 	OutInitialState.PlaceDuelistsAtStartingCells();
+
+	// A UMIDADE do lugar entra no estado: é ela que decide se a poça vira lama
+	// ou seca. Vem do mesmo clima que põe neve na serra — dois números
+	// diferentes sobre o mesmo lugar, e não duas ideias de clima.
+	OutInitialState.Humidity = static_cast<uint8>(FMath::Clamp(
+		ScenaryClimate::HumidityPercent(ScenaryClimate::ConfiguredClimate()), 0, 100));
+
 
 
 	OutPresentations.Reset();

@@ -46,7 +46,10 @@ FText FBattleNarration::Describe(const FBattleEvent& Event, const FString& Actor
 	switch (Event.Type)
 	{
 	case EBattleEventType::AtaqueAcertou:
-		return FText::Format(LOCTEXT("AtaqueAcertou", "{Actor} atacou {Target} e acertou"), Args);
+		// O NÚMERO, e não só o "acertou": a variação de dano é sorteada
+		// (BattlePhaseCombat), e sem o valor na tela dois golpes iguais
+		// parecem idênticos enquanto tiram vidas diferentes.
+		return FText::Format(LOCTEXT("AtaqueAcertou", "{Actor} atacou {Target} e acertou - {Value} de dano"), Args);
 
 	case EBattleEventType::AtaqueErrou:
 		return FText::Format(LOCTEXT("AtaqueErrou", "{Actor} atacou {Target} e errou"), Args);

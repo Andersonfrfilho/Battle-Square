@@ -867,6 +867,11 @@ bool ABattleArena::BeginBattle(const FBattleState& InitialState, const TArray<FP
 
 	CurrentState = InitialState;
 
+	// A semente ANTES do primeiro turno: depois dele o gerador já andou, e o
+	// número que aparece deixa de ser o que reproduz a partida.
+	FBattleDebugScreen::Show(FormatSeedPanelLine(CurrentState.Random.State),
+		0.0f, FColor::Silver, /*Key=*/30);
+
 	// ANTES da checagem de casa bloqueada não daria certo: a escolha precisa
 	// do estado montado para saber onde os pets estão. Por isso ela própria
 	// recusa layouts que bloqueiem casa inicial.
@@ -1702,6 +1707,7 @@ void ABattleArena::ResolveTurnWithCommits(const FTurnCommit& LocalCommit, const 
 	LastCommitBySide[0] = LeftCommit;
 	LastCommitBySide[1] = RightCommit;
 
+	const uint64 AcasoAntesDoTurno = CurrentState.Random.State;
 	FBattleResolveResult Result = FBattleResolver::ResolveTurn(CurrentState, LeftCommit, RightCommit);
 	// ResolveTurn nunca decide vitória/derrota por design (BattleOutcome.h:
 	// "separação deliberada") — quem chama precisa avaliar depois. Achado
@@ -1709,6 +1715,9 @@ void ABattleArena::ResolveTurnWithCommits(const FTurnCommit& LocalCommit, const 
 	// chamavam isto, então BatalhaEncerrada nunca disparava em produção.
 	BattleOutcome::EvaluateOutcome(Result.NextState, Result.Trace);
 	CurrentState = Result.NextState;
+
+	FBattleDebugScreen::Show(FormatRandomPanelLine(AcasoAntesDoTurno, CurrentState.Random.State),
+		0.0f, FColor::Silver, /*Key=*/31);
 
 	// Captura, XP e anúncio do fim viviam SÓ no caminho de rede. A batalha
 	// local resolvia o turno, avaliava o desfecho e não contava a ninguém —
@@ -1814,6 +1823,23 @@ void ABattleArena::Tick(float DeltaSeconds)
 		bWaitingForPlaybackToOpenNextTurn = false;
 		FinishPlaybackAndSettleTurn();
 	}
+}
+
+FString ABattleArena::FormatSeedPanelLine(uint64 Seed)
+{
+	return FString::Printf(TEXT("semente: 0x%016llX (copie para repetir esta partida)"), Seed);
+}
+
+FString ABattleArena::FormatRandomPanelLine(uint64 StateBefore, uint64 StateAfter)
+{
+	// O estado do gerador vai junto de propósito: dois turnos com o mesmo
+	// estado final e commits iguais TÊM de dar o mesmo resultado, e é essa
+	// igualdade que se confere olhando, sem instrumentar nada.
+	// Dois Printf, e não um com o formato escolhido por ternário: a checagem
+	// de formato da engine exige que a máscara seja literal na chamada.
+	return StateBefore == StateAfter
+		? FString::Printf(TEXT("acaso: nenhum sorteio neste turno - estado 0x%016llX"), StateAfter)
+		: FString::Printf(TEXT("acaso: SORTEOU neste turno - estado 0x%016llX"), StateAfter);
 }
 
 void ABattleArena::LogCommit(const TCHAR* Quem, const FTurnCommit& Commit) const

@@ -40,6 +40,13 @@ bool FBattleNarrationDescribesOutcomesTest::RunTest(const FString& Parameters)
 	const FString Dano = Describe(MakeEvent(EBattleEventType::DanoAplicado, 1, 2, 12));
 	TestTrue(TEXT("Dano mostra o número"), Dano.Contains(TEXT("12")));
 
+	// O acerto carrega o número do PRÓPRIO golpe, e não só o total do turno.
+	// A variação de dano é sorteada golpe a golpe (BattlePhaseCombat); com
+	// DanoAplicado somando três acertos numa linha só, dois turnos de dano
+	// bem diferente saem indistinguíveis no feed.
+	TestTrue(TEXT("Acerto mostra o dano daquele golpe"),
+		Describe(MakeEvent(EBattleEventType::AtaqueAcertou, 1, 2, 7)).Contains(TEXT("7")));
+
 	// Esquiva e defesa são o coração da lição: sem vê-las, o jogador não
 	// conclui que atacar quem está evasivo é desperdício.
 	TestTrue(TEXT("Esquiva é dita"),

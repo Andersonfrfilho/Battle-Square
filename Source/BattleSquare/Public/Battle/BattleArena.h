@@ -149,6 +149,27 @@ public:
 	float GetObstacleTopHeightAt(uint8 Column, uint8 Row) const;
 
 	/**
+	 * A linha de painel que carrega a SEMENTE da partida.
+	 *
+	 * Sem ela o painel conta o turno mas não permite voltar nele: o BattleSim
+	 * é determinístico justamente para que semente mais commits recriem a
+	 * partida inteira, e essa metade não saía de lugar nenhum.
+	 *
+	 * Em hexadecimal porque é para ser copiada e colada, não lida.
+	 */
+	static FString FormatSeedPanelLine(uint64 Seed);
+
+	/**
+	 * A linha de painel que diz se o ACASO entrou neste turno.
+	 *
+	 * O gerador anda um passo por sorteio, e não existe conta barata que
+	 * recupere QUANTOS passos ele deu entre dois estados. Mas a pergunta que
+	 * custa caro é outra — "esse resultado estranho foi sorteio ou foi
+	 * regra?" — e para ela basta o estado ter mudado ou não.
+	 */
+	static FString FormatRandomPanelLine(uint64 StateBefore, uint64 StateAfter);
+
+	/**
 	 * Veste a arena com o ambiente do lugar onde o encontro aconteceu.
 	 *
 	 * A arena nasce a um milhão de unidades do mundo (DP-enc-03), fora de

@@ -48,3 +48,19 @@ float FWorldMapProjection::PlayerArrowAngleDegrees(const FWorldMapSnapshot& Snap
 	// Uma seta que gira num mapa que também gira soma os dois e mente.
 	return Mode == EMode::SeguindoOOlhar ? 0.0f : Snapshot.PlayerYawDegrees;
 }
+
+bool FWorldMapProjection::IsMarkerVisible(const FWorldMapMarkerInfo& Marker,
+	const FWorldMapSnapshot& Snapshot)
+{
+	if (Marker.Kind == EWorldMapMarker::Jogador)
+	{
+		return true;
+	}
+
+	if (!Snapshot.bHidesUndiscovered)
+	{
+		return true;
+	}
+
+	return Snapshot.Discovery.IsDiscovered(Marker.WorldXY);
+}

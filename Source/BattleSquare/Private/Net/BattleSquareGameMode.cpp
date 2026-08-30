@@ -23,6 +23,7 @@
 #include "Environment/MountainRange.h"
 #include "Environment/ScenaryClimate.h"
 #include "Environment/SceneLighting.h"
+#include "Environment/WorldTimeOfDay.h"
 #include "World/WorldStatusReadout.h"
 #include "UI/WorldLoadingScreen.h"
 #include "UI/WorldMapScreen.h"
@@ -388,6 +389,14 @@ FString ABattleSquareGameMode::SetUpWorldEncounterFlow()
 		World->GetTimerManager().SetTimer(TrainingTimer, this,
 			&ABattleSquareGameMode::TickTrainingFields,
 			WorldStatusRefreshSeconds, /*bLoop=*/true);
+
+		// A DESCOBERTA também: uma região tem 800 unidades e ninguém a
+		// atravessa entre dois quadros. O que ela carrega vem do save, e é o
+		// que faz o mapa lembrar de uma sessão para a outra.
+		WorldDiscovery = FPetCollectionService::LoadDiscovery(PetCollectionSlotName);
+		World->GetTimerManager().SetTimer(DiscoveryTimer, this,
+			&ABattleSquareGameMode::RefreshWorldDiscovery,
+			WorldStatusRefreshSeconds, /*bLoop=*/true);
 	}
 	return FString();
 }
@@ -413,6 +422,8 @@ void ABattleSquareGameMode::Tick(float DeltaSeconds)
 	{
 		return;
 	}
+
+	TickWorldClock();
 
 	const double CurrentTime = GetWorld()->GetTimeSeconds();
 	// Ordem importa: CheckAbandonment primeiro (SALA-09, declara
@@ -791,6 +802,38 @@ void ABattleSquareGameMode::SpawnTrainingFields()
 		0.0f, FColor::Green, /*Key=*/722);
 }
 
+void ABattleSquareGameMode::TickWorldClock()
+{
+	if (!CenaDoMundo || !CenaDoMundo->IsDayCycleRunning())
+	{
+		return;
+	}
+
+	const float Hora = CenaDoMundo->GetHour();
+	const EDayPhase Fase = WorldTimeOfDay::PhaseAtHour(Hora);
+
+	// A cor da linha é a cor do céu: quem passa o olho pelo painel lê a hora
+	// antes de ler o número, do mesmo jeito que lê a hora pela luz na tela.
+	FColor CorDaFase = FColor::White;
+	switch (Fase)
+	{
+	case EDayPhase::Dawn:  CorDaFase = FColor::Orange; break;
+	case EDayPhase::Day:   CorDaFase = FColor::Yellow; break;
+	case EDayPhase::Dusk:  CorDaFase = FColor::Orange; break;
+	case EDayPhase::Night: CorDaFase = FColor::Cyan;   break;
+	}
+
+	const int32 Horas = FMath::FloorToInt(Hora);
+	const int32 Minutos = FMath::FloorToInt((Hora - Horas) * 60.0f);
+
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("%02d:%02d — %s (sol %.0f°)"),
+			Horas, Minutos,
+			WorldTimeOfDay::PhaseDebugName(Fase),
+			WorldTimeOfDay::SunElevationDegrees(Hora)),
+		0.0f, CorDaFase, /*Key=*/750);
+}
+
 void ABattleSquareGameMode::TickTrainingFields()
 {
 	UWorld* World = GetWorld();
@@ -969,6 +1012,29 @@ bool ABattleSquareGameMode::LearnSpecialtyOfCurrentField()
 	return false;
 }
 
+void ABattleSquareGameMode::RefreshWorldDiscovery()
+{
+	const APawn* Jogador = AcharPawnDoJogador(GetWorld());
+	if (!Jogador)
+	{
+		return;
+	}
+
+	const int32 Novas = WorldDiscovery.MarkSeenFrom(
+		FVector2D(Jogador->GetActorLocation()));
+	if (Novas == 0)
+	{
+		return;
+	}
+
+	FPetCollectionService::SaveDiscovery(PetCollectionSlotName, WorldDiscovery);
+
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("mapa: %d regiões conhecidas"),
+			WorldDiscovery.DiscoveredCount()),
+		0.0f, FColor(150, 200, 255), /*Key=*/742);
+}
+
 void ABattleSquareGameMode::RefreshWorldMap()
 {
 	UWorld* World = GetWorld();
@@ -982,6 +1048,7 @@ void ABattleSquareGameMode::RefreshWorldMap()
 	Retrato.PlayerXY = FVector2D(Jogador->GetActorLocation());
 	Retrato.PlayerYawDegrees = Jogador->GetActorRotation().Yaw;
 	Retrato.ShoreRadiusUnits = WorldSceneryCellSizeUnits * RaioDoChaoEmCasas;
+	Retrato.Discovery = WorldDiscovery;
 
 	// CAMPOS DE TREINO na cor de cada atributo: são o único destino do mapa,
 	// e um mapa sem destino é um radar.
@@ -1079,8 +1146,16 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 	{
 		FActorSpawnParameters Parametros;
 		Parametros.ObjectFlags |= RF_Transient;
-		World->SpawnActor<ABattleSceneLighting>(
+		ABattleSceneLighting* Luz = World->SpawnActor<ABattleSceneLighting>(
 			ABattleSceneLighting::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, Parametros);
+
+		// No MUNDO o dia corre. Na arena não — ver `StartDayCycle`.
+		if (Luz)
+		{
+			Luz->SetSecondsPerDay(WorldSecondsPerDay);
+			Luz->StartDayCycle(WorldStartHour);
+			CenaDoMundo = Luz;
+		}
 	}
 
 	// Mata já colocada à mão manda — mesmo critério dos encontros: criar por

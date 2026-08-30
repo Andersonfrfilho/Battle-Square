@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "World/WorldDiscovery.h"
 #include "Math/RandomStream.h"
 #include "Engine/TimerHandle.h"
 #include "GameFramework/GameModeBase.h"
@@ -138,6 +139,24 @@ public:
 	void SpawnWorldScenery();
 
 	/**
+	 * Registra onde o jogador está, e grava se algo novo apareceu.
+	 *
+	 * No MESMO temporizador lento do painel do mundo: descoberta é regional, e
+	 * uma região tem 800 unidades — ninguém a atravessa entre dois quadros.
+	 * Marcar a cada Tick seria gastar sessenta chamadas por segundo para
+	 * responder a mesma coisa.
+	 *
+	 * Só grava quando descobre: sem isso, cada passo escreveria o save inteiro
+	 * no disco.
+	 */
+	void RefreshWorldDiscovery();
+
+	/** O que este jogador já viu. Carregado do save ao montar o mundo. */
+	FWorldDiscovery WorldDiscovery;
+
+	FTimerHandle DiscoveryTimer;
+
+	/**
 	 * Escreve o painel do mundo: seu pet, seus atributos, quem está por perto.
 	 *
 	 * Num TEMPORIZADOR lento, não a cada quadro: nada disso muda em 16ms, e um
@@ -189,6 +208,13 @@ public:
 	 * onde ele veio.
 	 */
 	void TickTrainingFields();
+
+	/** Põe a hora e a fase no painel — relógio que não se vê não existe. */
+	void TickWorldClock();
+
+	/** A luz do mundo, para o painel saber que horas o sol acha que são. */
+	UPROPERTY(Transient)
+	TObjectPtr<class ABattleSceneLighting> CenaDoMundo;
 
 	FTimerHandle TrainingTimer;
 	float TrainingCarrySeconds = 0.0f;
@@ -264,6 +290,22 @@ public:
 	 *  nascem não deveria replantar a floresta inteira. */
 	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
 	int32 WorldScenerySeed = 20260829;
+
+	/**
+	 * A hora em que o mundo abre, de 0 a 24.
+	 *
+	 * Sete da manhã: o jogo começa de dia, porque começar no escuro faz quem
+	 * abriu pela primeira vez achar que algo não carregou. Quem quiser
+	 * verificar a noite, a aurora ou um bicho noturno muda isto e entra
+	 * direto na hora — esperar dez minutos de relógio para medir a noite é
+	 * medir a paciência.
+	 */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
+	float WorldStartHour = 7.0f;
+
+	/** Quanto dura um dia inteiro, em segundos de relógio de parede. */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
+	float WorldSecondsPerDay = 1200.0f;
 
 	/** Ids do catálogo sorteados para os encontros. */
 	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")

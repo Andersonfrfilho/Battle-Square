@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "World/WorldDiscovery.h"
 #include "Meta/PetCollectionSaveGame.h"
 
 // T2–T3 (tasks.md, Coleção e Captura): captura e persistência da
@@ -43,4 +44,8 @@ public:
 	static FTrainerProfile LoadTrainerProfile(const FString& SlotName);
 
 	static void SaveTrainerProfile(const FString& SlotName, const FTrainerProfile& Profile);
+
+	static FWorldDiscovery LoadDiscovery(const FString& SlotName);
+
+	static void SaveDiscovery(const FString& SlotName, const FWorldDiscovery& Discovery);
 };

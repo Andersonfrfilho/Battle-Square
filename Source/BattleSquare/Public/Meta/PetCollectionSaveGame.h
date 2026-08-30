@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "World/WorldDiscovery.h"
 #include "GameFramework/SaveGame.h"
 #include "PetCollectionSaveGame.generated.h"
 
@@ -105,4 +106,15 @@ public:
 	 */
 	UPROPERTY()
 	FTrainerProfile Trainer;
+
+	/**
+	 * O que o jogador já viu do mundo.
+	 *
+	 * No MESMO save, pelo mesmo motivo do treinador: dois arquivos
+	 * dessincronizam. Save gravado antes disto existir carrega com o mapa em
+	 * branco, que é o estado de quem nunca andou — e não o mapa completo, que
+	 * seria devolver de graça o que a feature existe para cobrar.
+	 */
+	UPROPERTY()
+	FWorldDiscovery Discovery;
 };

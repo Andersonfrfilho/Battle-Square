@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "World/WorldDiscovery.h"
 
 /** O que um marcador do mapa é — a forma diz a categoria, a cor diz qual. */
 UENUM()
@@ -36,6 +37,26 @@ struct BATTLESQUARE_API FWorldMapSnapshot
 	float ShoreRadiusUnits = 6000.0f;
 
 	TArray<FWorldMapMarkerInfo> Markers;
+
+	/**
+	 * O que o jogador já viu. O mapa só desenha marcador em região descoberta.
+	 *
+	 * Viaja no retrato, e não é consultado do save por quem desenha: a tela
+	 * não busca dado (DP-ui-01). E como o retrato é montado num temporizador
+	 * lento, o mapa não fica lendo save a cada quadro.
+	 */
+	FWorldDiscovery Discovery;
+
+	/**
+	 * O mapa RESPEITA a descoberta?
+	 *
+	 * Falso é o mapa completo — o que ele era antes desta feature, e o que um
+	 * teste de outro assunto continua querendo. Explícito, e não deduzido de
+	 * "a descoberta está vazia": vazia é o estado de quem nunca andou, e
+	 * confundir os dois faria o mapa nascer completo justamente para quem
+	 * acabou de começar.
+	 */
+	bool bHidesUndiscovered = true;
 };
 
 /**
@@ -77,6 +98,21 @@ public:
 	 */
 	static FVector2D ToMapSpace(const FVector2D& WorldXY, const FWorldMapSnapshot& Snapshot,
 		EMode Mode, float RangeUnits);
+
+	/**
+	 * Este marcador deve APARECER?
+	 *
+	 * Mora aqui, e não em quem desenha, porque a resposta é a mesma para o
+	 * minimapa e para o mapa completo — e duas cópias concordariam até a
+	 * primeira edição, com o sintoma sendo um adversário visível num mapa e
+	 * escondido no outro.
+	 *
+	 * O JOGADOR é sempre visível. Ele está onde está; escondê-lo por causa de
+	 * uma região não marcada seria o mapa negar a única coisa que ele sabe
+	 * com certeza.
+	 */
+	static bool IsMarkerVisible(const FWorldMapMarkerInfo& Marker,
+		const FWorldMapSnapshot& Snapshot);
 
 	/** Para onde a seta do jogador aponta na tela, em graus horários. */
 	static float PlayerArrowAngleDegrees(const FWorldMapSnapshot& Snapshot, EMode Mode);

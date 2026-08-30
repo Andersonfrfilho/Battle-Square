@@ -87,6 +87,15 @@ namespace
 
 			for (const FWorldMapMarkerInfo& Marcador : GSnapshot.Markers)
 			{
+				// O QUE NÃO FOI DESCOBERTO não aparece. A regra mora na
+				// projeção, e não aqui, porque o minimapa e o mapa completo
+				// precisam responder igual — duas cópias dariam um adversário
+				// visível num e escondido no outro.
+				if (!FWorldMapProjection::IsMarkerVisible(Marcador, GSnapshot))
+				{
+					continue;
+				}
+
 				const FVector2D Normalizado = FWorldMapProjection::ToMapSpace(
 					Marcador.WorldXY, GSnapshot, Modo, AlcanceUnidades);
 

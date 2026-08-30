@@ -17,13 +17,16 @@
 #include "Meta/PetAttributeProgression.h"
 #include "World/WorldEncounterFlow.h"
 #include "World/WorldExplorerCharacter.h"
+#include "Environment/CaveSystem.h"
 #include "Environment/ForestBackdrop.h"
+#include "Environment/IslandFeatureLayout.h"
 #include "Environment/MountainRange.h"
 #include "Environment/ScenaryClimate.h"
 #include "Environment/SceneLighting.h"
 #include "World/WorldStatusReadout.h"
 #include "UI/WorldLoadingScreen.h"
 #include "UI/WorldMapScreen.h"
+#include "Environment/WalkableMountain.h"
 #include "Environment/WorldBoundaryWater.h"
 #include "World/WorldTrainingField.h"
 #include "Battle/PetView.h"
@@ -1232,6 +1235,59 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 				ScenaryClimate::SnowLineMeters(Clima)),
 			0.0f, FColor::Cyan, /*Key=*/725);
 	}
+
+	// Montanhas que se sobem e cavernas que se percorrem, no anel entre os
+	// campos de treino e a beira da água. Onde cada uma cai é decisão de
+	// `IslandFeatureLayout`, que já foi conferida sem abrir o jogo: quina de
+	// caverna dentro de montanha é defeito que só se acha indo até lá a pé.
+	int32 MontanhasPlantadas = 0;
+	int32 CavernasPlantadas = 0;
+	int32 MaiorCavernaPlantada = 0;
+	int32 PatamaresDaTrilhaMaisLonga = 0;
+
+	for (const IslandFeatureLayout::FFeaturePlacement& Peca : IslandFeatureLayout::Plan())
+	{
+		const FVector2D Deslocamento = Peca.CenterUnits();
+		const FVector OndeNaIlha(Origem.X + Deslocamento.X, Origem.Y + Deslocamento.Y, AlturaDoChao);
+
+		// A semente muda com o ângulo. Com a mesma para todas, as três trilhas
+		// serpenteariam igual e a ilha pareceria a mesma montanha copiada.
+		const uint32 SementeDaPeca = static_cast<uint32>(WorldScenerySeed)
+			+ static_cast<uint32>(FMath::RoundToInt(Peca.AngleDegrees));
+
+		if (Peca.Feature == IslandFeatureLayout::EIslandFeature::WalkableMountain)
+		{
+			AWalkableMountain* Montanha = World->SpawnActor<AWalkableMountain>(
+				AWalkableMountain::StaticClass(), OndeNaIlha, FRotator::ZeroRotator, Parametros);
+			if (Montanha)
+			{
+				Montanha->BuildMountain(SementeDaPeca);
+				++MontanhasPlantadas;
+				PatamaresDaTrilhaMaisLonga = FMath::Max(
+					PatamaresDaTrilhaMaisLonga, Montanha->GetTrailSteps().Num());
+			}
+			continue;
+		}
+
+		ACaveSystem* Caverna = World->SpawnActor<ACaveSystem>(
+			ACaveSystem::StaticClass(), OndeNaIlha, FRotator::ZeroRotator, Parametros);
+		if (Caverna)
+		{
+			Caverna->BuildCave(Peca.CaveSide, Peca.CaveSide, SementeDaPeca);
+			++CavernasPlantadas;
+			MaiorCavernaPlantada = FMath::Max(MaiorCavernaPlantada, Peca.CaveSide);
+		}
+	}
+
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("montanhas: %d com trilha (a mais longa tem %d patamares)"),
+			MontanhasPlantadas, PatamaresDaTrilhaMaisLonga),
+		0.0f, FColor::Yellow, /*Key=*/726);
+
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("cavernas: %d com labirinto (a maior é %dx%d)"),
+			CavernasPlantadas, MaiorCavernaPlantada, MaiorCavernaPlantada),
+		0.0f, FColor::Orange, /*Key=*/727);
 
 	FBattleDebugScreen::Show(
 		FString::Printf(TEXT("mundo: sol e mata plantados (chão em Z=%.0f%s)"),

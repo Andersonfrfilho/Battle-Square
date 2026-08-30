@@ -160,6 +160,7 @@ a escolha de ataques e magias que dependem desses atributos"*.
 **Mundo com cara de lugar** — ✅ CONCLUÍDO (`60834f3`) — sol e mata no mundo aberto, reusando o cenário da arena; painel do mundo com pet, atributos e distância do adversário mais próximo.
 **Campos de treino** — ✅ CONCLUÍDO (`0e4ec04`) — cinco clareiras coloridas, uma por atributo, que dão DESTINO ao mapa.
 **Estudo do dono** — ✅ CONCLUÍDO — o treinador tem especialidades, limitadas a duas de cinco, que multiplicam o rendimento do treino sem substituir o pet.
+**Escolas e Elementos** — ✅ CONCLUÍDO (30/08/2026, `.specs/features/escolas-e-elementos/`) — o tipo virou ESCOLA × ELEMENTO, doze combinações a partir de duas tabelas de quatro linhas. Quatro tipos novos (Psíquico, Mágico, Inseto, Caverna), magia que muda atributo, e o Mágico equilibrado por desenho em vez de número. Acrescentar elemento ou escola virou uma linha em `Config/PetTypes.json`.
 
 **Duas decisões seguem do usuário, e estão marcadas na spec:** se o treino
 avança offline (DP-atr-10, hoje "só com o jogo aberto"), e se dá para trocar de

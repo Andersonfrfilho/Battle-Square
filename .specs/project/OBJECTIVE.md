@@ -14,8 +14,8 @@ pelo mundo, encontrar um inimigo que anda, cair numa arena com botões, escolher
 ações que o pet sabe fazer, ver o que aconteceu narrado em português, vencer,
 ganhar experiência, e voltar a um mundo que se repõe.
 
-**347 testes**, cinco sondas, Editor e Shipping compilando (medido em
-29/08/2026).
+**378 testes**, cinco sondas, Editor e Shipping compilando (medido em
+30/08/2026).
 
 **Atualização de 29/08/2026 — M8, Atributos e Treino.** O laço deixou de ser
 só "andar, lutar, ganhar XP": o pet tem atributos que crescem pelo uso, golpes

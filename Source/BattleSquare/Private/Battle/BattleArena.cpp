@@ -3,6 +3,8 @@
 #include "Battle/BattleArena.h"
 
 #include "Environment/ForestBackdrop.h"
+#include "Environment/MountainRange.h"
+#include "Environment/ScenaryClimate.h"
 #include "Environment/SceneLighting.h"
 #include "Environment/ScenaryPalette.h"
 #include "Battle/DeterministicSpread.h"
@@ -272,6 +274,7 @@ void ABattleArena::BeginPlay()
 	// A mata vem antes das lajes porque o chão dela É o chão da batalha: as
 	// lajes só existem onde há regra, e se apoiam nele.
 	SpawnForestBackdrop();
+	SpawnMountainRange();
 	RefreshTileVisuals();
 }
 
@@ -423,6 +426,44 @@ void ABattleArena::SpawnForestBackdrop()
 	FBattleDebugScreen::Show(
 		TEXT("chao: o proprio da mata — a arena nao tem chao"),
 		0.0f, FColor::Green, /*Key=*/23);
+}
+
+void ABattleArena::SpawnMountainRange()
+{
+	UWorld* World = GetWorld();
+	if (!World || MountainRange)
+	{
+		return;
+	}
+
+	// No mesmo plano da mata: a serra sobe do chão que já existe, e não de
+	// um nível próprio. O número que desce vem do MESMO lugar que desceu a
+	// mata — dois cálculos discordariam na primeira edição (L-032/L-033).
+	const FVector PeDaSerra = GetActorLocation()
+		+ FVector(0.0f, 0.0f,
+			ArenaGeometria::SuperficieNeutra - AForestBackdrop::GroundTopLocalZ());
+
+	FActorSpawnParameters Parametros;
+	Parametros.Owner = this;
+	MountainRange = World->SpawnActor<AMountainRange>(
+		AMountainRange::StaticClass(), PeDaSerra, FRotator::ZeroRotator, Parametros);
+	if (!MountainRange)
+	{
+		return;
+	}
+
+	const EScenaryClimate Clima = ScenaryClimate::ConfiguredClimate();
+	MountainRange->BuildRange(Clima, static_cast<uint32>(ForestSeed));
+
+	// Painel de desenvolvimento, não texto de jogador: some no Shipping.
+	// Diz a conta E o porquê — "nenhum cume com gelo" só é informação ao lado
+	// da linha da neve que o clima do lugar impôs.
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("serra: %d corpos, %d com gelo (neve acima de %.0f m)"),
+			MountainRange->GetPeakCount(),
+			MountainRange->GetSnowCapCount(),
+			ScenaryClimate::SnowLineMeters(Clima)),
+		0.0f, FColor::Cyan, /*Key=*/25);
 }
 
 void ABattleArena::BuildArenaGeometry()

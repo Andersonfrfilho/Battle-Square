@@ -18,6 +18,7 @@ class UStaticMesh;
 class UStaticMeshComponent;
 class UMaterialInterface;
 class AForestBackdrop;
+class AMountainRange;
 class ABattleSceneLighting;
 class APetOwnerView;
 
@@ -208,6 +209,9 @@ public:
 	 */
 	AForestBackdrop* GetForestBackdrop() const { return ForestBackdrop; }
 
+	/** A serra do horizonte, para o teste que exige que ela exista. */
+	AMountainRange* GetMountainRange() const { return MountainRange; }
+
 	/** Semente da mata — a mesma arena dá a mesma floresta, sempre. */
 	UPROPERTY(EditDefaultsOnly, Category = "Arena")
 	int32 ForestSeed = 20260829;
@@ -341,6 +345,9 @@ protected:
 	TObjectPtr<AForestBackdrop> ForestBackdrop;
 
 	UPROPERTY()
+	TObjectPtr<AMountainRange> MountainRange;
+
+	UPROPERTY()
 	TObjectPtr<ABattleSceneLighting> SceneLighting;
 
 	UPROPERTY()
@@ -348,6 +355,15 @@ protected:
 
 	/** Planta a mata em volta, uma vez, quando a arena entra em cena. */
 	void SpawnForestBackdrop();
+
+	/**
+	 * Ergue a serra que fecha o fundo, ATRÁS da mata.
+	 *
+	 * A mata veste os primeiros sessenta metros e para; sem relevo ao longe,
+	 * o céu encosta no chão logo depois do último tronco e o mundo não tem
+	 * tamanho nenhum.
+	 */
+	void SpawnMountainRange();
 
 	/** Acende sol e céu, a menos que o mapa já traga os seus. */
 	void SpawnSceneLighting();

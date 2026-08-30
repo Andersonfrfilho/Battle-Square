@@ -59,6 +59,19 @@ namespace PaletaDoCenario
 	 */
 	const FLinearColor CinzaDaPedra(0.318f, 0.325f, 0.341f);
 
+	/**
+	 * Rocha da serra: o mesmo cinza puxado para o escuro e para o azul.
+	 *
+	 * A serra está a quilômetros, e a perspectiva aérea escurece e azula tudo
+	 * que está longe. Pintá-la com o cinza da pedra de perto a traria para o
+	 * primeiro plano — o quadro perderia profundidade justamente onde ela
+	 * deveria aparecer.
+	 */
+	const FLinearColor CinzaDaSerra(0.196f, 0.216f, 0.259f);
+
+	/** Gelo do cume: branco frio, nunca puro — branco puro estoura na tela. */
+	const FLinearColor BrancoDoGelo(0.878f, 0.914f, 0.949f);
+
 	// Acentos: pontos pequenos, saturados, que só funcionam porque o resto
 	// do quadro é dessaturado.
 
@@ -141,6 +154,12 @@ FLinearColor ScenaryPalette::ColorFor(EScenaryRole Role, FName MaterialSlot)
 
 	case EScenaryRole::CanopyTree:
 		return VerdeDoDossel;
+
+	case EScenaryRole::MountainRock:
+		return CinzaDaSerra;
+
+	case EScenaryRole::MountainSnow:
+		return BrancoDoGelo;
 	}
 
 	return VerdeDaMata;

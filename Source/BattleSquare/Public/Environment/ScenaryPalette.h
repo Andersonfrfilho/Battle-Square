@@ -32,7 +32,20 @@ enum class EScenaryRole : uint8
 	/** Árvore da mata, ainda inteira no quadro. */
 	ForestTree,
 	/** Árvore do dossel, que fecha o fundo. */
-	CanopyTree
+	CanopyTree,
+
+	/**
+	 * Rocha da serra do horizonte.
+	 *
+	 * Separada de `Rock` porque a distância é informação: a pedra a dois
+	 * metros da grade é objeto, e a mesma cor a sete quilômetros faria a serra
+	 * parecer perto. Ela é mais escura e mais azul — é assim que o olho lê
+	 * "longe" antes de qualquer neblina.
+	 */
+	MountainRock,
+
+	/** O gelo do cume. */
+	MountainSnow
 };
 
 /**

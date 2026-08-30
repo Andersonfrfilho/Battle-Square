@@ -18,6 +18,8 @@
 #include "World/WorldEncounterFlow.h"
 #include "World/WorldExplorerCharacter.h"
 #include "Environment/ForestBackdrop.h"
+#include "Environment/MountainRange.h"
+#include "Environment/ScenaryClimate.h"
 #include "Environment/SceneLighting.h"
 #include "World/WorldStatusReadout.h"
 #include "UI/WorldLoadingScreen.h"
@@ -1205,6 +1207,23 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 	{
 		Agua->ShoreRadiusUnits = RaioDaTerra;
 		Agua->BuildBoundary();
+	}
+
+	// A SERRA fecha o horizonte, e nasce do mesmo `Onde` da mata: a arena e o
+	// mundo aberto precisam ler como o MESMO lugar, e o fundo é o que mais
+	// denuncia dois cenários diferentes.
+	AMountainRange* Serra = World->SpawnActor<AMountainRange>(
+		AMountainRange::StaticClass(), Onde, FRotator::ZeroRotator, Parametros);
+	if (Serra)
+	{
+		const EScenaryClimate Clima = ScenaryClimate::ConfiguredClimate();
+		Serra->BuildRange(Clima, static_cast<uint32>(WorldScenerySeed));
+
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("serra: %d corpos, %d com gelo (neve acima de %.0f m)"),
+				Serra->GetPeakCount(), Serra->GetSnowCapCount(),
+				ScenaryClimate::SnowLineMeters(Clima)),
+			0.0f, FColor::Cyan, /*Key=*/725);
 	}
 
 	FBattleDebugScreen::Show(

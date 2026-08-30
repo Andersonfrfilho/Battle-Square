@@ -52,6 +52,7 @@ uint64 FBattleState::ComputeHash() const
 		{
 			Hash = CombineBattleHash(Hash, static_cast<uint64>(static_cast<int64>(Pet->MovePowers[Indice])));
 			Hash = CombineBattleHash(Hash, Pet->MoveTerrainEffects[Indice]);
+			Hash = CombineBattleHash(Hash, Pet->MoveTerrainDurations[Indice]);
 			Hash = CombineBattleHash(Hash, Pet->MoveEffectStats[Indice]);
 			Hash = CombineBattleHash(Hash, static_cast<uint64>(static_cast<int64>(Pet->MoveEffectPercents[Indice])));
 		}
@@ -80,6 +81,19 @@ uint64 FBattleState::ComputeHash() const
 		Hash = CombineBattleHash(Hash, CellProperty);
 	}
 
+	// O PRAZO entra no hash junto com o terreno. Duas partidas com o mesmo
+	// tabuleiro, uma com gelo que derrete no próximo slot e outra com gelo que
+	// dura três, são duas partidas diferentes — e sem isto teriam a mesma
+	// assinatura, que é exatamente a divergência que o hash existe para pegar.
+	for (uint8 Prazo : CellCountdown)
+	{
+		Hash = CombineBattleHash(Hash, Prazo);
+	}
+	for (uint8 Volta : CellRevertsTo)
+	{
+		Hash = CombineBattleHash(Hash, Volta);
+	}
+
 	Hash = CombineBattleHash(Hash, static_cast<uint64>(static_cast<int64>(TurnNumber)));
 	Hash = CombineBattleHash(Hash, bBattleEnded ? 1ULL : 0ULL);
 	Hash = CombineBattleHash(Hash, WinningSide);
@@ -96,8 +110,10 @@ void FBattleState::ResizeGrid(int32 Columns, int32 Rows)
 	GridRows = static_cast<uint8>(
 		FMath::Clamp(Rows, BattleGridMinSide, BattleGridMaxSide));
 
-	CellLayout.Init(static_cast<uint8>(ECellProperty::None),
-		static_cast<int32>(GridColumns) * static_cast<int32>(GridRows));
+	const int32 Casas = static_cast<int32>(GridColumns) * static_cast<int32>(GridRows);
+	CellLayout.Init(static_cast<uint8>(ECellProperty::None), Casas);
+	CellCountdown.Init(0, Casas);
+	CellRevertsTo.Init(static_cast<uint8>(ECellProperty::None), Casas);
 }
 
 void FBattleState::PlaceDuelistsAtStartingCells()

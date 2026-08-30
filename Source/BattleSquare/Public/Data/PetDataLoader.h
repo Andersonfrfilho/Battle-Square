@@ -19,6 +19,12 @@ struct FLoadedPetMove
 	FString TerrainEffect = TEXT("none");
 
 	/**
+	 * Por quantos slots o terreno dura. ZERO é para sempre — o alagamento de
+	 * sempre, e o valor de todo golpe assinado antes de o gelo existir.
+	 */
+	int32 TerrainDuration = 0;
+
+	/**
 	 * Atributo exigido para usar o golpe, e o mínimo dele.
 	 *
 	 * "none" com 0 é golpe SEM requisito — o que todo golpe assinado antes

@@ -233,7 +233,7 @@ namespace
 
 	// Declarada antes porque ResolveAttackForSide a chama e ela vem depois.
 	void ApplyHitAgainst(FBattleState& State, FPetState& Attacker, FPetState& Target,
-		bool bIsMagic, int32 MovePower, uint8 TerrainEffect, uint8 SlotIndex, TArray<FBattleEvent>& OutTrace);
+		bool bIsMagic, int32 MovePower, FTerrainDeposit Deposito, uint8 SlotIndex, TArray<FBattleEvent>& OutTrace);
 
 	FPetState* FindPetById(FBattleState& State, uint8 PetId)
 	{
@@ -289,7 +289,9 @@ namespace
 		// como poder faria esse pet bater sem dano nenhum.
 		const uint8 MoveIndex = GetMoveIndexFromAction(Action);
 		const int32 MovePower = Attacker->GetMovePower(MoveIndex);
-		const uint8 TerrainEffect = Attacker->GetMoveTerrainEffect(MoveIndex);
+		const FTerrainDeposit Deposito{
+			Attacker->GetMoveTerrainEffect(MoveIndex),
+			Attacker->GetMoveTerrainDuration(MoveIndex) };
 
 		// A MAGIA DE ATRIBUTO acontece ANTES do dano, e por dois motivos: um
 		// golpe que sobe o próprio ataque precisa valer já neste acerto, senão
@@ -308,7 +310,7 @@ namespace
 				OutTrace);
 		}
 
-		ApplyHitAgainst(State, *Attacker, *Target, bIsMagic, MovePower, TerrainEffect, SlotIndex, OutTrace);
+		ApplyHitAgainst(State, *Attacker, *Target, bIsMagic, MovePower, Deposito, SlotIndex, OutTrace);
 	}
 
 	/**
@@ -342,7 +344,7 @@ namespace
 		FPetState& Target,
 		bool bIsMagic,
 		int32 MovePower,
-		uint8 TerrainEffect,
+		FTerrainDeposit Deposito,
 		uint8 SlotIndex,
 		TArray<FBattleEvent>& OutTrace)
 	{
@@ -448,7 +450,7 @@ namespace
 		// a relação entre causa e efeito, que é o que torna a cadeia
 		// jogável — bater na grama e ver a casa mudar ensina; ver mudar sem
 		// acertar é ruído.
-		if (TerrainEffect != static_cast<uint8>(ECellProperty::None))
+		if (Deposito.Terrain != static_cast<uint8>(ECellProperty::None))
 		{
 			const int32 CellIndex = State.CellIndex(TargetPtr->Column, TargetPtr->Row);
 			if (State.CellLayout.IsValidIndex(CellIndex)
@@ -462,7 +464,10 @@ namespace
 				// sido resolvido — e passariam a existir duas regras para
 				// remover o mesmo obstáculo, que concordariam até a primeira
 				// edição.
-				State.CellLayout[CellIndex] = TerrainEffect;
+				// Com prazo, é terreno que PASSA — o gelo. Sem prazo, é o
+				// alagamento de sempre, que fica.
+				State.SetTemporaryTerrain(TargetPtr->Column, TargetPtr->Row,
+					Deposito.Terrain, Deposito.Slots);
 
 				FBattleEvent Terreno;
 				Terreno.Type = EBattleEventType::TerrenoMudou;
@@ -471,7 +476,8 @@ namespace
 				Terreno.ActorId = AttackerPtr->PetId;
 				Terreno.TargetId = TargetPtr->PetId;
 				Terreno.ToCell = PackCell(TargetPtr->Column, TargetPtr->Row);
-				Terreno.Value = static_cast<int32>(TerrainEffect);
+				Terreno.Value = static_cast<int32>(Deposito.Terrain);
+				Terreno.Detail = Deposito.Slots;
 				OutTrace.Add(Terreno);
 			}
 		}
@@ -520,8 +526,8 @@ void BattlePhases::ApplyCombat(
 		// físico padrão. Usar o golpe de alguém aqui faria a colisão ferir
 		// conforme uma escolha que ninguém fez.
 		ApplyHitAgainst(State, *Um, *Outro, /*bIsMagic=*/false, /*MovePower=*/0,
-			/*TerrainEffect=*/0, SlotIndex, OutTrace);
+			FTerrainDeposit{}, SlotIndex, OutTrace);
 		ApplyHitAgainst(State, *Outro, *Um, /*bIsMagic=*/false, /*MovePower=*/0,
-			/*TerrainEffect=*/0, SlotIndex, OutTrace);
+			FTerrainDeposit{}, SlotIndex, OutTrace);
 	}
 }

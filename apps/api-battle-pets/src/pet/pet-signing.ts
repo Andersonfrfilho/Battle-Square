@@ -19,6 +19,7 @@ export type SignedPetMove = {
   requiresValue: number;
   effectStat: string;
   effectPercent: number;
+  terrainDuration: number;
 };
 
 export type SignedPetExport = {
@@ -77,6 +78,7 @@ export function toSignedMoves(
     requiresValue?: number;
     effectStat?: string;
     effectPercent?: number;
+    terrainDuration?: number;
   }[],
 ): SignedPetMove[] {
   return [...moves]
@@ -97,6 +99,11 @@ export function toSignedMoves(
       // reserializa o golpe, então a ordem das chaves entra na assinatura.
       effectStat: move.effectStat ?? 'none',
       effectPercent: move.effectPercent ?? 0,
+      // NO FIM, como todas as anteriores. Zero é PARA SEMPRE — o alagamento
+      // que nunca voltou atrás, e o valor de todo golpe já assinado. Fosse
+      // zero "some na hora", esta chave apagaria em silêncio o efeito de
+      // terreno de todo golpe que existe.
+      terrainDuration: move.terrainDuration ?? 0,
     }));
 }
 

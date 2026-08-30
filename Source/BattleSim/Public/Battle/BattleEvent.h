@@ -62,7 +62,20 @@ enum class EBattleEventType : uint8
 	// No FIM do enum, pelo mesmo motivo dos anteriores: os valores existentes
 	// entram no hash do traço.
 	ObstaculoDerrubado,
-	SubiuNoObstaculo
+	SubiuNoObstaculo,
+
+	// Terreno temporário chegou ao fim e a casa voltou ao que era — o gelo
+	// derretendo. Evento PRÓPRIO, e não um segundo `TerrenoMudou`, porque a
+	// diferença é o que o jogador precisa entender: uma casa mudou porque
+	// alguém a atingiu, a outra mudou porque o tempo passou, e ninguém tem
+	// o que comemorar na segunda.
+	//
+	// `Value` carrega o terreno que a casa voltou a ser; `ActorId` é vazio,
+	// porque derreter não tem autor.
+	//
+	// No FIM do enum, pelo mesmo motivo dos anteriores: os valores existentes
+	// entram no hash do traço.
+	TerrenoDerreteu
 };
 
 // Sentinela para TargetId/ActorId quando não há alvo aplicável

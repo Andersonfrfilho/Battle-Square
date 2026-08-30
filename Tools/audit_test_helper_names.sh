@@ -26,6 +26,18 @@ import re, pathlib, collections
 por_nome = collections.defaultdict(set)
 for caminho in pathlib.Path('Source').glob('*/Private/Tests/*.cpp'):
     texto = caminho.read_text(errors='ignore')
+
+    # Namespace NOMEADO isola de verdade: em unity build os helpers do arquivo
+    # ficam qualificados e dois homônimos deixam de ser sobrecargas um do
+    # outro. É a correção da armadilha, não um jeito de escapar da sonda —
+    # então arquivo que a aplicou sai da conta.
+    #
+    # A sonda nasceu quando TODO helper vivia em namespace anônimo, e ali o
+    # nome era mesmo a única defesa. Continuar exigindo nome único depois da
+    # correção transformaria a sonda numa taxa sobre quem a seguiu.
+    if re.search(r'^namespace\s+\w+', texto, re.M):
+        continue
+
     # Funções livres indentadas com um tab: o formato dos helpers em namespace
     # anônimo neste projeto.
     for achado in re.finditer(r'^\t(?:static\s+)?[A-Za-z_][\w:<>\* &]*\s+(\w+)\s*\(', texto, re.M):

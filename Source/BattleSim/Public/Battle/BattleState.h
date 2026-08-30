@@ -121,6 +121,22 @@ struct FPetState
 	uint8 MoveTerrainEffects[4] = { 0, 0, 0, 0 };
 
 	/**
+	 * Por quantos SLOTS o terreno que o golpe deixa sobrevive.
+	 *
+	 * ZERO é PARA SEMPRE, e isso não é um acidente de valor padrão: água e
+	 * casa de dano nunca expiraram, e todo golpe já assinado tem zero aqui.
+	 * Fosse zero "some na hora", a fatia do gelo apagaria em silêncio o efeito
+	 * de todo golpe de terreno que existe.
+	 *
+	 * É também o "nível de congelamento" que o gelo tem — não existe nível
+	 * separado da duração (DP-gelo-01). Duas casas de gelo que derretem no
+	 * mesmo instante e diferem num número abstrato seriam indistinguíveis
+	 * para quem joga, e o número seria decoração.
+	 */
+	UPROPERTY()
+	uint8 MoveTerrainDurations[4] = { 0, 0, 0, 0 };
+
+	/**
 	 * O que cada golpe faz com ATRIBUTO, e em quem.
 	 *
 	 * O SINAL diz o alvo: positivo sobe o SEU atributo, negativo derruba o
@@ -190,6 +206,11 @@ struct FPetState
 		return MoveIndex < 4 ? MoveTerrainEffects[MoveIndex] : 0;
 	}
 
+	uint8 GetMoveTerrainDuration(uint8 MoveIndex) const
+	{
+		return MoveIndex < 4 ? MoveTerrainDurations[MoveIndex] : 0;
+	}
+
 	/** Poder do golpe naquele índice, ou 0 fora da faixa. */
 	int32 GetMovePower(uint8 MoveIndex) const
 	{
@@ -223,6 +244,8 @@ struct FBattleState
 		// idêntico ao de antes de Arenas Variadas (design.md, zero
 		// regressão). Índice = Row*GridColumns+Column (CellLayoutIndex).
 		CellLayout.Init(static_cast<uint8>(ECellProperty::None), BattleGridDefaultCellCount);
+		CellCountdown.Init(0, BattleGridDefaultCellCount);
+		CellRevertsTo.Init(static_cast<uint8>(ECellProperty::None), BattleGridDefaultCellCount);
 
 		// As regras de terreno do JOGO nascem com o estado.
 		//
@@ -247,6 +270,79 @@ struct FBattleState
 	// serialização, replicação e reconexão junto com o resto.
 	UPROPERTY()
 	TArray<uint8> CellLayout;
+
+	/**
+	 * TERRENO TEMPORÁRIO: quantos slots faltam, e no que a casa volta a ser.
+	 *
+	 * Duas listas paralelas a `CellLayout`, e não um campo só, porque terreno
+	 * que passa são três informações: o que a casa é agora, quanto falta, e o
+	 * que havia embaixo. Sem a terceira, congelar uma POÇA e esperar derreter
+	 * devolveria água FUNDA — o jogador ganharia fundura de graça, e o gelo
+	 * viraria a maneira mais barata de alagar o campo.
+	 *
+	 * Zero em `CellCountdown` é permanente, que é o que toda casa é hoje.
+	 *
+	 * Ninguém mexe nestes arrays diretamente: quem põe terreno que passa usa
+	 * `SetTemporaryTerrain`, e quem faz o tempo correr é a fase de
+	 * encerramento. Duas listas editadas à mão em lugares diferentes
+	 * concordariam até a primeira edição.
+	 */
+	UPROPERTY()
+	TArray<uint8> CellCountdown;
+
+	UPROPERTY()
+	TArray<uint8> CellRevertsTo;
+
+	/**
+	 * Põe terreno na casa, com prazo.
+	 *
+	 * `Slots == 0` é terreno PERMANENTE — o comportamento de água e casa de
+	 * dano, que nunca voltaram atrás.
+	 *
+	 * Congelar sobre gelo não empilha nem reinicia sozinho: o prazo novo vale,
+	 * e o que a casa volta a ser continua sendo o de baixo. Fosse o de cima, a
+	 * segunda camada faria a casa derreter para GELO, e ela nunca mais seria
+	 * água.
+	 */
+	void SetTemporaryTerrain(int32 Column, int32 Row, uint8 Terrain, uint8 Slots)
+	{
+		const int32 Indice = CellIndex(Column, Row);
+		if (!CellLayout.IsValidIndex(Indice))
+		{
+			return;
+		}
+
+		if (Slots > 0)
+		{
+			const bool bJaEraTemporario =
+				CellCountdown.IsValidIndex(Indice) && CellCountdown[Indice] > 0;
+
+			if (CellRevertsTo.IsValidIndex(Indice) && !bJaEraTemporario)
+			{
+				CellRevertsTo[Indice] = CellLayout[Indice];
+			}
+			if (CellCountdown.IsValidIndex(Indice))
+			{
+				CellCountdown[Indice] = Slots;
+			}
+		}
+		else
+		{
+			// Terreno permanente APAGA o prazo que houvesse: alagar de vez uma
+			// casa congelada não pode deixar para trás um cronômetro que a
+			// devolveria ao que ela era antes do gelo.
+			if (CellCountdown.IsValidIndex(Indice))
+			{
+				CellCountdown[Indice] = 0;
+			}
+			if (CellRevertsTo.IsValidIndex(Indice))
+			{
+				CellRevertsTo[Indice] = static_cast<uint8>(ECellProperty::None);
+			}
+		}
+
+		CellLayout[Indice] = Terrain;
+	}
 
 	/**
 	 * Dimensões da grade. Moram no ESTADO, e não numa constante global,
@@ -287,9 +383,9 @@ struct FBattleState
 	/**
 	 * Declara o que uma ação exige do terreno.
 	 *
-	 * Chamado pela MONTAGEM. Se ninguém chamar, nenhuma ação exige nada — e é
-	 * por isso que o padrão precisa ser posto em algum lugar visível, e não
-	 * ficar dependendo de quem monta lembrar.
+	 * Os padrões do jogo já vêm no construtor; isto é para SOBRESCREVER — uma
+	 * arena com regra própria, ou um teste que quer um caso sem reconstruir a
+	 * tabela inteira.
 	 */
 	void RequireTerrainForSkill(EActionType Action, ECellProperty Terrain)
 	{

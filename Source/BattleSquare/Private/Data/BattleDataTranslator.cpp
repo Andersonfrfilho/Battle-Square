@@ -40,6 +40,14 @@ namespace
 		{
 			return static_cast<uint8>(ECellProperty::Damage);
 		}
+		if (Nome.Equals(TEXT("shallow_water"), ESearchCase::IgnoreCase))
+		{
+			return static_cast<uint8>(ECellProperty::ShallowWater);
+		}
+		if (Nome.Equals(TEXT("ice"), ESearchCase::IgnoreCase))
+		{
+			return static_cast<uint8>(ECellProperty::Ice);
+		}
 
 		// "none" e qualquer coisa desconhecida caem aqui.
 		return static_cast<uint8>(ECellProperty::None);
@@ -134,6 +142,14 @@ void FBattleDataTranslator::TranslatePet(
 		OutBattleState.MoveTerrainEffects[Indice] = Source.Moves.IsValidIndex(Indice)
 			? TerrainEffectFromName(Source.Moves[Indice].TerrainEffect)
 			: static_cast<uint8>(ECellProperty::None);
+
+		// Duração negativa ou absurda não vira prazo maluco: o teto é o turno
+		// inteiro mais dois, porque gelo que atravessa vários turnos deixa de
+		// ser jogada e vira mudança de arena — e quem decide arena é a
+		// montagem, não um golpe.
+		OutBattleState.MoveTerrainDurations[Indice] = Source.Moves.IsValidIndex(Indice)
+			? static_cast<uint8>(FMath::Clamp(Source.Moves[Indice].TerrainDuration, 0, 5))
+			: 0;
 	}
 
 }

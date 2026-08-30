@@ -630,3 +630,45 @@ bool FVisibleTerrainIsNeverBuriedTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FFunduraSeVeNaGeometriaTest,
+	"BattleSquare.Arena.Geometry.FunduraSeVeNaGeometria",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FFunduraSeVeNaGeometriaTest::RunTest(const FString&)
+{
+	// Poça e água funda VESTEM o mesmo material — não há asset novo, e slot
+	// que ninguém atribui é casa invisível, defeito que este projeto já pagou
+	// três vezes. Então quem tem de separá-las é a GEOMETRIA, e é isto que
+	// este teste trava: uma RELAÇÃO, não um número.
+	const float PeNaPoca = ABattleArena::GetCellFootingHeight(
+		static_cast<uint8>(ECellProperty::ShallowWater));
+	const float PeNaAgua = ABattleArena::GetCellFootingHeight(
+		static_cast<uint8>(ECellProperty::Water));
+	const float PeNoSeco = ABattleArena::GetCellFootingHeight(
+		static_cast<uint8>(ECellProperty::None));
+
+	TestTrue(TEXT("Na poça o pé afunda menos que na água funda"),
+		PeNaPoca > PeNaAgua);
+	TestTrue(TEXT("Mas ainda afunda — poça é água, não chão"),
+		PeNaPoca < PeNoSeco);
+
+	// O GELO é sólido: pisa-se EM CIMA. Fosse o pé dentro dele como na água,
+	// congelar não mudaria nada na tela e o jogador não veria a jogada
+	// acontecer — que é a única forma de ele entender por que não submergiu.
+	const float PeNoGelo = ABattleArena::GetCellFootingHeight(
+		static_cast<uint8>(ECellProperty::Ice));
+	TestTrue(TEXT("No gelo o pé fica ACIMA da água que ele cobre"),
+		PeNoGelo > PeNaAgua);
+	TestEqual(TEXT("E pousa na própria superfície, como todo chão sólido"),
+		PeNoGelo, ABattleArena::GetCellSurfaceHeight(
+			static_cast<uint8>(ECellProperty::Ice)));
+
+	// A lâmina da poça fica ABAIXO da lâmina da água funda: menos água,
+	// menos volume visível. Invertido, a poça pareceria a mais funda das duas.
+	TestTrue(TEXT("A lâmina da poça é mais baixa que a da água funda"),
+		ABattleArena::GetCellSurfaceHeight(static_cast<uint8>(ECellProperty::ShallowWater))
+			< ABattleArena::GetCellSurfaceHeight(static_cast<uint8>(ECellProperty::Water)));
+
+	return true;
+}

@@ -139,5 +139,48 @@ void BattlePhases::ApplyResolution(
 	}
 
 	// Passo 4: SlotEncerrado por último, uma única vez.
+	// O GELO DERRETE — e derrete AQUI, no mesmo lugar onde o efeito de
+	// atributo expira, porque é a mesma pergunta: o que este slot consumiu.
+	// Fizesse isso a fase de combate, terreno posto e terreno derretido
+	// aconteceriam em ordens diferentes conforme quem atacou primeiro.
+	//
+	// E derrete DEPOIS do dano do slot: quem congelou uma casa para negar
+	// terreno ao outro compra o slot inteiro, não o pedaço dele.
+	for (int32 Indice = 0; Indice < State.CellCountdown.Num(); ++Indice)
+	{
+		if (State.CellCountdown[Indice] == 0)
+		{
+			continue;
+		}
+
+		--State.CellCountdown[Indice];
+		if (State.CellCountdown[Indice] > 0)
+		{
+			continue;
+		}
+
+		const uint8 Volta = State.CellRevertsTo.IsValidIndex(Indice)
+			? State.CellRevertsTo[Indice]
+			: static_cast<uint8>(ECellProperty::None);
+
+		State.CellLayout[Indice] = Volta;
+		if (State.CellRevertsTo.IsValidIndex(Indice))
+		{
+			State.CellRevertsTo[Indice] = static_cast<uint8>(ECellProperty::None);
+		}
+
+		FBattleEvent Derreteu;
+		Derreteu.Type = EBattleEventType::TerrenoDerreteu;
+		Derreteu.SlotIndex = SlotIndex;
+		Derreteu.Phase = 5; // F5
+		Derreteu.ActorId = BattleEventNoActor;
+		Derreteu.TargetId = BattleEventNoActor;
+		Derreteu.ToCell = PackCell(
+			static_cast<uint8>(Indice % State.GridColumns),
+			static_cast<uint8>(Indice / State.GridColumns));
+		Derreteu.Value = static_cast<int32>(Volta);
+		OutTrace.Add(Derreteu);
+	}
+
 	EmitSlotEnded(OutTrace, SlotIndex);
 }

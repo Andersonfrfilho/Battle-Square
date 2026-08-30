@@ -3,7 +3,10 @@
 #include "Battle/BattleResolver.h"
 #include "Misc/AutomationTest.h"
 
-namespace
+// Namespace NOMEADO: o anônimo não isola em unity build, onde os arquivos
+// de teste viram uma unidade de tradução só e dois helpers homônimos
+// colidem (L-042).
+namespace RequisitoDeTerrenoTeste
 {
 	FBattleState EstadoComTerreno(ECellProperty TerrenoDoPet)
 	{
@@ -49,6 +52,8 @@ namespace
 			[Tipo](const FBattleEvent& E) { return E.Type == Tipo; });
 	}
 }
+
+using namespace RequisitoDeTerrenoTeste;
 
 // A POÇA não serve para submergir, e a FUNDA serve.
 //

@@ -6,7 +6,10 @@
 #include "Battle/BattleTypes.h"
 #include "Misc/AutomationTest.h"
 
-namespace
+// Namespace NOMEADO: o anônimo não isola em unity build, onde os arquivos
+// de teste viram uma unidade de tradução só e dois helpers homônimos
+// colidem (L-042).
+namespace EfeitoDeTerrenoDoGolpeTeste
 {
 	FBattleState MakeTerrainDuel(uint8 EfeitoDoGolpe0)
 	{
@@ -51,6 +54,8 @@ namespace
 		return false;
 	}
 }
+
+using namespace EfeitoDeTerrenoDoGolpeTeste;
 
 // O golpe DEIXA algo na casa que acertou. É o que fecha a cadeia que o usuário
 // desenhou: um golpe de água alaga, e alagar é o que torna submergir possível

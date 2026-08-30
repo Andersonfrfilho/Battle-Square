@@ -41,6 +41,7 @@ describe('golpes no payload assinado', () => {
         requiresValue: 0,
         effectStat: 'none',
         effectPercent: 0,
+        terrainDuration: 0,
       },
     ]);
   });
@@ -108,6 +109,7 @@ describe('requisito de atributo do golpe', () => {
       'requiresValue',
       'effectStat',
       'effectPercent',
+      'terrainDuration',
     ]);
   });
 });

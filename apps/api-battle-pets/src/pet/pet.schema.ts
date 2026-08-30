@@ -65,6 +65,14 @@ export const petMoves = pgTable(
      */
     effectStat: varchar('effect_stat', { length: 16 }).notNull().default('none'),
     effectPercent: integer('effect_percent').notNull().default(0),
+
+    /**
+     * Por quantos slots o terreno que o golpe deixa sobrevive. ZERO e para
+     * sempre — o alagamento que nunca voltou atras, e o que todo golpe ja
+     * cadastrado e. Fosse zero "some na hora", esta coluna apagaria em
+     * silencio o efeito de terreno de todo golpe que existe.
+     */
+    terrainDuration: integer('terrain_duration').notNull().default(0),
   },
   (table) => ({
     petSlotUnique: unique('pet_moves_pet_slot_unique').on(table.petId, table.slot),

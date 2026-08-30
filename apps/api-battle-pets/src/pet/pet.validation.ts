@@ -19,7 +19,7 @@ const attributeSchema = z
 export const petMoveSchema = z.object({
   name: z.string().min(1, 'Nome do golpe é obrigatório').max(60),
   power: z.number().int().min(1, 'Poder do golpe precisa ser ao menos 1').max(500),
-  terrainEffect: z.enum(['none', 'water', 'damage']).default('none'),
+  terrainEffect: z.enum(['none', 'water', 'damage', 'shallow_water', 'ice']).default('none'),
   /**
    * Atributo exigido para usar o golpe, e o mínimo dele.
    *
@@ -44,6 +44,13 @@ export const petMoveSchema = z.object({
    */
   effectStat: z.enum(['none', 'attack', 'defense', 'speed']).default('none'),
   effectPercent: z.number().int().min(-60).max(60).default(0),
+
+  /**
+   * O teto de 5 e o mesmo do tradutor, e ele recorta de novo la: gelo que
+   * atravessa varios turnos deixa de ser jogada e vira mudanca de arena, e
+   * quem decide arena e a montagem, nao um golpe.
+   */
+  terrainDuration: z.number().int().min(0).max(5).default(0),
 });
 
 export const createPetSchema = z.object({

@@ -20,6 +20,21 @@ namespace
 			default:                      return LOCTEXT("StatNenhum", "atributo");
 		}
 	}
+
+	/** O terreno como o jogador lê. */
+	FText DescribeTerrain(uint8 Terrain)
+	{
+		switch (static_cast<ECellProperty>(Terrain))
+		{
+			case ECellProperty::Water:        return LOCTEXT("TerrenoAguaFunda", "água funda");
+			case ECellProperty::ShallowWater: return LOCTEXT("TerrenoPoca", "poça");
+			case ECellProperty::Ice:          return LOCTEXT("TerrenoGelo", "gelo");
+			case ECellProperty::Damage:       return LOCTEXT("TerrenoBrasa", "brasa");
+			case ECellProperty::Buff:         return LOCTEXT("TerrenoBonus", "terreno de bônus");
+			case ECellProperty::Blocked:      return LOCTEXT("TerrenoObstaculo", "obstáculo");
+			default:                          return LOCTEXT("TerrenoSeco", "chão seco");
+		}
+	}
 }
 
 namespace
@@ -90,6 +105,39 @@ FText FBattleNarration::Describe(const FBattleEvent& Event, const FString& Actor
 		ArgsFim.Add(TEXT("Atributo"), DescribeStat(Event.Detail));
 		return FText::Format(
 			LOCTEXT("AtributoNormalizou", "{Actor}: {Atributo} voltou ao normal"), ArgsFim);
+	}
+
+	// O TABULEIRO mudando é jogada, e até agora mudava calado: a laje trocava
+	// de cor e nenhuma linha dizia por quê. Quem não estava olhando para
+	// aquela casa no instante exato não tinha como saber que ela mudou.
+	case EBattleEventType::TerrenoMudou:
+	{
+		FFormatNamedArguments ArgsTerreno = Args;
+		ArgsTerreno.Add(TEXT("Terreno"), DescribeTerrain(static_cast<uint8>(Event.Value)));
+
+		// Terreno COM PRAZO diz o prazo. "Congelou a casa" sem mais nada faria
+		// o jogador planejar em cima de algo que vai embora, e descobrir isso
+		// tarde demais é o mesmo que a regra não existir para ele.
+		if (Event.Detail > 0)
+		{
+			ArgsTerreno.Add(TEXT("Slots"), FText::AsNumber(static_cast<int32>(Event.Detail)));
+			return FText::Format(LOCTEXT("TerrenoMudouComPrazo",
+				"{Actor} cobriu a casa de {Terreno} — dura {Slots} ações"), ArgsTerreno);
+		}
+
+		return FText::Format(LOCTEXT("TerrenoMudou",
+			"{Actor} mudou a casa para {Terreno}"), ArgsTerreno);
+	}
+
+	case EBattleEventType::TerrenoDerreteu:
+	{
+		FFormatNamedArguments ArgsFim = Args;
+		ArgsFim.Add(TEXT("Terreno"), DescribeTerrain(static_cast<uint8>(Event.Value)));
+
+		// SEM ator, e a frase reflete isso: derreter não tem autor, e pôr um
+		// nome ali faria o jogador procurar o que o outro tinha feito.
+		return FText::Format(LOCTEXT("TerrenoDerreteu",
+			"o gelo derreteu — a casa voltou a ser {Terreno}"), ArgsFim);
 	}
 
 	case EBattleEventType::EsquivouPorReflexo:

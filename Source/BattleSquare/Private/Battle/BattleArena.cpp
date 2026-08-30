@@ -74,6 +74,19 @@ namespace ArenaGeometria
 	constexpr float PeDentroDaAgua = -22.0f;
 
 	/**
+	 * A POÇA e o GELO se distinguem por GEOMETRIA, não por material.
+	 *
+	 * Não há asset novo para eles, e inventar um slot de material que ninguém
+	 * atribui produziria exatamente o defeito que este projeto já pagou três
+	 * vezes: a casa existe na lógica e não existe na tela. A geometria diz o
+	 * que eles SÃO, que é a informação que importa — a poça mal cobre o pé, e
+	 * o gelo é superfície SÓLIDA, pisada por cima.
+	 */
+	constexpr float LaminaDaPoca = -3.2f;
+	constexpr float PeDentroDaPoca = -7.0f;
+	constexpr float SuperficieDoGelo = -1.5f;
+
+	/**
 	 * Casa sem regra nenhuma NÃO tem vão: ela é o próprio chão da clareira, e
 	 * quem delimita a grade é a linha desenhada. O vão em toda casa era o que
 	 * fazia o tabuleiro ler como placa quadriculada posta sobre o cenário.
@@ -215,6 +228,10 @@ float ABattleArena::GetCellSurfaceHeight(uint8 CellProperty)
 	{
 	case ECellProperty::Water:
 		return ArenaGeometria::LaminaDaAgua;
+	case ECellProperty::ShallowWater:
+		return ArenaGeometria::LaminaDaPoca;
+	case ECellProperty::Ice:
+		return ArenaGeometria::SuperficieDoGelo;
 	case ECellProperty::Blocked:
 		return ArenaGeometria::SuperficieBloqueada;
 	default:
@@ -229,12 +246,15 @@ float ABattleArena::GetCellFootingHeight(uint8 CellProperty)
 	// Só a água separa as duas: a lâmina fica visível acima do solo e o pé
 	// desce por dentro dela. Nos outros terrenos o pé pousa na superfície,
 	// porque não há por onde entrar.
-	if (static_cast<ECellProperty>(CellProperty) == ECellProperty::Water)
+	// O GELO fica de fora de propósito: ele é superfície sólida, e o pé pousa
+	// EM CIMA. É a diferença visível entre a casa congelada e a água que ela
+	// cobre — sem ela, congelar não mudaria nada na tela.
+	switch (static_cast<ECellProperty>(CellProperty))
 	{
-		return ArenaGeometria::PeDentroDaAgua;
+	case ECellProperty::Water:        return ArenaGeometria::PeDentroDaAgua;
+	case ECellProperty::ShallowWater: return ArenaGeometria::PeDentroDaPoca;
+	default:                          return GetCellSurfaceHeight(CellProperty);
 	}
-
-	return GetCellSurfaceHeight(CellProperty);
 }
 
 void ABattleArena::BeginPlay()
@@ -504,7 +524,12 @@ UMaterialInterface* ABattleArena::ResolveTileMaterial(uint8 CellProperty) const
 {
 	switch (static_cast<ECellProperty>(CellProperty))
 	{
+	// Poça e gelo VESTEM a água: é o material que existe, e o que os separa
+	// dela é a altura da superfície e do pé, não a textura. Slot de material
+	// que ninguém atribui não é diferença — é casa invisível.
 	case ECellProperty::Water:
+	case ECellProperty::ShallowWater:
+	case ECellProperty::Ice:
 		return WaterTileMaterial.LoadSynchronous();
 	case ECellProperty::Damage:
 		return DamageTileMaterial.LoadSynchronous();
@@ -977,7 +1002,8 @@ void ABattleArena::DispatchEventToPetViews(const FBattleEvent& Event)
 	// chão. Aqui, e não no fim do turno, para a mudança aparecer no instante
 	// em que o feed a narra.
 	if (Event.Type == EBattleEventType::ObstaculoDerrubado
-		|| Event.Type == EBattleEventType::TerrenoMudou)
+		|| Event.Type == EBattleEventType::TerrenoMudou
+		|| Event.Type == EBattleEventType::TerrenoDerreteu)
 	{
 		RefreshTileVisuals();
 	}
@@ -1953,8 +1979,18 @@ void ABattleArena::DrawDebugGrid() const
 			switch (static_cast<ECellProperty>(Propriedade))
 			{
 			case ECellProperty::Water:
-				NomeDaCasa = TEXT(" ÁGUA");
+				NomeDaCasa = TEXT(" ÁGUA FUNDA");
 				CorDoTerreno = FColor(60, 140, 255);
+				break;
+			case ECellProperty::ShallowWater:
+				// Diz que é RASA na própria etiqueta: "água" sozinho faria o
+				// jogador tentar submergir e não entender a recusa.
+				NomeDaCasa = TEXT(" POÇA (rasa)");
+				CorDoTerreno = FColor(120, 200, 255);
+				break;
+			case ECellProperty::Ice:
+				NomeDaCasa = TEXT(" GELO");
+				CorDoTerreno = FColor(210, 240, 255);
 				break;
 			case ECellProperty::Damage:
 				NomeDaCasa = TEXT(" DANO");
@@ -1970,6 +2006,17 @@ void ABattleArena::DrawDebugGrid() const
 				break;
 			default:
 				break;
+			}
+
+			// O PRAZO na etiqueta. Gelo sem contagem faz o jogador planejar
+			// em cima de um terreno que já vai embora — e descobrir isso no
+			// slot seguinte é o mesmo que a regra não existir para ele.
+			const int32 IndiceDaCasa = CurrentState.CellIndex(Column, Row);
+			if (CurrentState.CellCountdown.IsValidIndex(IndiceDaCasa)
+				&& CurrentState.CellCountdown[IndiceDaCasa] > 0)
+			{
+				NomeDaCasa += FString::Printf(TEXT(" [%d]"),
+					CurrentState.CellCountdown[IndiceDaCasa]);
 			}
 
 			// Ocupação em AMARELO por cima do terreno: saber quem está onde

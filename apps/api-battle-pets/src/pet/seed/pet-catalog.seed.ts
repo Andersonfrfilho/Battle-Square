@@ -106,8 +106,13 @@ export const PET_CATALOG_SEED: CreatePetDeclaration[] = [
     maxHealth: 110,
     moves: [
       { name: 'Borrifo', power: 75, terrainEffect: 'none' },
-      { name: 'Poça', power: 50, terrainEffect: 'water' },
-      { name: 'Correnteza', power: 120, terrainEffect: 'none' },
+      // O nome sempre disse a regra certa; agora ela existe. Poca molha o pe
+      // e NAO da para submergir — quem quer fundura procura Mare Alta.
+      { name: 'Poça', power: 50, terrainEffect: 'shallow_water' },
+      // CONGELA a casa por dois slots: nega o terreno a quem contava com ele,
+      // e devolve o que estava embaixo quando derrete. Poder baixo de
+      // proposito — a recompensa e o que o OUTRO deixa de fazer.
+      { name: 'Friagem', power: 45, terrainEffect: 'ice', terrainDuration: 2 },
       { name: 'Vaga', power: 140, terrainEffect: 'none', requiresAttribute: 'underground', requiresValue: 8 },
     ],
   },

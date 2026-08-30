@@ -256,6 +256,21 @@ FORCEINLINE int32 WaterDepthOf(uint8 CellProperty)
 	}
 }
 
+/**
+ * O que um golpe DEIXA na casa que acertou: o terreno, e por quanto tempo.
+ *
+ * Um parâmetro em vez de dois soltos, porque são uma coisa só — e porque o
+ * caminho do combate já passa nove valores por baixo, e o décimo posicional
+ * seria o que alguém acabaria trocando de lugar com o vizinho.
+ *
+ * `Slots == 0` é permanente: o alagamento de sempre.
+ */
+struct FTerrainDeposit
+{
+	uint8 Terrain = 0;
+	uint8 Slots = 0;
+};
+
 // Grade PADRÃO. Não é mais o único tamanho possível: o estado carrega as
 // suas próprias dimensões (FBattleState::GridColumns/GridRows), e estes
 // valores são só o que uma arena nasce sendo quando ninguém escolheu.

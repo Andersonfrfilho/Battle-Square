@@ -74,6 +74,7 @@ namespace
 			// Ausente continua "none": golpe assinado antes do efeito existir
 			// não muda a casa, e é assim que ele sempre se comportou.
 			(*Objeto)->TryGetStringField(TEXT("terrainEffect"), Golpe.TerrainEffect);
+			(*Objeto)->TryGetNumberField(TEXT("terrainDuration"), Golpe.TerrainDuration);
 
 			// Chaves ausentes ficam com o padrão do struct: golpe assinado
 			// antes do requisito existir não exige nada, e é assim que ele

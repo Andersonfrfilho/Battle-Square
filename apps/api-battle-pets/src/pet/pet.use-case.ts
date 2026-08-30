@@ -41,6 +41,7 @@ export async function createPet(input: CreatePetInput): Promise<CreatePetResult>
           requiresValue: move.requiresValue,
           effectStat: move.effectStat,
           effectPercent: move.effectPercent,
+          terrainDuration: move.terrainDuration,
         })),
       );
     }

@@ -55,6 +55,16 @@ export const petMoves = pgTable(
      */
     requiresAttribute: varchar('requires_attribute', { length: 16 }).notNull().default('none'),
     requiresValue: integer('requires_value').notNull().default(0),
+    /**
+     * Magia de ATRIBUTO: qual atributo o golpe mexe, e quanto.
+     *
+     * 'none' | 'attack' | 'defense' | 'speed'. O SINAL do percentual diz o
+     * alvo — positivo sobe o do proprio pet, negativo derruba o do oponente.
+     * Um campo em vez de dois, e nao existe subir o do oponente nem baixar o
+     * proprio, entao nenhum caso fica escondido.
+     */
+    effectStat: varchar('effect_stat', { length: 16 }).notNull().default('none'),
+    effectPercent: integer('effect_percent').notNull().default(0),
   },
   (table) => ({
     petSlotUnique: unique('pet_moves_pet_slot_unique').on(table.petId, table.slot),

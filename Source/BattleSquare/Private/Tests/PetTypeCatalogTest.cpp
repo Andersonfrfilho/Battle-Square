@@ -1,0 +1,197 @@
+// Copyright 2026 Anderson. All Rights Reserved.
+
+#include "Balance/PetTypeCatalog.h"
+#include "Balance/PetTypeIdentity.h"
+#include "Battle/PetAppearance.h"
+#include "Misc/AutomationTest.h"
+#include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
+
+namespace
+{
+	FString EscreverCatalogoDeTeste(const FString& NomeDoArquivo, const FString& Conteudo)
+	{
+		const FString Caminho = FPaths::Combine(
+			FPaths::ProjectSavedDir(), TEXT("PetTypeCatalogFixture"), NomeDoArquivo);
+		FFileHelper::SaveStringToFile(Conteudo, *Caminho);
+		return Caminho;
+	}
+
+	/** Devolve o catálogo ao do arquivo mesmo se o teste falhar no meio. */
+	struct FCatalogoTemporario
+	{
+		explicit FCatalogoTemporario(const FPetTypeCatalog& Catalogo)
+		{
+			FPetTypeCatalog::OverrideForTesting(&Catalogo);
+		}
+		~FCatalogoTemporario() { FPetTypeCatalog::OverrideForTesting(nullptr); }
+	};
+}
+
+// UM ELEMENTO NOVO É UMA LINHA, e nada de C++.
+//
+// É a garantia que esta feature inteira existe para dar, e ela se perde em
+// silêncio: alguém acrescenta um `if` numa tabela de cor "só desta vez", e o
+// próximo elemento volta a exigir quatro edições — das quais esquecer uma
+// produz um tipo pela metade, que existe, luta e sai parecendo genérico.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FNewElementNeedsNoCodeTest,
+	"BattleSquare.Balance.PetTypeCatalog.NewElementNeedsNoCode",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FNewElementNeedsNoCodeTest::RunTest(const FString& Parameters)
+{
+	// Um elemento que NÃO existe em lugar nenhum do código.
+	const FString Json = TEXT(R"({
+		"schools": [
+			{ "name": "Natural", "crest": "Chama", "crestScale": [0.18, 0.18, 0.46] }
+		],
+		"elements": [
+			{ "name": "Vento", "color": [0.75, 0.90, 0.95], "tiltDegrees": -40, "skills": ["voar"] }
+		]
+	})");
+
+	FPetTypeCatalog Catalogo;
+	TestTrue(TEXT("O catálogo carrega"),
+		FPetTypeCatalog::LoadFromJson(EscreverCatalogoDeTeste(TEXT("vento.json"), Json), Catalogo));
+
+	const FCatalogoTemporario EmUso(Catalogo);
+
+	// O tipo RESOLVE, sem nenhuma linha de C++ conhecer "Vento".
+	const FPetTypeIdentity Identidade = FPetTypeIdentity::Parse(TEXT("Natural/Vento"));
+	TestTrue(TEXT("O par é válido"), Identidade.IsValid());
+	TestEqual(TEXT("O elemento novo é lido"), Identidade.Element, FString(TEXT("Vento")));
+
+	// E chega à TELA com a cor e o tombo declarados — sem isso ele existiria
+	// na regra e não no jogo, que é o defeito de L-041.
+	const FPetAppearance Aparencia = FPetAppearance::ForType(TEXT("Natural/Vento"));
+	TestTrue(TEXT("A cor declarada chega à aparência"),
+		Aparencia.AccentColor.Equals(FLinearColor(0.75f, 0.90f, 0.95f), 0.001f));
+	TestTrue(TEXT("O tombo declarado chega à aparência"),
+		FMath::IsNearlyEqual(Aparencia.CrestRotation.Roll, -40.0f, 0.01f));
+
+	// E a skill dele veio junto, do MESMO arquivo.
+	const FPetElementDefinition* Vento = Catalogo.FindElement(TEXT("Vento"));
+	TestTrue(TEXT("O elemento está no catálogo"), Vento != nullptr);
+	TestTrue(TEXT("E carrega a skill declarada"),
+		Vento && Vento->SkillNames.Contains(TEXT("voar")));
+
+	return true;
+}
+
+// UMA ESCOLA NOVA também é uma linha.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FNewSchoolNeedsNoCodeTest,
+	"BattleSquare.Balance.PetTypeCatalog.NewSchoolNeedsNoCode",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FNewSchoolNeedsNoCodeTest::RunTest(const FString& Parameters)
+{
+	const FString Json = TEXT(R"({
+		"schools": [
+			{ "name": "Alquimia", "crest": "Antena", "crestScale": [0.05, 0.05, 0.52] }
+		],
+		"elements": [
+			{ "name": "Fogo", "color": [0.95, 0.35, 0.05], "tiltDegrees": -6, "skills": [] }
+		]
+	})");
+
+	FPetTypeCatalog Catalogo;
+	TestTrue(TEXT("O catálogo carrega"),
+		FPetTypeCatalog::LoadFromJson(EscreverCatalogoDeTeste(TEXT("alquimia.json"), Json), Catalogo));
+
+	const FCatalogoTemporario EmUso(Catalogo);
+
+	TestTrue(TEXT("A escola nova resolve"),
+		FPetTypeIdentity::Parse(TEXT("Alquimia/Fogo")).IsValid());
+
+	const FPetAppearance Aparencia = FPetAppearance::ForType(TEXT("Alquimia/Fogo"));
+	TestTrue(TEXT("E a malha declarada chega à aparência"),
+		Aparencia.CrestShape == EPetCrestShape::Antena);
+
+	return true;
+}
+
+// Arquivo AUSENTE não vira tabela padrão embutida no C++.
+//
+// Um padrão em código seria a segunda cópia da mesma lista, e cópias
+// concordam até a primeira edição — L-032 e L-033 foram exatamente isso. Sem
+// o arquivo, o tipo não resolve e o pet sai VISIVELMENTE neutro.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FMissingCatalogHasNoCodeFallbackTest,
+	"BattleSquare.Balance.PetTypeCatalog.MissingCatalogHasNoCodeFallback",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FMissingCatalogHasNoCodeFallbackTest::RunTest(const FString& Parameters)
+{
+	FPetTypeCatalog Ausente;
+	TestFalse(TEXT("Arquivo inexistente não carrega"),
+		FPetTypeCatalog::LoadFromJson(TEXT("/caminho/que/nao/existe.json"), Ausente));
+	TestTrue(TEXT("E o catálogo continua vazio"), Ausente.IsEmpty());
+
+	const FCatalogoTemporario EmUso(Ausente);
+
+	TestFalse(TEXT("Com catálogo vazio, nenhum tipo resolve"),
+		FPetTypeIdentity::Parse(TEXT("Natural/Fogo")).IsValid());
+
+	// E o pet sai NEUTRO — visível, não invisível. Um pet da cor do chão é
+	// tão ausente quanto um sem malha.
+	const FPetAppearance Aparencia = FPetAppearance::ForType(TEXT("Natural/Fogo"));
+	TestTrue(TEXT("O neutro é o ouro-palha, que nenhum terreno usa"),
+		Aparencia.AccentColor.Equals(FLinearColor(0.79f, 0.64f, 0.15f), 0.001f));
+
+	return true;
+}
+
+// O arquivo QUE O JOGO USA carrega, e declara o que o jogo espera.
+//
+// Os testes acima provam que o mecanismo funciona; este prova que o arquivo
+// REAL está certo. Sem ele, o catálogo poderia estar quebrado com todos os
+// outros testes verdes — que é a distância entre "o código funciona" e "o
+// jogo funciona".
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FShippedTypeCatalogLoadsTest,
+	"BattleSquare.Balance.PetTypeCatalog.ShippedCatalogLoads",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FShippedTypeCatalogLoadsTest::RunTest(const FString& Parameters)
+{
+	FPetTypeCatalog Catalogo;
+	const FString Caminho = FPaths::Combine(FPaths::ProjectConfigDir(), TEXT("PetTypes.json"));
+	if (!FPetTypeCatalog::LoadFromJson(Caminho, Catalogo))
+	{
+		AddError(TEXT("Config/PetTypes.json não carregou"));
+		return false;
+	}
+
+	TestEqual(TEXT("Três escolas"), Catalogo.GetSchools().Num(), 3);
+	TestEqual(TEXT("Quatro elementos"), Catalogo.GetElements().Num(), 4);
+
+	// Cada elemento precisa dos DOIS canais: cor e tombo. Um elemento sem
+	// tombo próprio seria invisível para quem não distingue matiz.
+	for (const FPetElementDefinition& Elemento : Catalogo.GetElements())
+	{
+		for (const FPetElementDefinition& Outro : Catalogo.GetElements())
+		{
+			if (&Elemento == &Outro)
+			{
+				continue;
+			}
+			TestFalse(*FString::Printf(TEXT("%s e %s têm tombos diferentes"),
+				*Elemento.Name, *Outro.Name),
+				FMath::IsNearlyEqual(Elemento.TiltDegrees, Outro.TiltDegrees, 1.0f));
+			TestFalse(*FString::Printf(TEXT("%s e %s têm cores diferentes"),
+				*Elemento.Name, *Outro.Name),
+				Elemento.Color.Equals(Outro.Color, 0.001f));
+		}
+	}
+
+	// E os nomes ANTIGOS, que já foram assinados, continuam resolvendo.
+	FString Escola;
+	FString Elemento;
+	TestTrue(TEXT("'Magico' ainda resolve"),
+		Catalogo.ResolveLegacyName(TEXT("Magico"), Escola, Elemento));
+	TestEqual(TEXT("E vira Psiquica"), Escola, FString(TEXT("Psiquica")));
+
+	return true;
+}

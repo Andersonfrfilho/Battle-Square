@@ -44,7 +44,14 @@ enum class EBattleEventType : uint8
 	// próprio, e não `Esquivou` reaproveitado, porque a diferença é o que o
 	// jogador precisa entender — uma foi decisão dele, a outra foi atributo.
 	// No FIM do enum, pelo mesmo motivo dos anteriores.
-	EsquivouPorReflexo
+	EsquivouPorReflexo,
+
+	// Magia de atributo (escola psíquica). `Detail` diz qual atributo,
+	// `Value` diz quanto — positivo em si, negativo no oponente. No FIM do
+	// enum, pelo mesmo motivo dos anteriores: os valores existentes entram no
+	// hash do traço.
+	AtributoAlterado,
+	AtributoVoltouAoNormal
 };
 
 // Sentinela para TargetId/ActorId quando não há alvo aplicável
@@ -86,6 +93,16 @@ struct FBattleEvent
 	// do que se evita ao não ter hierarquia de eventos.
 	UPROPERTY()
 	int32 Value = 0;
+
+	/**
+	 * Segundo genérico, pelo mesmo motivo do primeiro.
+	 *
+	 * Existe porque a magia de atributo precisa dizer DUAS coisas — qual
+	 * atributo e quanto — e empacotar as duas dentro de `Value` seria o tipo
+	 * de aritmética que ninguém lembra de desfazer seis meses depois.
+	 */
+	UPROPERTY()
+	uint8 Detail = 0;
 };
 
 static_assert(sizeof(EBattleEventType) == 1, "EBattleEventType deve ocupar 1 byte — struct de evento precisa ficar compacto para o trace inteiro replicar barato.");

@@ -26,6 +26,16 @@ struct FLoadedPetMove
 	 */
 	FString RequiresAttribute = TEXT("none");
 	int32 RequiresValue = 0;
+
+	/**
+	 * Magia de atributo: qual atributo, e quanto.
+	 *
+	 * O SINAL diz o alvo — positivo sobe o do próprio pet, negativo derruba o
+	 * do oponente. "none" com 0 é golpe sem efeito, que é o que todo golpe
+	 * assinado antes desta feature continua sendo.
+	 */
+	FString EffectStat = TEXT("none");
+	int32 EffectPercent = 0;
 };
 
 struct FLoadedPetRecord

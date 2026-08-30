@@ -22,6 +22,16 @@ class BATTLESQUARE_API FPetSkillCatalog
 {
 public:
 	/** Falha explícita se ausente ou malformado — nunca catálogo vazio calado. */
+	/**
+	 * Monta as skills a partir do catálogo de TIPOS.
+	 *
+	 * É o caminho normal desde 30/08/2026: a skill é do ELEMENTO, e o elemento
+	 * já se declara em `PetTypes.json`. `LoadFromJson` continua existindo para
+	 * quem quiser um arquivo de skills à parte — teste, ou uma variação de
+	 * regra — mas o jogo não usa dois arquivos para a mesma lista.
+	 */
+	static FPetSkillCatalog FromTypeCatalog(const class FPetTypeCatalog& Types);
+
 	static bool LoadFromJson(const FString& FilePath, FPetSkillCatalog& OutCatalog);
 
 	/**

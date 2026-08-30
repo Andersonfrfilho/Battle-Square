@@ -120,6 +120,71 @@ struct FPetState
 	UPROPERTY()
 	uint8 MoveTerrainEffects[4] = { 0, 0, 0, 0 };
 
+	/**
+	 * O que cada golpe faz com ATRIBUTO, e em quem.
+	 *
+	 * O SINAL diz o alvo: positivo sobe o SEU atributo, negativo derruba o
+	 * DELE. Um campo em vez de dois, e a leitura sai natural — "+30 de ataque"
+	 * é ficar mais forte, "−30 de ataque" é enfraquecer o outro. Não existe
+	 * subir o atributo do oponente nem baixar o próprio, então a bijeção é
+	 * completa e não esconde nenhum caso.
+	 */
+	UPROPERTY()
+	uint8 MoveEffectStats[4] = { 0, 0, 0, 0 };
+
+	UPROPERTY()
+	int32 MoveEffectPercents[4] = { 0, 0, 0, 0 };
+
+	/**
+	 * O efeito ATIVO neste pet. UM de cada vez, e o novo substitui o antigo.
+	 *
+	 * Empilhar seria dominante: três magias de ataque no mesmo turno dobrariam
+	 * o dano, e a escola psíquica passaria a vencer por repetição em vez de
+	 * por escolha. Substituir mantém a decisão viva — vale a pena trocar o
+	 * bônus que já está de pé?
+	 */
+	UPROPERTY()
+	uint8 ActiveEffectStat = 0;
+
+	UPROPERTY()
+	int32 ActiveEffectPercent = 0;
+
+	UPROPERTY()
+	uint8 ActiveEffectSlotsRemaining = 0;
+
+	uint8 GetMoveEffectStat(uint8 MoveIndex) const
+	{
+		return MoveIndex < 4 ? MoveEffectStats[MoveIndex] : 0;
+	}
+
+	int32 GetMoveEffectPercent(uint8 MoveIndex) const
+	{
+		return MoveIndex < 4 ? MoveEffectPercents[MoveIndex] : 0;
+	}
+
+	/** Atributo já com o efeito ativo somado. Nunca abaixo de 1. */
+	int32 GetEffectiveStat(EBattleStat Which) const
+	{
+		const int32 Base =
+			Which == EBattleStat::Ataque ? Attack :
+			Which == EBattleStat::Defesa ? Defense :
+			Which == EBattleStat::Velocidade ? Speed : 0;
+
+		if (ActiveEffectSlotsRemaining == 0
+			|| static_cast<EBattleStat>(ActiveEffectStat) != Which)
+		{
+			return Base;
+		}
+
+		// Piso de 1: um atributo zerado por magia faria o pet parar de existir
+		// como adversário, e perder assim não ensina nada a quem perdeu.
+		return FMath::Max(1, Base + (Base * ActiveEffectPercent) / 100);
+	}
+
+	int32 GetEffectiveAttack() const { return GetEffectiveStat(EBattleStat::Ataque); }
+	int32 GetEffectiveDefense() const { return GetEffectiveStat(EBattleStat::Defesa); }
+	int32 GetEffectiveSpeed() const { return GetEffectiveStat(EBattleStat::Velocidade); }
+
 	uint8 GetMoveTerrainEffect(uint8 MoveIndex) const
 	{
 		return MoveIndex < 4 ? MoveTerrainEffects[MoveIndex] : 0;

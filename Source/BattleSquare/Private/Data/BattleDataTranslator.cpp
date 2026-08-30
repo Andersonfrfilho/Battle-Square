@@ -6,6 +6,30 @@
 
 namespace
 {
+	/**
+	 * Nome do atributo como o dado assinado o escreve.
+	 *
+	 * Desconhecido vira "nenhum", e é a escolha segura: um golpe que não mexe
+	 * em atributo nenhum ainda é um golpe. O erro de cadastro é barrado na
+	 * ESCRITA, pelo enum do Zod — aqui, recusar a batalha seria pior.
+	 */
+	uint8 StatFromName(const FString& Nome)
+	{
+		if (Nome.Equals(TEXT("attack"), ESearchCase::IgnoreCase))
+		{
+			return static_cast<uint8>(EBattleStat::Ataque);
+		}
+		if (Nome.Equals(TEXT("defense"), ESearchCase::IgnoreCase))
+		{
+			return static_cast<uint8>(EBattleStat::Defesa);
+		}
+		if (Nome.Equals(TEXT("speed"), ESearchCase::IgnoreCase))
+		{
+			return static_cast<uint8>(EBattleStat::Velocidade);
+		}
+		return static_cast<uint8>(EBattleStat::Nenhum);
+	}
+
 	uint8 TerrainEffectFromName(const FString& Nome)
 	{
 		if (Nome.Equals(TEXT("water"), ESearchCase::IgnoreCase))
@@ -100,6 +124,13 @@ void FBattleDataTranslator::TranslatePet(
 		//
 		// Efeito desconhecido vira "não muda nada", nunca um valor qualquer:
 		// um erro de digitação no cadastro não pode alagar o tabuleiro.
+		OutBattleState.MoveEffectStats[Indice] = Source.Moves.IsValidIndex(Indice)
+			? StatFromName(Source.Moves[Indice].EffectStat)
+			: 0;
+		OutBattleState.MoveEffectPercents[Indice] = Source.Moves.IsValidIndex(Indice)
+			? Source.Moves[Indice].EffectPercent
+			: 0;
+
 		OutBattleState.MoveTerrainEffects[Indice] = Source.Moves.IsValidIndex(Indice)
 			? TerrainEffectFromName(Source.Moves[Indice].TerrainEffect)
 			: static_cast<uint8>(ECellProperty::None);

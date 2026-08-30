@@ -33,6 +33,17 @@ export const petMoveSchema = z.object({
     .enum(['none', 'musculature', 'personality', 'camouflage', 'flight', 'underground'])
     .default('none'),
   requiresValue: z.number().int().min(0).max(999).default(0),
+  /**
+   * Magia de atributo. Conjunto FECHADO pelo mesmo motivo dos outros: o jogo
+   * trata nome desconhecido como "sem efeito", entao um erro de cadastro
+   * produziria um golpe que simplesmente nao faz nada — e a escrita e o unico
+   * lugar em que isso aparece.
+   *
+   * O teto de 60 e o mesmo do nucleo (BattleStatEffectMaxPercent), e ele
+   * recorta de novo la: amarra de jogo nao e acordo entre camadas.
+   */
+  effectStat: z.enum(['none', 'attack', 'defense', 'speed']).default('none'),
+  effectPercent: z.number().int().min(-60).max(60).default(0),
 });
 
 export const createPetSchema = z.object({

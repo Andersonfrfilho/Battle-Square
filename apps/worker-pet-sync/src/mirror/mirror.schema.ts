@@ -29,6 +29,8 @@ export type MirrorPetRow = {
     // acrescentar a chave num golpe antigo quebraria a assinatura DELE.
     requiresAttribute?: string;
     requiresValue?: number;
+    effectStat?: string;
+    effectPercent?: number;
   }[];
   signature: string;
 };

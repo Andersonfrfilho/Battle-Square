@@ -9,6 +9,21 @@
 
 namespace
 {
+	/** Nome do atributo como o jogador lê. */
+	FText DescribeStat(uint8 Stat)
+	{
+		switch (static_cast<EBattleStat>(Stat))
+		{
+			case EBattleStat::Ataque:     return LOCTEXT("StatAtaque", "ataque");
+			case EBattleStat::Defesa:     return LOCTEXT("StatDefesa", "defesa");
+			case EBattleStat::Velocidade: return LOCTEXT("StatVelocidade", "velocidade");
+			default:                      return LOCTEXT("StatNenhum", "atributo");
+		}
+	}
+}
+
+namespace
+{
 	TArray<FBattleNarrationFeed::FLine> GNarrationLines;
 
 	/** Nome ausente não pode quebrar a frase nem derrubar a partida: o feed é
@@ -46,6 +61,34 @@ FText FBattleNarration::Describe(const FBattleEvent& Event, const FString& Actor
 	// Frase DIFERENTE da esquiva declarada de propósito: uma foi decisão do
 	// jogador, a outra foi o atributo agindo sozinho, e confundir as duas
 	// ensinaria a lição errada sobre o que a escolha dele fez.
+	// DP-atr-08 outra vez: sorteio ou não, o que MUDA o resultado é narrado.
+	// Um bônus que aparece sem frase faz o jogador achar que o dano saiu
+	// errado, e este projeto já gastou rodadas com regra funcionando e
+	// parecendo quebrada.
+	case EBattleEventType::AtributoAlterado:
+	{
+		FFormatNamedArguments ArgsAtributo = Args;
+		ArgsAtributo.Add(TEXT("Atributo"), DescribeStat(Event.Detail));
+		ArgsAtributo.Add(TEXT("Quanto"), FText::AsNumber(FMath::Abs(Event.Value)));
+
+		// Frases DIFERENTES para subir e descer. "alterou o ataque em 30" faz
+		// o jogador parar para descobrir de que lado a coisa foi — e ele está
+		// no meio de um turno.
+		return Event.Value > 0
+			? FText::Format(
+				LOCTEXT("AtributoSubiu", "{Actor} concentrou-se: {Atributo} +{Quanto}%"), ArgsAtributo)
+			: FText::Format(
+				LOCTEXT("AtributoDesceu", "{Actor} enfraqueceu {Target}: {Atributo} −{Quanto}%"), ArgsAtributo);
+	}
+
+	case EBattleEventType::AtributoVoltouAoNormal:
+	{
+		FFormatNamedArguments ArgsFim = Args;
+		ArgsFim.Add(TEXT("Atributo"), DescribeStat(Event.Detail));
+		return FText::Format(
+			LOCTEXT("AtributoNormalizou", "{Actor}: {Atributo} voltou ao normal"), ArgsFim);
+	}
+
 	case EBattleEventType::EsquivouPorReflexo:
 		return FText::Format(LOCTEXT("EsquivouPorReflexo", "{Actor} desviou por reflexo"), Args);
 

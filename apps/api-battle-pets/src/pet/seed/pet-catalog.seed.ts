@@ -135,8 +135,11 @@ export const PET_CATALOG_SEED: CreatePetDeclaration[] = [
     maxHealth: 105,
     moves: [
       { name: 'Pressentir', power: 75, terrainEffect: 'none' },
-      { name: 'Distorção', power: 105, terrainEffect: 'none' },
-      { name: 'Espelho', power: 90, terrainEffect: 'none' },
+      // A ESCOLA PSÍQUICA muda a luta em vez de encerrá-la: poder baixo, e o
+      // que ela entrega é o turno seguinte. É a razão de existir dela, e o
+      // que substituiu o 150% contra todo tipo natural que o psíquico tinha.
+      { name: 'Concentração', power: 35, terrainEffect: 'none', effectStat: 'attack', effectPercent: 40 },
+      { name: 'Peso da Mente', power: 40, terrainEffect: 'none', effectStat: 'speed', effectPercent: -35 },
       // Personalidade alta: quem hesita não sustenta o olhar.
       { name: 'Colapso', power: 150, terrainEffect: 'none', requiresAttribute: 'personality', requiresValue: 8 },
     ],
@@ -150,10 +153,11 @@ export const PET_CATALOG_SEED: CreatePetDeclaration[] = [
     maxHealth: 90,
     moves: [
       { name: 'Fagulha Arcana', power: 85, terrainEffect: 'none' },
+      // Derruba a DEFESA do outro: o golpe que prepara o Grimório.
+      { name: 'Fissura Arcana', power: 30, terrainEffect: 'none', effectStat: 'defense', effectPercent: -45 },
       // O mago FABRICA o terreno de que precisa — a versão dele do que a Maré
       // faz com água, e o que dá sentido a ele não ter skill própria.
       { name: 'Poça Invocada', power: 50, terrainEffect: 'water' },
-      { name: 'Selo', power: 115, terrainEffect: 'none' },
       { name: 'Grimório', power: 165, terrainEffect: 'none', requiresAttribute: 'musculature', requiresValue: 10 },
     ],
   },

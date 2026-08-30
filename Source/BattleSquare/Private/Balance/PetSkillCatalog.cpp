@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Balance/PetSkillCatalog.h"
+#include "Balance/PetTypeCatalog.h"
 #include "Balance/PetTypeIdentity.h"
 
 #include "Dom/JsonObject.h"
@@ -41,6 +42,29 @@ const TArray<EActionType>& FPetSkillCatalog::GetUniversalActions()
 		EActionType::Esquivar
 	};
 	return Universais;
+}
+
+FPetSkillCatalog FPetSkillCatalog::FromTypeCatalog(const FPetTypeCatalog& Types)
+{
+	// As skills passaram a morar em `PetTypes.json`, junto do elemento que as
+	// tem. Um segundo arquivo declarando skill por tipo era a última cópia da
+	// lista de elementos — e cópias concordam até a primeira edição, que aqui
+	// significaria um elemento existindo para a cor e não para a skill.
+	FPetSkillCatalog Catalogo;
+	for (const FPetElementDefinition& Elemento : Types.GetElements())
+	{
+		TArray<EActionType> Acoes;
+		for (const FString& Nome : Elemento.SkillNames)
+		{
+			const EActionType Acao = SkillFromName(Nome);
+			if (Acao != EActionType::Aguardar)
+			{
+				Acoes.Add(Acao);
+			}
+		}
+		Catalogo.SkillsByType.Add(Elemento.Name, Acoes);
+	}
+	return Catalogo;
 }
 
 bool FPetSkillCatalog::LoadFromJson(const FString& FilePath, FPetSkillCatalog& OutCatalog)

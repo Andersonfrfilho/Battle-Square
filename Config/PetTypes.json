@@ -1,0 +1,33 @@
+{
+  "_comment": "TODO o sistema de tipos, num arquivo so. Acrescentar um elemento ou uma escola e UMA entrada aqui — antes eram dois arquivos C++ e dois JSON, e esquecer um deles produzia um tipo pela metade: existe, luta, e sai parecendo generico.",
+
+  "_comment_dois_canais": "Cada elemento declara COR e TOMBO porque sao os dois canais de silhueta. Quem nao distingue matiz le a inclinacao, e vice-versa. Declarar so um deixa metade dos jogadores sem a informacao — foi o defeito que dois testes pegaram em 30/08/2026.",
+
+  "_comment_o_que_e_codigo": "Fica em codigo, e nao aqui: a MALHA da crista (asset novo e codigo — este arquivo so escolhe entre as que existem), o atributo que uma magia mexe (EBattleStat, porque cada um tem regra em GetEffectiveStat) e a propriedade de casa (ECellProperty, mesma razao). Isso nao e dado; e comportamento com nome.",
+
+  "_comment_como_acrescentar": "ELEMENTO: uma entrada em 'elements' + as relacoes dele em TypeEffectiveness.json. ESCOLA: uma entrada em 'schools' + as relacoes em TypeEffectiveness.json. GOLPE ou MAGIA: nada aqui — golpe vem do backend assinado, e ja e dado.",
+
+  "schools": [
+    { "name": "Fisica",   "crest": "Cristal", "crestScale": [0.20, 0.20, 0.22] },
+    { "name": "Natural",  "crest": "Chama",   "crestScale": [0.18, 0.18, 0.46] },
+    { "name": "Psiquica", "crest": "Orbe",    "crestScale": [0.15, 0.15, 0.15] }
+  ],
+
+  "elements": [
+    { "name": "Fogo",   "color": [0.95, 0.35, 0.05], "tiltDegrees": -6,  "skills": ["voar"] },
+    { "name": "Agua",   "color": [0.10, 0.70, 0.90], "tiltDegrees": -52, "skills": ["submergir"] },
+    { "name": "Planta", "color": [0.20, 0.78, 0.25], "tiltDegrees": -28, "skills": ["camuflar"] },
+    { "name": "Terra",  "color": [0.55, 0.30, 0.72], "tiltDegrees": -80, "skills": [] }
+  ],
+
+  "_comment_legado": "Nomes de UM eixo so que ja foram ASSINADOS. Nao e conveniencia: dado assinado nao se reescreve de fora, e recusar estes nomes invalidaria pets que existem.",
+  "legacyNames": [
+    { "name": "Fogo",     "school": "Natural",  "element": "Fogo"   },
+    { "name": "Agua",     "school": "Natural",  "element": "Agua"   },
+    { "name": "Planta",   "school": "Natural",  "element": "Planta" },
+    { "name": "Inseto",   "school": "Fisica",   "element": "Planta" },
+    { "name": "Caverna",  "school": "Fisica",   "element": "Terra"  },
+    { "name": "Psiquico", "school": "Psiquica", "element": "Agua"   },
+    { "name": "Magico",   "school": "Psiquica", "element": "Fogo"   }
+  ]
+}

@@ -52,7 +52,13 @@ uint64 FBattleState::ComputeHash() const
 		{
 			Hash = CombineBattleHash(Hash, static_cast<uint64>(static_cast<int64>(Pet->MovePowers[Indice])));
 			Hash = CombineBattleHash(Hash, Pet->MoveTerrainEffects[Indice]);
+			Hash = CombineBattleHash(Hash, Pet->MoveEffectStats[Indice]);
+			Hash = CombineBattleHash(Hash, static_cast<uint64>(static_cast<int64>(Pet->MoveEffectPercents[Indice])));
 		}
+
+		Hash = CombineBattleHash(Hash, Pet->ActiveEffectStat);
+		Hash = CombineBattleHash(Hash, static_cast<uint64>(static_cast<int64>(Pet->ActiveEffectPercent)));
+		Hash = CombineBattleHash(Hash, Pet->ActiveEffectSlotsRemaining);
 
 		Hash = CombineBattleHash(Hash, Pet->PostureFlags);
 	}

@@ -105,16 +105,19 @@ namespace
 		const bool bAttackerBuffed = IsOnBuffCell(Attacker, State);
 		const bool bTargetBuffed = IsOnBuffCell(Target, State);
 
+		// Atributo JÁ com a magia de efeito somada: é aqui que "subir o ataque"
+		// deixa de ser um número guardado e vira dano na tela.
+		const int32 AtaqueDoPet = Attacker.GetEffectiveAttack();
 		const int32 EffectiveAttack = bAttackerBuffed
-			? (Attacker.Attack * BattleArenaConstants::CellBuffPercent) / 100
-			: Attacker.Attack;
+			? (AtaqueDoPet * BattleArenaConstants::CellBuffPercent) / 100
+			: AtaqueDoPet;
 
 		int32 DefenseFactorPercent = bTargetDefending ? DefendingDefenseFactorPercent : 100;
 		if (bTargetBuffed)
 		{
 			DefenseFactorPercent = (DefenseFactorPercent * BattleArenaConstants::CellBuffPercent) / 100;
 		}
-		const int32 EffectiveDefense = (Target.Defense * DefenseFactorPercent) / 100;
+		const int32 EffectiveDefense = (Target.GetEffectiveDefense() * DefenseFactorPercent) / 100;
 
 		const int32 RawDamage = (EffectiveAttack * ActionMultiplierPercent) / 100 - EffectiveDefense;
 		return FMath::Max(MinDamage, RawDamage);
@@ -140,6 +143,49 @@ namespace
 		Event.ActorId = Target.PetId; // quem executou a esquiva é o sujeito do evento
 		Event.TargetId = Attacker.PetId;
 		OutTrace.Add(Event);
+	}
+
+	void EmitStatEffect(TArray<FBattleEvent>& OutTrace, uint8 SlotIndex,
+		const FPetState& Caster, const FPetState& Affected, EBattleStat Stat, int32 Percent)
+	{
+		FBattleEvent Event;
+		Event.Type = EBattleEventType::AtributoAlterado;
+		Event.SlotIndex = SlotIndex;
+		Event.Phase = 4; // F4
+		Event.ActorId = Caster.PetId;
+		Event.TargetId = Affected.PetId;
+		Event.Detail = static_cast<uint8>(Stat);
+		Event.Value = Percent;
+		OutTrace.Add(Event);
+	}
+
+	/**
+	 * Aplica o efeito do golpe, SUBSTITUINDO o que estivesse ativo.
+	 *
+	 * O sinal decide o alvo: positivo em si, negativo no oponente. Recortar no
+	 * teto acontece AQUI e não na montagem, pelo mesmo motivo dos tetos de
+	 * esquiva: amarra de jogo não é acordo entre camadas, e um estado vindo da
+	 * rede não pode passar por cima dela.
+	 */
+	void ApplyStatEffect(FPetState& Caster, FPetState& Opponent, uint8 SlotIndex,
+		uint8 StatRaw, int32 Percent, TArray<FBattleEvent>& OutTrace)
+	{
+		const EBattleStat Stat = static_cast<EBattleStat>(StatRaw);
+		if (Stat == EBattleStat::Nenhum || Percent == 0)
+		{
+			return;
+		}
+
+		const int32 Recortado = FMath::Clamp(Percent,
+			-BattleStatEffectMaxPercent, BattleStatEffectMaxPercent);
+
+		FPetState& Afetado = Recortado > 0 ? Caster : Opponent;
+
+		Afetado.ActiveEffectStat = StatRaw;
+		Afetado.ActiveEffectPercent = Recortado;
+		Afetado.ActiveEffectSlotsRemaining = BattleStatEffectSlots;
+
+		EmitStatEffect(OutTrace, SlotIndex, Caster, Afetado, Stat, Recortado);
 	}
 
 	void EmitReflexDodge(TArray<FBattleEvent>& OutTrace, uint8 SlotIndex, const FPetState& Attacker, const FPetState& Target)
@@ -244,6 +290,23 @@ namespace
 		const uint8 MoveIndex = GetMoveIndexFromAction(Action);
 		const int32 MovePower = Attacker->GetMovePower(MoveIndex);
 		const uint8 TerrainEffect = Attacker->GetMoveTerrainEffect(MoveIndex);
+
+		// A MAGIA DE ATRIBUTO acontece ANTES do dano, e por dois motivos: um
+		// golpe que sobe o próprio ataque precisa valer já neste acerto, senão
+		// o jogador gasta um slot para nada; e um que derruba a defesa do
+		// outro precisa valer contra o dano que vem em seguida — que é
+		// exatamente o que torna a jogada interessante.
+		//
+		// Só a MAGIA carrega efeito. Ataque físico que mexesse em atributo
+		// apagaria a diferença entre as duas ações, e é ela que dá sentido à
+		// escola psíquica.
+		if (bIsMagic)
+		{
+			ApplyStatEffect(*Attacker, *Target, SlotIndex,
+				Attacker->GetMoveEffectStat(MoveIndex),
+				Attacker->GetMoveEffectPercent(MoveIndex),
+				OutTrace);
+		}
 
 		ApplyHitAgainst(State, *Attacker, *Target, bIsMagic, MovePower, TerrainEffect, SlotIndex, OutTrace);
 	}

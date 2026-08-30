@@ -2,52 +2,11 @@
 
 #include "Balance/PetTypeIdentity.h"
 
+#include "Balance/PetTypeCatalog.h"
+
 namespace
 {
-	const FString EscolaFisica = TEXT("Fisica");
-	const FString EscolaNatural = TEXT("Natural");
-	const FString EscolaPsiquica = TEXT("Psiquica");
-
-	const FString ElementoFogo = TEXT("Fogo");
-	const FString ElementoAgua = TEXT("Agua");
-	const FString ElementoPlanta = TEXT("Planta");
-	const FString ElementoTerra = TEXT("Terra");
-
-	/**
-	 * Os nomes de um eixo só que já foram assinados, e o par que cada um vira.
-	 *
-	 * Não é conveniência: é compatibilidade com dado que não se pode reescrever.
-	 * Um pet assinado como "Magico" continua sendo o mesmo pet — o que muda é
-	 * o jogo passar a saber que ele é psíquico de fogo.
-	 */
-	bool TraduzirNomeAntigo(const FString& Nome, FPetTypeIdentity& Fora)
-	{
-		struct FLegado { const TCHAR* Antigo; const TCHAR* Escola; const TCHAR* Elemento; };
-		static const FLegado Tabela[] = {
-			{ TEXT("Fogo"),     TEXT("Natural"),  TEXT("Fogo")   },
-			{ TEXT("Agua"),     TEXT("Natural"),  TEXT("Agua")   },
-			{ TEXT("Planta"),   TEXT("Natural"),  TEXT("Planta") },
-			// Inseto é corpo, e o corpo dele é do mundo da folha.
-			{ TEXT("Inseto"),   TEXT("Fisica"),   TEXT("Planta") },
-			// Caverna é a matéria em estado puro.
-			{ TEXT("Caverna"),  TEXT("Fisica"),   TEXT("Terra")  },
-			{ TEXT("Psiquico"), TEXT("Psiquica"), TEXT("Agua")   },
-			{ TEXT("Magico"),   TEXT("Psiquica"), TEXT("Fogo")   },
-		};
-
-		for (const FLegado& Entrada : Tabela)
-		{
-			if (Nome.Equals(Entrada.Antigo, ESearchCase::IgnoreCase))
-			{
-				Fora.School = Entrada.Escola;
-				Fora.Element = Entrada.Elemento;
-				return true;
-			}
-		}
-		return false;
-	}
-
-	/** Casa sem diferenciar caixa e devolve a grafia CANÔNICA. */
+	/** Casa sem diferenciar caixa e devolve a grafia CANÔNICA do catálogo. */
 	bool Reconhecer(const TArray<FString>& Conhecidos, const FString& Bruto, FString& Fora)
 	{
 		for (const FString& Conhecido : Conhecidos)
@@ -64,14 +23,27 @@ namespace
 
 const TArray<FString>& FPetTypeIdentity::AllSchools()
 {
-	static const TArray<FString> Escolas = { EscolaFisica, EscolaNatural, EscolaPsiquica };
-	return Escolas;
+	// Reconstruído a cada chamada em vez de guardado num static: o catálogo
+	// pode ser trocado (teste, recarga), e um cache aqui devolveria a lista
+	// antiga sem nada indicar que ela ficou velha.
+	static TArray<FString> Nomes;
+	Nomes.Reset();
+	for (const FPetSchoolDefinition& Escola : FPetTypeCatalog::Get().GetSchools())
+	{
+		Nomes.Add(Escola.Name);
+	}
+	return Nomes;
 }
 
 const TArray<FString>& FPetTypeIdentity::AllElements()
 {
-	static const TArray<FString> Elementos = { ElementoFogo, ElementoAgua, ElementoPlanta, ElementoTerra };
-	return Elementos;
+	static TArray<FString> Nomes;
+	Nomes.Reset();
+	for (const FPetElementDefinition& Elemento : FPetTypeCatalog::Get().GetElements())
+	{
+		Nomes.Add(Elemento.Name);
+	}
+	return Nomes;
 }
 
 FString FPetTypeIdentity::ToTypeString() const
@@ -95,6 +67,7 @@ FPetTypeIdentity FPetTypeIdentity::Parse(const FString& PetType)
 		return Identidade;
 	}
 
-	TraduzirNomeAntigo(PetType.TrimStartAndEnd(), Identidade);
+	FPetTypeCatalog::Get().ResolveLegacyName(
+		PetType.TrimStartAndEnd(), Identidade.School, Identidade.Element);
 	return Identidade;
 }

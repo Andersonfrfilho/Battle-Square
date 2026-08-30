@@ -17,6 +17,8 @@ export type SignedPetMove = {
   terrainEffect: string;
   requiresAttribute: string;
   requiresValue: number;
+  effectStat: string;
+  effectPercent: number;
 };
 
 export type SignedPetExport = {
@@ -73,6 +75,8 @@ export function toSignedMoves(
     terrainEffect?: string;
     requiresAttribute?: string;
     requiresValue?: number;
+    effectStat?: string;
+    effectPercent?: number;
   }[],
 ): SignedPetMove[] {
   return [...moves]
@@ -89,6 +93,10 @@ export function toSignedMoves(
       // tanto quanto a ordem dos campos do pet.
       requiresAttribute: move.requiresAttribute ?? 'none',
       requiresValue: move.requiresValue ?? 0,
+      // NO FIM, como as anteriores, e pelo mesmo motivo: o verificador
+      // reserializa o golpe, então a ordem das chaves entra na assinatura.
+      effectStat: move.effectStat ?? 'none',
+      effectPercent: move.effectPercent ?? 0,
     }));
 }
 

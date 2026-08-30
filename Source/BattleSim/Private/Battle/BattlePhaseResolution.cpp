@@ -78,6 +78,40 @@ void BattlePhases::ApplyResolution(
 		}
 	}
 
+	// Passo 2b: o efeito de atributo CONTA UM SLOT, e some quando zera.
+	//
+	// Diferente da postura, que expira todo slot: um efeito que durasse um
+	// slot só nunca chegaria ao golpe seguinte, e a magia de atributo não
+	// valeria o turno que ela custa.
+	for (FPetState& Pet : State.Pets)
+	{
+		if (Pet.ActiveEffectSlotsRemaining == 0)
+		{
+			continue;
+		}
+
+		--Pet.ActiveEffectSlotsRemaining;
+		if (Pet.ActiveEffectSlotsRemaining > 0)
+		{
+			continue;
+		}
+
+		// O FIM é narrado como o começo foi. Bônus que some calado faz o
+		// jogador achar que o dano ficou errado — e este projeto já gastou
+		// rodadas com regra funcionando e parecendo quebrada.
+		FBattleEvent Fim;
+		Fim.Type = EBattleEventType::AtributoVoltouAoNormal;
+		Fim.SlotIndex = SlotIndex;
+		Fim.Phase = 5; // F5
+		Fim.ActorId = Pet.PetId;
+		Fim.Detail = Pet.ActiveEffectStat;
+		Fim.Value = Pet.ActiveEffectPercent;
+		OutTrace.Add(Fim);
+
+		Pet.ActiveEffectStat = 0;
+		Pet.ActiveEffectPercent = 0;
+	}
+
 	// Passo 3: postura expira ao fim do slot (BTL-12) — nunca acumula
 	// entre slots. Reset incondicional, vivo ou morto, por limpeza de
 	// estado (mantém o hash consistente com "nada pendente entre slots").

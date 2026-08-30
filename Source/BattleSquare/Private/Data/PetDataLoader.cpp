@@ -81,6 +81,8 @@ namespace
 			// disto — o JSON dos golpes é repassado como veio do espelho.
 			(*Objeto)->TryGetStringField(TEXT("requiresAttribute"), Golpe.RequiresAttribute);
 			(*Objeto)->TryGetNumberField(TEXT("requiresValue"), Golpe.RequiresValue);
+			(*Objeto)->TryGetStringField(TEXT("effectStat"), Golpe.EffectStat);
+			(*Objeto)->TryGetNumberField(TEXT("effectPercent"), Golpe.EffectPercent);
 
 			if (!Golpe.Name.IsEmpty())
 			{

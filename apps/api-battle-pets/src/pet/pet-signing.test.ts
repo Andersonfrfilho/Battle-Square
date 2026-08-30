@@ -33,7 +33,15 @@ describe('golpes no payload assinado', () => {
     const assinados = toSignedMoves([{ slot: 0, name: 'Bote', power: 10 }]);
 
     expect(assinados).toEqual([
-      { name: 'Bote', power: 10, terrainEffect: 'none', requiresAttribute: 'none', requiresValue: 0 },
+      {
+        name: 'Bote',
+        power: 10,
+        terrainEffect: 'none',
+        requiresAttribute: 'none',
+        requiresValue: 0,
+        effectStat: 'none',
+        effectPercent: 0,
+      },
     ]);
   });
 
@@ -49,15 +57,9 @@ describe('efeito de terreno do golpe', () => {
     // Golpe cadastrado antes do efeito existir não muda a casa. Omitir a
     // chave produziria um payload diferente do que o verificador reconstrói,
     // e a assinatura falharia sem ninguém entender por quê.
-    const assinados = toSignedMoves([{ slot: 0, name: 'Bote', power: 10 }]);
+    const [assinado] = toSignedMoves([{ slot: 0, name: 'Bote', power: 10 }]);
 
-    expect(assinados[0]).toEqual({
-      name: 'Bote',
-      power: 10,
-      terrainEffect: 'none',
-      requiresAttribute: 'none',
-      requiresValue: 0,
-    });
+    expect(assinado?.terrainEffect).toBe('none');
   });
 
   test('o efeito declarado é preservado', () => {
@@ -104,6 +106,31 @@ describe('requisito de atributo do golpe', () => {
       'terrainEffect',
       'requiresAttribute',
       'requiresValue',
+      'effectStat',
+      'effectPercent',
     ]);
+  });
+});
+
+describe('magia de atributo do golpe', () => {
+  test('ausente vira "none"/0, nunca some do payload', () => {
+    const [assinado] = toSignedMoves([{ slot: 0, name: 'Bote', power: 10 }]);
+
+    expect(assinado?.effectStat).toBe('none');
+    expect(assinado?.effectPercent).toBe(0);
+  });
+
+  test('o SINAL do percentual diz o alvo, e viaja assinado', () => {
+    // Positivo sobe o do próprio pet; negativo derruba o do oponente. Não
+    // existe subir o do oponente nem baixar o próprio, então o sinal cobre os
+    // dois casos sem um campo a mais.
+    const assinados = toSignedMoves([
+      { slot: 0, name: 'Foco', power: 20, effectStat: 'attack', effectPercent: 30 },
+      { slot: 1, name: 'Peso', power: 20, effectStat: 'speed', effectPercent: -25 },
+    ]);
+
+    expect(assinados[0]?.effectPercent).toBe(30);
+    expect(assinados[1]?.effectPercent).toBe(-25);
+    expect(assinados[1]?.effectStat).toBe('speed');
   });
 });

@@ -80,6 +80,34 @@ FORCEINLINE void UnpackCell(uint8 PackedCell, uint8& OutColumn, uint8& OutRow)
 	OutRow = (PackedCell >> 4) & 0x0F;
 }
 
+/**
+ * Que atributo uma magia de efeito mexe.
+ *
+ * `Nenhum` é o golpe SEM efeito, e é o valor zero de propósito: um golpe
+ * cadastrado antes desta feature não mexe em atributo nenhum, e é assim que
+ * ele sempre se comportou.
+ */
+UENUM()
+enum class EBattleStat : uint8
+{
+	Nenhum = 0,
+	Ataque,
+	Defesa,
+	Velocidade
+};
+
+/**
+ * Por quantos SLOTS um efeito de atributo dura.
+ *
+ * Três é o turno inteiro: quem gasta o primeiro slot numa magia de efeito
+ * colhe nos dois seguintes. Um slot só faria a magia não valer o turno; mais
+ * que um turno faria o primeiro a agir vencer por acúmulo.
+ */
+inline constexpr uint8 BattleStatEffectSlots = 3;
+
+/** Teto do efeito, para os dois lados. */
+inline constexpr int32 BattleStatEffectMaxPercent = 60;
+
 // Deslocamento de uma direção na grade. Nenhuma (Defender/Aguardar) e
 // qualquer entrada fora do enum mapeiam para (0,0) — ausência de
 // movimento, não erro. Usado por F3 (movimento) e F4 (alcance de ataque).

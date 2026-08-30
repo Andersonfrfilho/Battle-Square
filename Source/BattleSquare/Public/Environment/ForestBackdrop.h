@@ -89,18 +89,23 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Mata")
 	float CameraClearanceInCells = 3.0f;
 
-	/** Material do chão de floresta; nulo faz o disco herdar o do pacote. */
-	UPROPERTY(EditDefaultsOnly, Category = "Mata")
-	TSoftObjectPtr<UMaterialInterface> GroundMaterial;
-
 private:
+	/**
+	 * Veste o chão: o material do mundo quando há um, a paleta quando não há.
+	 *
+	 * Num lugar só porque são dois momentos — a construção da mata e o
+	 * empréstimo do chão, que chega depois — e duplicar a decisão faria as
+	 * duas divergirem na primeira edição.
+	 */
+	void ApplyGroundMaterial();
+
 	UPROPERTY()
 	TObjectPtr<USceneComponent> ForestRoot;
 
 	UPROPERTY()
 	TObjectPtr<UStaticMeshComponent> GroundMesh;
 
-	/** Chão emprestado pelo mundo; vazio faz valer GroundMaterial. */
+	/** Chão emprestado pelo mundo; vazio faz valer a paleta do cenário. */
 	UPROPERTY()
 	TObjectPtr<UMaterialInterface> AdoptedGroundMaterial;
 

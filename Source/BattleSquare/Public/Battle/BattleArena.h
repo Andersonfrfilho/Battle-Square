@@ -14,6 +14,7 @@
 #include "BattleArena.generated.h"
 
 class UCameraComponent;
+class UStaticMesh;
 class UStaticMeshComponent;
 class UMaterialInterface;
 class AForestBackdrop;
@@ -170,6 +171,25 @@ public:
 	const TArray<TObjectPtr<UStaticMeshComponent>>& GetCellTileMeshes() const { return CellTileMeshes; }
 
 	/**
+	 * O que OCUPA cada casa — visível só onde a casa é bloqueada.
+	 *
+	 * Um por casa, e não um por bloqueio, porque o layout do campo muda
+	 * entre batalhas: componente criado sob demanda no meio da partida é
+	 * componente que às vezes não existe quando alguém o procura.
+	 */
+	const TArray<TObjectPtr<UStaticMeshComponent>>& GetCellObstacleMeshes() const { return CellObstacleMeshes; }
+
+	/**
+	 * Põe cada laje — e o que ocupa cada casa — na altura, no material e no
+	 * relevo do terreno que aquela casa virou.
+	 *
+	 * Pública porque o que ela produz é justamente o que só se vê na tela, e
+	 * o teste precisa poder mudar o campo e pedir o redesenho sem esperar
+	 * uma batalha inteira acontecer.
+	 */
+	void RefreshTileVisuals();
+
+	/**
 	 * O sol da cena, ou nulo quando o mapa já tinha um.
 	 *
 	 * O mapa do jogo não tem ator de luz nenhum, e sem sol a engine ilumina
@@ -305,6 +325,16 @@ protected:
 
 	UPROPERTY(VisibleAnywhere)
 	TArray<TObjectPtr<UStaticMeshComponent>> CellTileMeshes;
+
+	UPROPERTY(VisibleAnywhere)
+	TArray<TObjectPtr<UStaticMeshComponent>> CellObstacleMeshes;
+
+	/** As duas matérias de que um bloqueio é feito: pedra ou tronco caído. */
+	UPROPERTY()
+	TObjectPtr<UStaticMesh> RockObstacleMesh;
+
+	UPROPERTY()
+	TObjectPtr<UStaticMesh> LogObstacleMesh;
 
 private:
 	UPROPERTY()
@@ -548,8 +578,15 @@ private:
 	/** Monta chão, moldura e lajes no construtor, com malha e material já atribuídos. */
 	void BuildArenaGeometry();
 
-	/** Põe cada laje na altura e no material do terreno que aquela casa virou. */
-	void RefreshTileVisuals();
+
+	/**
+	 * Mostra, escala, gira e pinta o que ocupa UMA casa bloqueada — e o
+	 * esconde em toda casa que não é.
+	 *
+	 * A casa bloqueada era só uma laje mais alta: quem olhava via piso, e
+	 * "não dá para andar aqui" ficava por conta de quem já sabia da regra.
+	 */
+	bool RefreshCellObstacle(int32 CellIndex, int32 Column, int32 Row, uint8 CellProperty);
 
 	UMaterialInterface* ResolveTileMaterial(uint8 CellProperty) const;
 

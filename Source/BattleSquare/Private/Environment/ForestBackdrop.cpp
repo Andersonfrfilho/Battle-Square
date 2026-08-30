@@ -6,6 +6,8 @@
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "Environment/ScenaryPalette.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -63,6 +65,15 @@ namespace MataDoCenario
 		FFaixa Faixa;
 		float AlturaEmCasas;
 		int32 Quantidade;
+		/**
+		 * O que esta espécie precisa DIZER na tela.
+		 *
+		 * Não sai da malha nem do material: `plant_bush` e `grass_large`
+		 * chegam do pacote com o mesmo slot `grass`, e enquanto a cor vinha
+		 * de lá o arbusto e o capim eram o mesmo verde. É esta coluna que os
+		 * separa.
+		 */
+		EScenaryRole Papel;
 	};
 
 	const FEspecie Especies[] = {
@@ -70,40 +81,40 @@ namespace MataDoCenario
 		// Não existe malha "grass": o kit traz um MATERIAL com esse nome, e
 		// ele ficou com o slot do asset na importação. As duas abaixo cobrem
 		// o mesmo papel de capim rasteiro.
-		{ TEXT("grass_large"),             Rasteira, 0.42f, 56 },
-		{ TEXT("grass_leafs"),             Rasteira, 0.26f, 54 },
-		{ TEXT("flower_redA"),             Rasteira, 0.24f, 14 },
-		{ TEXT("flower_yellowA"),          Rasteira, 0.20f, 14 },
-		{ TEXT("mushroom_red"),            Rasteira, 0.18f, 10 },
+		{ TEXT("grass_large"),             Rasteira, 0.42f, 56, EScenaryRole::GroundCover },
+		{ TEXT("grass_leafs"),             Rasteira, 0.26f, 54, EScenaryRole::GroundCover },
+		{ TEXT("flower_redA"),             Rasteira, 0.24f, 14, EScenaryRole::Accent },
+		{ TEXT("flower_yellowA"),          Rasteira, 0.20f, 14, EScenaryRole::Accent },
+		{ TEXT("mushroom_red"),            Rasteira, 0.18f, 10, EScenaryRole::Accent },
 
 		// Borda: o volume baixo que separa o tabuleiro da mata.
-		{ TEXT("plant_bushSmall"),         Borda,    0.40f, 20 },
-		{ TEXT("plant_bush"),              Borda,    0.55f, 18 },
-		{ TEXT("plant_bushLarge"),         Borda,    0.62f, 16 },
-		{ TEXT("stump_round"),             Borda,    0.38f,  8 },
-		{ TEXT("log"),                     Borda,    0.34f,  8 },
-		{ TEXT("rock_smallA"),             Borda,    0.32f, 12 },
-		{ TEXT("rock_smallD"),             Borda,    0.38f, 12 },
+		{ TEXT("plant_bushSmall"),         Borda,    0.40f, 20, EScenaryRole::Undergrowth },
+		{ TEXT("plant_bush"),              Borda,    0.55f, 18, EScenaryRole::Undergrowth },
+		{ TEXT("plant_bushLarge"),         Borda,    0.62f, 16, EScenaryRole::Undergrowth },
+		{ TEXT("stump_round"),             Borda,    0.38f,  8, EScenaryRole::DeadWood },
+		{ TEXT("log"),                     Borda,    0.34f,  8, EScenaryRole::DeadWood },
+		{ TEXT("rock_smallA"),             Borda,    0.32f, 12, EScenaryRole::Rock },
+		{ TEXT("rock_smallD"),             Borda,    0.38f, 12, EScenaryRole::Rock },
 
 		// Mata: primeiro plano de árvore, ainda inteira no quadro.
-		{ TEXT("rock_largeA"),             Mata,     0.58f,  8 },
-		{ TEXT("rock_largeC"),             Mata,     0.70f,  6 },
-		{ TEXT("rock_tallD"),              Mata,     1.30f,  6 },
-		{ TEXT("rock_tallA"),              Mata,     1.80f,  4 },
-		{ TEXT("tree_pineSmallA"),         Mata,     1.70f, 12 },
-		{ TEXT("tree_pineSmallC"),         Mata,     1.90f, 12 },
-		{ TEXT("tree_oak"),                Mata,     2.30f, 10 },
-		{ TEXT("tree_blocks"),             Mata,     2.10f,  8 },
+		{ TEXT("rock_largeA"),             Mata,     0.58f,  8, EScenaryRole::Rock },
+		{ TEXT("rock_largeC"),             Mata,     0.70f,  6, EScenaryRole::Rock },
+		{ TEXT("rock_tallD"),              Mata,     1.30f,  6, EScenaryRole::Rock },
+		{ TEXT("rock_tallA"),              Mata,     1.80f,  4, EScenaryRole::Rock },
+		{ TEXT("tree_pineSmallA"),         Mata,     1.70f, 12, EScenaryRole::ForestTree },
+		{ TEXT("tree_pineSmallC"),         Mata,     1.90f, 12, EScenaryRole::ForestTree },
+		{ TEXT("tree_oak"),                Mata,     2.30f, 10, EScenaryRole::ForestTree },
+		{ TEXT("tree_blocks"),             Mata,     2.10f,  8, EScenaryRole::ForestTree },
 
 		// Dossel: o paredão que fecha o fundo.
-		{ TEXT("tree_pineRoundC"),         Dossel,   2.50f, 12 },
-		{ TEXT("tree_pineRoundA"),         Dossel,   2.70f, 12 },
-		{ TEXT("tree_default"),            Dossel,   2.90f, 12 },
-		{ TEXT("tree_thin"),               Dossel,   3.20f, 10 },
-		{ TEXT("tree_tall"),               Dossel,   3.40f, 10 },
-		{ TEXT("tree_pineTallA_detailed"), Dossel,   3.50f, 12 },
-		{ TEXT("tree_pineTallB_detailed"), Dossel,   3.90f, 12 },
-		{ TEXT("tree_pineTallC_detailed"), Dossel,   3.70f, 12 },
+		{ TEXT("tree_pineRoundC"),         Dossel,   2.50f, 12, EScenaryRole::CanopyTree },
+		{ TEXT("tree_pineRoundA"),         Dossel,   2.70f, 12, EScenaryRole::CanopyTree },
+		{ TEXT("tree_default"),            Dossel,   2.90f, 12, EScenaryRole::CanopyTree },
+		{ TEXT("tree_thin"),               Dossel,   3.20f, 10, EScenaryRole::CanopyTree },
+		{ TEXT("tree_tall"),               Dossel,   3.40f, 10, EScenaryRole::CanopyTree },
+		{ TEXT("tree_pineTallA_detailed"), Dossel,   3.50f, 12, EScenaryRole::CanopyTree },
+		{ TEXT("tree_pineTallB_detailed"), Dossel,   3.90f, 12, EScenaryRole::CanopyTree },
+		{ TEXT("tree_pineTallC_detailed"), Dossel,   3.70f, 12, EScenaryRole::CanopyTree },
 	};
 
 	constexpr int32 TotalDeEspecies = UE_ARRAY_COUNT(Especies);
@@ -134,9 +145,6 @@ AForestBackdrop::AForestBackdrop()
 
 	ForestRoot = CreateDefaultSubobject<USceneComponent>(TEXT("ForestRoot"));
 	SetRootComponent(ForestRoot);
-
-	GroundMaterial = TSoftObjectPtr<UMaterialInterface>(
-		FSoftObjectPath(FString(PastaDaMata) + TEXT("leafsGreen.leafsGreen")));
 
 	GroundMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ForestGround"));
 	GroundMesh->SetupAttachment(ForestRoot);
@@ -192,15 +200,7 @@ void AForestBackdrop::BuildForest(float CellSize, uint32 Seed, const FVector2D& 
 		EspessuraDoChao / CilindroDaEngineUnidades));
 	GroundMesh->SetRelativeLocation(FVector::ZeroVector);
 
-	// O que o mundo emprestou vem primeiro: a batalha que nasce de um
-	// encontro deve acontecer no chão daquele lugar, não numa paleta à parte.
-	UMaterialInterface* Chao = AdoptedGroundMaterial
-		? AdoptedGroundMaterial.Get()
-		: GroundMaterial.LoadSynchronous();
-	if (Chao)
-	{
-		GroundMesh->SetMaterial(0, Chao);
-	}
+	ApplyGroundMaterial();
 
 	const float FolgaDoTabuleiro = BoardClearanceInCells * CellSize;
 	const float FolgaDaCamera = CameraClearanceInCells * CellSize;
@@ -227,6 +227,13 @@ void AForestBackdrop::BuildForest(float CellSize, uint32 Seed, const FVector2D& 
 			continue;
 		}
 		const float EscalaBase = (Especie.AlturaEmCasas * CellSize) / AlturaDaMalha;
+
+		// A cor vem da NOSSA paleta, não do pacote. Os dez materiais do kit
+		// são variações de uma faixa estreita: trocar um pelo outro moveria o
+		// problema em vez de resolvê-lo. Aqui capim, arbusto, árvore, dossel
+		// e pedra recebem degraus de BRILHO distintos, que é o que se lê de
+		// longe.
+		ScenaryPalette::PaintComponent(Grupo, Especie.Papel);
 
 		const uint32 SementeDaEspecie = BattleSpread::Scatter(Seed ^ BattleSpread::SeedFromText(Especie.Nome));
 
@@ -321,14 +328,35 @@ void AForestBackdrop::SetGroundMaterialOverride(UMaterialInterface* Material)
 
 	// Aplicar JÁ, e não só na próxima construção: a arena empresta o chão
 	// depois de sondar o mundo, que é depois de a mata estar plantada.
-	if (GroundMesh)
+	ApplyGroundMaterial();
+}
+
+void AForestBackdrop::ApplyGroundMaterial()
+{
+	if (!GroundMesh)
 	{
-		UMaterialInterface* Chao = AdoptedGroundMaterial
-			? AdoptedGroundMaterial.Get()
-			: GroundMaterial.LoadSynchronous();
-		if (Chao)
+		return;
+	}
+
+	// O que o mundo emprestou vem primeiro: a batalha que nasce de um
+	// encontro deve acontecer no chão daquele lugar, não numa paleta à parte.
+	if (UMaterialInterface* Emprestado = AdoptedGroundMaterial.Get())
+	{
+		GroundMesh->SetMaterial(0, Emprestado);
+		return;
+	}
+
+	// Sem empréstimo, o chão sai da NOSSA paleta.
+	//
+	// Ele já foi vestido com `leafsGreen` — o mesmo material das folhas das
+	// árvores. Chão e copa eram literalmente uma cor só, e o quadro inteiro
+	// lia como uma mancha verde-água sem relevo. O chão agora é o degrau
+	// mais escuro da escala, justamente para o resto se destacar contra ele.
+	if (UMaterialInterface* Base = ScenaryPalette::ColorableBaseMaterial())
+	{
+		if (UMaterialInstanceDynamic* Tinta = GroundMesh->CreateDynamicMaterialInstance(0, Base))
 		{
-			GroundMesh->SetMaterial(0, Chao);
+			Tinta->SetVectorParameterValue(TEXT("Color"), ScenaryPalette::GroundColor());
 		}
 	}
 }

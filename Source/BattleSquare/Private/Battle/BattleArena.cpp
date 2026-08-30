@@ -4,12 +4,15 @@
 
 #include "Environment/ForestBackdrop.h"
 #include "Environment/SceneLighting.h"
+#include "Environment/ScenaryPalette.h"
+#include "Battle/DeterministicSpread.h"
 #include "Battle/PetOwnerView.h"
 #include "UI/BattleResultWidget.h"
 #include "Blueprint/UserWidget.h"
 #include "Misc/Paths.h"
 #include "Misc/ConfigCacheIni.h"
 #include "Balance/PetSkillCatalog.h"
+#include "Balance/PetTypeCatalog.h"
 #include "Balance/ArenaLayoutCatalog.h"
 #include "EngineUtils.h"
 #include "Battle/BattleNarration.h"
@@ -93,6 +96,19 @@ namespace ArenaGeometria
 			? ProporcaoDaLajeNeutra
 			: ProporcaoDaLajeComRegra;
 	}
+
+	/**
+	 * Altura, em casas, do que ocupa a casa BLOQUEADA.
+	 *
+	 * A casa bloqueada era uma laje um pouco mais alta, e mais nada: quem
+	 * olhava via piso, não obstáculo. Um tronco ou uma pedra com mais de uma
+	 * casa de altura diz sozinho por que ninguém passa ali — e é sobre ele
+	 * que a regra de destruir ou escalar vai se apoiar.
+	 */
+	constexpr float AlturaDoObstaculoEmCasas = 1.15f;
+
+	/** Quanto da casa o obstáculo ocupa em planta, para não invadir a vizinha. */
+	constexpr float ProporcaoDoObstaculo = 0.82f;
 
 	/** A linha desenhada assenta ESTE tanto acima da superfície da laje. */
 	constexpr float FolgaDaGradeDesenhada = 4.0f;
@@ -382,6 +398,7 @@ void ABattleArena::BuildArenaGeometry()
 	const float LadoDaLaje = CellSize * ProporcaoDaLajeNeutra;
 
 	CellTileMeshes.Reset();
+	CellObstacleMeshes.Reset();
 	for (int32 Linha = 0; Linha < GridRows; ++Linha)
 	{
 		for (int32 Coluna = 0; Coluna < GridColumns; ++Coluna)
@@ -405,6 +422,18 @@ void ABattleArena::BuildArenaGeometry()
 				(SuperficieNeutra + FundoDoTabuleiro) * 0.5f));
 
 			CellTileMeshes.Add(Laje);
+
+			// O que OCUPA a casa bloqueada. Nasce escondido: só a casa que
+			// carrega a regra o mostra, e é RefreshTileVisuals que sabe qual
+			// é qual.
+			UStaticMeshComponent* Obstaculo = CreateDefaultSubobject<UStaticMeshComponent>(
+				FName(*FString::Printf(TEXT("CellObstacle_%d_%d"), Coluna, Linha)));
+			Obstaculo->SetupAttachment(ArenaRoot);
+			Obstaculo->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			Obstaculo->SetRelativeLocation(FVector(DeslocamentoX, DeslocamentoY, SuperficieBloqueada));
+			Obstaculo->SetVisibility(false);
+
+			CellObstacleMeshes.Add(Obstaculo);
 		}
 	}
 
@@ -416,6 +445,25 @@ void ABattleArena::BuildArenaGeometry()
 		for (UStaticMeshComponent* Laje : CellTileMeshes)
 		{
 			Laje->SetStaticMesh(CuboDaArena.Object);
+		}
+	}
+
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> PedraDoObstaculo(
+		TEXT("/Game/Environment/Nature/rock_tallA.rock_tallA"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> TroncoDoObstaculo(
+		TEXT("/Game/Environment/Nature/log.log"));
+
+	RockObstacleMesh = PedraDoObstaculo.Succeeded() ? PedraDoObstaculo.Object : nullptr;
+	LogObstacleMesh = TroncoDoObstaculo.Succeeded() ? TroncoDoObstaculo.Object : nullptr;
+
+	// Pelo mesmo motivo das lajes: o componente já nasce com malha. Qual das
+	// duas ele exibe é decisão de RefreshTileVisuals, mas nenhuma casa fica
+	// com um componente vazio à espera dela.
+	for (UStaticMeshComponent* Obstaculo : CellObstacleMeshes)
+	{
+		if (RockObstacleMesh)
+		{
+			Obstaculo->SetStaticMesh(RockObstacleMesh);
 		}
 	}
 }
@@ -444,6 +492,8 @@ void ABattleArena::RefreshTileVisuals()
 	// O que o mundo emprestou veste o chão da MATA — a arena não tem chão.
 	ApplyAdoptedGroundMaterial();
 
+	int32 CasasComObstaculo = 0;
+
 	for (int32 Linha = 0; Linha < GetActiveGridRows(); ++Linha)
 	{
 		for (int32 Coluna = 0; Coluna < GetActiveGridColumns(); ++Coluna)
@@ -458,6 +508,11 @@ void ABattleArena::RefreshTileVisuals()
 				static_cast<uint8>(Coluna), static_cast<uint8>(Linha));
 
 			UStaticMeshComponent* Laje = CellTileMeshes[Indice];
+
+			if (RefreshCellObstacle(Indice, Coluna, Linha, Propriedade))
+			{
+				++CasasComObstaculo;
+			}
 
 			// A casa SEM REGRA não é desenhada: ela é o próprio chão da mata.
 			// Enquanto toda casa tinha laje, o tabuleiro lia como uma placa
@@ -491,6 +546,107 @@ void ABattleArena::RefreshTileVisuals()
 			}
 		}
 	}
+
+	// Casa bloqueada que continuasse lisa seria indistinguível de uma
+	// laje cinza qualquer. A contagem na tela diz se o obstáculo NASCEU,
+	// e é a diferença entre "não apareceu" e "apareceu fora de vista".
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("bloqueio: %d casa(s) com tronco ou pedra em pe"),
+			CasasComObstaculo),
+		0.0f, FColor::Orange, /*Key=*/24);
+}
+
+bool ABattleArena::RefreshCellObstacle(int32 CellIndex, int32 Column, int32 Row, uint8 CellProperty)
+{
+	using namespace ArenaGeometria;
+
+	if (!CellObstacleMeshes.IsValidIndex(CellIndex) || !CellObstacleMeshes[CellIndex])
+	{
+		return false;
+	}
+
+	UStaticMeshComponent* Obstaculo = CellObstacleMeshes[CellIndex];
+
+	const bool bBloqueada =
+		static_cast<ECellProperty>(CellProperty) == ECellProperty::Blocked;
+	Obstaculo->SetVisibility(bBloqueada);
+	if (!bBloqueada)
+	{
+		return false;
+	}
+
+	// Qual obstáculo, e virado para onde, sai das COORDENADAS da casa: o
+	// mesmo campo dá sempre a mesma cena, sem depender de relógio nem de
+	// sorteio — e duas casas bloqueadas vizinhas não saem gêmeas.
+	const uint32 SementeDaCasa = BattleSpread::Scatter(
+		static_cast<uint32>(Column) * 73856093u ^ static_cast<uint32>(Row) * 19349663u);
+
+	const bool bEhPedra = (SementeDaCasa & 1u) == 0u;
+	UStaticMesh* Malha = bEhPedra ? RockObstacleMesh.Get() : LogObstacleMesh.Get();
+	if (!Malha)
+	{
+		return false;
+	}
+	Obstaculo->SetStaticMesh(Malha);
+
+	// O que ocupa a casa fica EM PÉ: o maior eixo da malha vira a altura.
+	// O tronco do pacote é deitado (71 de comprimento contra 17 de altura);
+	// encolhido para caber na casa ele viraria tábua de 30 unidades num
+	// tabuleiro de 150 — exatamente o "apenas piso" que o obstáculo veio
+	// desfazer. A regra é do maior eixo, e não do tronco, para a próxima
+	// malha do pacote não precisar de um caso à parte.
+	const FBox CaixaLocal = Malha->GetBoundingBox();
+	const FVector TamanhoLocal = CaixaLocal.GetSize();
+
+	FRotator Assentamento = FRotator::ZeroRotator;
+	if (TamanhoLocal.X > TamanhoLocal.Z && TamanhoLocal.X >= TamanhoLocal.Y)
+	{
+		Assentamento = FRotator(90.0f, 0.0f, 0.0f);
+	}
+	else if (TamanhoLocal.Y > TamanhoLocal.Z)
+	{
+		Assentamento = FRotator(0.0f, 0.0f, 90.0f);
+	}
+
+	const float Giro = BattleSpread::Between(0.0f, 360.0f, BattleSpread::Fraction(SementeDaCasa, 0));
+	const FQuat Orientacao = FQuat(FRotator(0.0f, Giro, 0.0f)) * FQuat(Assentamento);
+
+	// Escala pela caixa MEDIDA **já orientada**, como a mata: medir antes de
+	// virar diria a altura errada justamente para o tronco.
+	const FVector TamanhoOrientado = CaixaLocal.TransformBy(FTransform(Orientacao)).GetSize();
+	if (TamanhoOrientado.Z <= KINDA_SMALL_NUMBER)
+	{
+		return false;
+	}
+
+	float Escala = (AlturaDoObstaculoEmCasas * CellSize) / TamanhoOrientado.Z;
+
+	// E não pode transbordar a casa: a casa do lado é onde o pet anda.
+	const float MaiorLadoEmPlanta = FMath::Max(TamanhoOrientado.X, TamanhoOrientado.Y);
+	if (MaiorLadoEmPlanta > KINDA_SMALL_NUMBER)
+	{
+		Escala = FMath::Min(Escala, (CellSize * ProporcaoDoObstaculo) / MaiorLadoEmPlanta);
+	}
+
+	Obstaculo->SetRelativeScale3D(FVector(Escala));
+	Obstaculo->SetRelativeRotation(Orientacao);
+
+	// A malha do pacote não nasce com o pé na origem. Assentar pela caixa é
+	// o que impede o obstáculo de flutuar sobre a laje ou de afundar nela —
+	// o mesmo defeito que os pets já tiveram.
+	const FBox CaixaFinal = CaixaLocal.TransformBy(
+		FTransform(Orientacao, FVector::ZeroVector, FVector(Escala)));
+	Obstaculo->SetRelativeLocation(FVector(
+		Obstaculo->GetRelativeLocation().X,
+		Obstaculo->GetRelativeLocation().Y,
+		SuperficieBloqueada - CaixaFinal.Min.Z));
+
+	// A cor vem da mesma paleta do cenário: o obstáculo é matéria da mata
+	// que calhou de cair no tabuleiro, não peça de outro jogo.
+	ScenaryPalette::PaintComponent(
+		Obstaculo, bEhPedra ? EScenaryRole::Rock : EScenaryRole::DeadWood);
+
+	return true;
 }
 
 FVector ABattleArena::GetCellWorldLocation(uint8 Column, uint8 Row) const
@@ -859,12 +1015,19 @@ void ABattleArena::AnnounceBattleFinishedIfEnded(const TArray<FBattleEvent>& Tra
 
 TArray<EActionType> ABattleArena::GetAvailableActionsForSide(uint8 Side) const
 {
-	const FString Caminho = PetSkillCatalogPath.IsEmpty()
-		? FPaths::Combine(FPaths::ProjectConfigDir(), TEXT("PetSkills.json"))
-		: PetSkillCatalogPath;
+	// A skill vem do catálogo de TIPOS: ela é do ELEMENTO, e o elemento já se
+	// declara em Config/PetTypes.json. O arquivo separado de skills existia
+	// como uma segunda lista de elementos, e cópias concordam até a primeira
+	// edição — aqui a discordância seria um elemento existindo para a cor e
+	// não para a skill.
+	FPetSkillCatalog Catalogo = FPetSkillCatalog::FromTypeCatalog(FPetTypeCatalog::Get());
 
-	FPetSkillCatalog Catalogo;
-	if (!FPetSkillCatalog::LoadFromJson(Caminho, Catalogo))
+	// `PetSkillCatalogPath` continua honrado para quem apontar um arquivo
+	// próprio — teste, ou variação de regra. VAZIO é o caso normal, e não
+	// significa "use o padrão de antes": significa que o catálogo de tipos
+	// basta.
+	const bool bTemArquivoProprio = !PetSkillCatalogPath.IsEmpty();
+	if (bTemArquivoProprio && !FPetSkillCatalog::LoadFromJson(PetSkillCatalogPath, Catalogo))
 	{
 		return FPetSkillCatalog::GetUniversalActions();
 	}
@@ -1076,12 +1239,19 @@ void ABattleArena::ApplySkillsToActionQueue()
 		return;
 	}
 
-	const FString Caminho = PetSkillCatalogPath.IsEmpty()
-		? FPaths::Combine(FPaths::ProjectConfigDir(), TEXT("PetSkills.json"))
-		: PetSkillCatalogPath;
+	// A skill vem do catálogo de TIPOS: ela é do ELEMENTO, e o elemento já se
+	// declara em Config/PetTypes.json. O arquivo separado de skills existia
+	// como uma segunda lista de elementos, e cópias concordam até a primeira
+	// edição — aqui a discordância seria um elemento existindo para a cor e
+	// não para a skill.
+	FPetSkillCatalog Catalogo = FPetSkillCatalog::FromTypeCatalog(FPetTypeCatalog::Get());
 
-	FPetSkillCatalog Catalogo;
-	if (!FPetSkillCatalog::LoadFromJson(Caminho, Catalogo))
+	// `PetSkillCatalogPath` continua honrado para quem apontar um arquivo
+	// próprio — teste, ou variação de regra. VAZIO é o caso normal, e não
+	// significa "use o padrão de antes": significa que o catálogo de tipos
+	// basta.
+	const bool bTemArquivoProprio = !PetSkillCatalogPath.IsEmpty();
+	if (bTemArquivoProprio && !FPetSkillCatalog::LoadFromJson(PetSkillCatalogPath, Catalogo))
 	{
 		// DP-skill-04: sem catálogo, ninguém fica sem ação — todo pet volta a
 		// ter os seis universais, que é o comportamento de antes desta feature.

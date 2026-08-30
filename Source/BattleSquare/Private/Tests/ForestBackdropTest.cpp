@@ -5,6 +5,7 @@
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "Misc/AutomationTest.h"
 #include "Engine/World.h"
 #include "Engine/Engine.h"
@@ -310,6 +311,101 @@ bool FForestBackdropIsSpawnedByArenaTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("A mata spawnada pela arena tem elementos plantados"),
 			Mata->GetPlantedCount() > 0);
 	}
+
+	DestroyForestTestWorld(World);
+	return true;
+}
+
+/**
+ * A mata precisa ser PINTADA, não herdar a cor do pacote.
+ *
+ * O chão vinha vestido com `leafsGreen` — o MESMO material das folhas das
+ * árvores. Chão e copa eram uma cor só, e o quadro inteiro lia como uma
+ * mancha verde-água. Trocar um material do kit por outro moveria o problema:
+ * os dez são variações de uma faixa estreita.
+ *
+ * A asserção é sobre a PINTURA ter acontecido, não sobre o desenho — o mesmo
+ * modo de falhar de componente criado sem asset atribuído.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FForestBackdropPaintsEverySpeciesFromThePaletteTest,
+	"BattleSquare.ForestBackdrop.PaintsEverySpeciesFromThePalette",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FForestBackdropPaintsEverySpeciesFromThePaletteTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateForestTestWorld();
+	AForestBackdrop* Mata = World->SpawnActor<AForestBackdrop>();
+	if (!TestNotNull(TEXT("AForestBackdrop spawna sem crash"), Mata))
+	{
+		DestroyForestTestWorld(World);
+		return false;
+	}
+
+	Mata->BuildForest(CasaDeTeste, /*Seed=*/7u, CameraDeTeste);
+
+	int32 EspeciesSemTinta = 0;
+	for (const TObjectPtr<UHierarchicalInstancedStaticMeshComponent>& Grupo : Mata->GetSpeciesClusters())
+	{
+		if (!Grupo || !Grupo->GetStaticMesh())
+		{
+			continue;
+		}
+		if (!Cast<UMaterialInstanceDynamic>(Grupo->GetMaterial(0)))
+		{
+			++EspeciesSemTinta;
+		}
+	}
+	TestEqual(TEXT("toda especie sai da nossa paleta, nao da cor do pacote"),
+		EspeciesSemTinta, 0);
+
+	// E o chão também: era ELE que vestia o material das folhas.
+	UStaticMeshComponent* Chao = Mata->GetGroundMesh();
+	if (TestNotNull(TEXT("a mata tem chao"), Chao))
+	{
+		TestNotNull(TEXT("o chao da mata e' pintado pela paleta"),
+			Cast<UMaterialInstanceDynamic>(Chao->GetMaterial(0)));
+	}
+
+	DestroyForestTestWorld(World);
+	return true;
+}
+
+/**
+ * O chão emprestado pelo mundo continua vencendo a paleta.
+ *
+ * A batalha que nasce de um encontro acontece no chão daquele lugar; se a
+ * paleta passasse por cima, a arena voltaria a parecer outro lugar — que é
+ * exatamente o defeito que o empréstimo resolveu.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FForestBackdropLetsTheWorldGroundWinTest,
+	"BattleSquare.ForestBackdrop.LetsTheWorldGroundWin",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FForestBackdropLetsTheWorldGroundWinTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateForestTestWorld();
+	AForestBackdrop* Mata = World->SpawnActor<AForestBackdrop>();
+	if (!TestNotNull(TEXT("AForestBackdrop spawna sem crash"), Mata))
+	{
+		DestroyForestTestWorld(World);
+		return false;
+	}
+
+	UMaterialInterface* DoMundo = LoadObject<UMaterialInterface>(
+		nullptr, TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+	if (!TestNotNull(TEXT("o material de emprestimo carrega"), DoMundo))
+	{
+		DestroyForestTestWorld(World);
+		return false;
+	}
+
+	Mata->BuildForest(CasaDeTeste, /*Seed=*/7u, CameraDeTeste);
+	Mata->SetGroundMaterialOverride(DoMundo);
+
+	TestEqual(TEXT("o chao emprestado pelo mundo vence a paleta"),
+		Mata->GetGroundMesh()->GetMaterial(0), DoMundo);
 
 	DestroyForestTestWorld(World);
 	return true;

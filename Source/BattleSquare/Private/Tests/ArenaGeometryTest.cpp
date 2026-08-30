@@ -340,3 +340,113 @@ bool FArenaBoardSitsOnTheForestFloorTest::RunTest(const FString& Parameters)
 	ArenaCena::DestruirMundoDaGeometria(World);
 	return true;
 }
+
+// A casa BLOQUEADA não pode ser só um piso um pouco mais alto.
+//
+// Era o que ela era: quem olhava via chão, e "não dá para andar aqui" ficava
+// por conta de quem já sabia da regra. Um tronco ou uma pedra ocupando a casa
+// diz isso sozinho — e é sobre ele que destruir e escalar vão se apoiar.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FArenaBlockedCellCarriesAnObstacleTest,
+	"BattleSquare.Battle.Arena.BlockedCellCarriesAnObstacle",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FArenaBlockedCellCarriesAnObstacleTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = ArenaCena::CriarMundoDaGeometria();
+	ABattleArena* Arena = World->SpawnActor<ABattleArena>();
+
+	FBattleState& Estado = Arena->GetMutableCurrentState();
+	for (uint8& Casa : Estado.CellLayout)
+	{
+		Casa = static_cast<uint8>(ECellProperty::None);
+	}
+	Estado.CellLayout[Estado.CellIndex(2, 2)] = static_cast<uint8>(ECellProperty::Blocked);
+	Estado.CellLayout[Estado.CellIndex(0, 0)] = static_cast<uint8>(ECellProperty::Water);
+
+	Arena->RefreshTileVisuals();
+
+	const TArray<TObjectPtr<UStaticMeshComponent>>& Obstaculos = Arena->GetCellObstacleMeshes();
+	TestEqual(TEXT("ha um obstaculo por casa, criado no construtor"),
+		Obstaculos.Num(), Arena->GetCellTileMeshes().Num());
+
+	const int32 NaPedra = Estado.CellIndex(2, 2);
+	const int32 NaAgua = Estado.CellIndex(0, 0);
+	const int32 NoPlano = Estado.CellIndex(1, 1);
+
+	if (!TestTrue(TEXT("os indices das casas existem"),
+		Obstaculos.IsValidIndex(NaPedra) && Obstaculos.IsValidIndex(NaAgua) && Obstaculos.IsValidIndex(NoPlano)))
+	{
+		ArenaCena::DestruirMundoDaGeometria(World);
+		return false;
+	}
+
+	TestTrue(TEXT("a casa bloqueada MOSTRA o obstaculo"), Obstaculos[NaPedra]->IsVisible());
+	TestFalse(TEXT("a agua nao ganha obstaculo"), Obstaculos[NaAgua]->IsVisible());
+	TestFalse(TEXT("a casa sem regra nao ganha obstaculo"), Obstaculos[NoPlano]->IsVisible());
+
+	// O mesmo defeito de sempre: componente visível sem asset atribuído passa
+	// em toda lógica e não existe na tela.
+	UStaticMesh* Malha = Obstaculos[NaPedra]->GetStaticMesh();
+	if (!TestNotNull(TEXT("o obstaculo tem malha atribuida"), Malha))
+	{
+		ArenaCena::DestruirMundoDaGeometria(World);
+		return false;
+	}
+
+	// E ele precisa TER volume. A medida sai da CAIXA DO COMPONENTE, não de
+	// uma conta refeita aqui: refazer a conta é escrever a regra duas vezes,
+	// e as duas cópias concordam até a primeira edição.
+	const FBoxSphereBounds Caixa =
+		Obstaculos[NaPedra]->CalcBounds(Obstaculos[NaPedra]->GetRelativeTransform());
+
+	TestTrue(TEXT("ele sobe acima da laje, nao e' um piso"),
+		Caixa.BoxExtent.Z * 2.0f > Arena->CellSize * 0.5f);
+	TestTrue(TEXT("e nao invade a casa vizinha"),
+		FMath::Max(Caixa.BoxExtent.X, Caixa.BoxExtent.Y) * 2.0f <= Arena->CellSize);
+
+	// Ele ASSENTA no topo da casa bloqueada: nem flutuando sobre a laje, nem
+	// com meio corpo dentro dela — o defeito que os pets já tiveram.
+	TestEqual(TEXT("o pe do obstaculo encosta na superficie da casa bloqueada"),
+		static_cast<float>(Caixa.Origin.Z - Caixa.BoxExtent.Z),
+		ABattleArena::GetCellSurfaceHeight(static_cast<uint8>(ECellProperty::Blocked)),
+		1.0f);
+
+	ArenaCena::DestruirMundoDaGeometria(World);
+	return true;
+}
+
+// O que ocupa a casa sai das COORDENADAS dela: o mesmo campo dá sempre a
+// mesma cena. Sorteio com relógio faria a arena mudar de cara a cada abertura
+// e tornaria impossível reproduzir o que o usuário viu na tela.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FArenaObstacleIsDeterministicPerCellTest,
+	"BattleSquare.Battle.Arena.ObstacleIsDeterministicPerCell",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FArenaObstacleIsDeterministicPerCellTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = ArenaCena::CriarMundoDaGeometria();
+
+	const auto CenaDaCasaBloqueada = [](ABattleArena* Arena)
+	{
+		FBattleState& Estado = Arena->GetMutableCurrentState();
+		Estado.CellLayout[Estado.CellIndex(2, 2)] = static_cast<uint8>(ECellProperty::Blocked);
+		Arena->RefreshTileVisuals();
+
+		UStaticMeshComponent* Obstaculo = Arena->GetCellObstacleMeshes()[Estado.CellIndex(2, 2)];
+		return TPair<UStaticMesh*, FRotator>(Obstaculo->GetStaticMesh(), Obstaculo->GetRelativeRotation());
+	};
+
+	ABattleArena* Primeira = World->SpawnActor<ABattleArena>();
+	ABattleArena* Segunda = World->SpawnActor<ABattleArena>();
+
+	const TPair<UStaticMesh*, FRotator> Uma = CenaDaCasaBloqueada(Primeira);
+	const TPair<UStaticMesh*, FRotator> Outra = CenaDaCasaBloqueada(Segunda);
+
+	TestEqual(TEXT("a mesma casa recebe a mesma materia"), Uma.Key, Outra.Key);
+	TestTrue(TEXT("e o mesmo giro"), Uma.Value.Equals(Outra.Value, 0.01f));
+
+	ArenaCena::DestruirMundoDaGeometria(World);
+	return true;
+}

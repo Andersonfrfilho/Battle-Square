@@ -25,6 +25,9 @@
 #include "Environment/WorldBoundaryWater.h"
 #include "World/WorldTrainingField.h"
 #include "Battle/PetView.h"
+#include "Components/CapsuleComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/Character.h"
 #include "Engine/StaticMeshActor.h"
 #include "World/TrainingFieldRules.h"
 #include "Balance/PetTypeCatalog.h"
@@ -238,6 +241,41 @@ namespace
 	}
 }
 
+void ABattleSquareGameMode::FreezePlayerWhileWorldIsNotReady(bool bFreeze)
+{
+	ACharacter* Explorador = Cast<ACharacter>(AcharPawnDoJogador(GetWorld()));
+	UCharacterMovementComponent* Movimento =
+		Explorador ? Explorador->GetCharacterMovement() : nullptr;
+	if (!Movimento)
+	{
+		return;
+	}
+
+	if (bFreeze)
+	{
+		// Já congelado? Sair cedo: reentrar todo quadro zeraria a velocidade
+		// de novo, o que não faz mal, mas também não faz nada.
+		if (Movimento->MovementMode == MOVE_None)
+		{
+			return;
+		}
+
+		Movimento->StopMovementImmediately();
+		Movimento->SetMovementMode(MOVE_None);
+		return;
+	}
+
+	if (Movimento->MovementMode != MOVE_None)
+	{
+		return;
+	}
+
+	// Volta CAINDO, e não andando: o chão acabou de nascer sob ele, e deixar a
+	// engine resolver o contato é mais honesto que afirmar que ele já está em
+	// pé sobre algo que pode não estar exatamente ali.
+	Movimento->SetMovementMode(MOVE_Falling);
+}
+
 FString ABattleSquareGameMode::LoadConfiguredMirrorPets(TArray<FLoadedPetRecord>& OutPets) const
 {
 	if (WorldEncounterMirrorPath.IsEmpty())
@@ -440,6 +478,18 @@ void ABattleSquareGameMode::Tick(float DeltaSeconds)
 	// sem espelho configurado) segue funcionando exatamente como antes.
 	if (!WorldEncounterFlow && bWorldEncounterSetupIsTransient)
 	{
+		// O jogador NÃO SIMULA enquanto o mundo não existe.
+		//
+		// A montagem depende do pawn e roda aqui, no Tick — e até ela
+		// acontecer não há chão nenhum. O jogador nascia e CAÍA nesses
+		// quadros, indo parar abaixo do chão antes de o chão ser criado; o
+		// guarda de queda o devolvia, e ele caía de novo.
+		//
+		// Congelar é o conserto certo, e não engrossar o chão: com a tela de
+		// carregamento por cima, ele não tem o que fazer mesmo. Física rodando
+		// num mundo que ainda não foi montado é a definição do problema.
+		FreezePlayerWhileWorldIsNotReady(true);
+
 		const FString Problem = SetUpWorldEncounterFlow();
 		if (Problem.IsEmpty())
 		{
@@ -447,6 +497,7 @@ void ABattleSquareGameMode::Tick(float DeltaSeconds)
 
 			// O mundo está montado: a tela sai. Sai AQUI, e não num
 			// temporizador, porque o critério é o estado e não o relógio.
+			FreezePlayerWhileWorldIsNotReady(false);
 			FWorldLoadingScreen::Hide();
 
 			// O mapa só aparece depois de haver mundo para mostrar: um
@@ -1102,7 +1153,24 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 	const bool bAchouChao = World->LineTraceSingleByChannel(Toque, Origem,
 		Origem - FVector(0.0f, 0.0f, TracoDeChaoUnidades), ECC_WorldStatic, Consulta);
 
-	const float AlturaDoChao = bAchouChao ? Toque.Location.Z : Origem.Z;
+	// Sem traço, o chão vai nos PÉS do jogador — não no centro dele.
+	//
+	// `GetActorLocation` devolve o meio da cápsula, e usá-lo punha o topo da
+	// terra na altura da cintura: o jogador nascia enterrado até a metade ou,
+	// pior, caía por dentro. Meia altura de cápsula é a diferença entre estar
+	// em pé no chão e estar dentro dele.
+	float AlturaDoChao = Toque.Location.Z;
+	if (!bAchouChao)
+	{
+		float MeiaAltura = 0.0f;
+		if (const ACharacter* Personagem = Cast<ACharacter>(Jogador))
+		{
+			MeiaAltura = Personagem->GetCapsuleComponent()
+				? Personagem->GetCapsuleComponent()->GetScaledCapsuleHalfHeight()
+				: 0.0f;
+		}
+		AlturaDoChao = Origem.Z - MeiaAltura;
+	}
 
 	FActorSpawnParameters Parametros;
 	Parametros.ObjectFlags |= RF_Transient;

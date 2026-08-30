@@ -410,3 +410,37 @@ bool FForestBackdropLetsTheWorldGroundWinTest::RunTest(const FString& Parameters
 	DestroyForestTestWorld(World);
 	return true;
 }
+
+// O CHÃO DA MATA COLIDE. Ele é o piso do mundo, não pintura de fundo.
+//
+// Nasceu sem colisão porque a mata começou como cenário de FUNDO da arena,
+// onde ninguém anda. No mundo aberto ele é a ilha — e enquanto os 225 cubos do
+// teste de streaming estiveram lá, eles seguravam o jogador e esconderam isto.
+// Ao removê-los, o jogador passou a cair pelo chão.
+//
+// A lição é geral, e por isso este teste existe: o que segurava o jogador não
+// era o que parecia segurá-lo. Andaime que sustenta produção não é andaime —
+// é estrutura que ninguém declarou.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FForestGroundIsWalkableTest,
+	"BattleSquare.Environment.ForestBackdrop.GroundIsWalkable",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FForestGroundIsWalkableTest::RunTest(const FString& Parameters)
+{
+	const AForestBackdrop* Padrao = GetDefault<AForestBackdrop>();
+	const UStaticMeshComponent* Chao = Padrao->GetGroundMesh();
+
+	TestTrue(TEXT("O chão existe"), Chao != nullptr);
+	if (!Chao)
+	{
+		return false;
+	}
+
+	TestTrue(TEXT("E COLIDE — dá para andar em cima dele"),
+		Chao->GetCollisionEnabled() != ECollisionEnabled::NoCollision);
+	TestTrue(TEXT("E bloqueia o pawn, em vez de só responder a consulta"),
+		Chao->GetCollisionResponseToChannel(ECC_Pawn) == ECR_Block);
+
+	return true;
+}

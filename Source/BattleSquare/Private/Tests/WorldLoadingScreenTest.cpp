@@ -84,3 +84,46 @@ bool FLoadingSaysWhyItFailedTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+// O carregamento é um PORTÃO, não uma cobertura.
+//
+// A distinção veio do usuário, depois de ver o jogador cair pelo cenário: a
+// tela escondia um mundo que já estava VIVO e ainda não montado. Cobrir um
+// mundo pela metade é diferente de não o deixar viver antes da hora — e o
+// primeiro tem exatamente o defeito que o segundo não pode ter.
+//
+// O que este teste fixa é a metade que não depende de ator: "pronto" só
+// acontece quando TODAS as etapas terminam, e falhar nunca conta como pronto.
+// A outra metade — o jogador congelado — está em
+// ABattleSquareGameMode::FreezePlayerWhileWorldIsNotReady, e só o roteiro de
+// verificação prova, porque exige física rodando.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FLoadingIsAGateNotACoverTest,
+	"BattleSquare.UI.WorldLoading.IsAGateNotACover",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FLoadingIsAGateNotACoverTest::RunTest(const FString& Parameters)
+{
+	// Nenhuma etapa parcial abre o portão — nem a última sozinha.
+	FWorldLoadingProgress QuaseLa;
+	QuaseLa.bTypeCatalogReady = true;
+	QuaseLa.bMirrorVerified = true;
+	QuaseLa.bEncountersPlaced = true;
+	TestFalse(TEXT("Sem cenário, o mundo NÃO está pronto"), QuaseLa.IsEverythingReady());
+
+	FWorldLoadingProgress SoOCenario;
+	SoOCenario.bSceneryBuilt = true;
+	TestFalse(TEXT("Só o cenário não basta"), SoOCenario.IsEverythingReady());
+
+	// E a falha jamais abre o portão: desistir não é chegar.
+	FWorldLoadingProgress Falhou;
+	Falhou.bTypeCatalogReady = true;
+	Falhou.bMirrorVerified = true;
+	Falhou.bSceneryBuilt = true;
+	Falhou.bEncountersPlaced = true;
+	Falhou.PermanentProblem = TEXT("espelho não carregou");
+	TestTrue(TEXT("As quatro etapas terminaram"), Falhou.IsEverythingReady());
+	TestTrue(TEXT("Mas a falha continua sendo falha"), Falhou.HasFailed());
+
+	return true;
+}

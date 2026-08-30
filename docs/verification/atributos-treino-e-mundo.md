@@ -229,6 +229,17 @@ repetição. Antes, o jogador nascia num mundo cinza e depois levava um engasgo.
 - [ ] Julgamento: a espera ficou **tolerável**, ou ainda é longa mesmo com
       tela? Tela não encurta espera — só a torna explicável.
 
+**O item mais importante desta seção**, porque é o defeito que já apareceu:
+
+- [ ] O jogador **não cai pelo cenário** ao dar play. Nem uma vez, nem
+      "cai e volta".
+      *A causa era o mundo estar VIVO antes de estar montado: a montagem roda
+      no Tick, e o jogador simulava física durante os quadros em que ainda não
+      havia chão. A tela cobria isso sem impedir. Agora ele fica congelado até
+      o portão abrir — e se voltar a cair, o congelamento não está pegando.*
+- [ ] Enquanto a tela está no ar, **nada se move** — nem o jogador nem os
+      adversários.
+
 ## CARGA-02 — Falha diz o motivo
 
 - [ ] Renomeando o espelho em `DefaultGame.ini` para um caminho que não existe,

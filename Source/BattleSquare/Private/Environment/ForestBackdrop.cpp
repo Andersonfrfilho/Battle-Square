@@ -27,7 +27,23 @@ namespace MataDoCenario
 	constexpr float RaioDoChaoEmCasas = 30.0f;
 
 	/** Espessura do disco: fino, mas acima do plano do template. */
+	/**
+	 * O que se VÊ do chão: uma borda fina, porque ele é uma clareira e não um
+	 * platô.
+	 */
 	constexpr float EspessuraDoChao = 4.0f;
+
+	/**
+	 * O que o chão TEM de corpo, para baixo.
+	 *
+	 * Quatro unidades de espessura seguram um pet parado e NÃO seguram um
+	 * jogador caindo: a cápsula atravessa uma laje fina entre dois quadros, e
+	 * o mundo parece não ter piso. Duzentas unidades de pedra invisível abaixo
+	 * da superfície custam nada e fecham esse buraco.
+	 *
+	 * O TOPO não muda — só cresce para baixo. A clareira continua rente.
+	 */
+	constexpr float ProfundidadeDoChao = 200.0f;
 
 	/** Quantas vezes tentar reposicionar uma planta antes de desistir dela. */
 	constexpr int32 TentativasPorPlanta = 8;
@@ -150,7 +166,18 @@ AForestBackdrop::AForestBackdrop()
 	GroundMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ForestGround"));
 	GroundMesh->SetupAttachment(ForestRoot);
 	// Cenário não empurra ninguém: quem decide onde o pet está é o núcleo.
-	GroundMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	// O CHÃO COLIDE, e isto não é detalhe: ele é o piso do mundo.
+	//
+	// Nasceu sem colisão porque a mata começou como cenário de FUNDO da arena,
+	// onde ninguém anda. No mundo aberto ele é a ilha — e enquanto os 225
+	// cubos do teste de streaming estiveram lá, eles seguravam o jogador e
+	// esconderam isto. Ao removê-los, o jogador passou a cair pelo chão.
+	//
+	// A lição, e ela é geral: o que segurava o jogador não era o que parecia
+	// segurá-lo. Andaime que sustenta produção não é andaime — é estrutura
+	// que ninguém declarou.
+	GroundMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	GroundMesh->SetCollisionResponseToAllChannels(ECR_Block);
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CilindroDoChao(CilindroDaEngine);
 	if (CilindroDoChao.Succeeded())
@@ -205,8 +232,13 @@ void AForestBackdrop::BuildForest(float CellSize, uint32 Seed, const FVector2D& 
 	GroundMesh->SetRelativeScale3D(FVector(
 		RaioDoChao * 2.0f / CilindroDaEngineUnidades,
 		RaioDoChao * 2.0f / CilindroDaEngineUnidades,
-		EspessuraDoChao / CilindroDaEngineUnidades));
-	GroundMesh->SetRelativeLocation(FVector::ZeroVector);
+		ProfundidadeDoChao / CilindroDaEngineUnidades));
+
+	// Descido pela metade do que cresceu, para o TOPO ficar onde estava:
+	// GroundTopLocalZ() continua valendo, e quem posiciona a mata contra uma
+	// superfície não precisa saber que ela engrossou.
+	GroundMesh->SetRelativeLocation(FVector(0.0f, 0.0f,
+		EspessuraDoChao * 0.5f - ProfundidadeDoChao * 0.5f));
 
 	ApplyGroundMaterial();
 

@@ -126,6 +126,30 @@ public:
 	 *
 	 * QUANDO O MAPA ESTIVER LIMPO: apagar esta função e o bRemoveStreamingTestCubes.
 	 */
+	/**
+	 * O mundo está montado?
+	 *
+	 * É um PORTÃO, e não um aviso: enquanto for falso, o jogo não roda — o
+	 * jogador não simula, e o que vier a depender do mundo pergunta aqui em
+	 * vez de descobrir do jeito difícil.
+	 *
+	 * Nasceu de um defeito que o usuário viu antes de mim: o jogador caía pelo
+	 * cenário porque a montagem acontece no Tick, e ele existia e simulava
+	 * física durante os quadros em que ainda não havia chão. A tela de
+	 * carregamento cobria isso — e cobrir um mundo vivo pela metade é
+	 * diferente de não o deixar viver antes da hora.
+	 */
+	bool IsWorldReady() const { return WorldEncounterFlow != nullptr; }
+
+	/**
+	 * Impede o jogador de cair num mundo que ainda não foi montado.
+	 *
+	 * A montagem roda no Tick e depende do pawn; até ela acontecer, não há
+	 * chão. Com a tela de carregamento por cima ele não tem o que fazer mesmo,
+	 * e física rodando num mundo inexistente é a definição do problema.
+	 */
+	void FreezePlayerWhileWorldIsNotReady(bool bFreeze);
+
 	void RemoveStreamingTestCubes();
 
 	/** Desligue quando o mapa estiver limpo — e apague o código junto. */

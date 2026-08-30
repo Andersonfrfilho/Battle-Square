@@ -1,25 +1,14 @@
 # Roteiro de verificação — Atributos, Treino, Tipos e o Mundo (M8)
 
-**Status:** **não verificado ainda.**
-**Atualizado em 30/08/2026** duas vezes: primeiro com os tipos de dois eixos, a
-magia de atributo e a paleta; depois com o carregamento, a água, os dois mapas
-e os obstáculos derrubáveis (seções CARGA, ÁGUA, MAPA, DERRUBAR).
-
-Cobre tudo o que M8 acrescentou em 2026-08-29 e 30. Os testes provam que os números
-somam, que a fila recusa e que o hash muda. O que eles **não** decidem, e por
-isso este roteiro existe:
-
-- **Nada disto foi visto na tela.** Sol, mata, painel do mundo, campos de
-  treino, golpe trancado e esquiva por reflexo estão verificados por build e
-  por teste — não por olho. Este projeto já teve **três atores invisíveis**
-  passando por baterias inteiras (`CLAUDE.md`), e o padrão é sempre o mesmo:
-  componente criado sem asset atribuído.
-- **Se ver o pet mudar é interessante.** É a pergunta que a fatia 1 existia
-  para responder, e nenhum teste responde.
-- **Se os números estão certos.** Três são chute meu, e estão nomeados abaixo.
-
-O painel se grava sozinho em `Saved/BattleDebug.txt` — não depende de tecla,
-de foco nem da área de transferência. É o caminho para me mandar o resultado.
+> **SUBSTITUÍDO em 30/08/2026 por `o-que-precisa-de-olho.md`.**
+>
+> Este roteiro misturava o que uma máquina confere com o que só uma pessoa
+> confere. A metade automatizável virou teste e sonda — pedir que alguém a
+> repetisse à mão era gastar tempo humano no que já está coberto.
+>
+> Fica aqui como HISTÓRICO: ele registra o que se pensava verificar em
+> 29–30/08, e vários dos seus itens explicam por que as sondas de hoje
+> existem. Não o rode.
 
 ---
 

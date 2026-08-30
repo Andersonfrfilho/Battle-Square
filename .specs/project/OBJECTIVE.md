@@ -115,8 +115,14 @@ poder verificar seria entregar trabalho não medido.
 bloqueio de infraestrutura, e sobram dois:
 
 - **Item 2 — os NOVE roteiros verificáveis.** Nenhum foi rodado. O de M8
-  (`atributos-treino-e-mundo.md`) é novo e é o mais decisivo: 40 itens, e o
-  julgamento de três números que são chute meu. É o único
+  (`atributos-treino-e-mundo.md`) é novo e é o mais decisivo: **103 itens** em
+  22 seções, cobrindo atributos, treino, tipos, magia de atributo, mundo,
+  carregamento, água, os dois mapas e os obstáculos derrubáveis.
+
+  Ele carrega três coisas que só uma pessoa jogando dá: os julgamentos que
+  reprovam desenhos meus, a MEDIÇÃO do carregamento (CARGA-01 — sem ela,
+  qualquer otimização minha é palpite), e a decisão de produto sobre combate no
+  mundo aberto (DERRUBAR-02). É o único
   caminho para o que teste nenhum decide, e agora há bem mais a olhar: sol e
   mata no mundo, painel do mundo, campos de treino, golpe trancado, esquiva por
   reflexo. **Nada disso foi visto na tela** — só verificado por build e teste,

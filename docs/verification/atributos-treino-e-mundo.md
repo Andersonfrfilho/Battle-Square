@@ -1,8 +1,9 @@
 # Roteiro de verificação — Atributos, Treino, Tipos e o Mundo (M8)
 
 **Status:** **não verificado ainda.**
-**Atualizado em 30/08/2026** com os tipos de dois eixos, a magia de atributo e
-a paleta corrigida — três seções novas ao fim (TIPO, MAGIA, PALETA).
+**Atualizado em 30/08/2026** duas vezes: primeiro com os tipos de dois eixos, a
+magia de atributo e a paleta; depois com o carregamento, a água, os dois mapas
+e os obstáculos derrubáveis (seções CARGA, ÁGUA, MAPA, DERRUBAR).
 
 Cobre tudo o que M8 acrescentou em 2026-08-29 e 30. Os testes provam que os números
 somam, que a fila recusa e que o hash muda. O que eles **não** decidem, e por
@@ -205,6 +206,113 @@ disputarem com os pets.
       apagados — perder saturação não pode ter custado a diferença entre eles.
 - [ ] Julgamento: o mundo ficou **sóbrio demais**? A troca foi deliberada —
       os pets são a coisa mais viva na tela — mas o preço é real.
+
+---
+
+## CARGA-01 — A espera passou a ter tela, e a tela passou a ter número
+
+O mundo **não** é montado ao dar play: ele depende do pawn e roda no Tick, com
+repetição. Antes, o jogador nascia num mundo cinza e depois levava um engasgo.
+
+- [ ] Ao dar play, aparece a tela de carregamento **antes** de o mundo aparecer
+      — e não o mundo pela metade primeiro.
+- [ ] Ela mostra o passo em que está (`Conferindo a assinatura dos pets…`,
+      `Plantando a mata…`) e a porcentagem **sobe**.
+- [ ] Ela **sai sozinha** quando o mundo está pronto, e o que aparece já está
+      completo — mata, sol, campos e adversários de uma vez.
+- [ ] **O número:** anote o que o painel mostra —
+      `carregamento: cenário ___ ms, encontros ___ ms` — e o que o log diz em
+      `[carregamento] malhas pesadas prontas em ___ ms`.
+      *É a medição que decide o próximo conserto: se o peso está no disco
+      (malhas), na mata (cenário) ou na verificação de assinatura. Sem isso,
+      qualquer otimização minha é palpite.*
+- [ ] Julgamento: a espera ficou **tolerável**, ou ainda é longa mesmo com
+      tela? Tela não encurta espera — só a torna explicável.
+
+## CARGA-02 — Falha diz o motivo
+
+- [ ] Renomeando o espelho em `DefaultGame.ini` para um caminho que não existe,
+      a tela **fica** e mostra o motivo em laranja — não gira para sempre nem
+      some deixando um mundo quebrado.
+- [ ] Desfazendo, volta ao normal.
+
+## ÁGUA-01 — O limite se lê de longe
+
+- [ ] Há uma **faixa de água** em volta da ilha, visível de dentro do mapa.
+- [ ] Andando até a borda, você **para na margem** — e vê a água antes de
+      parar. *Não pode haver parede sentida em terreno seco: a barreira é
+      invisível e a razão é visível, nessa ordem.*
+- [ ] Não existe **vão** por onde escapar. Tente contornar a borda inteira
+      empurrando contra ela. *O anel é um polígono de 24 caixas; vão de um
+      centímetro é vão que o jogador encontra.*
+- [ ] O guarda de queda **não dispara mais** por andar até o fim do mundo —
+      quem não alcança a borda não cai dela.
+- [ ] A água é escura e apagada, e a terra se destaca contra ela.
+
+## MAPA-01 — O minimapa acompanha o olhar
+
+- [ ] Há um minimapa no canto superior direito.
+- [ ] Ao girar a câmera, o mapa **gira junto**: o que está à sua frente fica
+      sempre em cima.
+      *É o item que mais importa aqui. O teste da projeção passa nos quatro
+      pontos cardeais nos dois modos — se estiver errado NA TELA, o defeito é
+      de desenho e não de matemática, o que estreita muito a busca.*
+- [ ] Os **cinco campos** aparecem nas cores dos atributos, e andar até um
+      deles faz o ponto crescer e ficar centrado.
+- [ ] Os **adversários** aparecem, e todos da mesma cor — o mapa diz que há
+      alguém ali, não quem.
+- [ ] Quem está **fora do alcance** simplesmente não aparece, em vez de ficar
+      colado na borda.
+
+## MAPA-02 — O mapa completo é para planejar
+
+- [ ] **M** abre e fecha o mapa completo, e o minimapa continua lá.
+- [ ] O completo tem o **norte fixo**: girar a câmera **não** o gira.
+      *É de propósito — mapa que gira enquanto se olha para ele não se
+      memoriza.*
+- [ ] Dá para ver a ilha inteira, com a água como moldura, e localizar os
+      cinco campos de uma vez.
+- [ ] Com o mapa aberto, ainda dá para andar (ou não — anote o que acontece).
+- [ ] Julgamento: com o mapa completo, **dá para planejar uma rota** entre dois
+      campos? Se não der, ele é decoração.
+
+## DERRUBAR-01 — Árvore e pedra caem
+
+- [ ] O **botão esquerdo** golpeia. Contra uma árvore, o painel mostra
+      `golpe: N de dano, falta M`.
+- [ ] Golpeando de novo, a árvore **cai** e some da tela.
+- [ ] Golpear o vazio diz `golpe no vazio` — não fica em silêncio.
+- [ ] **Capim e flor não caem**, e o golpe os ignora: mirando grama com uma
+      árvore perto, é a árvore que apanha.
+- [ ] **Pedra aguenta mais** que tronco caído.
+- [ ] A árvore derrubada **não volta**, e nenhuma OUTRA árvore some junto.
+      *É o risco da implementação: instâncias derrubadas encolhem em vez de
+      serem removidas, justamente para o índice não deslocar. Se sumir a
+      vizinha, foi isso.*
+- [ ] **Treinar musculatura faz diferença:** anote quantos golpes um tronco
+      leva antes e depois de subir musculatura num campo.
+      *É o ciclo fechando — treino do mundo sentido no mundo.*
+- [ ] Julgamento: derrubar é **satisfatório** ou é trabalho? Hoje não há som,
+      nem animação, nem queda — a árvore simplesmente some.
+
+## DERRUBAR-02 — O que eu decidi sozinho
+
+- [ ] O golpe do mundo **não atinge os adversários** que andam pelo mapa: eles
+      continuam sendo resolvidos na arena.
+- [ ] Julgamento, e é decisão sua: era isso que você queria com "destrutíveis
+      pelos usuários", ou a intenção incluía **bater nos inimigos no mundo**?
+      *Se incluía, isto é metade do caminho — combate fora do tabuleiro muda o
+      que o jogo é, e merece spec antes de código.*
+
+## CUBOS-01 — O andaime saiu
+
+- [ ] Os **blocos coloridos** do teste de streaming não aparecem mais.
+- [ ] Aparece um aviso laranja dizendo quantos foram removidos e que eles
+      devem sair do MAPA.
+      *O aviso é chato de propósito: paliativo silencioso vira permanente.*
+- [ ] Depois de apagá-los no editor (World Outliner → filtro `Cube` → apagar →
+      salvar), o aviso **some sozinho** — e aí me avise para eu remover o
+      código (B-010).
 
 ## Como me devolver o resultado
 

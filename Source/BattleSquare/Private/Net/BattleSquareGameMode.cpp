@@ -87,6 +87,40 @@ namespace
 	/** Folga que evita as duas superfícies coplanares. */
 	constexpr float FolgaDoChaoUnidades = 2.0f;
 
+	/**
+	 * O pawn do jogador, com a MESMA tolerância que a detecção de encontro usa.
+	 *
+	 * `GetFirstPlayerController()->GetPawn()` pode ser nulo na montagem, e o
+	 * código de encontro já previa isso caindo numa varredura. Quem cuidava do
+	 * cenário não previa: o mundo ficaria com os campos de treino nascidos na
+	 * origem e SEM CHÃO NENHUM, que é pior que nenhum dos dois.
+	 */
+	APawn* AcharPawnDoJogador(UWorld* World)
+	{
+		if (!World)
+		{
+			return nullptr;
+		}
+
+		if (const APlayerController* Controlador = World->GetFirstPlayerController())
+		{
+			if (APawn* Possuido = Controlador->GetPawn())
+			{
+				return Possuido;
+			}
+		}
+
+		for (TActorIterator<APawn> Iterador(World); Iterador; ++Iterador)
+		{
+			if (IsValid(*Iterador))
+			{
+				return *Iterador;
+			}
+		}
+
+		return nullptr;
+	}
+
 	TArray<uint8> MirrorKeyHexToBytes(const FString& Hex)
 	{
 		TArray<uint8> Bytes;
@@ -559,8 +593,9 @@ void ABattleSquareGameMode::SpawnTrainingFields()
 		return;
 	}
 
-	const APawn* Jogador = World->GetFirstPlayerController()
-		? World->GetFirstPlayerController()->GetPawn() : nullptr;
+	// MESMO pawn que a mata usou: campo de treino num lugar e chão em outro
+	// deixaria os discos boiando fora da clareira.
+	const APawn* Jogador = AcharPawnDoJogador(World);
 	const FVector Centro = Jogador ? Jogador->GetActorLocation() : FVector::ZeroVector;
 
 	// Os cinco atributos que existem, na mesma grafia do requisito de golpe.
@@ -602,8 +637,7 @@ void ABattleSquareGameMode::TickTrainingFields()
 		return;
 	}
 
-	const APawn* Jogador = World->GetFirstPlayerController()
-		? World->GetFirstPlayerController()->GetPawn() : nullptr;
+	const APawn* Jogador = AcharPawnDoJogador(World);
 	if (!Jogador)
 	{
 		return;
@@ -724,8 +758,7 @@ void ABattleSquareGameMode::ReloadOwnedPetSnapshot()
 bool ABattleSquareGameMode::LearnSpecialtyOfCurrentField()
 {
 	UWorld* World = GetWorld();
-	const APawn* Jogador = World && World->GetFirstPlayerController()
-		? World->GetFirstPlayerController()->GetPawn() : nullptr;
+	const APawn* Jogador = AcharPawnDoJogador(World);
 	if (!Jogador)
 	{
 		return false;
@@ -772,8 +805,7 @@ void ABattleSquareGameMode::RefreshWorldStatus()
 		return;
 	}
 
-	const APawn* Jogador = World->GetFirstPlayerController()
-		? World->GetFirstPlayerController()->GetPawn() : nullptr;
+	const APawn* Jogador = AcharPawnDoJogador(World);
 
 	FWorldStatusSnapshot Retrato;
 	Retrato.bHasOwnedPet = bHasCachedOwnedPet;
@@ -836,8 +868,7 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 		return;
 	}
 
-	APawn* Jogador = World->GetFirstPlayerController()
-		? World->GetFirstPlayerController()->GetPawn() : nullptr;
+	APawn* Jogador = AcharPawnDoJogador(World);
 	if (!Jogador)
 	{
 		return;
@@ -903,8 +934,7 @@ void ABattleSquareGameMode::SpawnRoamingEncounters()
 		return;
 	}
 
-	APawn* Jogador = World->GetFirstPlayerController()
-		? World->GetFirstPlayerController()->GetPawn() : nullptr;
+	const APawn* Jogador = AcharPawnDoJogador(World);
 	const FVector Centro = Jogador ? Jogador->GetActorLocation() : FVector::ZeroVector;
 
 	FRandomStream Sorteio(WorldEncounterSeed);
@@ -1000,8 +1030,7 @@ void ABattleSquareGameMode::MaintainEncounterPopulation()
 		return;
 	}
 
-	APawn* Jogador = World->GetFirstPlayerController()
-		? World->GetFirstPlayerController()->GetPawn() : nullptr;
+	const APawn* Jogador = AcharPawnDoJogador(World);
 	const FVector Centro = Jogador ? Jogador->GetActorLocation() : FVector::ZeroVector;
 
 	// Semente avança a cada reposição: repor sempre com a mesma faria os

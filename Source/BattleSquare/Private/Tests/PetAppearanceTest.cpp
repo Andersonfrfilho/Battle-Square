@@ -104,3 +104,81 @@ bool FPetAppearanceTellsDogFromCatTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+// SETE tipos, e cada um precisa ser distinguível dos outros seis.
+//
+// Com três tipos a matiz bastava sozinha. Com sete, dois problemas aparecem
+// juntos: o olho não separa sete matizes num bicho em movimento, e sete matizes
+// distintas não cabem sem encostar nas cores que o TERRENO já usa.
+//
+// A saída foi pôr a SILHUETA para identificar e a cor para agrupar. Este teste
+// protege as duas metades: nenhum par de tipos partilha forma E cor.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FEverySevenTypesAreTellableApartTest,
+	"BattleSquare.Battle.PetAppearance.EverySevenTypesAreTellableApart",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FEverySevenTypesAreTellableApartTest::RunTest(const FString& Parameters)
+{
+	const TCHAR* Tipos[] = {
+		TEXT("Fogo"), TEXT("Agua"), TEXT("Planta"),
+		TEXT("Inseto"), TEXT("Psiquico"), TEXT("Magico"), TEXT("Caverna"),
+	};
+	constexpr int32 Quantos = UE_ARRAY_COUNT(Tipos);
+
+	for (int32 A = 0; A < Quantos; ++A)
+	{
+		const FPetAppearance PrimeiraAparencia = FPetAppearance::ForType(Tipos[A]);
+
+		for (int32 B = A + 1; B < Quantos; ++B)
+		{
+			const FPetAppearance SegundaAparencia = FPetAppearance::ForType(Tipos[B]);
+
+			const bool bMesmaForma = PrimeiraAparencia.CrestShape == SegundaAparencia.CrestShape;
+			const bool bMesmaCor = PrimeiraAparencia.AccentColor.Equals(SegundaAparencia.AccentColor, 0.001f);
+
+			TestFalse(
+				*FString::Printf(TEXT("%s e %s não têm forma E cor iguais"), Tipos[A], Tipos[B]),
+				bMesmaForma && bMesmaCor);
+		}
+	}
+
+	return true;
+}
+
+// Tipo NOVO não pode sair igual ao pet sem tipo.
+//
+// O ramo padrão devolve a aparência neutra, então um nome escrito errado —
+// "Psíquico" com acento, "magico" noutra grafia — produz um bicho que existe,
+// luta e parece genérico. É o modo de falhar de L-045: o ramo existe, o dado
+// nunca cai nele, e nada avisa.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FNewTypesDoNotFallBackToNeutralTest,
+	"BattleSquare.Battle.PetAppearance.NewTypesDoNotFallBackToNeutral",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FNewTypesDoNotFallBackToNeutralTest::RunTest(const FString& Parameters)
+{
+	const FPetAppearance Neutro = FPetAppearance::ForType(TEXT("tipo-que-nao-existe"));
+
+	const TCHAR* Novos[] = {
+		TEXT("Inseto"), TEXT("Psiquico"), TEXT("Magico"), TEXT("Caverna"),
+	};
+
+	for (const TCHAR* Tipo : Novos)
+	{
+		const FPetAppearance Aparencia = FPetAppearance::ForType(Tipo);
+		TestFalse(
+			*FString::Printf(TEXT("%s não cai no ramo neutro"), Tipo),
+			Aparencia.CrestShape == Neutro.CrestShape
+				&& Aparencia.AccentColor.Equals(Neutro.AccentColor, 0.001f));
+	}
+
+	// E o nome é casado sem diferenciar maiúscula: o catálogo do backend não
+	// promete grafia, e um pet "PSIQUICO" não pode virar genérico por isso.
+	TestTrue(TEXT("A grafia em caixa alta encontra o mesmo tipo"),
+		FPetAppearance::ForType(TEXT("PSIQUICO")).CrestShape
+			== FPetAppearance::ForType(TEXT("Psiquico")).CrestShape);
+
+	return true;
+}

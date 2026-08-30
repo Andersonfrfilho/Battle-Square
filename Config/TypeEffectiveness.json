@@ -1,11 +1,33 @@
 {
-  "types": ["Fogo", "Agua", "Planta"],
+  "_comment": "Efetividade por tipo, em porcentagem (100 = neutro, ausente = 100). A ESTRUTURA e dois triangulos e um elo, e nao uma lista de excecoes: com sete tipos, quarenta e duas excecoes soltas nao se decoram nem se equilibram. NATURAIS (Fogo, Agua, Planta) mantem o ciclo de sempre. OCULTOS (Psiquico, Caverna, Inseto) tem o proprio ciclo: a mente atravessa a pedra, o teto desaba sobre o enxame, e o enxame nao tem mente unica para dominar. MAGICO e o elo: domina os tres naturais e se perde nos tres ocultos. Inseto conta como oculto na TABELA por causa do ciclo, ainda que a cor dele seja natural — e isso e proposital: ele e a ponte entre os dois mundos.",
+  "types": ["Fogo", "Agua", "Planta", "Psiquico", "Magico", "Inseto", "Caverna"],
   "effectiveness": [
     { "attacker": "Fogo", "defender": "Planta", "percent": 150 },
     { "attacker": "Fogo", "defender": "Agua", "percent": 50 },
     { "attacker": "Agua", "defender": "Fogo", "percent": 150 },
     { "attacker": "Agua", "defender": "Planta", "percent": 50 },
     { "attacker": "Planta", "defender": "Agua", "percent": 150 },
-    { "attacker": "Planta", "defender": "Fogo", "percent": 50 }
+    { "attacker": "Planta", "defender": "Fogo", "percent": 50 },
+
+    { "attacker": "Psiquico", "defender": "Caverna", "percent": 150 },
+    { "attacker": "Psiquico", "defender": "Inseto", "percent": 50 },
+    { "attacker": "Caverna", "defender": "Inseto", "percent": 150 },
+    { "attacker": "Caverna", "defender": "Psiquico", "percent": 50 },
+    { "attacker": "Inseto", "defender": "Psiquico", "percent": 150 },
+    { "attacker": "Inseto", "defender": "Caverna", "percent": 50 },
+
+    { "attacker": "Magico", "defender": "Fogo", "percent": 150 },
+    { "attacker": "Magico", "defender": "Agua", "percent": 150 },
+    { "attacker": "Magico", "defender": "Planta", "percent": 150 },
+    { "attacker": "Magico", "defender": "Psiquico", "percent": 50 },
+    { "attacker": "Magico", "defender": "Caverna", "percent": 50 },
+    { "attacker": "Magico", "defender": "Inseto", "percent": 50 },
+
+    { "attacker": "Fogo", "defender": "Magico", "percent": 50 },
+    { "attacker": "Agua", "defender": "Magico", "percent": 50 },
+    { "attacker": "Planta", "defender": "Magico", "percent": 50 },
+    { "attacker": "Psiquico", "defender": "Magico", "percent": 150 },
+    { "attacker": "Caverna", "defender": "Magico", "percent": 150 },
+    { "attacker": "Inseto", "defender": "Magico", "percent": 150 }
   ]
 }

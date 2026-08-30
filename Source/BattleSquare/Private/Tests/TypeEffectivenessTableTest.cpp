@@ -91,3 +91,79 @@ bool FTypeEffectivenessTableLoadFromJsonTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+// A tabela de SETE tipos tem estrutura, e a estrutura é o que a torna
+// decorável: dois triângulos e um elo, não quarenta e duas exceções soltas.
+//
+// O teste lê o arquivo REAL de configuração. Um teste sobre uma tabela
+// inventada aqui provaria que o código funciona e não que o jogo está certo —
+// e é o jogo que se joga.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FShippedTypeChartHoldsItsShapeTest,
+	"BattleSquare.Balance.TypeEffectiveness.ShippedChartHoldsItsShape",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FShippedTypeChartHoldsItsShapeTest::RunTest(const FString& Parameters)
+{
+	FTypeEffectivenessTable Tabela;
+	const FString Caminho = FPaths::Combine(FPaths::ProjectConfigDir(), TEXT("TypeEffectiveness.json"));
+	if (!FTypeEffectivenessTable::LoadFromJson(Caminho, Tabela))
+	{
+		AddError(TEXT("Config/TypeEffectiveness.json não carregou"));
+		return false;
+	}
+
+	// Ciclo natural, o de sempre.
+	TestEqual(TEXT("Fogo queima Planta"), Tabela.GetPercent(TEXT("Fogo"), TEXT("Planta")), 150);
+	TestEqual(TEXT("Planta bebe Água"), Tabela.GetPercent(TEXT("Planta"), TEXT("Agua")), 150);
+	TestEqual(TEXT("Água apaga Fogo"), Tabela.GetPercent(TEXT("Agua"), TEXT("Fogo")), 150);
+
+	// Ciclo oculto: a mente atravessa a pedra, o teto desaba sobre o enxame, e
+	// o enxame não tem mente única para dominar.
+	TestEqual(TEXT("Psíquico atravessa Caverna"), Tabela.GetPercent(TEXT("Psiquico"), TEXT("Caverna")), 150);
+	TestEqual(TEXT("Caverna esmaga Inseto"), Tabela.GetPercent(TEXT("Caverna"), TEXT("Inseto")), 150);
+	TestEqual(TEXT("Inseto confunde Psíquico"), Tabela.GetPercent(TEXT("Inseto"), TEXT("Psiquico")), 150);
+
+	// O ELO. Mágico domina o material e se perde no que não é material — e a
+	// simetria é o que impede que ele seja simplesmente o melhor tipo.
+	const TCHAR* Naturais[] = { TEXT("Fogo"), TEXT("Agua"), TEXT("Planta") };
+	for (const TCHAR* Natural : Naturais)
+	{
+		TestEqual(*FString::Printf(TEXT("Mágico domina %s"), Natural),
+			Tabela.GetPercent(TEXT("Magico"), Natural), 150);
+		TestEqual(*FString::Printf(TEXT("E %s pouco arranha Mágico"), Natural),
+			Tabela.GetPercent(Natural, TEXT("Magico")), 50);
+	}
+
+	const TCHAR* Ocultos[] = { TEXT("Psiquico"), TEXT("Caverna"), TEXT("Inseto") };
+	for (const TCHAR* Oculto : Ocultos)
+	{
+		TestEqual(*FString::Printf(TEXT("Mágico se perde em %s"), Oculto),
+			Tabela.GetPercent(TEXT("Magico"), Oculto), 50);
+		TestEqual(*FString::Printf(TEXT("E %s domina Mágico"), Oculto),
+			Tabela.GetPercent(Oculto, TEXT("Magico")), 150);
+	}
+
+	// NENHUM tipo é forte contra todos. Um tipo sem fraqueza é um tipo que
+	// todo mundo escolhe, e aí a tabela inteira deixa de decidir alguma coisa.
+	const TCHAR* Todos[] = {
+		TEXT("Fogo"), TEXT("Agua"), TEXT("Planta"),
+		TEXT("Psiquico"), TEXT("Magico"), TEXT("Inseto"), TEXT("Caverna"),
+	};
+	for (const TCHAR* Atacante : Todos)
+	{
+		bool bTemFraqueza = false;
+		for (const TCHAR* Defensor : Todos)
+		{
+			if (Tabela.GetPercent(Defensor, Atacante) > 100)
+			{
+				bTemFraqueza = true;
+				break;
+			}
+		}
+		TestTrue(*FString::Printf(TEXT("%s tem ao menos um tipo que o supera"), Atacante),
+			bTemFraqueza);
+	}
+
+	return true;
+}

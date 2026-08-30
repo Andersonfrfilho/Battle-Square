@@ -111,6 +111,66 @@ export const PET_CATALOG_SEED: CreatePetDeclaration[] = [
       { name: 'Vaga', power: 140, terrainEffect: 'none', requiresAttribute: 'underground', requiresValue: 8 },
     ],
   },
+  {
+    name: 'Zunido',
+    type: 'Inseto',
+    attack: 60,
+    defense: 35,
+    speed: 80,
+    maxHealth: 95,
+    moves: [
+      { name: 'Ferroada', power: 80, terrainEffect: 'none' },
+      { name: 'Enxame', power: 110, terrainEffect: 'none' },
+      // Deixa a casa hostil sem bater forte: a teia é armadilha, não golpe.
+      { name: 'Teia Ácida', power: 55, terrainEffect: 'damage' },
+      { name: 'Revoada', power: 145, terrainEffect: 'none', requiresAttribute: 'flight', requiresValue: 10 },
+    ],
+  },
+  {
+    name: 'Vigília',
+    type: 'Psiquico',
+    attack: 65,
+    defense: 45,
+    speed: 65,
+    maxHealth: 105,
+    moves: [
+      { name: 'Pressentir', power: 75, terrainEffect: 'none' },
+      { name: 'Distorção', power: 105, terrainEffect: 'none' },
+      { name: 'Espelho', power: 90, terrainEffect: 'none' },
+      // Personalidade alta: quem hesita não sustenta o olhar.
+      { name: 'Colapso', power: 150, terrainEffect: 'none', requiresAttribute: 'personality', requiresValue: 8 },
+    ],
+  },
+  {
+    name: 'Alfarrábio',
+    type: 'Magico',
+    attack: 75,
+    defense: 30,
+    speed: 60,
+    maxHealth: 90,
+    moves: [
+      { name: 'Fagulha Arcana', power: 85, terrainEffect: 'none' },
+      // O mago FABRICA o terreno de que precisa — a versão dele do que a Maré
+      // faz com água, e o que dá sentido a ele não ter skill própria.
+      { name: 'Poça Invocada', power: 50, terrainEffect: 'water' },
+      { name: 'Selo', power: 115, terrainEffect: 'none' },
+      { name: 'Grimório', power: 165, terrainEffect: 'none', requiresAttribute: 'musculature', requiresValue: 10 },
+    ],
+  },
+  {
+    name: 'Estalagmite',
+    type: 'Caverna',
+    attack: 55,
+    defense: 75,
+    speed: 35,
+    maxHealth: 145,
+    moves: [
+      { name: 'Cabeçada', power: 70, terrainEffect: 'none' },
+      { name: 'Desmoronar', power: 120, terrainEffect: 'none' },
+      { name: 'Fissura', power: 60, terrainEffect: 'damage' },
+      { name: 'Abalo', power: 140, terrainEffect: 'none', requiresAttribute: 'underground', requiresValue: 8 },
+    ],
+  },
 ];
 
 export type SeedResult = {

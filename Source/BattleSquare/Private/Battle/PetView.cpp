@@ -240,11 +240,24 @@ UStaticMesh* APetView::CrestMeshFor(EPetCrestShape Shape) const
 	switch (Shape)
 	{
 		case EPetCrestShape::Folha:
+		case EPetCrestShape::Orbe:
 			return SphereAsset;
+
+		// A ÚNICA forma angular do elenco. Caverna é mineral, e aresta é o que
+		// separa pedra de bicho num relance — mais que qualquer matiz.
+		case EPetCrestShape::Cristal:
+			return CubeAsset;
+
+		// Cilindro não afina na ponta: a antena fica com espessura constante,
+		// que é o que a distingue de todo o resto, que é cone.
+		case EPetCrestShape::Antena:
+			return CylinderAsset;
+
 		case EPetCrestShape::Barbatana:
 		case EPetCrestShape::Chama:
 		case EPetCrestShape::Orelha:
 		case EPetCrestShape::OrelhaCaida:
+		case EPetCrestShape::Ponta:
 		default:
 			return ConeAsset;
 	}

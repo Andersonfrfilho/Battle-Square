@@ -1,8 +1,15 @@
 {
-  "_comment": "Skills por TIPO de pet (DP-skill-01). Os seis tipos de acao universais nao aparecem aqui: eles sao de todo pet, e listar seria convidar alguem a remove-los de um tipo. Uma skill por tipo, de proposito — identidade so existe quando ha diferenca, e duas skills por tipo ja comecam a diluir isso.",
+  "_comment": "Skills por TIPO de pet (DP-skill-01). Os seis tipos de acao universais nao aparecem aqui: eles sao de todo pet, e listar seria convidar alguem a remove-los de um tipo.",
+  "_comment_compartilhar": "O nucleo tem TRES skills (camuflar, voar, submergir) e o jogo tem SETE tipos. Compartilhar e a saida honesta; inventar uma quarta skill so para dar uma a cada tipo seria mecanica nova disfarcada de tabela. Inseto voa porque tem asas, e dividir 'voar' com Fogo diz a verdade sobre os dois. Caverna camufla porque o escuro esconde.",
+  "_comment_sem_skill": "Psiquico e Magico ficam SEM skill propria, de proposito. A identidade deles esta na tabela de efetividade — Magico domina os tres naturais e se perde nos tres ocultos, o que e uma identidade forte — e dar a eles uma skill emprestada diluiria as tres que existem sem acrescentar nada. Tipo sem skill nao fica sem acao: os seis universais sao de todo pet.",
+  "_comment_escavar": "O que FALTA de verdade e 'escavar': a mesma postura de subsolo que submergir usa, porem exigindo pedra em vez de agua. Caverna a quer, e ela nao entrou aqui porque exigiria tornar o requisito de terreno um DADO da skill (hoje ele esta no codigo do nucleo) — mecanica nova, com spec e teste proprios, nao uma linha neste arquivo.",
   "types": [
-    { "type": "Fogo",   "skills": ["voar"] },
-    { "type": "Agua",   "skills": ["submergir"] },
-    { "type": "Planta", "skills": ["camuflar"] }
+    { "type": "Fogo",     "skills": ["voar"] },
+    { "type": "Agua",     "skills": ["submergir"] },
+    { "type": "Planta",   "skills": ["camuflar"] },
+    { "type": "Inseto",   "skills": ["voar"] },
+    { "type": "Caverna",  "skills": ["camuflar"] },
+    { "type": "Psiquico", "skills": [] },
+    { "type": "Magico",   "skills": [] }
   ]
 }

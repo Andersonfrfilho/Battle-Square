@@ -15,7 +15,23 @@ enum class EPetCrestShape : uint8
 	OrelhaCaida,
 	Chama,
 	Barbatana,
-	Folha
+	Folha,
+
+	/**
+	 * As quatro formas dos tipos acrescentados em 30/08/2026.
+	 *
+	 * Acrescentadas ao FIM, como todo enum deste projeto: os valores
+	 * existentes viajam em dado salvo, e inserir no meio reinterpretaria o
+	 * que já foi gravado.
+	 *
+	 * A SILHUETA passou a carregar o tipo, e a cor só reforça. Com três
+	 * tipos, matiz bastava; com sete, o olho não separa sete matizes num
+	 * bicho em movimento — mas separa quatro contornos.
+	 */
+	Antena,   // Inseto — cilindro fino e alto
+	Orbe,     // Psíquico — esfera que não toca o corpo
+	Cristal,  // Caverna — cubo, a única forma angular
+	Ponta     // Mágico — cone, apontando ao contrário
 };
 
 /**

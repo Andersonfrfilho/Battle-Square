@@ -55,7 +55,12 @@ namespace EfeitoDeTerrenoDoGolpeTeste
 	}
 }
 
-using namespace EfeitoDeTerrenoDoGolpeTeste;
+// SEM `using namespace` no escopo do arquivo: em unity build os dois
+// arquivos viram uma TU só, os dois `using` ficam visíveis, e a chamada
+// volta a ser ambígua — o namespace nomeado deixa de isolar justamente
+// onde ele precisava isolar. Qualificar no ponto de chamada é o que
+// realmente separa (L-042).
+
 
 // O golpe DEIXA algo na casa que acertou. É o que fecha a cadeia que o usuário
 // desenhou: um golpe de água alaga, e alagar é o que torna submergir possível
@@ -67,16 +72,16 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FMoveChangesTerrainOnHitTest::RunTest(const FString& Parameters)
 {
-	FBattleState State = MakeTerrainDuel(static_cast<uint8>(ECellProperty::Water));
+	FBattleState State = EfeitoDeTerrenoDoGolpeTeste::MakeTerrainDuel(static_cast<uint8>(ECellProperty::Water));
 	TArray<FBattleEvent> Trace;
 
 	FBattleAction Aguardar;
 	BattlePhases::ApplyCombat(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar, 0, Trace);
 
 	TestEqual(TEXT("A casa do alvo virou água"),
-		static_cast<int32>(CasaDoAlvo(State)), static_cast<int32>(ECellProperty::Water));
+		static_cast<int32>(EfeitoDeTerrenoDoGolpeTeste::CasaDoAlvo(State)), static_cast<int32>(ECellProperty::Water));
 	TestTrue(TEXT("E a mudança foi anunciada no traço"),
-		TemEvento(Trace, EBattleEventType::TerrenoMudou));
+		EfeitoDeTerrenoDoGolpeTeste::TemEvento(Trace, EBattleEventType::TerrenoMudou));
 
 	return true;
 }
@@ -91,7 +96,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FMoveWithoutEffectLeavesTerrainAloneTest::RunTest(const FString& Parameters)
 {
-	FBattleState State = MakeTerrainDuel(static_cast<uint8>(ECellProperty::None));
+	FBattleState State = EfeitoDeTerrenoDoGolpeTeste::MakeTerrainDuel(static_cast<uint8>(ECellProperty::None));
 
 	// Casa do alvo começa como BÔNUS: se o golpe sem efeito a "neutralizasse",
 	// o bônus sumiria sem ninguém ter pedido.
@@ -102,9 +107,9 @@ bool FMoveWithoutEffectLeavesTerrainAloneTest::RunTest(const FString& Parameters
 	BattlePhases::ApplyCombat(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar, 0, Trace);
 
 	TestEqual(TEXT("A casa continua como bônus"),
-		static_cast<int32>(CasaDoAlvo(State)), static_cast<int32>(ECellProperty::Buff));
+		static_cast<int32>(EfeitoDeTerrenoDoGolpeTeste::CasaDoAlvo(State)), static_cast<int32>(ECellProperty::Buff));
 	TestFalse(TEXT("E nada foi anunciado"),
-		TemEvento(Trace, EBattleEventType::TerrenoMudou));
+		EfeitoDeTerrenoDoGolpeTeste::TemEvento(Trace, EBattleEventType::TerrenoMudou));
 
 	return true;
 }
@@ -119,7 +124,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FBlockedCellNeverChangesTest::RunTest(const FString& Parameters)
 {
-	FBattleState State = MakeTerrainDuel(static_cast<uint8>(ECellProperty::Water));
+	FBattleState State = EfeitoDeTerrenoDoGolpeTeste::MakeTerrainDuel(static_cast<uint8>(ECellProperty::Water));
 	State.CellLayout[State.CellIndex(2, 1)] = static_cast<uint8>(ECellProperty::Blocked);
 
 	TArray<FBattleEvent> Trace;
@@ -127,7 +132,7 @@ bool FBlockedCellNeverChangesTest::RunTest(const FString& Parameters)
 	BattlePhases::ApplyCombat(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar, 0, Trace);
 
 	TestEqual(TEXT("Casa bloqueada continua bloqueada"),
-		static_cast<int32>(CasaDoAlvo(State)), static_cast<int32>(ECellProperty::Blocked));
+		static_cast<int32>(EfeitoDeTerrenoDoGolpeTeste::CasaDoAlvo(State)), static_cast<int32>(ECellProperty::Blocked));
 
 	return true;
 }
@@ -141,7 +146,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FFloodingEnablesSubmergingTest::RunTest(const FString& Parameters)
 {
-	FBattleState State = MakeTerrainDuel(static_cast<uint8>(ECellProperty::Water));
+	FBattleState State = EfeitoDeTerrenoDoGolpeTeste::MakeTerrainDuel(static_cast<uint8>(ECellProperty::Water));
 	TArray<FBattleEvent> Trace;
 	FBattleAction Aguardar;
 
@@ -149,7 +154,7 @@ bool FFloodingEnablesSubmergingTest::RunTest(const FString& Parameters)
 	BattlePhases::ApplyPostures(State, Aguardar,
 		FBattleAction{ EActionType::Submergir, EBattleDirection::Nenhuma }, 0, Trace);
 	TestTrue(TEXT("Em terra seca, submergir falha"),
-		TemEvento(Trace, EBattleEventType::PosturaFalhou));
+		EfeitoDeTerrenoDoGolpeTeste::TemEvento(Trace, EBattleEventType::PosturaFalhou));
 
 	// O golpe alaga a casa do alvo.
 	Trace.Reset();
@@ -160,7 +165,7 @@ bool FFloodingEnablesSubmergingTest::RunTest(const FString& Parameters)
 	BattlePhases::ApplyPostures(State, Aguardar,
 		FBattleAction{ EActionType::Submergir, EBattleDirection::Nenhuma }, 1, Trace);
 	TestFalse(TEXT("Depois de alagada, submergir funciona"),
-		TemEvento(Trace, EBattleEventType::PosturaFalhou));
+		EfeitoDeTerrenoDoGolpeTeste::TemEvento(Trace, EBattleEventType::PosturaFalhou));
 
 	return true;
 }

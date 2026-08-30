@@ -35,7 +35,14 @@ for caminho in pathlib.Path('Source').glob('*/Private/Tests/*.cpp'):
     # A sonda nasceu quando TODO helper vivia em namespace anônimo, e ali o
     # nome era mesmo a única defesa. Continuar exigindo nome único depois da
     # correção transformaria a sonda numa taxa sobre quem a seguiu.
-    if re.search(r'^namespace\s+\w+', texto, re.M):
+    # ...MAS so quando o arquivo NAO reabre o namespace com `using` no escopo
+    # dele. Em unity build os dois `using` ficam visiveis na mesma TU e a
+    # chamada volta a ser ambigua — o namespace nomeado deixa de isolar
+    # justamente onde precisava. Quem qualifica no ponto de chamada esta
+    # protegido; quem poe `using namespace` no topo NAO esta, e a sonda
+    # precisa continuar cobrando dele.
+    if (re.search(r'^namespace\s+\w+', texto, re.M)
+            and not re.search(r'^using namespace\s+\w+\s*;', texto, re.M)):
         continue
 
     # Funções livres indentadas com um tab: o formato dos helpers em namespace

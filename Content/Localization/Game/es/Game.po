@@ -4,8 +4,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Game\n"
-"POT-Creation-Date: 2026-08-30 18:10\n"
-"PO-Revision-Date: 2026-08-30 18:10\n"
+"POT-Creation-Date: 2026-08-30 19:47\n"
+"PO-Revision-Date: 2026-08-30 19:47\n"
 "Language-Team: \n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
@@ -161,150 +161,108 @@ msgid "Ações: 0 de 3 — escolha o tipo"
 msgstr ""
 
 #. Key:	AtributoSubiu
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1473)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1473)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1581)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1581)
 msgctxt "PetAttributes,AtributoSubiu"
 msgid "{Pet}: {Atributo} {Antes} → {Depois}"
 msgstr ""
 
 #. Key:	GolpeDesbloqueado
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1506)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1506)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1614)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1614)
 msgctxt "PetAttributes,GolpeDesbloqueado"
 msgid "{Pet} desbloqueou {Golpe}!"
 msgstr ""
 
 #. Key:	GolpeUsado
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2027)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2027)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2156)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2156)
 msgctxt "BattleNarration,GolpeUsado"
 msgid "— usou {Move}"
 msgstr ""
 
 #. Key:	SuperEfetivo
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2040)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2040)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2169)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2169)
 msgctxt "BattleNarration,SuperEfetivo"
 msgid "É super efetivo!"
 msgstr ""
 
 #. Key:	PoucoEfetivo
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2046)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2046)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2175)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2175)
 msgctxt "BattleNarration,PoucoEfetivo"
 msgid "Não é muito efetivo..."
 msgstr ""
 
+#. Key:	AtributoNormalizou
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(107)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(107)
+msgctxt "BattleNarration,AtributoNormalizou"
+msgid "{Actor}: {Atributo} voltou ao normal"
+msgstr ""
+
+#. Key:	TerrenoMudouComPrazo
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(124)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(124)
+msgctxt "BattleNarration,TerrenoMudouComPrazo"
+msgid "{Actor} cobriu a casa de {Terreno} — dura {Slots} ações"
+msgstr ""
+
+#. Key:	TerrenoMudou
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(128)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(128)
+msgctxt "BattleNarration,TerrenoMudou"
+msgid "{Actor} mudou a casa para {Terreno}"
+msgstr ""
+
+#. Key:	TerrenoDerreteu
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(139)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(139)
+msgctxt "BattleNarration,TerrenoDerreteu"
+msgid "o gelo derreteu — a casa voltou a ser {Terreno}"
+msgstr ""
+
+#. Key:	EsquivouPorReflexo
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(144)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(144)
+msgctxt "BattleNarration,EsquivouPorReflexo"
+msgid "{Actor} desviou por reflexo"
+msgstr ""
+
 #. Key:	ObstaculoDerrubado
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(101)
-#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(101)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(149)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(149)
 msgctxt "BattleNarration,ObstaculoDerrubado"
 msgid "{Actor} derrubou o obstáculo — a passagem abriu"
 msgstr ""
 
 #. Key:	SubiuNoObstaculo
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(108)
-#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(108)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(156)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(156)
 msgctxt "BattleNarration,SubiuNoObstaculo"
 msgid "{Actor} escalou o obstáculo — ataca de cima e alcança quem voa"
 msgstr ""
 
 #. Key:	Defendeu
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(112)
-#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(112)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(160)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(160)
 msgctxt "BattleNarration,Defendeu"
 msgid "{Actor} defendeu o golpe"
 msgstr ""
 
 #. Key:	DanoAplicado
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(115)
-#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(115)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(163)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(163)
 msgctxt "BattleNarration,DanoAplicado"
 msgid "{Target} perdeu {Value} de vida"
 msgstr ""
 
 #. Key:	PetMorreu
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(118)
-#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(118)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(166)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(166)
 msgctxt "BattleNarration,PetMorreu"
 msgid "{Target} foi derrotado"
-msgstr ""
-
-#. Key:	SubmergirSemAgua
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(125)
-#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(125)
-msgctxt "BattleNarration,SubmergirSemAgua"
-msgid "{Actor} tentou mergulhar, mas não há água nesta casa"
-msgstr ""
-
-#. Key:	PosturaFalhou
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(128)
-#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(128)
-msgctxt "BattleNarration,PosturaFalhou"
-msgid "{Actor} não conseguiu assumir a postura"
-msgstr ""
-
-#. Key:	EncontroNoMesmoPonto
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(131)
-#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(131)
-msgctxt "BattleNarration,EncontroNoMesmoPonto"
-msgid "{Actor} e {Target} foram para a mesma casa e trombaram"
-msgstr ""
-
-#. Key:	MovimentoBloqueado
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(137)
-#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(137)
-msgctxt "BattleNarration,MovimentoBloqueado"
-msgid "{Actor} tentou andar e esbarrou no limite da arena"
-msgstr ""
-
-#. Key:	PosturaDefender
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(143)
-#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(143)
-msgctxt "BattleNarration,PosturaDefender"
-msgid "{Actor} se defendeu"
-msgstr ""
-
-#. Key:	PosturaEsquivar
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(145)
-#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(145)
-msgctxt "BattleNarration,PosturaEsquivar"
-msgid "{Actor} ficou evasivo"
-msgstr ""
-
-#. Key:	PosturaCamuflar
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(147)
-#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(147)
-msgctxt "BattleNarration,PosturaCamuflar"
-msgid "{Actor} se camuflou e sumiu de vista"
-msgstr ""
-
-#. Key:	PosturaVoar
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(149)
-#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(149)
-msgctxt "BattleNarration,PosturaVoar"
-msgid "{Actor} alçou voo — fora do alcance físico, exposto à magia"
-msgstr ""
-
-#. Key:	PosturaSubmergir
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(151)
-#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(151)
-msgctxt "BattleNarration,PosturaSubmergir"
-msgid "{Actor} mergulhou no solo"
-msgstr ""
-
-#. Key:	PosturaAssumida
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(153)
-#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(153)
-msgctxt "BattleNarration,PosturaAssumida"
-msgid "{Actor} assumiu postura"
-msgstr ""
-
-#. Key:	Moveu
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(157)
-#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(157)
-msgctxt "BattleNarration,Moveu"
-msgid "{Actor} se moveu"
 msgstr ""
 
 #. Key:	StatAtaque
@@ -314,11 +272,39 @@ msgctxt "BattleNarration,StatAtaque"
 msgid "ataque"
 msgstr ""
 
+#. Key:	SubmergirSemAgua
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(173)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(173)
+msgctxt "BattleNarration,SubmergirSemAgua"
+msgid "{Actor} tentou mergulhar, mas não há água nesta casa"
+msgstr ""
+
+#. Key:	PosturaFalhou
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(176)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(176)
+msgctxt "BattleNarration,PosturaFalhou"
+msgid "{Actor} não conseguiu assumir a postura"
+msgstr ""
+
+#. Key:	EncontroNoMesmoPonto
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(179)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(179)
+msgctxt "BattleNarration,EncontroNoMesmoPonto"
+msgid "{Actor} e {Target} foram para a mesma casa e trombaram"
+msgstr ""
+
 #. Key:	StatDefesa
 #. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(18)
 #: Source/BattleSquare/Private/Battle/BattleNarration.cpp(18)
 msgctxt "BattleNarration,StatDefesa"
 msgid "defesa"
+msgstr ""
+
+#. Key:	MovimentoBloqueado
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(185)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(185)
+msgctxt "BattleNarration,MovimentoBloqueado"
+msgid "{Actor} tentou andar e esbarrou no limite da arena"
 msgstr ""
 
 #. Key:	StatVelocidade
@@ -328,6 +314,41 @@ msgctxt "BattleNarration,StatVelocidade"
 msgid "velocidade"
 msgstr ""
 
+#. Key:	PosturaDefender
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(191)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(191)
+msgctxt "BattleNarration,PosturaDefender"
+msgid "{Actor} se defendeu"
+msgstr ""
+
+#. Key:	PosturaEsquivar
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(193)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(193)
+msgctxt "BattleNarration,PosturaEsquivar"
+msgid "{Actor} ficou evasivo"
+msgstr ""
+
+#. Key:	PosturaCamuflar
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(195)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(195)
+msgctxt "BattleNarration,PosturaCamuflar"
+msgid "{Actor} se camuflou e sumiu de vista"
+msgstr ""
+
+#. Key:	PosturaVoar
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(197)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(197)
+msgctxt "BattleNarration,PosturaVoar"
+msgid "{Actor} alçou voo — fora do alcance físico, exposto à magia"
+msgstr ""
+
+#. Key:	PosturaSubmergir
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(199)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(199)
+msgctxt "BattleNarration,PosturaSubmergir"
+msgid "{Actor} mergulhou no solo"
+msgstr ""
+
 #. Key:	StatNenhum
 #. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(20)
 #: Source/BattleSquare/Private/Battle/BattleNarration.cpp(20)
@@ -335,67 +356,116 @@ msgctxt "BattleNarration,StatNenhum"
 msgid "atributo"
 msgstr ""
 
+#. Key:	PosturaAssumida
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(201)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(201)
+msgctxt "BattleNarration,PosturaAssumida"
+msgid "{Actor} assumiu postura"
+msgstr ""
+
+#. Key:	Moveu
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(205)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(205)
+msgctxt "BattleNarration,Moveu"
+msgid "{Actor} se moveu"
+msgstr ""
+
+#. Key:	TerrenoAguaFunda
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(29)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(29)
+msgctxt "BattleNarration,TerrenoAguaFunda"
+msgid "água funda"
+msgstr ""
+
+#. Key:	TerrenoPoca
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(30)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(30)
+msgctxt "BattleNarration,TerrenoPoca"
+msgid "poça"
+msgstr ""
+
+#. Key:	TerrenoGelo
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(31)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(31)
+msgctxt "BattleNarration,TerrenoGelo"
+msgid "gelo"
+msgstr ""
+
+#. Key:	TerrenoBrasa
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(32)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(32)
+msgctxt "BattleNarration,TerrenoBrasa"
+msgid "brasa"
+msgstr ""
+
+#. Key:	TerrenoBonus
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(33)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(33)
+msgctxt "BattleNarration,TerrenoBonus"
+msgid "terreno de bônus"
+msgstr ""
+
+#. Key:	TerrenoObstaculo
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(34)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(34)
+msgctxt "BattleNarration,TerrenoObstaculo"
+msgid "obstáculo"
+msgstr ""
+
+#. Key:	TerrenoSeco
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(35)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(35)
+msgctxt "BattleNarration,TerrenoSeco"
+msgid "chão seco"
+msgstr ""
+
 #. Key:	PetSemNome
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(42)
-#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(42)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(57)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(57)
 msgctxt "BattleNarration,PetSemNome"
 msgid "O pet"
 msgstr ""
 
 #. Key:	AdversarioSemNome
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(43)
-#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(43)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(58)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(58)
 msgctxt "BattleNarration,AdversarioSemNome"
 msgid "o adversário"
 msgstr ""
 
 #. Key:	AtaqueAcertou
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(52)
-#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(52)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(67)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(67)
 msgctxt "BattleNarration,AtaqueAcertou"
 msgid "{Actor} atacou {Target} e acertou - {Value} de dano"
 msgstr ""
 
 #. Key:	AtaqueErrou
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(55)
-#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(55)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(70)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(70)
 msgctxt "BattleNarration,AtaqueErrou"
 msgid "{Actor} atacou {Target} e errou"
 msgstr ""
 
 #. Key:	Esquivou
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(58)
-#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(58)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(73)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(73)
 msgctxt "BattleNarration,Esquivou"
 msgid "{Actor} esquivou"
 msgstr ""
 
 #. Key:	AtributoSubiu
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(82)
-#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(82)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(97)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(97)
 msgctxt "BattleNarration,AtributoSubiu"
 msgid "{Actor} concentrou-se: {Atributo} +{Quanto}%"
 msgstr ""
 
 #. Key:	AtributoDesceu
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(84)
-#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(84)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(99)
+#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(99)
 msgctxt "BattleNarration,AtributoDesceu"
 msgid "{Actor} enfraqueceu {Target}: {Atributo} −{Quanto}%"
-msgstr ""
-
-#. Key:	AtributoNormalizou
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(92)
-#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(92)
-msgctxt "BattleNarration,AtributoNormalizou"
-msgid "{Actor}: {Atributo} voltou ao normal"
-msgstr ""
-
-#. Key:	EsquivouPorReflexo
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleNarration.cpp(96)
-#: Source/BattleSquare/Private/Battle/BattleNarration.cpp(96)
-msgctxt "BattleNarration,EsquivouPorReflexo"
-msgid "{Actor} desviou por reflexo"
 msgstr ""
 
 #. Key:	GolpeSemNome

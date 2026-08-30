@@ -34,7 +34,12 @@ namespace TerrenoQuePassaTeste
 	}
 }
 
-using namespace TerrenoQuePassaTeste;
+// SEM `using namespace` no escopo do arquivo: em unity build os dois
+// arquivos viram uma TU só, os dois `using` ficam visíveis, e a chamada
+// volta a ser ambígua — o namespace nomeado deixa de isolar justamente
+// onde ele precisava isolar. Qualificar no ponto de chamada é o que
+// realmente separa (L-042).
+
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeloDerreteNoPrazoTest,
 	"BattleSim.Terrain.Temporary.GeloDerreteNoPrazo",
@@ -42,7 +47,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGeloDerreteNoPrazoTest,
 
 bool FGeloDerreteNoPrazoTest::RunTest(const FString&)
 {
-	FBattleState Estado = CampoVazio();
+	FBattleState Estado = TerrenoQuePassaTeste::CampoVazio();
 	Estado.SetTemporaryTerrain(1, 1, static_cast<uint8>(ECellProperty::Ice), 2);
 
 	const int32 Casa = Estado.CellIndex(1, 1);
@@ -50,7 +55,7 @@ bool FGeloDerreteNoPrazoTest::RunTest(const FString&)
 		static_cast<uint8>(ECellProperty::Ice));
 
 	TArray<FBattleEvent> Traco;
-	PassaUmSlot(Estado, 0, Traco);
+	TerrenoQuePassaTeste::PassaUmSlot(Estado, 0, Traco);
 
 	// Prazo 2 tem que sobreviver ao PRIMEIRO slot. Fosse "derrete no fim do
 	// slot em que foi posto", congelar por 1 seria congelar por nada, e o
@@ -58,19 +63,19 @@ bool FGeloDerreteNoPrazoTest::RunTest(const FString&)
 	TestEqual(TEXT("Depois de um slot ainda é gelo"), Estado.CellLayout[Casa],
 		static_cast<uint8>(ECellProperty::Ice));
 	TestEqual(TEXT("E ninguém anunciou derretimento"),
-		ContaEventos(Traco, EBattleEventType::TerrenoDerreteu), 0);
+		TerrenoQuePassaTeste::ContaEventos(Traco, EBattleEventType::TerrenoDerreteu), 0);
 
-	PassaUmSlot(Estado, 1, Traco);
+	TerrenoQuePassaTeste::PassaUmSlot(Estado, 1, Traco);
 
 	TestEqual(TEXT("No segundo slot derreteu"), Estado.CellLayout[Casa],
 		static_cast<uint8>(ECellProperty::None));
 	TestEqual(TEXT("E foi anunciado"),
-		ContaEventos(Traco, EBattleEventType::TerrenoDerreteu), 1);
+		TerrenoQuePassaTeste::ContaEventos(Traco, EBattleEventType::TerrenoDerreteu), 1);
 
 	// Derretido é derretido: nada de anunciar de novo a cada slot seguinte.
-	PassaUmSlot(Estado, 2, Traco);
+	TerrenoQuePassaTeste::PassaUmSlot(Estado, 2, Traco);
 	TestEqual(TEXT("Não derrete duas vezes"),
-		ContaEventos(Traco, EBattleEventType::TerrenoDerreteu), 1);
+		TerrenoQuePassaTeste::ContaEventos(Traco, EBattleEventType::TerrenoDerreteu), 1);
 
 	return true;
 }
@@ -84,14 +89,14 @@ bool FGeloDevolveOQueHaviaEmbaixoTest::RunTest(const FString&)
 	// ESTE é o teste que justifica a terceira lista. Congelar uma POÇA e
 	// esperar derreter não pode devolver água FUNDA: o jogador ganharia
 	// fundura de graça, e o gelo viraria a maneira mais barata de alagar.
-	FBattleState Estado = CampoVazio();
+	FBattleState Estado = TerrenoQuePassaTeste::CampoVazio();
 	const int32 Casa = Estado.CellIndex(1, 1);
 	Estado.CellLayout[Casa] = static_cast<uint8>(ECellProperty::ShallowWater);
 
 	Estado.SetTemporaryTerrain(1, 1, static_cast<uint8>(ECellProperty::Ice), 1);
 
 	TArray<FBattleEvent> Traco;
-	PassaUmSlot(Estado, 0, Traco);
+	TerrenoQuePassaTeste::PassaUmSlot(Estado, 0, Traco);
 
 	TestEqual(TEXT("A poça volta a ser POÇA, não água funda"),
 		Estado.CellLayout[Casa], static_cast<uint8>(ECellProperty::ShallowWater));
@@ -124,7 +129,7 @@ bool FCongelarDeNovoNaoPerdeOFundoTest::RunTest(const FString&)
 	// Congelar sobre gelo renova o prazo, mas o que está EMBAIXO continua
 	// sendo a água. Fosse o de cima, a segunda camada faria a casa derreter
 	// para GELO — e ela nunca mais seria água.
-	FBattleState Estado = CampoVazio();
+	FBattleState Estado = TerrenoQuePassaTeste::CampoVazio();
 	const int32 Casa = Estado.CellIndex(1, 1);
 	Estado.CellLayout[Casa] = static_cast<uint8>(ECellProperty::Water);
 
@@ -132,7 +137,7 @@ bool FCongelarDeNovoNaoPerdeOFundoTest::RunTest(const FString&)
 	Estado.SetTemporaryTerrain(1, 1, static_cast<uint8>(ECellProperty::Ice), 1);
 
 	TArray<FBattleEvent> Traco;
-	PassaUmSlot(Estado, 0, Traco);
+	TerrenoQuePassaTeste::PassaUmSlot(Estado, 0, Traco);
 
 	TestEqual(TEXT("Derrete para ÁGUA, não para gelo"),
 		Estado.CellLayout[Casa], static_cast<uint8>(ECellProperty::Water));
@@ -149,20 +154,20 @@ bool FAlagamentoContinuaPermanenteTest::RunTest(const FString&)
 	// ZERO É PARA SEMPRE. É a propriedade de migração desta fatia inteira:
 	// todo golpe já assinado tem zero aqui, e se zero fosse "some na hora"
 	// esta feature apagaria em silêncio o efeito de terreno de todos eles.
-	FBattleState Estado = CampoVazio();
+	FBattleState Estado = TerrenoQuePassaTeste::CampoVazio();
 	const int32 Casa = Estado.CellIndex(1, 1);
 	Estado.SetTemporaryTerrain(1, 1, static_cast<uint8>(ECellProperty::Water), 0);
 
 	TArray<FBattleEvent> Traco;
 	for (uint8 Slot = 0; Slot < 3; ++Slot)
 	{
-		PassaUmSlot(Estado, Slot, Traco);
+		TerrenoQuePassaTeste::PassaUmSlot(Estado, Slot, Traco);
 	}
 
 	TestEqual(TEXT("A água alagada não volta atrás"),
 		Estado.CellLayout[Casa], static_cast<uint8>(ECellProperty::Water));
 	TestEqual(TEXT("E nada derreteu"),
-		ContaEventos(Traco, EBattleEventType::TerrenoDerreteu), 0);
+		TerrenoQuePassaTeste::ContaEventos(Traco, EBattleEventType::TerrenoDerreteu), 0);
 
 	return true;
 }
@@ -176,7 +181,7 @@ bool FAlagarDeVezApagaOPrazoTest::RunTest(const FString&)
 	// Alagar de vez uma casa congelada não pode deixar para trás o
 	// cronômetro do gelo — ele devolveria a casa ao que ela era ANTES, e o
 	// alagamento permanente duraria dois slots sem ninguém ter pedido isso.
-	FBattleState Estado = CampoVazio();
+	FBattleState Estado = TerrenoQuePassaTeste::CampoVazio();
 	const int32 Casa = Estado.CellIndex(1, 1);
 
 	Estado.SetTemporaryTerrain(1, 1, static_cast<uint8>(ECellProperty::Ice), 2);
@@ -185,7 +190,7 @@ bool FAlagarDeVezApagaOPrazoTest::RunTest(const FString&)
 	TArray<FBattleEvent> Traco;
 	for (uint8 Slot = 0; Slot < 3; ++Slot)
 	{
-		PassaUmSlot(Estado, Slot, Traco);
+		TerrenoQuePassaTeste::PassaUmSlot(Estado, Slot, Traco);
 	}
 
 	TestEqual(TEXT("Continua alagada"), Estado.CellLayout[Casa],
@@ -203,10 +208,10 @@ bool FPrazoEntraNoHashTest::RunTest(const FString&)
 	// Mesmo tabuleiro, gelos com prazos diferentes: são duas partidas
 	// diferentes, e sem isto teriam a mesma assinatura — que é exatamente a
 	// divergência que o hash existe para pegar.
-	FBattleState Curto = CampoVazio();
+	FBattleState Curto = TerrenoQuePassaTeste::CampoVazio();
 	Curto.SetTemporaryTerrain(1, 1, static_cast<uint8>(ECellProperty::Ice), 1);
 
-	FBattleState Longo = CampoVazio();
+	FBattleState Longo = TerrenoQuePassaTeste::CampoVazio();
 	Longo.SetTemporaryTerrain(1, 1, static_cast<uint8>(ECellProperty::Ice), 3);
 
 	TestNotEqual(TEXT("Prazos diferentes, hashes diferentes"),
@@ -225,7 +230,7 @@ bool FGolpeDeGeloNegaOTerrenoEDepoisDevolveTest::RunTest(const FString&)
 	// submerge → o gelo derrete → ele submerge. Sem este teste, cada peça
 	// estaria certa sozinha e o recurso não existiria para ninguém — que é
 	// como este projeto já produziu regra testada que nenhum jogador alcança.
-	FBattleState Estado = CampoVazio();
+	FBattleState Estado = TerrenoQuePassaTeste::CampoVazio();
 
 	FPetState Congelador;
 	Congelador.PetId = 1; Congelador.Side = 0;
@@ -263,8 +268,8 @@ bool FGolpeDeGeloNegaOTerrenoEDepoisDevolveTest::RunTest(const FString&)
 	TestFalse(TEXT("E agora ele NÃO submerge"),
 		Estado.TerrainAllowsSkill(EActionType::Submergir, Estado.CellLayout[Casa]));
 
-	PassaUmSlot(Estado, 0, Traco);
-	PassaUmSlot(Estado, 1, Traco);
+	TerrenoQuePassaTeste::PassaUmSlot(Estado, 0, Traco);
+	TerrenoQuePassaTeste::PassaUmSlot(Estado, 1, Traco);
 
 	TestEqual(TEXT("Derreteu de volta para água"), Estado.CellLayout[Casa],
 		static_cast<uint8>(ECellProperty::Water));

@@ -53,7 +53,12 @@ namespace RequisitoDeTerrenoTeste
 	}
 }
 
-using namespace RequisitoDeTerrenoTeste;
+// SEM `using namespace` no escopo do arquivo: em unity build os dois
+// arquivos viram uma TU só, os dois `using` ficam visíveis, e a chamada
+// volta a ser ambígua — o namespace nomeado deixa de isolar justamente
+// onde ele precisava isolar. Qualificar no ponto de chamada é o que
+// realmente separa (L-042).
+
 
 // A POÇA não serve para submergir, e a FUNDA serve.
 //
@@ -67,23 +72,23 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FPuddleIsNotDeepEnoughToSubmergeTest::RunTest(const FString& Parameters)
 {
-	FBattleState NaFunda = EstadoComTerreno(ECellProperty::Water);
+	FBattleState NaFunda = RequisitoDeTerrenoTeste::EstadoComTerreno(ECellProperty::Water);
 	const FBattleResolveResult Funda =
-		FBattleResolver::ResolveTurn(NaFunda, Submergir(), Aguardar());
+		FBattleResolver::ResolveTurn(NaFunda, RequisitoDeTerrenoTeste::Submergir(), RequisitoDeTerrenoTeste::Aguardar());
 	TestFalse(TEXT("Na água funda submergir NÃO falha"),
-		TemEvento(Funda.Trace, EBattleEventType::PosturaFalhou));
+		RequisitoDeTerrenoTeste::TemEvento(Funda.Trace, EBattleEventType::PosturaFalhou));
 
-	FBattleState NaPoca = EstadoComTerreno(ECellProperty::ShallowWater);
+	FBattleState NaPoca = RequisitoDeTerrenoTeste::EstadoComTerreno(ECellProperty::ShallowWater);
 	const FBattleResolveResult Poca =
-		FBattleResolver::ResolveTurn(NaPoca, Submergir(), Aguardar());
+		FBattleResolver::ResolveTurn(NaPoca, RequisitoDeTerrenoTeste::Submergir(), RequisitoDeTerrenoTeste::Aguardar());
 	TestTrue(TEXT("Na poça submergir FALHA"),
-		TemEvento(Poca.Trace, EBattleEventType::PosturaFalhou));
+		RequisitoDeTerrenoTeste::TemEvento(Poca.Trace, EBattleEventType::PosturaFalhou));
 
 	// E a recusa é ALTA: silenciosamente virar Aguardar deixaria o jogador
 	// achando que a skill não funciona, quando o que falta é fundura.
-	FBattleState NoSeco = EstadoComTerreno(ECellProperty::None);
+	FBattleState NoSeco = RequisitoDeTerrenoTeste::EstadoComTerreno(ECellProperty::None);
 	TestTrue(TEXT("Em terra seca também falha"),
-		TemEvento(FBattleResolver::ResolveTurn(NoSeco, Submergir(), Aguardar()).Trace,
+		RequisitoDeTerrenoTeste::TemEvento(FBattleResolver::ResolveTurn(NoSeco, RequisitoDeTerrenoTeste::Submergir(), RequisitoDeTerrenoTeste::Aguardar()).Trace,
 			EBattleEventType::PosturaFalhou));
 
 	return true;
@@ -180,7 +185,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FTerrainRequirementEntersHashTest::RunTest(const FString& Parameters)
 {
-	FBattleState Livre = EstadoComTerreno(ECellProperty::ShallowWater);
+	FBattleState Livre = RequisitoDeTerrenoTeste::EstadoComTerreno(ECellProperty::ShallowWater);
 	FBattleState Exigente = Livre;
 	Exigente.RequireTerrainForSkill(EActionType::Voar, ECellProperty::Water);
 

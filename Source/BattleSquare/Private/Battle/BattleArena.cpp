@@ -518,8 +518,14 @@ void ABattleArena::RefreshTileVisuals()
 			// Enquanto toda casa tinha laje, o tabuleiro lia como uma placa
 			// quadriculada pousada sobre o cenário — que é o defeito que o
 			// prato de terra tentou esconder em vez de resolver.
+			//
+			// A casa BLOQUEADA também não: quem a explica é a PEDRA que está
+			// nela, e a laje por baixo lia como piso de relevo retangular —
+			// um chão elevado, que é o oposto do que ela quer dizer.
+			// Obstáculo é volume, não superfície.
+			const ECellProperty Regra = static_cast<ECellProperty>(Propriedade);
 			const bool bCarregaRegra =
-				static_cast<ECellProperty>(Propriedade) != ECellProperty::None;
+				Regra != ECellProperty::None && Regra != ECellProperty::Blocked;
 			Laje->SetVisibility(bCarregaRegra);
 			if (!bCarregaRegra)
 			{

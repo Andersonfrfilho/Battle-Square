@@ -479,3 +479,71 @@ bool FArenaObstacleIsDeterministicPerCellTest::RunTest(const FString& Parameters
 	ArenaCena::DestruirMundoDaGeometria(World);
 	return true;
 }
+
+// A casa BLOQUEADA é volume, não superfície.
+//
+// Ela desenhava laje E pedra: a laje lia como piso de relevo retangular — um
+// chão elevado, que é o oposto do que ela quer dizer. Quem explica a casa
+// bloqueada é a pedra que está nela.
+//
+// Este teste fixa a REGRA, e não a aparência: casa bloqueada carrega
+// obstáculo, e obstáculo dispensa laje.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FBlockedCellIsVolumeNotSurfaceTest,
+	"BattleSquare.Battle.Arena.BlockedCellIsVolumeNotSurface",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FBlockedCellIsVolumeNotSurfaceTest::RunTest(const FString& Parameters)
+{
+	UWorld* Mundo = ArenaCena::CriarMundoDaGeometria();
+	if (!Mundo)
+	{
+		AddError(TEXT("não foi possível criar mundo de teste"));
+		return false;
+	}
+
+	ABattleArena* Arena = Mundo->SpawnActor<ABattleArena>();
+
+	FBattleState Estado;
+	FPetState Meu;
+	Meu.PetId = 1; Meu.Side = 0; Meu.Health = 50; Meu.MaxHealth = 50;
+	FPetState Dele;
+	Dele.PetId = 2; Dele.Side = 1; Dele.Health = 50; Dele.MaxHealth = 50;
+	Estado.Pets.Add(Meu);
+	Estado.Pets.Add(Dele);
+	Estado.PlaceDuelistsAtStartingCells();
+
+	// Uma casa BLOQUEADA longe dos pets, para a montagem não ser recusada.
+	Estado.CellLayout[Estado.CellIndex(0, 0)] = static_cast<uint8>(ECellProperty::Blocked);
+
+	TArray<FPetPresentationInfo> Apresentacoes;
+	Apresentacoes.AddDefaulted(2);
+	Apresentacoes[0].PetId = 1;
+	Apresentacoes[1].PetId = 2;
+
+	if (!Arena->BeginBattle(Estado, Apresentacoes))
+	{
+		AddError(TEXT("BeginBattle recusou a montagem"));
+		ArenaCena::DestruirMundoDaGeometria(Mundo);
+		return false;
+	}
+
+	const int32 Indice = Estado.CellIndex(0, 0);
+	const TArray<TObjectPtr<UStaticMeshComponent>>& Lajes = Arena->GetCellTileMeshes();
+	const TArray<TObjectPtr<UStaticMeshComponent>>& Obstaculos = Arena->GetCellObstacleMeshes();
+
+	if (Lajes.IsValidIndex(Indice) && Lajes[Indice])
+	{
+		TestFalse(TEXT("A casa bloqueada NÃO desenha laje — ela não é piso"),
+			Lajes[Indice]->IsVisible());
+	}
+
+	if (Obstaculos.IsValidIndex(Indice) && Obstaculos[Indice])
+	{
+		TestTrue(TEXT("Ela desenha OBSTÁCULO — é ele que a explica"),
+			Obstaculos[Indice]->IsVisible());
+	}
+
+	ArenaCena::DestruirMundoDaGeometria(Mundo);
+	return true;
+}

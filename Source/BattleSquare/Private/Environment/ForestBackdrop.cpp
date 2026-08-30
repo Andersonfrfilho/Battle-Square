@@ -195,7 +195,22 @@ AForestBackdrop::AForestBackdrop()
 			CreateDefaultSubobject<UHierarchicalInstancedStaticMeshComponent>(
 				FName(*FString::Printf(TEXT("Species_%s"), Especie.Nome)));
 		Grupo->SetupAttachment(ForestRoot);
-		Grupo->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		// O QUE BLOQUEIA É O QUE SE DERRUBA. Uma regra só, e ela vem do mesmo
+		// lugar: FWorldObstacleBreaking::StartingHealthFor. Árvore, pedra e
+		// tronco têm corpo; capim, flor e arbusto não.
+		//
+		// Duas listas — uma de "o que colide" e outra de "o que cai" —
+		// discordariam na primeira edição, e a discordância seria cruel de
+		// qualquer lado: uma árvore que barra e não cai é uma parede sem
+		// saída; uma que cai e não barra é um golpe sem motivo.
+		const bool bTemCorpo = FWorldObstacleBreaking::StartingHealthFor(Especie.Papel) > 0;
+		Grupo->SetCollisionEnabled(bTemCorpo
+			? ECollisionEnabled::QueryAndPhysics
+			: ECollisionEnabled::NoCollision);
+		if (bTemCorpo)
+		{
+			Grupo->SetCollisionResponseToAllChannels(ECR_Block);
+		}
 		Grupo->SetCastShadow(true);
 
 		// A malha é atribuída AQUI, no construtor. Componente criado sem

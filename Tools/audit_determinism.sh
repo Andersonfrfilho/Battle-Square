@@ -21,15 +21,32 @@ if [ ! -d "$CORE_DIR" ]; then
   exit 2
 fi
 
-FORBIDDEN_PATTERN='\b(float|double|FMath::Rand|FRandomStream)\b'
+# O LITERAL entra na conta, e não só a palavra. `Peso = 1.5f;` compila sem a
+# palavra "float" em lugar nenhum, quebra o determinismo do mesmo jeito, e
+# passou batido por esta sonda desde que ela existe — descoberto ao testá-la
+# contra um caso que eu supunha coberto.
+#
+# É o PONTO DECIMAL que denuncia, e não o sufixo `f`: `0x0F` é hexadecimal e
+# casou com "número seguido de F" na primeira tentativa, acusando o
+# empacotamento de casas que não tem float nenhum.
+FORBIDDEN_PATTERN='\b(float|double|FMath::Rand|FRandomStream)\b|[0-9]+\.[0-9]'
 
 VIOLATIONS=""
 while IFS= read -r -d '' FILE; do
   while IFS=: read -r LINE_NUM LINE_CONTENT; do
-    # Descarta linha que É comentário de linha inteira (começa com // após espaços).
+    # Descarta linha que É comentário e nada mais. Comentário não compila, e
+    # uma sonda que acusa a PALAVRA "float" dentro de uma explicação sobre
+    # por que float não entra aqui obriga a escrever mal para passar — o que
+    # é pior que não ter sonda, porque ensina a contornar em vez de corrigir.
     TRIMMED="$(echo "$LINE_CONTENT" | sed -E 's/^[[:space:]]*//')"
     case "$TRIMMED" in
       "//"*) continue ;;
+      "/*"*) continue ;;
+      # Corpo de comentário de bloco: `* texto`. Exige o ESPAÇO — sem ele,
+      # `*Ponteiro = 1.0f;` passaria batido, e essa é exatamente a linha que
+      # a sonda existe para pegar.
+      "* "*) continue ;;
+      "*/"*) continue ;;
     esac
     VIOLATIONS="${VIOLATIONS}${FILE}:${LINE_NUM}: ${LINE_CONTENT}"$'\n'
   done < <(grep -nE "$FORBIDDEN_PATTERN" "$FILE" || true)

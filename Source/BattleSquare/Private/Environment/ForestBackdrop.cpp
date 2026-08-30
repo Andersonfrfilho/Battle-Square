@@ -23,9 +23,6 @@ namespace MataDoCenario
 	/** Lado da primitiva da engine, em unidades de mundo. */
 	constexpr float CilindroDaEngineUnidades = 100.0f;
 
-	/** Raio do disco de chão, em casas — cobre o que a câmera alcança. */
-	constexpr float RaioDoChaoEmCasas = 30.0f;
-
 	/** Espessura do disco: fino, mas acima do plano do template. */
 	/**
 	 * O que se VÊ do chão: uma borda fina, porque ele é uma clareira e não um
@@ -243,7 +240,7 @@ void AForestBackdrop::BuildForest(float CellSize, uint32 Seed, const FVector2D& 
 		return;
 	}
 
-	const float RaioDoChao = RaioDoChaoEmCasas * CellSize;
+	const float RaioDoChao = GroundRadiusInCells * CellSize;
 	GroundMesh->SetRelativeScale3D(FVector(
 		RaioDoChao * 2.0f / CilindroDaEngineUnidades,
 		RaioDoChao * 2.0f / CilindroDaEngineUnidades,

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Environment/IslandGeography.h"
 #include "World/WorldDiscovery.h"
 
 /**
@@ -63,7 +64,7 @@ struct BATTLESQUARE_API FWorldMapSnapshot
 	float PlayerYawDegrees = 0.0f;
 
 	/** Onde a terra acaba — o mapa desenha a água a partir daqui. */
-	float ShoreRadiusUnits = 6000.0f;
+	float ShoreRadiusUnits = IslandGeography::LandRadiusUnits();
 
 	TArray<FWorldMapMarkerInfo> Markers;
 

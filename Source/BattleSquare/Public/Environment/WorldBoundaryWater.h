@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Environment/IslandGeography.h"
 #include "GameFramework/Actor.h"
 #include "WorldBoundaryWater.generated.h"
 
@@ -37,7 +38,7 @@ public:
 	 * para haver margem molhada em vez de um corte seco.
 	 */
 	UPROPERTY(EditDefaultsOnly, config, Category = "Mundo")
-	float ShoreRadiusUnits = 6000.0f;
+	float ShoreRadiusUnits = IslandGeography::LandRadiusUnits();
 
 	/** Até onde a água vai. Precisa passar do horizonte visível da câmera. */
 	UPROPERTY(EditDefaultsOnly, config, Category = "Mundo")

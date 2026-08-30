@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Environment/IslandGeography.h"
 
 /**
  * Onde as montanhas e as cavernas ficam na ilha.
@@ -58,7 +59,7 @@ namespace IslandFeatureLayout
 	/** As medidas da ilha que a decisão de plantar precisa respeitar. */
 	struct BATTLESQUARE_API FIslandBounds
 	{
-		float LandRadiusUnits = 6000.0f;
+		float LandRadiusUnits = IslandGeography::LandRadiusUnits();
 		float TrainingRingRadiusUnits = 1800.0f;
 		float TrainingFieldRadiusUnits = 400.0f;
 		int32 TrainingFieldCount = 5;

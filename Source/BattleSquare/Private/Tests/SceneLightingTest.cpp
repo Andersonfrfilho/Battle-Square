@@ -9,6 +9,7 @@
 #include "Engine/DirectionalLight.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
+#include "Environment/IslandGeography.h"
 #include "Environment/SceneLighting.h"
 #include "Net/BattleSquareGameMode.h"
 #include "Misc/AutomationTest.h"
@@ -351,9 +352,7 @@ bool FWorldSceneryIsReachableTest::RunTest(const FString& Parameters)
 	// nascem, senão o jogador anda até um inimigo e sai do chão no caminho.
 	const ABattleSquareGameMode* Padrao = GetDefault<ABattleSquareGameMode>();
 
-	// AForestBackdrop mede o chão em 30 casas de raio — ver o .cpp dele.
-	constexpr float RaioDoChaoEmCasas = 30.0f;
-	const float RaioDoChao = Padrao->WorldSceneryCellSizeUnits * RaioDoChaoEmCasas;
+	const float RaioDoChao = IslandGeography::LandRadiusUnits();
 
 	TestTrue(
 		*FString::Printf(TEXT("Chão de raio %.0f cobre os %.0f dos encontros"),

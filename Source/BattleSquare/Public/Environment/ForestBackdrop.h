@@ -115,6 +115,21 @@ public:
 	/** Posição local de cada planta — o que o teste mede para saber se sobrou espaço. */
 	TArray<FVector> GetPlantedLocations() const;
 
+	/**
+	 * Raio do disco de chão, EM CASAS.
+	 *
+	 * Em casas, e não em unidades, porque a mata serve DOIS donos com casas de
+	 * tamanhos diferentes: a arena (casa de 150) e o mundo aberto (casa de
+	 * 200). O mesmo trinta dá clareira de 4500 num e terra de 6000 no outro, e
+	 * é isso que se quer — o enquadramento da arena é um diorama, e ele não
+	 * pode crescer junto com a ilha.
+	 *
+	 * O padrão é o do diorama. Quem tem ilha própria — o mundo — escreve aqui
+	 * o seu raio antes de mandar construir.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "Mata")
+	float GroundRadiusInCells = 30.0f;
+
 	/** Raio, em casas, que nenhuma planta invade — em volta do tabuleiro. */
 	UPROPERTY(EditDefaultsOnly, Category = "Mata")
 	float BoardClearanceInCells = 2.2f;

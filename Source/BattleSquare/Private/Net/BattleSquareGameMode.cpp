@@ -22,6 +22,7 @@
 #include "Environment/CaveSystem.h"
 #include "Environment/ForestBackdrop.h"
 #include "Environment/IslandFeatureLayout.h"
+#include "Environment/IslandGeography.h"
 #include "Environment/MountainRange.h"
 #include "Environment/ScenaryClimate.h"
 #include "Environment/SceneLighting.h"
@@ -140,14 +141,6 @@ namespace
 
 	/** Folga que evita as duas superfícies coplanares. */
 	constexpr float FolgaDoChaoUnidades = 2.0f;
-
-	/**
-	 * Raio do chão da mata, EM CASAS. É a medida que AForestBackdrop usa
-	 * internamente, e repeti-la aqui é o preço de a margem da água precisar
-	 * coincidir com a borda da terra — com o número num lugar só, ele não
-	 * discorda de si mesmo (L-032).
-	 */
-	constexpr float RaioDoChaoEmCasas = 30.0f;
 
 	/**
 	 * O pawn do jogador, com a MESMA tolerância que a detecção de encontro usa.
@@ -1062,7 +1055,7 @@ void ABattleSquareGameMode::BuildWorldTerrainTiles()
 	WorldTerrainTiles.Reset();
 
 	const float Lado = FWorldDiscovery::RegionSizeUnits;
-	const float RaioDaTerra = WorldSceneryCellSizeUnits * RaioDoChaoEmCasas;
+	const float RaioDaTerra = IslandGeography::LandRadiusUnits();
 
 	// Onde há MATA: a densidade de troncos e pedras por região. Uma instância
 	// solta não é mata — é uma árvore no meio da clareira, e pintar a região
@@ -1176,7 +1169,7 @@ void ABattleSquareGameMode::RefreshWorldMap()
 	FWorldMapSnapshot Retrato;
 	Retrato.PlayerXY = FVector2D(Jogador->GetActorLocation());
 	Retrato.PlayerYawDegrees = Jogador->GetActorRotation().Yaw;
-	Retrato.ShoreRadiusUnits = WorldSceneryCellSizeUnits * RaioDoChaoEmCasas;
+	Retrato.ShoreRadiusUnits = IslandGeography::LandRadiusUnits();
 	Retrato.Discovery = WorldDiscovery;
 	Retrato.Terrain = WorldTerrainTiles;
 
@@ -1352,14 +1345,17 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 	// Sem vazio reservado para câmera: no mundo aberto a câmera segue o
 	// jogador, então não existe uma direção fixa a proteger — e reservar uma
 	// abriria um buraco sem explicação no meio da floresta.
+	// O chão do MUNDO é a ilha, não o diorama da arena: o padrão de trinta
+	// casas serve para enquadrar um tabuleiro, e crescer a ilha passa por
+	// IslandGeography e por mais nenhum lugar.
+	const float RaioDaTerra = IslandGeography::LandRadiusUnits();
+	Mata->GroundRadiusInCells = RaioDaTerra / WorldSceneryCellSizeUnits;
 	Mata->BuildForest(WorldSceneryCellSizeUnits,
 		static_cast<uint32>(WorldScenerySeed), FVector2D::ZeroVector);
 
 	// A ÁGUA fecha o mundo. Vem junto da mata porque as duas dependem do mesmo
 	// chão: a margem tem de coincidir com a borda da terra, e calcular a
 	// margem noutro lugar produziria água por cima da grama ou terra boiando.
-	const float RaioDaTerra = WorldSceneryCellSizeUnits * RaioDoChaoEmCasas;
-
 	AWorldBoundaryWater* Agua = World->SpawnActor<AWorldBoundaryWater>(
 		AWorldBoundaryWater::StaticClass(), Onde, FRotator::ZeroRotator, Parametros);
 	if (Agua)

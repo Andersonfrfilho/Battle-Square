@@ -17,10 +17,18 @@ import { createPetSchema, type CreatePetDeclaration } from '../pet.validation';
  *   escolher entre quatro seria escolher entre quatro nomes.
  * - O golpe que muda o terreno é sempre o mais caro em algum sentido — ou é o
  *   mais fraco, ou é o de nicho. Terreno de graça faria a escolha ser óbvia.
- * - Só pets de Água e Fogo mudam terreno, e cada um no seu sentido: água
- *   ALAGA (e alagar é o que torna submergir possível — o pet fabrica o terreno
- *   da própria skill), fogo QUEIMA (casa de dano). Planta camufla e não mexe
- *   no chão, porque quem se esconde continua pisando onde estava.
+ * - Cada elemento mexe no chão no SENTIDO dele: água ALAGA (e alagar é o que
+ *   torna submergir possível — o pet fabrica o terreno da própria skill) e
+ *   CONGELA; fogo QUEIMA (casa de dano); terra e água ENLAMEIAM, que é o
+ *   terreno incerto. Planta camufla e não mexe no chão, porque quem se esconde
+ *   continua pisando onde estava.
+ * - O congelamento é medido em DURAÇÃO, e não num número abstrato de "nível"
+ *   (DP-gelo-01): dois slots na Friagem, quatro na Nevasca. É a mesma escala.
+ * - Todo pet de Água tem um golpe que ALAGA. Sem ele o pet só submerge onde a
+ *   arena já tem rio, e a skill do elemento dele vira sorte de mapa.
+ * - Nenhum golpe cria água RASA: a poça é o que o gelo deixa ao derreter, e
+ *   ter uma origem só a mantém ligada ao gelo em vez de virar um alagamento
+ *   mais fraco.
  */
 export const PET_CATALOG_SEED: CreatePetDeclaration[] = [
   {
@@ -93,7 +101,10 @@ export const PET_CATALOG_SEED: CreatePetDeclaration[] = [
       // Alaga: é o golpe que FABRICA a condição de submergir. Fraco de
       // propósito — a recompensa dele é o turno seguinte, não este.
       { name: 'Maré Alta', power: 60, terrainEffect: 'water' },
-      { name: 'Redemoinho', power: 110, terrainEffect: 'none' },
+      // Água sobre terra dá LAMA. Este é o outro lado do que a Maré Alta faz:
+      // um alaga para o pet poder submergir, o outro encharca para o OUTRO
+      // não conseguir sair do lugar.
+      { name: 'Lodaçal', power: 55, terrainEffect: 'mud' },
       { name: 'Tsunami', power: 155, terrainEffect: 'none', requiresAttribute: 'musculature', requiresValue: 14 },
     ],
   },
@@ -106,9 +117,12 @@ export const PET_CATALOG_SEED: CreatePetDeclaration[] = [
     maxHealth: 110,
     moves: [
       { name: 'Borrifo', power: 75, terrainEffect: 'none' },
-      // O nome sempre disse a regra certa; agora ela existe. Poca molha o pe
-      // e NAO da para submergir — quem quer fundura procura Mare Alta.
-      { name: 'Poça', power: 50, terrainEffect: 'shallow_water' },
+      // Este golpe era a "Poça", e virou água RASA quando a fundura passou a
+      // existir. O nome ficou honesto e o pet ficou aleijado: sem um golpe
+      // que aprofunda, a Corrente não fabricava mais o terreno da própria
+      // skill, e só submergia onde a arena já tivesse rio. A poça continua
+      // existindo — ela é o que o gelo deixa ao derreter.
+      { name: 'Vazante', power: 60, terrainEffect: 'water' },
       // CONGELA a casa por dois slots: nega o terreno a quem contava com ele,
       // e devolve o que estava embaixo quando derrete. Poder baixo de
       // proposito — a recompensa e o que o OUTRO deixa de fazer.
@@ -144,7 +158,10 @@ export const PET_CATALOG_SEED: CreatePetDeclaration[] = [
       // que ela entrega é o turno seguinte. É a razão de existir dela, e o
       // que substituiu o 150% contra todo tipo natural que o psíquico tinha.
       { name: 'Concentração', power: 35, terrainEffect: 'none', effectStat: 'attack', effectPercent: 40 },
-      { name: 'Peso da Mente', power: 40, terrainEffect: 'none', effectStat: 'speed', effectPercent: -35 },
+      // A Vigília é de Água e NUNCA teve como alagar — buraco que passou
+      // despercebido porque o teste que o pegaria filtrava por um nome de
+      // tipo que não existe mais.
+      { name: 'Marejar', power: 55, terrainEffect: 'water' },
       // Personalidade alta: quem hesita não sustenta o olhar.
       { name: 'Colapso', power: 150, terrainEffect: 'none', requiresAttribute: 'personality', requiresValue: 8 },
     ],
@@ -176,8 +193,90 @@ export const PET_CATALOG_SEED: CreatePetDeclaration[] = [
     moves: [
       { name: 'Cabeçada', power: 70, terrainEffect: 'none' },
       { name: 'Desmoronar', power: 120, terrainEffect: 'none' },
-      { name: 'Fissura', power: 60, terrainEffect: 'damage' },
+      // Terra rachada vira atoleiro. Dá ao elemento Terra a coisa que ele não
+      // tinha: até aqui ele era o único sem nada de seu — sem skill própria e
+      // sem terreno próprio, o que o deixava genérico apesar do nome.
+      { name: 'Barreira de Lama', power: 60, terrainEffect: 'mud' },
       { name: 'Abalo', power: 140, terrainEffect: 'none', requiresAttribute: 'underground', requiresValue: 8 },
+    ],
+  },
+  {
+    // Natural/Terra — não existia. Das doze combinações de escola e elemento,
+    // cinco nunca tinham sido escritas, e a Terra tinha um pet só.
+    name: 'Barro',
+    type: 'Natural/Terra',
+    attack: 50,
+    defense: 70,
+    speed: 40,
+    maxHealth: 150,
+    moves: [
+      { name: 'Patada', power: 75, terrainEffect: 'none' },
+      // O especialista em lama: fraco no dano, e o que ele entrega é o
+      // tabuleiro. Quem pisa ali escorrega, atrasa, ou passa — e não sabe
+      // qual antes de tentar.
+      { name: 'Atoleiro', power: 55, terrainEffect: 'mud' },
+      { name: 'Deslizamento', power: 110, terrainEffect: 'none' },
+      { name: 'Terra Firme', power: 145, terrainEffect: 'none', requiresAttribute: 'underground', requiresValue: 10 },
+    ],
+  },
+  {
+    name: 'Fornalha',
+    type: 'Fisica/Fogo',
+    attack: 80,
+    defense: 40,
+    speed: 55,
+    maxHealth: 110,
+    moves: [
+      { name: 'Marreta', power: 85, terrainEffect: 'none' },
+      { name: 'Brasa Batida', power: 60, terrainEffect: 'damage' },
+      { name: 'Golpe Rubro', power: 115, terrainEffect: 'none' },
+      { name: 'Forja', power: 160, terrainEffect: 'none', requiresAttribute: 'musculature', requiresValue: 13 },
+    ],
+  },
+  {
+    name: 'Vagalhão',
+    type: 'Fisica/Agua',
+    attack: 70,
+    defense: 50,
+    speed: 60,
+    maxHealth: 120,
+    moves: [
+      { name: 'Investida', power: 80, terrainEffect: 'none' },
+      // Todo pet de Água precisa poder FABRICAR o terreno da própria skill,
+      // senão submergir só funciona onde a arena já tem água.
+      { name: 'Enseada', power: 60, terrainEffect: 'water' },
+      // O congelamento mais LONGO do catálogo: quatro slots. Quem o usa
+      // compra o turno inteiro do outro naquela casa.
+      { name: 'Nevasca', power: 45, terrainEffect: 'ice', terrainDuration: 4 },
+      { name: 'Arrebentação', power: 150, terrainEffect: 'none', requiresAttribute: 'musculature', requiresValue: 12 },
+    ],
+  },
+  {
+    name: 'Névoa',
+    type: 'Psiquica/Planta',
+    attack: 55,
+    defense: 60,
+    speed: 70,
+    maxHealth: 115,
+    moves: [
+      { name: 'Sussurro', power: 70, terrainEffect: 'none' },
+      { name: 'Torpor', power: 35, terrainEffect: 'none', effectStat: 'speed', effectPercent: -40 },
+      { name: 'Viço', power: 40, terrainEffect: 'none', effectStat: 'defense', effectPercent: 45 },
+      { name: 'Miragem', power: 150, terrainEffect: 'none', requiresAttribute: 'camouflage', requiresValue: 9 },
+    ],
+  },
+  {
+    name: 'Menir',
+    type: 'Psiquica/Terra',
+    attack: 60,
+    defense: 65,
+    speed: 45,
+    maxHealth: 135,
+    moves: [
+      { name: 'Toque de Pedra', power: 75, terrainEffect: 'none' },
+      { name: 'Lodo Mental', power: 50, terrainEffect: 'mud' },
+      { name: 'Peso do Chão', power: 40, terrainEffect: 'none', effectStat: 'attack', effectPercent: -40 },
+      { name: 'Monólito', power: 155, terrainEffect: 'none', requiresAttribute: 'personality', requiresValue: 9 },
     ],
   },
 ];

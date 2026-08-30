@@ -48,6 +48,10 @@ namespace
 		{
 			return static_cast<uint8>(ECellProperty::Ice);
 		}
+		if (Nome.Equals(TEXT("mud"), ESearchCase::IgnoreCase))
+		{
+			return static_cast<uint8>(ECellProperty::Mud);
+		}
 
 		// "none" e qualquer coisa desconhecida caem aqui.
 		return static_cast<uint8>(ECellProperty::None);

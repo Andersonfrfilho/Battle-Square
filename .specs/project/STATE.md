@@ -722,16 +722,26 @@ find "$HOME/Library/Logs/Unreal Engine/BattleSquareEditor" Saved/Logs -newer <ma
 **Previne:** ao acrescentar um campo a um `USaveGame` já existente, procurar **toda** função que monta esse save do zero. E ao juntar dois dados num arquivo, o teste que importa é o que **cruza** os caminhos de escrita — nunca os dois testes separados, que continuam verdes enquanto um apaga o outro.
 
 
-### B-010: os cubos do teste de streaming vivem no MAPA, e o editor está fora de alcance
+### B-010: os cubos do teste de streaming — RESOLVIDO em 30/08/2026
 
-**Descoberto:** 2026-08-30, quando o usuário perguntou por que havia blocos no mapa aberto.
+Os 216 cubos e os 36 atores de HLOD gerados a partir deles foram apagados do
+`WorldStreamingTest`. Sobraram 41 atores: os 25 pisos, a esfera de céu, o
+PlayerStart, o explorador, os quatro encontros, as luzes e o landscape.
 
-**O que são:** 225 cubos com 25 tonalidades, criados em M5 para **provar que o World Partition carrega e descarrega células** — cada cor marca uma célula. Nunca foram conteúdo de jogo. Ninguém os removeu porque, até a mata existir, o mundo não tinha mais nada.
+O caminho foi pelos DESCRITORES do World Partition, e não pelo World Outliner.
+Num commandlet as células não carregam, então `get_all_level_actors` devolve
+dez atores e destruir por ali não apaga nada; e como cada ator é um arquivo
+(OFPA), remover de verdade é remover o pacote dele. Os descritores dão rótulo,
+classe e caminho de pacote de todos os 293 — precisão em vez de palpite.
 
-**Por que não dá para remover direito:** eles estão dentro de `Content/Maps/WorldStreamingTest.umap`. Quem os apaga é o editor — World Outliner, filtro `Cube`, apagar, salvar. O `unreal-mcp` está com a conexão recusada nesta sessão, e sem ele não há como tocar em asset.
+**E o paliativo era NOCIVO, não só morto.** `RemoveStreamingTestCubes` varria
+`AStaticMeshActor` com a malha `/Engine/BasicShapes/Cube`, e eu documentei essa
+assinatura como "estreita de propósito". Ela não era: **os 25 pisos usam essa
+mesma malha**. O paliativo apagava o chão a cada Play, e o guarda-queda do
+jogador escondia o sintoma. Só apareceu porque o usuário perguntou por que os
+blocos continuavam na tela ANTES do Play — a pergunta era sobre o editor, e a
+resposta estava no runtime.
 
-**O paliativo, e por que ele é barulhento:** `ABattleSquareGameMode::RemoveStreamingTestCubes` os destrói em tempo de jogo, com assinatura estreita (`AStaticMeshActor` com a malha de cubo da engine — nada que este projeto cria no mundo se parece com isso). Ele **avisa na tela e no log** quantos removeu, com a instrução de apagá-los no mapa.
+A lição não é sobre cubos: **"assinatura estreita" foi afirmação minha, sem
+medição.** Bastava listar o que ela casava antes de confiar nela.
 
-O barulho é a parte importante: **paliativo silencioso vira permanente.** Ninguém lembra de apagar o que não incomoda, e no dia em que alguém puser um cubo de propósito ele sumiria sem explicação.
-
-**Resolução:** apagar os cubos no editor e remover a função junto do `bRemoveStreamingTestCubes`. Enquanto isso não acontece, o aviso na tela é o lembrete.

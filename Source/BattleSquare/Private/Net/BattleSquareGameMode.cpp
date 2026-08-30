@@ -96,62 +96,7 @@ void ABattleSquareGameMode::BeginPlay()
 	{
 		FWorldLoadingScreen::Show(GetWorld());
 		WarmUpHeavyAssets();
-		RemoveStreamingTestCubes();
 	}
-}
-
-void ABattleSquareGameMode::RemoveStreamingTestCubes()
-{
-	UWorld* World = GetWorld();
-	if (!World || !bRemoveStreamingTestCubes)
-	{
-		return;
-	}
-
-	// A assinatura é ESTREITA de propósito: AStaticMeshActor com a malha de
-	// cubo da engine. Nada que este projeto cria no mundo se parece com isso —
-	// o pet é esfera, o campo de treino é cilindro, a mata é instanciada e a
-	// água é cilindro. Uma varredura mais larga apagaria algo que alguém pôs
-	// de propósito, e apagar em silêncio é o defeito que este paliativo não
-	// pode ter.
-	UStaticMesh* CuboDaEngine = LoadObject<UStaticMesh>(
-		nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
-	if (!CuboDaEngine)
-	{
-		return;
-	}
-
-	TArray<AActor*> Condenados;
-	for (TActorIterator<AStaticMeshActor> It(World); It; ++It)
-	{
-		const UStaticMeshComponent* Malha = It->GetStaticMeshComponent();
-		if (IsValid(*It) && Malha && Malha->GetStaticMesh() == CuboDaEngine)
-		{
-			Condenados.Add(*It);
-		}
-	}
-
-	for (AActor* Cubo : Condenados)
-	{
-		Cubo->Destroy();
-	}
-
-	if (Condenados.IsEmpty())
-	{
-		return;
-	}
-
-	// BARULHENTO de propósito: paliativo silencioso vira permanente.
-	UE_LOG(LogTemp, Warning,
-		TEXT("[paliativo] %d cubos do teste de streaming removidos em tempo de jogo. ")
-		TEXT("Eles são conteúdo do MAPA: apague-os no editor (World Outliner, filtro 'Cube') ")
-		TEXT("e remova ABattleSquareGameMode::RemoveStreamingTestCubes."),
-		Condenados.Num());
-
-	FBattleDebugScreen::Show(
-		FString::Printf(TEXT("%d cubos de teste removidos — apague-os no MAPA e tire este código"),
-			Condenados.Num()),
-		0.0f, FColor::Orange, /*Key=*/724);
 }
 
 void ABattleSquareGameMode::WarmUpHeavyAssets()
@@ -649,7 +594,6 @@ void ABattleSquareGameMode::HandleRoomReady(const FString& Code)
 	// diferentes sobre o mesmo lugar, e não duas ideias de clima.
 	InitialState.Humidity = static_cast<uint8>(FMath::Clamp(
 		ScenaryClimate::HumidityPercent(ScenaryClimate::ConfiguredClimate()), 0, 100));
-
 
 
 	TArray<FPetPresentationInfo> Presentations;

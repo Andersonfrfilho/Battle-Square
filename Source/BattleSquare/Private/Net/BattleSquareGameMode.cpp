@@ -19,8 +19,13 @@
 #include "Environment/ForestBackdrop.h"
 #include "Environment/SceneLighting.h"
 #include "World/WorldStatusReadout.h"
+#include "UI/WorldLoadingScreen.h"
+#include "UI/WorldMapScreen.h"
+#include "Environment/WorldBoundaryWater.h"
 #include "World/WorldTrainingField.h"
+#include "Battle/PetView.h"
 #include "World/TrainingFieldRules.h"
+#include "Balance/PetTypeCatalog.h"
 #include "Meta/PetMoveRequirements.h"
 #include "Meta/TrainerSpecialtyRules.h"
 #include "World/EncounterDetectionComponent.h"
@@ -71,6 +76,41 @@ void ABattleSquareGameMode::BeginPlay()
 	Super::BeginPlay();
 	EnsureRoomRegistry();
 
+	// A tela de carregamento sobe ANTES de qualquer montagem, e é o único
+	// momento em que ela pode subir: a montagem acontece no Tick, num quadro
+	// só, e uma tela mostrada junto com o trabalho não chega a ser desenhada.
+	//
+	// Ela não sobe num nível sem encontros configurados: ali não há nada a
+	// esperar, e cobrir a tela para não esperar nada é pior que não cobrir.
+	if (!WorldEncounterMirrorPath.IsEmpty())
+	{
+		FWorldLoadingScreen::Show(GetWorld());
+		WarmUpHeavyAssets();
+	}
+}
+
+void ABattleSquareGameMode::WarmUpHeavyAssets()
+{
+	// A MATA carrega 28 malhas distintas do disco, e ela as carrega no
+	// CONSTRUTOR — ou seja, na primeira vez que um AForestBackdrop nasce.
+	// Nascendo no meio da montagem, esse custo é um engasgo em pleno jogo;
+	// forçando o objeto padrão a existir AQUI, ele acontece um quadro depois
+	// da tela de carregamento subir, e fica coberto.
+	//
+	// Isto NÃO torna o carregamento mais rápido. Move para onde há tela,
+	// que é diferente — e dizer o contrário seria mentir sobre o que se fez.
+	const double Comecou = FPlatformTime::Seconds();
+
+	AForestBackdrop::StaticClass()->GetDefaultObject();
+	APetView::StaticClass()->GetDefaultObject();
+	AWorldTrainingField::StaticClass()->GetDefaultObject();
+
+	// MEDIDO, e não estimado: a próxima partida diz onde o tempo foi, em vez
+	// de eu adivinhar. Foi assim que este projeto descobriu que a batalha
+	// acontecia a um milhão de unidades da câmera.
+	UE_LOG(LogTemp, Display,
+		TEXT("[carregamento] malhas pesadas prontas em %.0f ms"),
+		(FPlatformTime::Seconds() - Comecou) * 1000.0);
 }
 
 namespace
@@ -86,6 +126,14 @@ namespace
 
 	/** Folga que evita as duas superfícies coplanares. */
 	constexpr float FolgaDoChaoUnidades = 2.0f;
+
+	/**
+	 * Raio do chão da mata, EM CASAS. É a medida que AForestBackdrop usa
+	 * internamente, e repeti-la aqui é o preço de a margem da água precisar
+	 * coincidir com a borda da terra — com o número num lugar só, ele não
+	 * discorda de si mesmo (L-032).
+	 */
+	constexpr float RaioDoChaoEmCasas = 30.0f;
 
 	/**
 	 * O pawn do jogador, com a MESMA tolerância que a detecção de encontro usa.
@@ -245,10 +293,36 @@ FString ABattleSquareGameMode::SetUpWorldEncounterFlow()
 	WorldEncounterFlow->OnWorldBattleStarted.AddUObject(
 		this, &ABattleSquareGameMode::HandleWorldBattleStarted);
 
-	SpawnWorldScenery();
-	SpawnRoamingEncounters();
+	FWorldLoadingProgress Progresso;
+	Progresso.bTypeCatalogReady = !FPetTypeCatalog::Get().IsEmpty();
+	Progresso.bMirrorVerified = true; // chegou aqui: o espelho carregou e verificou
+	FWorldLoadingScreen::Update(Progresso);
 
+	// Cada passo é CRONOMETRADO. O usuário relatou demora para a mata
+	// aparecer; sem medir, o conserto seria palpite — e este projeto já
+	// aprendeu que consertar por hipótese custa mais que medir uma vez.
+	const double AntesDoCenario = FPlatformTime::Seconds();
+	SpawnWorldScenery();
+	Progresso.bSceneryBuilt = true;
+	FWorldLoadingScreen::Update(Progresso);
+
+	const double AntesDosEncontros = FPlatformTime::Seconds();
+	SpawnRoamingEncounters();
 	SpawnTrainingFields();
+	Progresso.bEncountersPlaced = true;
+	FWorldLoadingScreen::Update(Progresso);
+
+	const double Terminou = FPlatformTime::Seconds();
+	UE_LOG(LogTemp, Display,
+		TEXT("[carregamento] cenário %.0f ms · encontros e campos %.0f ms"),
+		(AntesDosEncontros - AntesDoCenario) * 1000.0,
+		(Terminou - AntesDosEncontros) * 1000.0);
+
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("carregamento: cenário %.0f ms, encontros %.0f ms"),
+			(AntesDosEncontros - AntesDoCenario) * 1000.0,
+			(Terminou - AntesDosEncontros) * 1000.0),
+		0.0f, FColor::Silver, /*Key=*/723);
 
 	ReloadOwnedPetSnapshot();
 	if (WorldStatusRefreshSeconds > 0.0f)
@@ -256,6 +330,13 @@ FString ABattleSquareGameMode::SetUpWorldEncounterFlow()
 		World->GetTimerManager().SetTimer(WorldStatusTimer, this,
 			&ABattleSquareGameMode::RefreshWorldStatus,
 			WorldStatusRefreshSeconds, /*bLoop=*/true);
+
+		// O MAPA anda mais rápido que o painel: meio segundo de atraso na
+		// posição faz a seta pular atrás do jogador, e um mapa que persegue
+		// quem o consulta é pior que nenhum.
+		World->GetTimerManager().SetTimer(WorldMapTimer, this,
+			&ABattleSquareGameMode::RefreshWorldMap,
+			WorldMapRefreshSeconds, /*bLoop=*/true);
 
 		// O treino usa o MESMO passo do painel: o jogador vê o número subir
 		// no instante em que ele sobe, e não meio segundo depois.
@@ -306,6 +387,15 @@ void ABattleSquareGameMode::Tick(float DeltaSeconds)
 		if (Problem.IsEmpty())
 		{
 			UE_LOG(LogTemp, Display, TEXT("ABattleSquareGameMode: encontros de mundo ATIVOS."));
+
+			// O mundo está montado: a tela sai. Sai AQUI, e não num
+			// temporizador, porque o critério é o estado e não o relógio.
+			FWorldLoadingScreen::Hide();
+
+			// O mapa só aparece depois de haver mundo para mostrar: um
+			// minimapa desenhando uma ilha vazia enquanto ela ainda é montada
+			// mostraria um mundo que não existe.
+			FWorldMapScreen::Show(GetWorld());
 		}
 		else if (!bHasLoggedWorldEncounterProblem || !bWorldEncounterSetupIsTransient)
 		{
@@ -319,6 +409,13 @@ void ABattleSquareGameMode::Tick(float DeltaSeconds)
 			else
 			{
 				UE_LOG(LogTemp, Warning, TEXT("ABattleSquareGameMode: encontros de mundo DESISTIDOS — %s"), *Problem);
+
+				// Falha PERMANENTE: a tela diz o motivo em vez de girar para
+				// sempre. Carregamento que nunca termina e nunca explica é o
+				// pior dos dois mundos — o jogador não joga e não sabe por quê.
+				FWorldLoadingProgress Falhou;
+				Falhou.PermanentProblem = Problem;
+				FWorldLoadingScreen::Update(Falhou);
 			}
 		}
 	}
@@ -797,6 +894,58 @@ bool ABattleSquareGameMode::LearnSpecialtyOfCurrentField()
 	return false;
 }
 
+void ABattleSquareGameMode::RefreshWorldMap()
+{
+	UWorld* World = GetWorld();
+	const APawn* Jogador = AcharPawnDoJogador(World);
+	if (!World || !Jogador || !FWorldMapScreen::IsVisible())
+	{
+		return;
+	}
+
+	FWorldMapSnapshot Retrato;
+	Retrato.PlayerXY = FVector2D(Jogador->GetActorLocation());
+	Retrato.PlayerYawDegrees = Jogador->GetActorRotation().Yaw;
+	Retrato.ShoreRadiusUnits = WorldSceneryCellSizeUnits * RaioDoChaoEmCasas;
+
+	// CAMPOS DE TREINO na cor de cada atributo: são o único destino do mapa,
+	// e um mapa sem destino é um radar.
+	for (TActorIterator<AWorldTrainingField> It(World); It; ++It)
+	{
+		if (!IsValid(*It))
+		{
+			continue;
+		}
+
+		FWorldMapMarkerInfo Marcador;
+		Marcador.WorldXY = FVector2D(It->GetActorLocation());
+		Marcador.Color = AWorldTrainingField::ColorForAttribute(It->TrainedAttribute);
+		Marcador.Kind = EWorldMapMarker::CampoDeTreino;
+		Marcador.WorldRadiusUnits = It->FieldRadiusUnits;
+		Retrato.Markers.Add(Marcador);
+	}
+
+	for (TActorIterator<AWorldEncounterActor> It(World); It; ++It)
+	{
+		if (!IsValid(*It) || It->bIsResolved)
+		{
+			continue;
+		}
+
+		FWorldMapMarkerInfo Marcador;
+		Marcador.WorldXY = FVector2D(It->GetActorLocation());
+		// Todos da MESMA cor, e não da cor do tipo deles: o mapa diz que há
+		// alguém ali, não quem. Saber o tipo de longe tiraria do encontro a
+		// única coisa que ele tem de surpresa.
+		Marcador.Color = FLinearColor(0.90f, 0.45f, 0.20f);
+		Marcador.Kind = EWorldMapMarker::Adversario;
+		Marcador.WorldRadiusUnits = 140.0f;
+		Retrato.Markers.Add(Marcador);
+	}
+
+	FWorldMapScreen::Update(Retrato);
+}
+
 void ABattleSquareGameMode::RefreshWorldStatus()
 {
 	UWorld* World = GetWorld();
@@ -908,6 +1057,19 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 	// abriria um buraco sem explicação no meio da floresta.
 	Mata->BuildForest(WorldSceneryCellSizeUnits,
 		static_cast<uint32>(WorldScenerySeed), FVector2D::ZeroVector);
+
+	// A ÁGUA fecha o mundo. Vem junto da mata porque as duas dependem do mesmo
+	// chão: a margem tem de coincidir com a borda da terra, e calcular a
+	// margem noutro lugar produziria água por cima da grama ou terra boiando.
+	const float RaioDaTerra = WorldSceneryCellSizeUnits * RaioDoChaoEmCasas;
+
+	AWorldBoundaryWater* Agua = World->SpawnActor<AWorldBoundaryWater>(
+		AWorldBoundaryWater::StaticClass(), Onde, FRotator::ZeroRotator, Parametros);
+	if (Agua)
+	{
+		Agua->ShoreRadiusUnits = RaioDaTerra;
+		Agua->BuildBoundary();
+	}
 
 	FBattleDebugScreen::Show(
 		FString::Printf(TEXT("mundo: sol e mata plantados (chão em Z=%.0f%s)"),

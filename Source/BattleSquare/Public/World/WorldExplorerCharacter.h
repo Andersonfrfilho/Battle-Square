@@ -59,6 +59,9 @@ public:
 	void CheckFallGuard();
 
 	/** Registra a posição atual como terra firme, se ele estiver no chão. */
+	/** M: abre e fecha o mapa completo. O minimapa não sai. */
+	void ToggleWorldMap();
+
 	void RememberSafeGround();
 
 	USpringArmComponent* GetCameraBoom() const { return CameraBoom; }

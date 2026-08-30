@@ -10,6 +10,7 @@
 #include "World/EncounterDetectionComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "UI/WorldMapScreen.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/PlayerController.h"
@@ -192,6 +193,13 @@ void AWorldExplorerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerI
 
 	PlayerInputComponent->BindKey(EKeys::Y, IE_Pressed, this, &AWorldExplorerCharacter::CycleCameraMode);
 
+	// M abre e fecha o mapa completo. Ligado AQUI, no pawn, e não no ouvinte
+	// de Slate que a depuração usa: mapa é jogo, e precisa existir em
+	// Shipping. Este é o mesmo caminho de input do pulo e da corrida, que
+	// comprovadamente funciona neste projeto — as teclas que falharam três
+	// vezes eram as amarradas fora do pawn.
+	PlayerInputComponent->BindKey(EKeys::M, IE_Pressed, this, &AWorldExplorerCharacter::ToggleWorldMap);
+
 	if (MoveAction)
 	{
 		EnhancedInput->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AWorldExplorerCharacter::HandleMove);
@@ -258,6 +266,11 @@ void AWorldExplorerCharacter::BeginPlay()
 			Material->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.95f, 0.95f, 0.95f));
 		}
 	}
+}
+
+void AWorldExplorerCharacter::ToggleWorldMap()
+{
+	FWorldMapScreen::ToggleFullMap();
 }
 
 void AWorldExplorerCharacter::RememberSafeGround()

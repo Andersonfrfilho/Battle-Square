@@ -103,6 +103,14 @@ public:
 	 * com o ambiente azul padrão — foi exatamente assim que a mata da arena
 	 * apareceu azul-clara na tela. É o mesmo defeito, num lugar diferente.
 	 */
+	/**
+	 * Força o carregamento das malhas pesadas ENQUANTO a tela cobre.
+	 *
+	 * Não acelera nada, e é importante não confundir: move o custo para um
+	 * momento em que existe tela, em vez de deixá-lo cair no meio do jogo.
+	 */
+	void WarmUpHeavyAssets();
+
 	void SpawnWorldScenery();
 
 	/**
@@ -114,6 +122,15 @@ public:
 	 * enquanto o jogador só anda.
 	 */
 	void RefreshWorldStatus();
+
+	/** Alimenta o minimapa e o mapa completo. */
+	void RefreshWorldMap();
+
+	FTimerHandle WorldMapTimer;
+
+	/** Passo do mapa. Mais curto que o do painel — ver o .cpp. */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
+	float WorldMapRefreshSeconds = 0.1f;
 
 	void ReloadOwnedPetSnapshot();
 

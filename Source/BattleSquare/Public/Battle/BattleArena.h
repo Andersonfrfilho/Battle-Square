@@ -119,7 +119,17 @@ public:
 	 * e deixaria a linha boiando no ar na primeira vez que alguém editasse um
 	 * dos dois.
 	 */
+	/** Onde a superfície daquele terreno é DESENHADA. */
 	static float GetCellSurfaceHeight(uint8 CellProperty);
+
+	/**
+	 * Onde o PÉ do pet pousa naquele terreno.
+	 *
+	 * Só a água separa os dois: a lâmina fica visível acima do solo e o pé
+	 * desce por dentro dela — quem está na água está DENTRO dela, não em cima,
+	 * e é o que faz submergir parecer submergir.
+	 */
+	static float GetCellFootingHeight(uint8 CellProperty);
 
 	/** O que a casa É, ou None enquanto não houver layout montado. */
 	uint8 GetCellProperty(uint8 Column, uint8 Row) const;

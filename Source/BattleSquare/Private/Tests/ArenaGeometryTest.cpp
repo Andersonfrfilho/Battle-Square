@@ -114,10 +114,20 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FArenaSurfaceHeightVariesByTerrainTest::RunTest(const FString& Parameters)
 {
 	const float Neutra = ABattleArena::GetCellSurfaceHeight(static_cast<uint8>(ECellProperty::None));
-	const float Agua = ABattleArena::GetCellSurfaceHeight(static_cast<uint8>(ECellProperty::Water));
 	const float Bloqueada = ABattleArena::GetCellSurfaceHeight(static_cast<uint8>(ECellProperty::Blocked));
 
-	TestTrue(TEXT("Água AFUNDA — é onde se submerge"), Agua < Neutra);
+	// A água ganhou DUAS alturas, e a pergunta "ela afunda?" passou a ser
+	// sobre o PÉ. A intenção deste teste continua a mesma — submergir precisa
+	// parecer submergir — só que agora ela mora no conceito certo: a lâmina é
+	// o que se vê, o pé é onde se entra.
+	//
+	// Antes as duas eram uma só, e afundar as duas juntas punha a água DEBAIXO
+	// do solo maciço da clareira: o jogador via terra numa casa de água.
+	const float Agua = ABattleArena::GetCellFootingHeight(static_cast<uint8>(ECellProperty::Water));
+
+	TestTrue(TEXT("Na água o PÉ afunda — é onde se submerge"), Agua < Neutra);
+	TestTrue(TEXT("E a LÂMINA aparece, acima do solo"),
+		ABattleArena::GetCellSurfaceHeight(static_cast<uint8>(ECellProperty::Water)) >= Neutra);
 	TestTrue(TEXT("Bloqueada SOBE — ninguém pisa nela"), Bloqueada > Neutra);
 
 	// Dano e bônus mudam de cor, não de altura: quem anda por cima delas anda
@@ -162,10 +172,14 @@ bool FArenaCellLocationFollowsTerrainTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Na água o pé desce"), NaAgua < NoPlano);
 	TestTrue(TEXT("Na pedra o pé sobe"), NaPedra > NoPlano);
 
-	// Mesma fonte que dimensiona a laje: dois números divergem na primeira edição.
-	TestEqual(TEXT("A altura é exatamente a superfície da casa"),
+	// Mesma fonte que posiciona o pet: dois números divergem na primeira
+	// edição. Na água o pé NÃO é a superfície desenhada — a lâmina fica
+	// visível acima do solo e o pé desce por dentro dela — então a fonte certa
+	// é a do PÉ, e conferir contra a lâmina afirmaria que o pet fica de pé
+	// sobre a água.
+	TestEqual(TEXT("A altura é exatamente onde o PÉ pousa naquela casa"),
 		NaAgua - Base,
-		ABattleArena::GetCellSurfaceHeight(static_cast<uint8>(ECellProperty::Water)));
+		ABattleArena::GetCellFootingHeight(static_cast<uint8>(ECellProperty::Water)));
 
 	// Na casa BLOQUEADA o pé não encosta na laje: encosta no TOPO do tronco,
 	// porque quem está ali escalou. Antes disto o pet subia e renderizava por
@@ -545,5 +559,74 @@ bool FBlockedCellIsVolumeNotSurfaceTest::RunTest(const FString& Parameters)
 	}
 
 	ArenaCena::DestruirMundoDaGeometria(Mundo);
+	return true;
+}
+
+// A ÁGUA PRECISA APARECER, e para isso ela tem de ficar acima do solo.
+//
+// Ela afundava dezoito unidades abaixo do neutro — o que funcionava enquanto a
+// arena tinha chão próprio com vão. Desde que a clareira da mata virou o piso,
+// o solo é um disco MACIÇO: a água ficava debaixo dele e nunca aparecia. O
+// jogador via terra numa casa que a regra chamava de água, e submergir ali
+// parecia defeito.
+//
+// Este teste fixa a RELAÇÃO, e não o número: qualquer terreno que se veja
+// precisa estar na superfície do chão ou acima dela. Assim ele continua
+// valendo quando as alturas forem ajustadas.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FVisibleTerrainIsNeverBuriedTest,
+	"BattleSquare.Battle.Arena.VisibleTerrainIsNeverBuried",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FVisibleTerrainIsNeverBuriedTest::RunTest(const FString& Parameters)
+{
+	// O topo do chão da clareira é a superfície da casa neutra: é ali que a
+	// mata é posicionada, e é o que o jogador enxerga como solo.
+	const float TopoDoSolo =
+		ABattleArena::GetCellSurfaceHeight(static_cast<uint8>(ECellProperty::None));
+
+	const uint8 QueSeVeem[] = {
+		static_cast<uint8>(ECellProperty::Water),
+		static_cast<uint8>(ECellProperty::Damage),
+		static_cast<uint8>(ECellProperty::Buff),
+		static_cast<uint8>(ECellProperty::Blocked),
+	};
+
+	for (const uint8 Terreno : QueSeVeem)
+	{
+		const float Superficie = ABattleArena::GetCellSurfaceHeight(Terreno);
+		TestTrue(
+			*FString::Printf(TEXT("O terreno %d não fica enterrado (%.1f contra solo %.1f)"),
+				static_cast<int32>(Terreno), Superficie, TopoDoSolo),
+			Superficie >= TopoDoSolo);
+	}
+
+	// E a ÁGUA tem DUAS alturas, que é o ponto: a lâmina se vê, o pé afunda.
+	//
+	// Confundi-las foi o defeito dos dois lados. Subir as duas juntas mostra a
+	// água e apaga a profundidade; descer as duas dá profundidade e enterra a
+	// água sob o solo maciço da clareira.
+	const float Lamina = ABattleArena::GetCellSurfaceHeight(
+		static_cast<uint8>(ECellProperty::Water));
+	const float Pe = ABattleArena::GetCellFootingHeight(
+		static_cast<uint8>(ECellProperty::Water));
+
+	TestTrue(TEXT("A lâmina da água aparece acima do solo"), Lamina >= TopoDoSolo);
+	TestTrue(TEXT("E o pé desce por dentro dela"), Pe < Lamina);
+
+	// Nos outros terrenos não há por onde entrar: pé e superfície coincidem.
+	for (const uint8 Terreno : QueSeVeem)
+	{
+		if (static_cast<ECellProperty>(Terreno) == ECellProperty::Water)
+		{
+			continue;
+		}
+		TestEqual(
+			*FString::Printf(TEXT("No terreno %d o pé pousa na superfície"),
+				static_cast<int32>(Terreno)),
+			ABattleArena::GetCellFootingHeight(Terreno),
+			ABattleArena::GetCellSurfaceHeight(Terreno));
+	}
+
 	return true;
 }

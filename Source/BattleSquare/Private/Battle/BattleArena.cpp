@@ -49,12 +49,29 @@ namespace ArenaGeometria
 
 	/**
 	 * Topo da laje por terreno. Neutro fica logo ABAIXO de zero para o pet
-	 * não afundar; água afunda de verdade (é onde se submerge) e casa
-	 * bloqueada sobe, porque ninguém pisa nela.
+	 * não afundar; casa bloqueada sobe, porque ninguém pisa nela.
 	 */
 	constexpr float SuperficieNeutra = -4.0f;
-	constexpr float SuperficieDaAgua = -22.0f;
 	constexpr float SuperficieBloqueada = 22.0f;
+
+	/**
+	 * A água tem DUAS alturas, e confundi-las foi o defeito.
+	 *
+	 * A LÂMINA é o que se vê: fica um fio acima do solo, como poça de floresta.
+	 * Ela afundava dezoito unidades, e isso funcionava enquanto a arena tinha
+	 * chão próprio com vão. Desde que a clareira da MATA virou o piso, o solo
+	 * é um disco maciço — a água ficava debaixo dele e nunca aparecia. O
+	 * jogador via terra numa casa que a regra chamava de água.
+	 *
+	 * O PÉ é onde o pet pisa, e ele desce: quem está na água está DENTRO dela,
+	 * não em cima. É o que faz submergir parecer submergir.
+	 *
+	 * A primeira tentativa de conserto subiu as duas juntas e apagou a
+	 * profundidade — dois testes reclamaram, e estavam certos: eles guardavam
+	 * uma intenção que eu ia atropelar para consertar outra.
+	 */
+	constexpr float LaminaDaAgua = -2.5f;
+	constexpr float PeDentroDaAgua = -22.0f;
 
 	/**
 	 * Casa sem regra nenhuma NÃO tem vão: ela é o próprio chão da clareira, e
@@ -197,12 +214,27 @@ float ABattleArena::GetCellSurfaceHeight(uint8 CellProperty)
 	switch (static_cast<ECellProperty>(CellProperty))
 	{
 	case ECellProperty::Water:
-		return ArenaGeometria::SuperficieDaAgua;
+		return ArenaGeometria::LaminaDaAgua;
 	case ECellProperty::Blocked:
 		return ArenaGeometria::SuperficieBloqueada;
 	default:
 		return ArenaGeometria::SuperficieNeutra;
 	}
+}
+
+float ABattleArena::GetCellFootingHeight(uint8 CellProperty)
+{
+	// Onde o PÉ do pet pousa, que não é onde a superfície é DESENHADA.
+	//
+	// Só a água separa as duas: a lâmina fica visível acima do solo e o pé
+	// desce por dentro dela. Nos outros terrenos o pé pousa na superfície,
+	// porque não há por onde entrar.
+	if (static_cast<ECellProperty>(CellProperty) == ECellProperty::Water)
+	{
+		return ArenaGeometria::PeDentroDaAgua;
+	}
+
+	return GetCellSurfaceHeight(CellProperty);
 }
 
 void ABattleArena::BeginPlay()
@@ -695,7 +727,10 @@ float ABattleArena::GetCellSurfaceHeightAt(uint8 Column, uint8 Row) const
 		return GetObstacleTopHeightAt(Column, Row);
 	}
 
-	return GetCellSurfaceHeight(Propriedade);
+	// O PÉ, e não a lâmina: esta função posiciona o pet. Na água a superfície
+	// desenhada fica ACIMA do solo (poça que se vê) e o pé desce por dentro
+	// dela — um pet pousado na lâmina ficaria de pé sobre a água.
+	return GetCellFootingHeight(Propriedade);
 }
 
 float ABattleArena::GetObstacleTopHeightAt(uint8 Column, uint8 Row) const

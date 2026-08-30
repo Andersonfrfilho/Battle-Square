@@ -223,6 +223,19 @@ struct FBattleState
 		// idêntico ao de antes de Arenas Variadas (design.md, zero
 		// regressão). Índice = Row*GridColumns+Column (CellLayoutIndex).
 		CellLayout.Init(static_cast<uint8>(ECellProperty::None), BattleGridDefaultCellCount);
+
+		// As regras de terreno do JOGO nascem com o estado.
+		//
+		// A primeira versão pedia que a montagem as aplicasse, e dois testes
+		// caíram na hora: estado montado à mão ficava sem regra, e submergir
+		// passava a funcionar em terra seca. Regra que depende de alguém
+		// lembrar de chamar é regra que some no caminho que ninguém revisou —
+		// o mesmo modo de falhar que este projeto já pagou quatro vezes com
+		// recurso testado e nunca alcançado.
+		//
+		// Quem quiser outra regra sobrescreve depois, que é como um teste
+		// monta um caso sem reconstruir a tabela inteira.
+		ApplyDefaultTerrainRequirements();
 	}
 
 	UPROPERTY()
@@ -244,6 +257,87 @@ struct FBattleState
 	 *
 	 * Não precisam ser iguais: 3x2 e 4x6 são grades legítimas.
 	 */
+	/**
+	 * Que TERRENO cada ação de postura exige, e com que nível.
+	 *
+	 * Indexado por EActionType. Zero é "não exige nada", e é o que toda ação
+	 * sem requisito continua sendo.
+	 *
+	 * Isto morava num `if` dentro do núcleo — "submergir exige água" — e era
+	 * por isso que uma skill nova custava uma edição de BattlePhasePosture.
+	 * Como DADO, `escavar` (que quer pedra) e um poder que exija água FUNDA
+	 * passam a ser uma linha de configuração, e não uma exceção a mais.
+	 *
+	 * O NÍVEL é comparação, não igualdade: exigir "água ao menos 2" deixa a
+	 * poça de fora sem precisar listar cada terreno que não serve.
+	 */
+	UPROPERTY()
+	uint8 SkillTerrainRequirement[16] = { 0 };
+
+	UPROPERTY()
+	uint8 SkillTerrainLevel[16] = { 0 };
+
+	/**
+	 * O terreno da casa satisfaz o que aquela ação exige?
+	 *
+	 * Ação sem requisito passa sempre. Com requisito, a casa precisa ser
+	 * daquele terreno E ter nível ao menos igual — a comparação é o que deixa
+	 * "água ao menos funda" excluir a poça sem listar terreno por terreno.
+	 */
+	/**
+	 * Declara o que uma ação exige do terreno.
+	 *
+	 * Chamado pela MONTAGEM. Se ninguém chamar, nenhuma ação exige nada — e é
+	 * por isso que o padrão precisa ser posto em algum lugar visível, e não
+	 * ficar dependendo de quem monta lembrar.
+	 */
+	void RequireTerrainForSkill(EActionType Action, ECellProperty Terrain)
+	{
+		const int32 Indice = static_cast<int32>(Action);
+		if (Indice >= 0 && Indice < 16)
+		{
+			SkillTerrainRequirement[Indice] = static_cast<uint8>(Terrain);
+		}
+	}
+
+	/**
+	 * Os requisitos que o jogo tem hoje.
+	 *
+	 * Mora aqui, e não em cada montagem, porque "submergir exige água funda" é
+	 * regra do jogo e não de uma partida. Toda batalha nasce com ela; quem
+	 * quiser outra sobrescreve depois — o que é como um teste monta um caso
+	 * sem precisar reconstruir a tabela inteira.
+	 */
+	void ApplyDefaultTerrainRequirements()
+	{
+		RequireTerrainForSkill(EActionType::Submergir, ECellProperty::Water);
+	}
+
+	bool TerrainAllowsSkill(EActionType Action, uint8 CellProperty) const
+	{
+		const int32 Indice = static_cast<int32>(Action);
+		if (Indice < 0 || Indice >= 16)
+		{
+			return true;
+		}
+
+		const uint8 Exigido = SkillTerrainRequirement[Indice];
+		if (Exigido == static_cast<uint8>(ECellProperty::None))
+		{
+			return true;
+		}
+
+		// ÁGUA é o caso com nível: a poça e o fundo são o mesmo terreno com
+		// funduras diferentes, e exigir água é exigir ao menos aquela fundura.
+		if (IsAnyWater(Exigido))
+		{
+			return IsAnyWater(CellProperty)
+				&& WaterDepthOf(CellProperty) >= WaterDepthOf(Exigido);
+		}
+
+		return CellProperty == Exigido;
+	}
+
 	UPROPERTY()
 	uint8 GridColumns = static_cast<uint8>(BattleGridDefaultColumns);
 

@@ -209,8 +209,52 @@ enum class ECellProperty : uint8
 	// Submergir exige ÁGUA. Acrescentado ao FIM do enum de propósito: os
 	// valores existentes vão para o layout da arena e para o hash do estado, e
 	// inserir no meio reinterpretaria toda arena já escrita.
-	Water
+	Water,
+
+	/**
+	 * A POÇA: molha o pé, dá para andar, e NÃO serve para o que precisa de
+	 * fundura.
+	 *
+	 * `Water` continua sendo a FUNDA, e isso é escolha de migração: é onde
+	 * submergir já funciona hoje, então toda arena escrita, todo golpe com
+	 * `terrainEffect: water` e todo snapshot de determinismo mantêm o
+	 * comportamento exato. A novidade é a rasa.
+	 */
+	ShallowWater,
+
+	/**
+	 * Água CONGELADA. Terreno temporário: derrete sozinho e volta a ser água.
+	 *
+	 * Quanto ele dura é o "nível de congelamento" — não existe nível separado
+	 * da duração, porque duas casas de gelo que duram o mesmo e diferem num
+	 * número abstrato seriam indistinguíveis para quem joga.
+	 */
+	Ice
 };
+
+/** Esta casa é água, de qualquer fundura? */
+FORCEINLINE bool IsAnyWater(uint8 CellProperty)
+{
+	const ECellProperty Regra = static_cast<ECellProperty>(CellProperty);
+	return Regra == ECellProperty::Water || Regra == ECellProperty::ShallowWater;
+}
+
+/**
+ * Quanta fundura esta casa tem: 0 seco, 1 poça, 2 fundo.
+ *
+ * Número, e não enum, porque a pergunta que os golpes fazem é de COMPARAÇÃO —
+ * "este poder exige ao menos 2" — e comparar níveis é o que faz um requisito
+ * de terreno crescer sem virar uma lista de casos.
+ */
+FORCEINLINE int32 WaterDepthOf(uint8 CellProperty)
+{
+	switch (static_cast<ECellProperty>(CellProperty))
+	{
+		case ECellProperty::ShallowWater: return 1;
+		case ECellProperty::Water:        return 2;
+		default:                          return 0;
+	}
+}
 
 // Grade PADRÃO. Não é mais o único tamanho possível: o estado carrega as
 // suas próprias dimensões (FBattleState::GridColumns/GridRows), e estes

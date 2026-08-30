@@ -125,6 +125,68 @@ aviso que descreve errado o mundo é pior que nenhum.
 
 ---
 
+---
+
+## Fatia 2 — Gelo (decidido em 30/08/2026)
+
+**O usuário:** *"derrete com o tempo e depende do nível de congelamento"*.
+
+### DP-gelo-01 — O NÍVEL É O TEMPO
+
+**Decisão: não existe "nível de congelamento" separado da duração. Um
+congelamento forte é um que demora mais a derreter.**
+
+Isso não é economia de campo — é o que a coisa É. Duas casas de gelo que duram
+o mesmo e diferem num "nível" abstrato seriam indistinguíveis para quem joga, e
+o número existiria só no código.
+
+E resolve como guardar o estado: uma casa temporária precisa de um contador, e
+o contador é o nível.
+
+### DP-gelo-02 — Terreno TEMPORÁRIO é um conceito, não um caso de gelo
+
+**Decisão: `FBattleState` ganha UM array de contador por casa. Zero é
+permanente.**
+
+A alternativa era `Gelo1`/`Gelo2`/`Gelo3` no enum, decrementando o valor. Ela
+funciona e cabe no byte que já existe — e foi recusada por dois motivos: três
+valores para um conceito só poluem o enum que os golpes usam como
+`terrainEffect`, e o próximo terreno temporário (lama? fogo no chão?) pediria
+mais três.
+
+Com um contador genérico, o gelo é a PRIMEIRA casa temporária, não a única
+possível.
+
+**Para o que ela volta** é implícito: gelo volta a ser água. Guardar o destino
+custaria um segundo array para uma pergunta que hoje tem uma resposta só, e
+acrescentá-lo depois é aditivo.
+
+### DP-gelo-03 — Derrete no fim do SLOT, como a postura expira
+
+O lugar já existe: `BattlePhaseResolution` decrementa duração de efeito e expira
+postura. O gelo entra ali, pelo mesmo motivo — é o único ponto do turno em que
+"passou tempo" tem significado.
+
+E o degelo é **narrado**, como tudo que muda o tabuleiro sem o jogador mandar:
+casa que volta a ser água sem aviso faz a jogada seguinte parecer defeito.
+
+### DP-gelo-04 — Congelar é um golpe, e a força vem do atributo
+
+Congelar é `terrainEffect: ice` — a mesma peça que já alaga. **Quanto** ele
+dura vem do atributo do pet, pela mesma regra que a spec propõe para a
+quantidade de água: poça é barata, rio exige atributo alto.
+
+### O que o gelo AINDA não decide
+
+- **Congelar prende quem está submerso?** Sair, ficar preso um turno, ou tomar
+  dano — as três são jogáveis e produzem jogos diferentes.
+- **Escorregar é movimento a mais ou movimento perdido?** Idem.
+
+As duas podem esperar: gelo que só impede submergir e derrete sozinho já é uma
+jogada completa — nega o terreno do oponente por alguns turnos.
+
+---
+
 ## Onde isto encontra a arena no lugar
 
 A proposta de **lutar onde o encontro aconteceu** (registrada em conversa,

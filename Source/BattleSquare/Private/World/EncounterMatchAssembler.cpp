@@ -64,6 +64,7 @@ bool FEncounterMatchAssembler::AssembleFromEncounter(const FEncounterMatchParams
 	OutInitialState.Pets.Add(EncounterPet);
 	OutInitialState.PlaceDuelistsAtStartingCells();
 
+
 	OutPresentations.Reset();
 	OutPresentations.Add(PlayerPresentation);
 	OutPresentations.Add(EncounterPresentation);

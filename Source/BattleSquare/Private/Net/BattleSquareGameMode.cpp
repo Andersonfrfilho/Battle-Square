@@ -639,6 +639,7 @@ void ABattleSquareGameMode::HandleRoomReady(const FString& Code)
 	InitialState.Pets.Add(Side1Pet);
 	InitialState.PlaceDuelistsAtStartingCells();
 
+
 	TArray<FPetPresentationInfo> Presentations;
 	Presentations.Add(Side0Presentation);
 	Presentations.Add(Side1Presentation);

@@ -66,6 +66,12 @@ uint64 FBattleState::ComputeHash() const
 	// Arenas Variadas (design.md): layout entra no hash na ordem fixa do
 	// array — não precisa de sort, CellLayout não é um contêiner cuja
 	// ordem de iteração varia (é indexado por posição de casa, estável).
+	for (int32 Indice = 0; Indice < 16; ++Indice)
+	{
+		Hash = CombineBattleHash(Hash, SkillTerrainRequirement[Indice]);
+		Hash = CombineBattleHash(Hash, SkillTerrainLevel[Indice]);
+	}
+
 	Hash = CombineBattleHash(Hash, GridColumns);
 	Hash = CombineBattleHash(Hash, GridRows);
 

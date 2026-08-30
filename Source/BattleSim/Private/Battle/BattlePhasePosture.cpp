@@ -49,11 +49,13 @@ namespace
 			return; // Ação não é de postura — nada a fazer nesta fase.
 		}
 
-		// Submergir exige ÁGUA. É a única postura condicionada a terreno:
-		// condicionar as demais mudaria o combate inteiro, e ninguém pediu
-		// isso — a skill é que descreve estar DENTRO da água.
-		if (Action.Type == EActionType::Submergir
-			&& State.CellLayout[State.CellIndex(Pet->Column, Pet->Row)] != static_cast<uint8>(ECellProperty::Water))
+		// O requisito de terreno é DADO, e não mais um `if` por skill.
+		//
+		// Era "submergir exige água", escrito aqui — e por isso `escavar`, que
+		// quer pedra, nunca pôde existir sem editar este arquivo. Agora a
+		// montagem declara o que cada ação exige, e este ponto só confere.
+		if (!State.TerrainAllowsSkill(Action.Type,
+			State.CellLayout[State.CellIndex(Pet->Column, Pet->Row)]))
 		{
 			// Falha ALTA, com evento próprio. Silenciosamente virar Aguardar
 			// deixaria o jogador achando que a skill não funciona, quando o

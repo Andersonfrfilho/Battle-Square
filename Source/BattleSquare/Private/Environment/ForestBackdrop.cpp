@@ -539,3 +539,9 @@ bool AForestBackdrop::DamageObstacle(int32 Handle, int32 Damage)
 
 	return true;
 }
+
+bool AForestBackdrop::IsSolidSpecies(int32 SpeciesIndex) const
+{
+	return SpeciesRoles.IsValidIndex(SpeciesIndex)
+		&& FWorldObstacleBreaking::StartingHealthFor(SpeciesRoles[SpeciesIndex]) > 0;
+}

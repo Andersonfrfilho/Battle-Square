@@ -79,6 +79,14 @@ public:
 	 */
 	static constexpr float MaxWalkableRiseUnits = 40.0f;
 
+	/**
+	 * O raio de base com que a montanha nasce.
+	 *
+	 * Público pelo mesmo motivo das medidas da caverna: quem decide ONDE
+	 * plantar precisa do tamanho antes de haver montanha para perguntar.
+	 */
+	static constexpr float DefaultBaseRadiusUnits = 1500.0f;
+
 private:
 	/** Um patamar da trilha, em coordenadas locais da montanha. */
 	void CarveStep(float ZUnits, float AngleRadians, float TangentialLengthUnits);
@@ -98,7 +106,7 @@ private:
 
 	/** Raio da base. */
 	UPROPERTY(EditAnywhere, Category = "Montanha")
-	float BaseRadiusUnits = 1500.0f;
+	float BaseRadiusUnits = DefaultBaseRadiusUnits;
 
 	/** Até que fração da altura a trilha sobe. */
 	UPROPERTY(EditAnywhere, Category = "Montanha")

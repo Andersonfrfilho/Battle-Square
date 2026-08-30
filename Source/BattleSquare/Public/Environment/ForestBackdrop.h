@@ -57,6 +57,17 @@ public:
 	const TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>>& GetSpeciesClusters() const { return SpeciesClusters; }
 
 	/**
+	 * Este agrupamento tem CORPO — dá para esbarrar e para derrubar?
+	 *
+	 * Responde pela MESMA função que decide o que se derruba
+	 * (`FWorldObstacleBreaking::StartingHealthFor`), e não por uma segunda
+	 * lista: capim e flor não bloqueiam ninguém, e duas listas de "o que é
+	 * sólido" concordariam até a primeira edição. O sintoma seria uma casa de
+	 * arena bloqueada por um cogumelo.
+	 */
+	bool IsSolidSpecies(int32 SpeciesIndex) const;
+
+	/**
 	 * Os obstáculos EM PÉ perto de um ponto, com a vida que ainda têm.
 	 *
 	 * Só o que é obstáculo entra: capim e flor não são derrubáveis, e

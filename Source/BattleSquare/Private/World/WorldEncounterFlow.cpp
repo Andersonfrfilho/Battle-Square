@@ -4,6 +4,7 @@
 #include "World/EncounterDetectionComponent.h"
 #include "World/WorldBattleTransitionService.h"
 #include "World/WorldEncounterActor.h"
+#include "World/ArenaWorldSampler.h"
 #include "Battle/BattleArena.h"
 
 void UWorldEncounterFlow::Initialize(AActor* InWorldPawn,
@@ -36,6 +37,13 @@ ABattleArena* UWorldEncounterFlow::HandleEncounterTriggered(AWorldEncounterActor
 
 	FEncounterMatchParams Params = MatchParams;
 	Params.EncounterCatalogId = Encounter->CatalogId.ToString();
+
+	// A ARENA É O LUGAR: a batalha nasce do pedaço de mapa onde os dois se
+	// encontraram. Sem esta coleta, tudo o que a montagem sabe fazer com
+	// terreno de mundo fica inalcançável, e a arena volta a ser sorteio.
+	Params.EncounterLocation = Encounter->GetActorLocation();
+	FArenaWorldSampler::Collect(Encounter->GetWorld(),
+		Params.EncounterLocation, Params.WorldFeatures);
 
 	FBattleState InitialState;
 	TArray<FPetPresentationInfo> Presentations;

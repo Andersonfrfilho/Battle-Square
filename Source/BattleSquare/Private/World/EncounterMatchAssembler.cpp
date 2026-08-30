@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "World/EncounterMatchAssembler.h"
+#include "Battle/BattleArena.h"
 #include "Environment/ScenaryClimate.h"
 #include "Misc/Paths.h"
 #include "Balance/TypeEffectivenessTable.h"
@@ -70,6 +71,34 @@ bool FEncounterMatchAssembler::AssembleFromEncounter(const FEncounterMatchParams
 	// diferentes sobre o mesmo lugar, e não duas ideias de clima.
 	OutInitialState.Humidity = static_cast<uint8>(FMath::Clamp(
 		ScenaryClimate::HumidityPercent(ScenaryClimate::ConfiguredClimate()), 0, 100));
+
+	// A ARENA É O LUGAR. Antes ela era sorteada de um catálogo, e o jogador
+	// topava com um inimigo na beira do lago para cair num "Campo Aberto" —
+	// o terreno era decoração aleatória em vez de consequência de para onde
+	// ele tinha andado.
+	//
+	// Sem amostra de mundo, o layout sai VAZIO e a arena cai no catálogo:
+	// batalha aberta direto pela tela não tem lugar nenhum de onde nascer.
+	if (!Params.WorldFeatures.IsEmpty())
+	{
+		FArenaFromWorldParams Terreno;
+		Terreno.EncounterLocation = Params.EncounterLocation;
+		// O tamanho da casa vem do PADRÃO da arena, e não de um número escrito
+		// aqui: `CellSize` já é a única fonte de verdade do espaçamento, e uma
+		// segunda cópia produziria um tabuleiro montado numa escala e desenhado
+		// noutra — as casas do mundo cairiam nas casas erradas da grade.
+		Terreno.CellSize = GetDefault<ABattleArena>()->CellSize;
+		Terreno.Columns = OutInitialState.GridColumns;
+		Terreno.Rows = OutInitialState.GridRows;
+		Terreno.HumidityPercent = OutInitialState.Humidity;
+		Terreno.Features = Params.WorldFeatures;
+
+		const TArray<uint8> DoMundo = FArenaFromWorld::Build(Terreno);
+		if (DoMundo.Num() == OutInitialState.CellLayout.Num())
+		{
+			OutInitialState.CellLayout = DoMundo;
+		}
+	}
 
 
 

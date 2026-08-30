@@ -6,6 +6,7 @@
 #include "Data/PetDataLoader.h"
 #include "Data/BattleDataTranslator.h"
 #include "Battle/BattleState.h"
+#include "World/ArenaFromWorld.h"
 
 struct FEncounterMatchParams
 {
@@ -28,6 +29,16 @@ struct FEncounterMatchParams
 	 * Teste que precisa de resultado fixo passa a semente explicitamente.
 	 */
 	uint64 RandomSeed = 0;
+
+	/**
+	 * O PEDAÇO DE MAPA onde o encontro aconteceu.
+	 *
+	 * Vazio é legítimo e significa "batalha sem mundo" — teste, tela de
+	 * batalha aberta direto, partida montada à mão. Aí a arena cai no
+	 * catálogo de sempre, que continua existindo por isso.
+	 */
+	FVector EncounterLocation = FVector::ZeroVector;
+	TArray<FWorldFeatureSample> WorldFeatures;
 };
 
 /**

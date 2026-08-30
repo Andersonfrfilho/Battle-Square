@@ -212,6 +212,9 @@ public:
 	/** Põe a hora e a fase no painel — relógio que não se vê não existe. */
 	void TickWorldClock();
 
+	/** Sorteia o tempo desta hora, entrega ao sol e escreve no painel. */
+	void MostrarTempoDoMundo();
+
 	/** A luz do mundo, para o painel saber que horas o sol acha que são. */
 	UPROPERTY(Transient)
 	TObjectPtr<class ABattleSceneLighting> CenaDoMundo;

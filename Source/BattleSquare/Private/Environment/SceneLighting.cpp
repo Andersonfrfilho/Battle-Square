@@ -125,6 +125,7 @@ void ABattleSceneLighting::Tick(float DeltaSeconds)
 	}
 
 	const float HorasPassadas = DeltaSeconds / SecondsPerDay * WorldTimeOfDay::HoursPerDay;
+	ElapsedHours += HorasPassadas;
 	ApplyHour(CurrentHour + HorasPassadas);
 }
 
@@ -139,21 +140,39 @@ void ABattleSceneLighting::ApplyHour(float Hour)
 	{
 		SunLight->SetRelativeRotation(WorldTimeOfDay::SunRotation(CurrentHour));
 		SunLight->SetLightColor(WorldTimeOfDay::SunColor(CurrentHour));
-		SunLight->SetIntensity(IntensidadeDoSol * WorldTimeOfDay::SunBrightness(CurrentHour));
+		SunLight->SetIntensity(IntensidadeDoSol * BrilhoAgora());
 	}
 
 	if (SkyLight)
 	{
 		// O céu escurece junto com o sol, mas nunca abaixo do luar.
-		SkyLight->SetIntensity(FMath::Max(
-			IntensidadeDoCeu * WorldTimeOfDay::SunBrightness(CurrentHour),
-			IntensidadeDoLuar));
+		SkyLight->SetIntensity(FMath::Max(IntensidadeDoCeu * BrilhoAgora(), IntensidadeDoLuar));
 	}
+}
+
+float ABattleSceneLighting::BrilhoAgora() const
+{
+	// A hora manda, a nuvem desconta. Dia encoberto é mais escuro que dia
+	// limpo e mais claro que noite limpa — e é assim que a chuva aparece na
+	// tela sem uma única partícula.
+	return WorldTimeOfDay::SunBrightness(CurrentHour) * WorldWeather::SunDimming(CurrentWeather);
+}
+
+void ABattleSceneLighting::SetWeather(EWeather Weather)
+{
+	if (Weather == CurrentWeather)
+	{
+		return;
+	}
+
+	CurrentWeather = Weather;
+	ApplyHour(CurrentHour);
 }
 
 void ABattleSceneLighting::StartDayCycle(float StartHour)
 {
 	bDayCycleRunning = true;
+	ElapsedHours = 0.0f;
 	PrimaryActorTick.SetTickFunctionEnable(true);
 	ApplyHour(StartHour);
 }

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Environment/WorldWeather.h"
 #include "SceneLighting.generated.h"
 
 class UDirectionalLightComponent;
@@ -60,6 +61,27 @@ public:
 	/** A hora que este ator está desenhando agora. */
 	float GetHour() const { return CurrentHour; }
 
+	/**
+	 * Horas corridas desde que o ciclo começou — sem dar a volta.
+	 *
+	 * Diferente de `GetHour`, que volta a zero toda meia-noite. O tempo dura
+	 * blocos de horas e precisa saber em QUAL dia está: com a hora que dá a
+	 * volta, a chuva do primeiro dia se repetiria igual em todos os outros.
+	 */
+	float GetElapsedHours() const { return ElapsedHours; }
+
+	/**
+	 * Que tempo faz. Escurece o sol e o céu junto com a hora.
+	 *
+	 * O ator recebe o tempo em vez de sorteá-lo: quem conhece a semente do
+	 * mundo e o clima do lugar é o mundo, e sortear aqui daria um segundo
+	 * céu discordando do que o painel escreve (L-032).
+	 */
+	void SetWeather(EWeather Weather);
+
+	/** O tempo que este ator está desenhando agora. */
+	EWeather GetWeather() const { return CurrentWeather; }
+
 	/** Verdadeiro quando o dia está correndo — falso na arena, por projeto. */
 	bool IsDayCycleRunning() const { return bDayCycleRunning; }
 
@@ -105,8 +127,16 @@ public:
 	static int32 DimLightingAuthoredInMap(UWorld* World);
 
 private:
+	/** Quanto de sol chega agora: a hora vezes o desconto da nuvem. */
+	float BrilhoAgora() const;
+
 	/** A hora desenhada. Única fonte: a cor e o giro saem dela por função. */
 	float CurrentHour = 12.0f;
+
+	/** Horas corridas, sem dar a volta — é por elas que o tempo muda. */
+	float ElapsedHours = 0.0f;
+
+	EWeather CurrentWeather = EWeather::Clear;
 
 	bool bDayCycleRunning = false;
 

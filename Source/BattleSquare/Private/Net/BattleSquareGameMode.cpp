@@ -8,6 +8,7 @@
 #include "Debug/BattleDebugToolbar.h"
 #include "Debug/BattleDebugScreen.h"
 #include "Battle/BattleActionQueueComponent.h"
+#include "Battle/BattleTypes.h"
 #include "UI/BattleActionSelectorWidget.h"
 #include "Net/BattleSquarePlayerController.h"
 #include "Debug/BattleDebugHUD.h"
@@ -24,6 +25,7 @@
 #include "Environment/ScenaryClimate.h"
 #include "Environment/SceneLighting.h"
 #include "Environment/WorldTimeOfDay.h"
+#include "Environment/WorldWeather.h"
 #include "World/WorldStatusReadout.h"
 #include "UI/WorldLoadingScreen.h"
 #include "UI/WorldMapScreen.h"
@@ -832,6 +834,41 @@ void ABattleSquareGameMode::TickWorldClock()
 			WorldTimeOfDay::PhaseDebugName(Fase),
 			WorldTimeOfDay::SunElevationDegrees(Hora)),
 		0.0f, CorDaFase, /*Key=*/750);
+
+	MostrarTempoDoMundo();
+}
+
+void ABattleSquareGameMode::MostrarTempoDoMundo()
+{
+	// O tempo é função da semente do mundo, do clima do lugar e das horas
+	// corridas. Quem sorteia é esta conta, uma só: o ator de luz recebe o
+	// resultado, e o painel escreve o MESMO resultado (L-032).
+	const EWeather Tempo = WorldWeather::WeatherAt(
+		static_cast<uint32>(WorldScenerySeed),
+		ScenaryClimate::ConfiguredClimate(),
+		CenaDoMundo->GetElapsedHours());
+
+	CenaDoMundo->SetWeather(Tempo);
+
+	FColor CorDoTempo = FColor::Yellow;
+	switch (Tempo)
+	{
+	case EWeather::Rain:     CorDoTempo = FColor::Blue;    break;
+	case EWeather::Overcast: CorDoTempo = FColor::Silver;  break;
+	case EWeather::Cloudy:   CorDoTempo = FColor::White;   break;
+	case EWeather::Clear:    CorDoTempo = FColor::Yellow;  break;
+	}
+
+	// A umidade entra na linha porque é ela que atravessa para a batalha: ver
+	// o número subir na chuva é ver, antes de lutar, que o campo vai estar
+	// enlameado.
+	const int32 Umidade = WorldWeather::HumidityPercent(ScenaryClimate::ConfiguredClimate(), Tempo);
+
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("tempo: %s — umidade %d%%%s"),
+			WorldWeather::WeatherDebugName(Tempo), Umidade,
+			Umidade >= MudMinHumidity ? TEXT(" (campo de LAMA)") : TEXT("")),
+		0.0f, CorDoTempo, /*Key=*/751);
 }
 
 void ABattleSquareGameMode::TickTrainingFields()

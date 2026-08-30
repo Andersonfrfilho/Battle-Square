@@ -150,6 +150,10 @@ bool FArenaCellLocationFollowsTerrainTest::RunTest(const FString& Parameters)
 	Estado.CellLayout[Estado.CellIndex(0, 0)] = static_cast<uint8>(ECellProperty::Water);
 	Estado.CellLayout[Estado.CellIndex(2, 2)] = static_cast<uint8>(ECellProperty::Blocked);
 
+	// Sem o redesenho o obstáculo ainda não tem tamanho nem assentamento, e
+	// a casa bloqueada não teria topo para o pé encostar.
+	Arena->RefreshTileVisuals();
+
 	const float Base = Arena->GetActorLocation().Z;
 	const float NaAgua = Arena->GetCellWorldLocation(0, 0).Z;
 	const float NoPlano = Arena->GetCellWorldLocation(1, 1).Z;
@@ -162,9 +166,34 @@ bool FArenaCellLocationFollowsTerrainTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("A altura é exatamente a superfície da casa"),
 		NaAgua - Base,
 		ABattleArena::GetCellSurfaceHeight(static_cast<uint8>(ECellProperty::Water)));
-	TestEqual(TEXT("E a consulta por casa concorda com ela"),
-		Arena->GetCellSurfaceHeightAt(2, 2),
-		ABattleArena::GetCellSurfaceHeight(static_cast<uint8>(ECellProperty::Blocked)));
+
+	// Na casa BLOQUEADA o pé não encosta na laje: encosta no TOPO do tronco,
+	// porque quem está ali escalou. Antes disto o pet subia e renderizava por
+	// dentro da pedra — de novo o defeito de afundar no tabuleiro.
+	//
+	// A medida sai da caixa do PRÓPRIO componente, e não de `altura * casa`:
+	// a escala do obstáculo ainda é aparada para ele não invadir a casa
+	// vizinha, então a conta refeita acharia um topo que a pedra larga não
+	// tem.
+	const TArray<TObjectPtr<UStaticMeshComponent>>& Obstaculos = Arena->GetCellObstacleMeshes();
+	const int32 IndiceDaPedra = Estado.CellIndex(2, 2);
+	if (!TestTrue(TEXT("a casa bloqueada tem componente de obstaculo"),
+		Obstaculos.IsValidIndex(IndiceDaPedra) && Obstaculos[IndiceDaPedra] != nullptr))
+	{
+		ArenaCena::DestruirMundoDaGeometria(World);
+		return false;
+	}
+
+	const FBoxSphereBounds CaixaDaPedra =
+		Obstaculos[IndiceDaPedra]->CalcBounds(Obstaculos[IndiceDaPedra]->GetRelativeTransform());
+	const float TopoDaPedra = static_cast<float>(CaixaDaPedra.Origin.Z + CaixaDaPedra.BoxExtent.Z);
+
+	TestEqual(TEXT("Quem escalou fica em cima do obstaculo, nao dentro dele"),
+		Arena->GetCellSurfaceHeightAt(2, 2), TopoDaPedra, 1.0f);
+	TestTrue(TEXT("E isso e' bem acima da laje bloqueada"),
+		Arena->GetCellSurfaceHeightAt(2, 2)
+			> ABattleArena::GetCellSurfaceHeight(static_cast<uint8>(ECellProperty::Blocked))
+				+ Arena->CellSize * 0.5f);
 
 	ArenaCena::DestruirMundoDaGeometria(World);
 	return true;

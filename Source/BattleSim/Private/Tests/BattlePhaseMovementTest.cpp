@@ -1,5 +1,6 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
+#include "Battle/BattleArenaConstants.h"
 #include "Battle/BattlePhases.h"
 #include "Battle/BattleState.h"
 #include "Battle/BattleEvent.h"
@@ -183,8 +184,17 @@ bool FBattlePhaseMovementSkipsDeadPetTest::RunTest(const FString& Parameters)
 	return true;
 }
 
-// T3: casa bloqueada rejeita movimento — pet nunca sai da posição
-// original, repetidamente, mesmo caminho de "fora da grade".
+// T3: casa bloqueada rejeita o movimento de quem NÃO TEM COMO PASSAR —
+// pet nunca sai da posição original, repetidamente.
+//
+// A casa bloqueada deixou de ser parede lisa: hoje ela é tronco ou pedra, e
+// quem tem força derruba, quem tem agilidade sobe (BattleSim.Obstacle.*). Este
+// teste continua sendo o caso do pet que não tem nem uma coisa nem outra — e
+// o `MakeMovementPet` o entrega assim, com ataque e velocidade em zero.
+//
+// A verificação explícita abaixo existe para que este teste passe DE
+// PROPÓSITO: sem ela, mexer no padrão do helper faria o pet virar forte e o
+// teste passaria a medir outra coisa em silêncio.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FBattlePhaseMovementBlockedCellRejectsMovementTest,
 	"BattleSim.Movement.BlockedCellRejectsMovement",
@@ -196,6 +206,11 @@ bool FBattlePhaseMovementBlockedCellRejectsMovementTest::RunTest(const FString& 
 	State.Pets.Add(MakeMovementPet(1, 0, 1, 1));
 	State.Pets.Add(MakeMovementPet(2, 1, 0, 0)); // longe, não interfere
 	State.CellLayout[State.CellIndex(2, 1)] = static_cast<uint8>(ECellProperty::Blocked); // casa à direita do Pet 1
+
+	TestTrue(TEXT("o pet deste teste e' fraco demais para derrubar"),
+		State.Pets[0].GetEffectiveAttack() < BattleArenaConstants::ObstacleBreakAttack);
+	TestTrue(TEXT("e lento demais para subir"),
+		State.Pets[0].GetEffectiveSpeed() < BattleArenaConstants::ObstacleClimbSpeed);
 
 	for (int32 Attempt = 0; Attempt < 5; ++Attempt)
 	{

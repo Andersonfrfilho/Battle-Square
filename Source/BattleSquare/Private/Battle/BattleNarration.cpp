@@ -92,6 +92,19 @@ FText FBattleNarration::Describe(const FBattleEvent& Event, const FString& Actor
 	case EBattleEventType::EsquivouPorReflexo:
 		return FText::Format(LOCTEXT("EsquivouPorReflexo", "{Actor} desviou por reflexo"), Args);
 
+	case EBattleEventType::ObstaculoDerrubado:
+		// Diz que a passagem ABRIU, e não só que algo caiu: é a consequência
+		// que muda a jogada seguinte, de quem derrubou e de quem assistiu.
+		return FText::Format(LOCTEXT("ObstaculoDerrubado",
+			"{Actor} derrubou o obstáculo — a passagem abriu"), Args);
+
+	case EBattleEventType::SubiuNoObstaculo:
+		// Diz o que a altura VALE. "Subiu no tronco" sozinho seria uma
+		// mudança de casa como outra qualquer, e o jogador não ligaria o
+		// golpe mais forte do slot seguinte a esta linha.
+		return FText::Format(LOCTEXT("SubiuNoObstaculo",
+			"{Actor} escalou o obstáculo — ataca de cima e alcança quem voa"), Args);
+
 	case EBattleEventType::Defendeu:
 		return FText::Format(LOCTEXT("Defendeu", "{Actor} defendeu o golpe"), Args);
 

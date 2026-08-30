@@ -320,6 +320,22 @@ namespace
 	 * escadas de postura em lugares diferentes concordariam até a primeira
 	 * edição.
 	 */
+	/**
+	 * Está EM CIMA de um obstáculo — a casa dele continuou bloqueada, e só se
+	 * chega a uma dessas escalando (BattlePhaseMovement, Passo 2).
+	 *
+	 * A altura não é campo de FPetState de propósito: ela já está escrita na
+	 * posição do pet somada ao tabuleiro, e um campo separado seria uma
+	 * segunda cópia da mesma verdade — foi assim que L-032 e L-033
+	 * aconteceram. Também é o que dispensa zerá-la: o pet desce quando anda
+	 * para fora, e cai junto se alguém derrubar o tronco.
+	 */
+	bool IsStandingOnObstacle(const FBattleState& State, const FPetState& Pet)
+	{
+		return State.CellLayout[State.CellIndex(Pet.Column, Pet.Row)]
+			== static_cast<uint8>(ECellProperty::Blocked);
+	}
+
 	void ApplyHitAgainst(
 		FBattleState& State,
 		FPetState& Attacker,
@@ -345,7 +361,13 @@ namespace
 
 		// Voar tira o pet do alcance do golpe FÍSICO, mas o expõe no céu — a
 		// magia acerta, e acerta mais forte. É troca, não escudo.
-		if (!bIsMagic && HasPosture(*TargetPtr, EBattlePostureFlags::Flying))
+		//
+		// Do alto de um obstáculo, porém, o golpe físico ALCANÇA quem voou:
+		// é a habilidade que subir destrava, e ela cai por si quando o pet
+		// desce ou o tronco vai ao chão. Sem isto, escalar seria só dano
+		// extra, e voar continuaria imune a tudo que não fosse magia.
+		const bool bAttackerIsElevated = IsStandingOnObstacle(State, *AttackerPtr);
+		if (!bIsMagic && HasPosture(*TargetPtr, EBattlePostureFlags::Flying) && !bAttackerIsElevated)
 		{
 			EmitMiss(OutTrace, SlotIndex, *AttackerPtr);
 			return;
@@ -390,6 +412,14 @@ namespace
 			Multiplier = (Multiplier * ExposedInTheAirDamagePercent) / 100;
 		}
 
+		// De CIMA para BAIXO bate mais forte. Exige que o alvo esteja mais
+		// embaixo: dois pets escalados brigam de igual para igual, senão
+		// subir premiaria até quem ataca alguém já no alto.
+		if (bAttackerIsElevated && !IsStandingOnObstacle(State, *TargetPtr))
+		{
+			Multiplier = (Multiplier * BattleArenaConstants::ElevatedAttackPercent) / 100;
+		}
+
 		const int32 DanoBase = ComputeDamage(*AttackerPtr, *TargetPtr, Multiplier, State);
 
 		// A variação é aplicada ao dano JÁ calculado, e não ao multiplicador:
@@ -424,9 +454,14 @@ namespace
 			if (State.CellLayout.IsValidIndex(CellIndex)
 				&& State.CellLayout[CellIndex] != static_cast<uint8>(ECellProperty::Blocked))
 			{
-				// Casa BLOQUEADA nunca muda: ela é estrutura da arena, não
-				// superfície. Um golpe que abrisse passagem mudaria o
-				// tabuleiro no meio do turno, e o movimento já foi resolvido.
+				// Casa BLOQUEADA não muda AQUI. Ela tem corpo, e derrubá-la
+				// é decisão do movimento (BattlePhaseMovement, Passo 2),
+				// onde o pet gasta o slot para isso e todo mundo ainda pode
+				// reagir ao caminho aberto. Um golpe de F4 que abrisse
+				// passagem mudaria o tabuleiro depois de o movimento já ter
+				// sido resolvido — e passariam a existir duas regras para
+				// remover o mesmo obstáculo, que concordariam até a primeira
+				// edição.
 				State.CellLayout[CellIndex] = TerrainEffect;
 
 				FBattleEvent Terreno;

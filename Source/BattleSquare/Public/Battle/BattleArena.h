@@ -135,6 +135,20 @@ public:
 	float GetCellSurfaceHeightAt(uint8 Column, uint8 Row) const;
 
 	/**
+	 * O TOPO do obstáculo daquela casa — onde o pé de quem escalou encosta.
+	 *
+	 * Mede a malha que está na tela, e não repete a conta que a montou: o
+	 * obstáculo é escalado pela altura, mas essa escala ainda é aparada para
+	 * ele não transbordar a casa, e quem recalculasse `altura * casa` acharia
+	 * um topo que a pedra larga não tem. Assertar contra os próprios limites
+	 * do componente é o mesmo padrão do teste que já cuida do obstáculo.
+	 *
+	 * Casa sem obstáculo montado devolve a superfície bloqueada, que é onde
+	 * ele assentaria — nunca uma altura inventada.
+	 */
+	float GetObstacleTopHeightAt(uint8 Column, uint8 Row) const;
+
+	/**
 	 * Veste a arena com o ambiente do lugar onde o encontro aconteceu.
 	 *
 	 * A arena nasce a um milhão de unidades do mundo (DP-enc-03), fora de

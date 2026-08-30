@@ -13,7 +13,28 @@ namespace
 		int32 DestColumn = 0;
 		int32 DestRow = 0;
 		bool bInsideGrid = false;
+		// Destino dentro da grade, mas ocupado por tronco ou pedra. Guardado
+		// em separado de bInsideGrid porque agora há TRÊS saídas para ele —
+		// derrubar, subir, esbarrar — e dobrar as três dentro de um booleano
+		// de validade escondia justamente a que interessa.
+		bool bDestinationIsObstacle = false;
 	};
+
+	bool IsCellOccupied(const FBattleState& State, int32 Column, int32 Row, const FPetState& Ignoring)
+	{
+		for (const FPetState& Pet : State.Pets)
+		{
+			if (&Pet == &Ignoring || !Pet.IsAlive())
+			{
+				continue;
+			}
+			if (static_cast<int32>(Pet.Column) == Column && static_cast<int32>(Pet.Row) == Row)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
 
 	void CollectIntent(FBattleState& State, uint8 Side, const FBattleAction& Action, TArray<FMoveIntent>& OutIntents)
 	{
@@ -54,9 +75,9 @@ namespace
 			// "destino válido", nome mantido para não mexer no resto do
 			// algoritmo (colisão entre aliados, EmitBlocked já existentes).
 			const bool bWithinBounds = State.IsInside(DestColumn, DestRow);
-			const bool bDestinationBlocked = bWithinBounds
+			Intent.bDestinationIsObstacle = bWithinBounds
 				&& State.CellLayout[State.CellIndex(DestColumn, DestRow)] == static_cast<uint8>(ECellProperty::Blocked);
-			Intent.bInsideGrid = bWithinBounds && !bDestinationBlocked;
+			Intent.bInsideGrid = bWithinBounds && !Intent.bDestinationIsObstacle;
 			OutIntents.Add(Intent);
 
 			// v1 é 1v1 — um único pet vivo por lado, então este laço
@@ -94,6 +115,34 @@ namespace
 		OutTrace.Add(Event);
 	}
 
+	void EmitObstacleFelled(TArray<FBattleEvent>& OutTrace, uint8 SlotIndex,
+		const FPetState& Pet, uint8 ObstacleCell)
+	{
+		FBattleEvent Event;
+		Event.Type = EBattleEventType::ObstaculoDerrubado;
+		Event.SlotIndex = SlotIndex;
+		Event.Phase = 3; // F3
+		Event.ActorId = Pet.PetId;
+		Event.TargetId = BattleEventNoActor;
+		Event.FromCell = PackCell(Pet.Column, Pet.Row);
+		Event.ToCell = ObstacleCell; // Derrubou dali; ele próprio fica onde está.
+		OutTrace.Add(Event);
+	}
+
+	void EmitClimbed(TArray<FBattleEvent>& OutTrace, uint8 SlotIndex,
+		const FPetState& Pet, uint8 FromCell, uint8 ToCell)
+	{
+		FBattleEvent Event;
+		Event.Type = EBattleEventType::SubiuNoObstaculo;
+		Event.SlotIndex = SlotIndex;
+		Event.Phase = 3; // F3
+		Event.ActorId = Pet.PetId;
+		Event.TargetId = BattleEventNoActor;
+		Event.FromCell = FromCell;
+		Event.ToCell = ToCell;
+		OutTrace.Add(Event);
+	}
+
 	void EmitBlocked(TArray<FBattleEvent>& OutTrace, uint8 SlotIndex, const FPetState& Pet)
 	{
 		FBattleEvent Event;
@@ -121,14 +170,117 @@ void BattlePhases::ApplyMovement(
 	CollectIntent(State, /*Side=*/0, LeftAction, Intents);
 	CollectIntent(State, /*Side=*/1, RightAction, Intents);
 
-	// Passos 2–3 (validade de destino, colisão entre aliados) só têm
-	// sentido se alguém tentou se mover — mas o Passo 4 (dano de casa)
+	// Passos 2–4 (obstáculo, validade de destino, colisão entre aliados) só
+	// têm sentido se alguém tentou se mover — mas o Passo 5 (dano de casa)
 	// precisa rodar sempre, mesmo com Intents vazio (ex.: os dois lados
 	// dão Aguardar, parados numa casa de dano). Por isso nenhum
 	// early-return: os passos de movimento ficam dentro deste bloco.
 	if (!Intents.IsEmpty())
 	{
-		// Passo 2: fora da grade é bloqueio individual, resolvido já aqui —
+		// Passo 2: a casa BLOQUEADA tem CORPO — tronco ou pedra, não parede
+		// lisa. Quem anda contra ela derruba (força), sobe (agilidade) ou
+		// esbarra, nesta ordem.
+		//
+		// Antes do Passo 4 de propósito: derrubar abre a casa para a disputa
+		// de destino do MESMO slot, e é isso que faz o forte trabalhar para o
+		// ágil quando os dois miram o mesmo obstáculo.
+		//
+		// Em ordem de PetId, e não de container: os dois lados podem mirar o
+		// mesmo obstáculo, e quem chega primeiro decide o que acontece com
+		// ele. Ordem de container não é determinismo (o mesmo motivo de
+		// ResolveTarget desempatar por PetId).
+		TArray<int32> OrdemDeResolucao;
+		for (int32 Index = 0; Index < Intents.Num(); ++Index)
+		{
+			OrdemDeResolucao.Add(Index);
+		}
+		OrdemDeResolucao.Sort([&Intents](int32 Esquerda, int32 Direita)
+		{
+			return Intents[Esquerda].Pet->PetId < Intents[Direita].Pet->PetId;
+		});
+
+		TArray<int32> IntencoesConsumidas;
+		for (int32 Index : OrdemDeResolucao)
+		{
+			FMoveIntent& Intent = Intents[Index];
+			if (!Intent.bDestinationIsObstacle)
+			{
+				continue;
+			}
+
+			// Relê o tabuleiro em vez de confiar na coleta: um aliado com
+			// força pode ter derrubado este mesmo obstáculo agora há pouco, e
+			// o caminho está aberto.
+			const int32 IndiceDaCasa = State.CellIndex(Intent.DestColumn, Intent.DestRow);
+			if (State.CellLayout[IndiceDaCasa] != static_cast<uint8>(ECellProperty::Blocked))
+			{
+				// Sem obstáculo já não há escalada: dali em diante é andar
+				// para uma casa vazia, e é `Moveu` que o feed precisa contar.
+				Intent.bDestinationIsObstacle = false;
+				Intent.bInsideGrid = true;
+				continue;
+			}
+
+			// Obstáculo com alguém em cima não cai nem recebe segundo
+			// morador: derrubá-lo tiraria o chão de quem já subiu, e a queda
+			// seria consequência de uma jogada de OUTRO pet. Esbarra, e o
+			// Passo 4 nem chega a ver a disputa.
+			if (IsCellOccupied(State, Intent.DestColumn, Intent.DestRow, *Intent.Pet))
+			{
+				continue;
+			}
+
+			// Força DERRUBA — e gasta o slot nisso: quem abre a passagem não
+			// atravessa no mesmo movimento. Sem esse custo, o obstáculo seria
+			// um pedágio de zero para o pet forte.
+			if (Intent.Pet->GetEffectiveAttack() >= BattleArenaConstants::ObstacleBreakAttack)
+			{
+				State.CellLayout[IndiceDaCasa] = static_cast<uint8>(ECellProperty::None);
+				EmitObstacleFelled(OutTrace, SlotIndex, *Intent.Pet,
+					PackCell(static_cast<uint8>(Intent.DestColumn), static_cast<uint8>(Intent.DestRow)));
+				IntencoesConsumidas.Add(Index);
+
+				// Quem mirava esta casa passa a andar para ela, tenha já sido
+				// visitado ou não. Sem isto, o ágil de PetId menor que decidiu
+				// escalar UM PASSO antes entraria numa casa cujo tronco acabou
+				// de ir ao chão — e o feed diria que ele escalou o nada.
+				const int32 IndiceQueCaiu = IndiceDaCasa;
+				for (int32 Outro = 0; Outro < Intents.Num(); ++Outro)
+				{
+					if (Outro == Index)
+					{
+						continue;
+					}
+					FMoveIntent& Vizinho = Intents[Outro];
+					if (Vizinho.bDestinationIsObstacle
+						&& State.CellIndex(Vizinho.DestColumn, Vizinho.DestRow) == IndiceQueCaiu)
+					{
+						Vizinho.bDestinationIsObstacle = false;
+						Vizinho.bInsideGrid = true;
+					}
+				}
+				continue;
+			}
+
+			// Agilidade SOBE. Daqui em diante a intenção é um movimento
+			// comum: entra na disputa de destino como qualquer outra, e o que
+			// a distingue na hora de aplicar é a casa ter continuado
+			// bloqueada.
+			if (Intent.Pet->GetEffectiveSpeed() >= BattleArenaConstants::ObstacleClimbSpeed)
+			{
+				Intent.bInsideGrid = true;
+			}
+		}
+
+		// Descendente: remover de trás para a frente mantém válidos os
+		// índices ainda não visitados.
+		IntencoesConsumidas.Sort([](int32 Esquerda, int32 Direita) { return Esquerda > Direita; });
+		for (int32 Index : IntencoesConsumidas)
+		{
+			Intents.RemoveAt(Index);
+		}
+
+		// Passo 3: fora da grade é bloqueio individual, resolvido já aqui —
 		// não compete por destino com mais ninguém.
 		TArray<FMoveIntent> ValidIntents;
 		for (const FMoveIntent& Intent : Intents)
@@ -143,7 +295,7 @@ void BattlePhases::ApplyMovement(
 			}
 		}
 
-		// Passo 3: disputa de destino, decidida por POSIÇÃO FINAL.
+		// Passo 4: disputa de destino, decidida por POSIÇÃO FINAL.
 		//
 		// DP-02 foi INVERTIDO em 2026-08-27: dois pets não ocupam a mesma
 		// casa. Decidir por posição final, e não conferindo a casa de destino
@@ -244,11 +396,22 @@ void BattlePhases::ApplyMovement(
 			Intent.Pet->Column = static_cast<uint8>(Intent.DestColumn);
 			Intent.Pet->Row = static_cast<uint8>(Intent.DestRow);
 			const uint8 ToCell = PackCell(Intent.Pet->Column, Intent.Pet->Row);
-			EmitMoved(OutTrace, SlotIndex, *Intent.Pet, FromCell, ToCell);
+
+			// Destino que continuou bloqueado só chega aqui pela escalada do
+			// Passo 2 — e subir num tronco não é andar: quem lê o feed
+			// precisa saber que aquele pet passou a lutar de cima.
+			if (Intent.bDestinationIsObstacle)
+			{
+				EmitClimbed(OutTrace, SlotIndex, *Intent.Pet, FromCell, ToCell);
+			}
+			else
+			{
+				EmitMoved(OutTrace, SlotIndex, *Intent.Pet, FromCell, ToCell);
+			}
 		}
 	}
 
-	// Passo 4 (Arenas Variadas, design.md — DP-arena-02): dano de casa,
+	// Passo 5 (Arenas Variadas, design.md — DP-arena-02): dano de casa,
 	// avaliado ao fim DESTE slot, pela posição atual de cada pet vivo —
 	// já depois do movimento acima ter sido aplicado (ou a mesma posição
 	// de antes, se ele não se moveu ou foi bloqueado). Soma em

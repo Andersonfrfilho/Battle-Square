@@ -51,7 +51,18 @@ enum class EBattleEventType : uint8
 	// enum, pelo mesmo motivo dos anteriores: os valores existentes entram no
 	// hash do traço.
 	AtributoAlterado,
-	AtributoVoltouAoNormal
+	AtributoVoltouAoNormal,
+
+	// A casa bloqueada tem corpo: quem tem força derruba o obstáculo, quem
+	// tem agilidade sobe nele. Dois eventos, e não um `TerrenoMudou` para o
+	// primeiro e um `Moveu` para o segundo, porque é a diferença entre os
+	// dois que o jogador precisa entender — e porque `Moveu` sozinho não
+	// contaria que aquele pet agora luta de cima.
+	//
+	// No FIM do enum, pelo mesmo motivo dos anteriores: os valores existentes
+	// entram no hash do traço.
+	ObstaculoDerrubado,
+	SubiuNoObstaculo
 };
 
 // Sentinela para TargetId/ActorId quando não há alvo aplicável

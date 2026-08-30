@@ -39,4 +39,41 @@ namespace BattleArenaConstants
 	constexpr int32 DamageVarianceBasePercent = 20;
 	constexpr int32 DamageVarianceFloorPercent = 5;
 	constexpr int32 AggressionPerVariancePoint = 2;
+
+	/**
+	 * A casa BLOQUEADA não é parede lisa: é tronco caído ou pedra em pé, e o
+	 * pet que anda contra ela faz uma de três coisas, nesta ordem.
+	 *
+	 * FORÇA derruba. Quem chega ao ataque efetivo do teto abaixo abre
+	 * passagem para todo mundo — inclusive para o adversário. É por isso que
+	 * derrubar não é obviamente bom: limpa o tabuleiro e entrega o terreno
+	 * alto que o outro talvez fosse usar.
+	 *
+	 * VELOCIDADE sobe. Quem não derruba mas alcança a agilidade do teto
+	 * escala e passa a lutar de cima (ElevatedAttackPercent). É a leitura
+	 * literal do pedido: "se eles não tiver atributos ou poderes suficientes,
+	 * subir neles".
+	 *
+	 * Quem não tem nem uma coisa nem outra esbarra, como antes.
+	 *
+	 * Os números saem do elenco semeado (pet-catalog.seed.ts): ataque de 40 a
+	 * 75, velocidade de 35 a 80. 65 deixa derrubar com o quarto mais forte —
+	 * raro o bastante para ser notícia; 55 deixa subir com pouco mais da
+	 * metade — comum o bastante para ser tática, e não sorte de elenco.
+	 * Ambos leem o valor EFETIVO, então um buff de ataque abre a passagem que
+	 * o pet cru não abriria: o obstáculo responde à jogada, não só à ficha.
+	 */
+	constexpr int32 ObstacleBreakAttack = 65;
+	constexpr int32 ObstacleClimbSpeed = 55;
+
+	/**
+	 * De cima para baixo bate mais forte — e só de cima para baixo: dois pets
+	 * em obstáculos diferentes brigam de igual para igual, sem bônus para
+	 * ninguém. Um multiplicador que valesse sempre que o atacante estivesse
+	 * no alto premiaria subir mesmo contra quem já está lá.
+	 *
+	 * 130 é o degrau do meio entre o buff de casa (120) e a exposição no ar
+	 * (150): mais que ocupar terreno bom, menos que pegar alguém sem chão.
+	 */
+	constexpr int32 ElevatedAttackPercent = 130;
 }

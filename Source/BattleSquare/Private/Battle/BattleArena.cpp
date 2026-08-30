@@ -677,7 +677,48 @@ uint8 ABattleArena::GetCellProperty(uint8 Column, uint8 Row) const
 
 float ABattleArena::GetCellSurfaceHeightAt(uint8 Column, uint8 Row) const
 {
-	return GetCellSurfaceHeight(GetCellProperty(Column, Row));
+	const uint8 Propriedade = GetCellProperty(Column, Row);
+
+	// Casa BLOQUEADA agora tem CORPO, e quem está nela só chegou ali
+	// escalando (BattlePhaseMovement, Passo 2). O pé dele encosta no TOPO do
+	// tronco, não na laje sob ele — devolvesse a laje, o pet que subiu
+	// renderizaria por dentro da pedra, exatamente o defeito de afundar no
+	// tabuleiro que já custou uma rodada.
+	if (static_cast<ECellProperty>(Propriedade) == ECellProperty::Blocked)
+	{
+		return GetObstacleTopHeightAt(Column, Row);
+	}
+
+	return GetCellSurfaceHeight(Propriedade);
+}
+
+float ABattleArena::GetObstacleTopHeightAt(uint8 Column, uint8 Row) const
+{
+	const int32 Indice = CurrentState.CellIndex(Column, Row);
+	if (!CellObstacleMeshes.IsValidIndex(Indice) || !CellObstacleMeshes[Indice])
+	{
+		return ArenaGeometria::SuperficieBloqueada;
+	}
+
+	// Só o obstáculo VISÍVEL conta. O componente já nasce com malha (para
+	// nenhuma casa ficar com o vazio à espera do redesenho), mas é
+	// RefreshTileVisuals quem lhe dá tamanho e assentamento — antes dela, a
+	// caixa é a da malha crua, e o topo seria um número que ninguém vê.
+	const UStaticMeshComponent* Obstaculo = CellObstacleMeshes[Indice];
+	const UStaticMesh* Malha = Obstaculo->GetStaticMesh();
+	if (!Malha || !Obstaculo->IsVisible())
+	{
+		return ArenaGeometria::SuperficieBloqueada;
+	}
+
+	// Os limites do próprio componente, já girado e escalado como está na
+	// tela. O Z relativo dele é o assentamento feito na montagem; somar o
+	// topo da caixa dá a altura que o olho vê.
+	const FBox CaixaOrientada = Malha->GetBoundingBox().TransformBy(
+		FTransform(Obstaculo->GetRelativeRotation(), FVector::ZeroVector,
+			Obstaculo->GetRelativeScale3D()));
+
+	return Obstaculo->GetRelativeLocation().Z + static_cast<float>(CaixaOrientada.Max.Z);
 }
 
 bool ABattleArena::AdoptAmbienceFromWorldLocation(const FVector& WorldLocation)
@@ -882,6 +923,17 @@ void ABattleArena::DispatchEventToPetViews(const FBattleEvent& Event)
 			View->GlideTo(GetCellWorldLocation(View->GetColumn(), View->GetRow()));
 			View->RefreshBodyAppearance();
 		}
+	}
+
+	// Evento que muda o TABULEIRO redesenha as lajes. Sem isto, o tronco
+	// derrubado continua em pé na tela enquanto o pet atravessa por dentro
+	// dele — e a casa que um golpe transformou em água segue com cara de
+	// chão. Aqui, e não no fim do turno, para a mudança aparecer no instante
+	// em que o feed a narra.
+	if (Event.Type == EBattleEventType::ObstaculoDerrubado
+		|| Event.Type == EBattleEventType::TerrenoMudou)
+	{
+		RefreshTileVisuals();
 	}
 
 	// Depois de QUALQUER reposicionamento: quem andou passa a olhar de outro

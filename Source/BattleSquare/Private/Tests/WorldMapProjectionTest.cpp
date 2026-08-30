@@ -13,7 +13,7 @@ namespace
 		return Retrato;
 	}
 
-	constexpr float Alcance = 1000.0f;
+	constexpr float AlcanceDoMapaDoMundo = 1000.0f;
 }
 
 // OS QUATRO PONTOS CARDEAIS, com o norte acima.
@@ -34,22 +34,22 @@ bool FMapNorthUpPutsNorthUpTest::RunTest(const FString& Parameters)
 
 	// +X é o NORTE. Na tela ele sobe, e o Y da tela cresce para baixo.
 	const FVector2D Norte = FWorldMapProjection::ToMapSpace(
-		FVector2D(500.0f, 0.0f), Retrato, Modo, Alcance);
+		FVector2D(500.0f, 0.0f), Retrato, Modo, AlcanceDoMapaDoMundo);
 	TestTrue(TEXT("Norte fica ACIMA do centro"), Norte.Y < 0.0f);
 	TestTrue(TEXT("E não desloca para os lados"), FMath::IsNearlyZero(Norte.X, 0.001f));
 
 	// +Y é o LESTE, e vai à direita.
 	const FVector2D Leste = FWorldMapProjection::ToMapSpace(
-		FVector2D(0.0f, 500.0f), Retrato, Modo, Alcance);
+		FVector2D(0.0f, 500.0f), Retrato, Modo, AlcanceDoMapaDoMundo);
 	TestTrue(TEXT("Leste fica à DIREITA"), Leste.X > 0.0f);
 	TestTrue(TEXT("E não sobe nem desce"), FMath::IsNearlyZero(Leste.Y, 0.001f));
 
 	const FVector2D Sul = FWorldMapProjection::ToMapSpace(
-		FVector2D(-500.0f, 0.0f), Retrato, Modo, Alcance);
+		FVector2D(-500.0f, 0.0f), Retrato, Modo, AlcanceDoMapaDoMundo);
 	TestTrue(TEXT("Sul fica ABAIXO"), Sul.Y > 0.0f);
 
 	const FVector2D Oeste = FWorldMapProjection::ToMapSpace(
-		FVector2D(0.0f, -500.0f), Retrato, Modo, Alcance);
+		FVector2D(0.0f, -500.0f), Retrato, Modo, AlcanceDoMapaDoMundo);
 	TestTrue(TEXT("Oeste fica à ESQUERDA"), Oeste.X < 0.0f);
 
 	// E a escala: metade do alcance é meio caminho até a borda.
@@ -72,9 +72,9 @@ bool FNorthUpIgnoresWhereYouLookTest::RunTest(const FString& Parameters)
 	const FVector2D Alvo(500.0f, 0.0f);
 
 	const FVector2D Olhando0 = FWorldMapProjection::ToMapSpace(
-		Alvo, MapaComJogadorEm(FVector2D::ZeroVector, 0.0f), Modo, Alcance);
+		Alvo, MapaComJogadorEm(FVector2D::ZeroVector, 0.0f), Modo, AlcanceDoMapaDoMundo);
 	const FVector2D Olhando90 = FWorldMapProjection::ToMapSpace(
-		Alvo, MapaComJogadorEm(FVector2D::ZeroVector, 90.0f), Modo, Alcance);
+		Alvo, MapaComJogadorEm(FVector2D::ZeroVector, 90.0f), Modo, AlcanceDoMapaDoMundo);
 
 	TestTrue(TEXT("O ponto não se move quando o jogador vira"),
 		Olhando0.Equals(Olhando90, 0.001f));
@@ -103,19 +103,19 @@ bool FHeadingUpPutsWhatIsAheadOnTopTest::RunTest(const FString& Parameters)
 
 	// Olhando para o norte (yaw 0), o que está ao norte fica em cima.
 	const FVector2D AoNorte = FWorldMapProjection::ToMapSpace(
-		FVector2D(500.0f, 0.0f), MapaComJogadorEm(FVector2D::ZeroVector, 0.0f), Modo, Alcance);
+		FVector2D(500.0f, 0.0f), MapaComJogadorEm(FVector2D::ZeroVector, 0.0f), Modo, AlcanceDoMapaDoMundo);
 	TestTrue(TEXT("Olhando ao norte, o norte fica em cima"), AoNorte.Y < 0.0f);
 
 	// Olhando para o LESTE (yaw 90), o que está a LESTE passa a ficar em cima.
 	const FVector2D AoLeste = FWorldMapProjection::ToMapSpace(
-		FVector2D(0.0f, 500.0f), MapaComJogadorEm(FVector2D::ZeroVector, 90.0f), Modo, Alcance);
+		FVector2D(0.0f, 500.0f), MapaComJogadorEm(FVector2D::ZeroVector, 90.0f), Modo, AlcanceDoMapaDoMundo);
 	TestTrue(TEXT("Olhando ao leste, o leste fica em cima"), AoLeste.Y < 0.0f);
 	TestTrue(TEXT("E centrado, não de lado"), FMath::IsNearlyZero(AoLeste.X, 0.001f));
 
 	// E o que está ATRÁS fica embaixo — a metade que prova que o giro tem o
 	// sinal certo. Sem ela, girar ao contrário passaria neste teste.
 	const FVector2D AtrasDele = FWorldMapProjection::ToMapSpace(
-		FVector2D(0.0f, -500.0f), MapaComJogadorEm(FVector2D::ZeroVector, 90.0f), Modo, Alcance);
+		FVector2D(0.0f, -500.0f), MapaComJogadorEm(FVector2D::ZeroVector, 90.0f), Modo, AlcanceDoMapaDoMundo);
 	TestTrue(TEXT("Olhando ao leste, o oeste fica embaixo"), AtrasDele.Y > 0.0f);
 
 	// A SETA não gira neste modo: quem gira é o mundo em volta dela. Somar os
@@ -143,7 +143,7 @@ bool FPlayerIsAlwaysAtTheCentreTest::RunTest(const FString& Parameters)
 		FWorldMapProjection::EMode::SeguindoOOlhar })
 	{
 		const FVector2D NoCentro =
-			FWorldMapProjection::ToMapSpace(LongeDoZero, Retrato, Modo, Alcance);
+			FWorldMapProjection::ToMapSpace(LongeDoZero, Retrato, Modo, AlcanceDoMapaDoMundo);
 		TestTrue(TEXT("O jogador fica no centro do mapa"),
 			NoCentro.IsNearlyZero(0.001f));
 	}

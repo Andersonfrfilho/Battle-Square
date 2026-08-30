@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "World/WorldDiscovery.h"
+#include "UI/WorldMapProjection.h"
 #include "Math/RandomStream.h"
 #include "Engine/TimerHandle.h"
 #include "GameFramework/GameModeBase.h"
@@ -155,6 +156,18 @@ public:
 	FWorldDiscovery WorldDiscovery;
 
 	FTimerHandle DiscoveryTimer;
+
+	/**
+	 * O terreno do mundo em pedaços, montado UMA vez.
+	 *
+	 * Ele não muda: a mata, a serra e a água estão onde a montagem as pôs.
+	 * Refazer isso a cada atualização do mapa seria varrer centenas de
+	 * instâncias de malha duas vezes por segundo para chegar sempre à mesma
+	 * resposta.
+	 */
+	TArray<FWorldMapTerrainTile> WorldTerrainTiles;
+
+	void BuildWorldTerrainTiles();
 
 	/**
 	 * Escreve o painel do mundo: seu pet, seus atributos, quem está por perto.

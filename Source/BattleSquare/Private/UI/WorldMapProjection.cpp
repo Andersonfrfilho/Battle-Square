@@ -2,6 +2,8 @@
 
 #include "UI/WorldMapProjection.h"
 
+#define LOCTEXT_NAMESPACE "MapaDoMundo"
+
 FVector2D FWorldMapProjection::ToMapSpace(const FVector2D& WorldXY,
 	const FWorldMapSnapshot& Snapshot, EMode Mode, float RangeUnits)
 {
@@ -64,3 +66,37 @@ bool FWorldMapProjection::IsMarkerVisible(const FWorldMapMarkerInfo& Marker,
 
 	return Snapshot.Discovery.IsDiscovered(Marker.WorldXY);
 }
+
+FLinearColor FWorldMapProjection::ColorForTerrain(EWorldMapTerrain Terrain)
+{
+	switch (Terrain)
+	{
+		// SURDAS de propósito. O terreno é o fundo sobre o qual os marcadores
+		// precisam saltar; um mapa com mata verde-viva e água azul-viva engole
+		// o adversário laranja que é a informação urgente. É a mesma regra que
+		// a paleta do mundo já segue — criatura é viva, terreno é terra.
+		case EWorldMapTerrain::Clareira: return FLinearColor(0.42f, 0.40f, 0.32f);
+		case EWorldMapTerrain::Mata:     return FLinearColor(0.20f, 0.30f, 0.20f);
+		case EWorldMapTerrain::Margem:   return FLinearColor(0.46f, 0.42f, 0.30f);
+		case EWorldMapTerrain::Agua:     return FLinearColor(0.16f, 0.26f, 0.40f);
+		case EWorldMapTerrain::Relevo:   return FLinearColor(0.34f, 0.32f, 0.34f);
+	}
+
+	return FLinearColor(0.30f, 0.30f, 0.30f);
+}
+
+FText FWorldMapProjection::LabelForTerrain(EWorldMapTerrain Terrain)
+{
+	switch (Terrain)
+	{
+		case EWorldMapTerrain::Clareira: return LOCTEXT("MapaClareira", "clareira");
+		case EWorldMapTerrain::Mata:     return LOCTEXT("MapaMata", "mata");
+		case EWorldMapTerrain::Margem:   return LOCTEXT("MapaMargem", "margem");
+		case EWorldMapTerrain::Agua:     return LOCTEXT("MapaAgua", "água");
+		case EWorldMapTerrain::Relevo:   return LOCTEXT("MapaRelevo", "serra");
+	}
+
+	return LOCTEXT("MapaDesconhecido", "desconhecido");
+}
+
+#undef LOCTEXT_NAMESPACE

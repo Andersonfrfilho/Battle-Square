@@ -146,3 +146,66 @@ bool FMapaEscondeOQueNaoFoiDescobertoTest::RunTest(const FString&)
 
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FLegendaDescreveOMapaQueExisteTest,
+	"BattleSquare.World.Map.LegendaDescreveOMapaQueExiste",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FLegendaDescreveOMapaQueExisteTest::RunTest(const FString&)
+{
+	const EWorldMapTerrain Todos[] = {
+		EWorldMapTerrain::Clareira, EWorldMapTerrain::Mata,
+		EWorldMapTerrain::Margem, EWorldMapTerrain::Agua,
+		EWorldMapTerrain::Relevo };
+
+	// Todo terreno tem NOME. Um sem rótulo apareceria no mapa como mancha que
+	// a legenda não explica — e a legenda existe justamente para isso.
+	TSet<FString> Nomes;
+	for (const EWorldMapTerrain Terreno : Todos)
+	{
+		const FString Nome = FWorldMapProjection::LabelForTerrain(Terreno).ToString();
+		TestFalse(TEXT("Nenhum terreno fica sem nome"), Nome.IsEmpty());
+		TestFalse(TEXT("E nenhum cai no rótulo de desconhecido"),
+			Nome.Equals(TEXT("desconhecido")));
+		Nomes.Add(Nome);
+	}
+	TestEqual(TEXT("Nomes não se repetem"), Nomes.Num(), static_cast<int32>(UE_ARRAY_COUNT(Todos)));
+
+	// E toda COR é distinta. Dois terrenos da mesma cor são um terreno só na
+	// tela, e a legenda passaria a listar uma diferença que ninguém vê.
+	TSet<FString> Cores;
+	for (const EWorldMapTerrain Terreno : Todos)
+	{
+		Cores.Add(FWorldMapProjection::ColorForTerrain(Terreno).ToString());
+	}
+	TestEqual(TEXT("Cores não se repetem"), Cores.Num(), static_cast<int32>(UE_ARRAY_COUNT(Todos)));
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTerrenoEFundoNaoInformacaoTest,
+	"BattleSquare.World.Map.TerrenoEFundoNaoInformacao",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FTerrenoEFundoNaoInformacaoTest::RunTest(const FString&)
+{
+	// Terreno é FUNDO: os marcadores precisam saltar por cima dele. É a mesma
+	// regra da paleta do mundo — criatura é viva, terreno é terra — e é o que
+	// impede o adversário laranja de sumir dentro de uma mancha de mata.
+	const FLinearColor Adversario(0.90f, 0.45f, 0.20f);
+	const float ForcaDoAdversario = Adversario.R + Adversario.G + Adversario.B;
+
+	const EWorldMapTerrain Todos[] = {
+		EWorldMapTerrain::Clareira, EWorldMapTerrain::Mata,
+		EWorldMapTerrain::Margem, EWorldMapTerrain::Agua,
+		EWorldMapTerrain::Relevo };
+
+	for (const EWorldMapTerrain Terreno : Todos)
+	{
+		const FLinearColor Cor = FWorldMapProjection::ColorForTerrain(Terreno);
+		TestTrue(TEXT("Todo terreno é mais surdo que o marcador de adversário"),
+			(Cor.R + Cor.G + Cor.B) < ForcaDoAdversario);
+	}
+
+	return true;
+}

@@ -5,6 +5,35 @@
 #include "CoreMinimal.h"
 #include "World/WorldDiscovery.h"
 
+/**
+ * O TERRENO de um pedaço do mundo, para o mapa desenhar.
+ *
+ * O mapa mostrava marcadores sobre dois círculos — terra e água — e por isso
+ * dizia onde as COISAS estão sem dizer como é o LUGAR. Quem olhava não sabia
+ * se o caminho até o campo de Voo atravessa mata fechada ou clareira, que é
+ * justamente o que um mapa serve para responder antes de andar.
+ */
+UENUM()
+enum class EWorldMapTerrain : uint8
+{
+	/** Chão aberto: dá para atravessar reto. */
+	Clareira,
+	/** Mata: tronco e pedra em pé, e é onde a arena nasce cheia de bloqueio. */
+	Mata,
+	/** A margem — molhado, e onde a lama aparece em clima úmido. */
+	Margem,
+	Agua,
+	/** Serra: o que fecha o horizonte e não se atravessa. */
+	Relevo
+};
+
+/** Um pedaço do mundo, do tamanho de uma região de descoberta. */
+struct BATTLESQUARE_API FWorldMapTerrainTile
+{
+	FVector2D WorldXY = FVector2D::ZeroVector;
+	EWorldMapTerrain Kind = EWorldMapTerrain::Clareira;
+};
+
 /** O que um marcador do mapa é — a forma diz a categoria, a cor diz qual. */
 UENUM()
 enum class EWorldMapMarker : uint8
@@ -57,6 +86,15 @@ struct BATTLESQUARE_API FWorldMapSnapshot
 	 * acabou de começar.
 	 */
 	bool bHidesUndiscovered = true;
+
+	/**
+	 * O terreno, em pedaços do tamanho de uma região de descoberta.
+	 *
+	 * Mesmo tamanho de propósito: a unidade do que se revela e a unidade do
+	 * que se desenha têm de coincidir, senão meia região fica pintada e meia
+	 * não — e a borda da descoberta vira serrilha em vez de fronteira.
+	 */
+	TArray<FWorldMapTerrainTile> Terrain;
 };
 
 /**
@@ -113,6 +151,19 @@ public:
 	 */
 	static bool IsMarkerVisible(const FWorldMapMarkerInfo& Marker,
 		const FWorldMapSnapshot& Snapshot);
+
+	/**
+	 * A cor de cada terreno no mapa.
+	 *
+	 * Mora aqui, junto da projeção, e não em quem desenha: o minimapa e o mapa
+	 * completo precisam pintar IGUAL, e a legenda precisa mostrar a MESMA cor
+	 * que o mapa usa. Três cópias produziriam uma legenda que descreve um mapa
+	 * que não existe — pior que legenda nenhuma.
+	 */
+	static FLinearColor ColorForTerrain(EWorldMapTerrain Terrain);
+
+	/** O nome que o jogador lê na legenda. */
+	static FText LabelForTerrain(EWorldMapTerrain Terrain);
 
 	/** Para onde a seta do jogador aponta na tela, em graus horários. */
 	static float PlayerArrowAngleDegrees(const FWorldMapSnapshot& Snapshot, EMode Mode);

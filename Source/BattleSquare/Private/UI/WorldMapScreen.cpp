@@ -83,7 +83,42 @@ namespace
 			DesenharPonto(Elementos, Camada + 1, Geometria, Centro,
 				FMath::Min(RaioDaTerraEmPixels * 2.0f, RaioEmPixels * 2.0f), CorDaTerra);
 
-			int32 CamadaAtual = Camada + 2;
+			// O TERRENO, e só onde foi descoberto: é o que separa "onde as
+			// coisas estão" de "como é o lugar". Sem isto o mapa dizia que há
+			// um campo de treino ali sem dizer se o caminho até ele atravessa
+			// mata fechada — que é o que se quer saber ANTES de andar.
+			//
+			// Por cima dos dois círculos e por baixo dos marcadores: o terreno
+			// é fundo, e um adversário coberto por uma mancha de mata seria o
+			// mapa escondendo a informação urgente atrás da ambiental.
+			const float LadoDoPedacoEmPixels =
+				(FWorldDiscovery::RegionSizeUnits / AlcanceUnidades) * RaioEmPixels;
+
+			for (const FWorldMapTerrainTile& Pedaco : GSnapshot.Terrain)
+			{
+				if (GSnapshot.bHidesUndiscovered
+					&& !GSnapshot.Discovery.IsDiscovered(Pedaco.WorldXY))
+				{
+					continue;
+				}
+
+				const FVector2D Normalizado = FWorldMapProjection::ToMapSpace(
+					Pedaco.WorldXY, GSnapshot, Modo, AlcanceUnidades);
+				if (Normalizado.Size() > 1.0f)
+				{
+					continue;
+				}
+
+				// Ligeiramente MAIOR que o passo, para os pedaços encostarem.
+				// Com o tamanho exato, o arredondamento de pixel abre fresta
+				// entre eles e a mancha vira xadrez.
+				DesenharPonto(Elementos, Camada + 2, Geometria,
+					Centro + Normalizado * RaioEmPixels,
+					LadoDoPedacoEmPixels * 1.15f,
+					FWorldMapProjection::ColorForTerrain(Pedaco.Kind));
+			}
+
+			int32 CamadaAtual = Camada + 3;
 
 			for (const FWorldMapMarkerInfo& Marcador : GSnapshot.Markers)
 			{
@@ -145,6 +180,94 @@ namespace
 	TSharedPtr<SWidget> GMapaCompleto;
 }
 
+/**
+	 * A LEGENDA, e ela só existe no mapa completo.
+	 *
+	 * Mapa com cor e sem legenda obriga a adivinhar o que cada mancha é — e
+	 * quem adivinha errado anda para o lado errado. No minimapa ela não cabe:
+	 * são 180 pixels, e uma legenda ali roubaria o espaço do próprio mapa.
+	 *
+	 * As cores vêm de `ColorForTerrain`, a MESMA que pinta o mapa. Uma segunda
+	 * tabela aqui produziria uma legenda descrevendo um mapa que não existe,
+	 * que é pior que legenda nenhuma.
+	 */
+	TSharedRef<SWidget> MontarLegenda()
+	{
+		TSharedRef<SVerticalBox> Caixa = SNew(SVerticalBox);
+
+		const EWorldMapTerrain Terrenos[] = {
+			EWorldMapTerrain::Clareira, EWorldMapTerrain::Mata,
+			EWorldMapTerrain::Margem, EWorldMapTerrain::Agua,
+			EWorldMapTerrain::Relevo };
+
+		for (const EWorldMapTerrain Terreno : Terrenos)
+		{
+			Caixa->AddSlot().AutoHeight().Padding(0.0f, 2.0f)
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+				[
+					SNew(SBox).WidthOverride(14.0f).HeightOverride(14.0f)
+					[
+						SNew(SImage)
+						.Image(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
+						.ColorAndOpacity(FWorldMapProjection::ColorForTerrain(Terreno))
+					]
+				]
+				+ SHorizontalBox::Slot().AutoWidth().Padding(6.0f, 0.0f, 0.0f, 0.0f)
+				  .VAlign(VAlign_Center)
+				[
+					SNew(STextBlock)
+					.Text(FWorldMapProjection::LabelForTerrain(Terreno))
+					.ColorAndOpacity(FSlateColor(FLinearColor(0.85f, 0.85f, 0.85f)))
+				]
+			];
+		}
+
+		// O que os MARCADORES são. Sem esta metade, a legenda explica o fundo
+		// e cala sobre o que se procura no mapa — que é o que o jogador foi
+		// olhar.
+		const TPair<FLinearColor, FText> Marcas[] = {
+			{ FLinearColor(0.90f, 0.45f, 0.20f),
+			  NSLOCTEXT("MapaDoMundo", "LegendaAdversario", "adversário") },
+			{ FLinearColor::White,
+			  NSLOCTEXT("MapaDoMundo", "LegendaTreino", "campo de treino (cor do atributo)") }
+		};
+
+		for (const TPair<FLinearColor, FText>& Marca : Marcas)
+		{
+			Caixa->AddSlot().AutoHeight().Padding(0.0f, 2.0f)
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+				[
+					SNew(SBox).WidthOverride(14.0f).HeightOverride(14.0f)
+					[
+						SNew(SImage)
+						.Image(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
+						.ColorAndOpacity(Marca.Key)
+					]
+				]
+				+ SHorizontalBox::Slot().AutoWidth().Padding(6.0f, 0.0f, 0.0f, 0.0f)
+				  .VAlign(VAlign_Center)
+				[
+					SNew(STextBlock).Text(Marca.Value)
+					.ColorAndOpacity(FSlateColor(FLinearColor(0.85f, 0.85f, 0.85f)))
+				]
+			];
+		}
+
+		Caixa->AddSlot().AutoHeight().Padding(0.0f, 10.0f, 0.0f, 0.0f)
+		[
+			SNew(STextBlock)
+			.Text(NSLOCTEXT("MapaDoMundo", "LegendaEscuro",
+				"o escuro é o que você ainda não viu"))
+			.ColorAndOpacity(FSlateColor(FLinearColor(0.55f, 0.55f, 0.55f)))
+		];
+
+		return Caixa;
+	}
+
 void FWorldMapScreen::Show(UWorld* World)
 {
 	if (!GEngine || !GEngine->GameViewport || GMinimapa.IsValid())
@@ -200,11 +323,20 @@ void FWorldMapScreen::ToggleFullMap()
 		.HAlign(HAlign_Center)
 		.VAlign(VAlign_Center)
 		[
-			SNew(SBox).WidthOverride(520.0f).HeightOverride(520.0f)
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot().AutoWidth()
 			[
-				SNew(SMapaDoMundo)
-				.Modo(FWorldMapProjection::EMode::NorteAcima)
-				.AlcanceUnidades(AlcanceCompleto)
+				SNew(SBox).WidthOverride(520.0f).HeightOverride(520.0f)
+				[
+					SNew(SMapaDoMundo)
+					.Modo(FWorldMapProjection::EMode::NorteAcima)
+					.AlcanceUnidades(AlcanceCompleto)
+				]
+			]
+			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+			  .Padding(16.0f, 0.0f, 0.0f, 0.0f)
+			[
+				MontarLegenda()
 			]
 		];
 

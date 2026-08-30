@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Net/BattleSquareGameMode.h"
+#include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "Balance/TypeEffectivenessTable.h"
 #include "World/EncounterRoamingComponent.h"
 #include "World/WorldEncounterActor.h"
@@ -396,6 +397,7 @@ FString ABattleSquareGameMode::SetUpWorldEncounterFlow()
 		// atravessa entre dois quadros. O que ela carrega vem do save, e é o
 		// que faz o mapa lembrar de uma sessão para a outra.
 		WorldDiscovery = FPetCollectionService::LoadDiscovery(PetCollectionSlotName);
+		BuildWorldTerrainTiles();
 		World->GetTimerManager().SetTimer(DiscoveryTimer, this,
 			&ABattleSquareGameMode::RefreshWorldDiscovery,
 			WorldStatusRefreshSeconds, /*bLoop=*/true);
@@ -1049,6 +1051,96 @@ bool ABattleSquareGameMode::LearnSpecialtyOfCurrentField()
 	return false;
 }
 
+void ABattleSquareGameMode::BuildWorldTerrainTiles()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	WorldTerrainTiles.Reset();
+
+	const float Lado = FWorldDiscovery::RegionSizeUnits;
+	const float RaioDaTerra = WorldSceneryCellSizeUnits * RaioDoChaoEmCasas;
+
+	// Onde há MATA: a densidade de troncos e pedras por região. Uma instância
+	// solta não é mata — é uma árvore no meio da clareira, e pintar a região
+	// inteira de verde por causa dela faria o mapa prometer um obstáculo que
+	// não existe.
+	TMap<int64, int32> SolidosPorRegiao;
+	for (TActorIterator<AForestBackdrop> It(World); It; ++It)
+	{
+		const AForestBackdrop* Mata = *It;
+		const TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>>& Grupos =
+			Mata->GetSpeciesClusters();
+
+		for (int32 Grupo = 0; Grupo < Grupos.Num(); ++Grupo)
+		{
+			const UHierarchicalInstancedStaticMeshComponent* Agrupamento = Grupos[Grupo];
+			if (!Agrupamento || !Mata->IsSolidSpecies(Grupo))
+			{
+				continue;
+			}
+
+			for (int32 Instancia = 0; Instancia < Agrupamento->GetInstanceCount(); ++Instancia)
+			{
+				FTransform Onde;
+				if (!Agrupamento->GetInstanceTransform(Instancia, Onde, /*bWorldSpace=*/true))
+				{
+					continue;
+				}
+
+				const FVector Posicao = Onde.GetLocation();
+				const int64 Chave = FWorldDiscovery::RegionKey(
+					FWorldDiscovery::RegionColumnOf(Posicao.X),
+					FWorldDiscovery::RegionRowOf(Posicao.Y));
+				SolidosPorRegiao.FindOrAdd(Chave) += 1;
+			}
+		}
+	}
+
+	const int32 Alcance = FMath::CeilToInt(RaioDaTerra * 1.6f / Lado);
+	for (int32 Coluna = -Alcance; Coluna <= Alcance; ++Coluna)
+	{
+		for (int32 Linha = -Alcance; Linha <= Alcance; ++Linha)
+		{
+			FWorldMapTerrainTile Pedaco;
+			Pedaco.WorldXY = FVector2D((Coluna + 0.5f) * Lado, (Linha + 0.5f) * Lado);
+
+			const float Distancia = Pedaco.WorldXY.Size();
+			const int32 Solidos = SolidosPorRegiao.FindRef(
+				FWorldDiscovery::RegionKey(Coluna, Linha));
+
+			// A ORDEM é a regra: a água vence a mata, e a serra vence tudo.
+			// Um pedaço é uma coisa só, e sem ordem declarada quem vence é a
+			// ordem em que os `if` foram escritos — que ninguém revisa.
+			if (Distancia > RaioDaTerra + Lado)
+			{
+				Pedaco.Kind = EWorldMapTerrain::Agua;
+			}
+			else if (Distancia > RaioDaTerra)
+			{
+				Pedaco.Kind = EWorldMapTerrain::Margem;
+			}
+			else if (Solidos >= 3)
+			{
+				Pedaco.Kind = EWorldMapTerrain::Mata;
+			}
+			else
+			{
+				Pedaco.Kind = EWorldMapTerrain::Clareira;
+			}
+
+			WorldTerrainTiles.Add(Pedaco);
+		}
+	}
+
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("mapa: %d pedaços de terreno"), WorldTerrainTiles.Num()),
+		0.0f, FColor(150, 200, 255), /*Key=*/743);
+}
+
 void ABattleSquareGameMode::RefreshWorldDiscovery()
 {
 	const APawn* Jogador = AcharPawnDoJogador(GetWorld());
@@ -1086,6 +1178,7 @@ void ABattleSquareGameMode::RefreshWorldMap()
 	Retrato.PlayerYawDegrees = Jogador->GetActorRotation().Yaw;
 	Retrato.ShoreRadiusUnits = WorldSceneryCellSizeUnits * RaioDoChaoEmCasas;
 	Retrato.Discovery = WorldDiscovery;
+	Retrato.Terrain = WorldTerrainTiles;
 
 	// CAMPOS DE TREINO na cor de cada atributo: são o único destino do mapa,
 	// e um mapa sem destino é um radar.

@@ -4,8 +4,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Game\n"
-"POT-Creation-Date: 2026-08-30 20:01\n"
-"PO-Revision-Date: 2026-08-30 20:01\n"
+"POT-Creation-Date: 2026-08-30 23:22\n"
+"PO-Revision-Date: 2026-08-30 23:22\n"
 "Language-Team: \n"
 "Language: pt-BR\n"
 "MIME-Version: 1.0\n"
@@ -161,36 +161,36 @@ msgid "Ações: 0 de 3 — escolha o tipo"
 msgstr "Ações: 0 de 3 — escolha o tipo"
 
 #. Key:	AtributoSubiu
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1600)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1600)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1620)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1620)
 msgctxt "PetAttributes,AtributoSubiu"
 msgid "{Pet}: {Atributo} {Antes} → {Depois}"
 msgstr "{Pet}: {Atributo} {Antes} → {Depois}"
 
 #. Key:	GolpeDesbloqueado
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1633)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1633)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1653)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1653)
 msgctxt "PetAttributes,GolpeDesbloqueado"
 msgid "{Pet} desbloqueou {Golpe}!"
 msgstr "{Pet} desbloqueou {Golpe}!"
 
 #. Key:	GolpeUsado
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2182)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2182)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2202)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2202)
 msgctxt "BattleNarration,GolpeUsado"
 msgid "— usou {Move}"
 msgstr "— usou {Move}"
 
 #. Key:	SuperEfetivo
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2195)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2195)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2215)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2215)
 msgctxt "BattleNarration,SuperEfetivo"
 msgid "É super efetivo!"
 msgstr "É super efetivo!"
 
 #. Key:	PoucoEfetivo
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2201)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2201)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2221)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2221)
 msgctxt "BattleNarration,PoucoEfetivo"
 msgid "Não é muito efetivo..."
 msgstr "Não é muito efetivo..."
@@ -621,6 +621,69 @@ msgstr "Pronto."
 msgctxt "WorldLoading,Titulo"
 msgid "BATTLE SQUARE"
 msgstr "BATTLE SQUARE"
+
+#. Key:	MapaClareira
+#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapProjection.cpp(92)
+#: Source/BattleSquare/Private/UI/WorldMapProjection.cpp(92)
+msgctxt "MapaDoMundo,MapaClareira"
+msgid "clareira"
+msgstr "clareira"
+
+#. Key:	MapaMata
+#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapProjection.cpp(93)
+#: Source/BattleSquare/Private/UI/WorldMapProjection.cpp(93)
+msgctxt "MapaDoMundo,MapaMata"
+msgid "mata"
+msgstr "mata"
+
+#. Key:	MapaMargem
+#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapProjection.cpp(94)
+#: Source/BattleSquare/Private/UI/WorldMapProjection.cpp(94)
+msgctxt "MapaDoMundo,MapaMargem"
+msgid "margem"
+msgstr "margem"
+
+#. Key:	MapaAgua
+#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapProjection.cpp(95)
+#: Source/BattleSquare/Private/UI/WorldMapProjection.cpp(95)
+msgctxt "MapaDoMundo,MapaAgua"
+msgid "água"
+msgstr "água"
+
+#. Key:	MapaRelevo
+#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapProjection.cpp(96)
+#: Source/BattleSquare/Private/UI/WorldMapProjection.cpp(96)
+msgctxt "MapaDoMundo,MapaRelevo"
+msgid "serra"
+msgstr "serra"
+
+#. Key:	MapaDesconhecido
+#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapProjection.cpp(99)
+#: Source/BattleSquare/Private/UI/WorldMapProjection.cpp(99)
+msgctxt "MapaDoMundo,MapaDesconhecido"
+msgid "desconhecido"
+msgstr "desconhecido"
+
+#. Key:	LegendaAdversario
+#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapScreen.cpp(232)
+#: Source/BattleSquare/Private/UI/WorldMapScreen.cpp(232)
+msgctxt "MapaDoMundo,LegendaAdversario"
+msgid "adversário"
+msgstr "adversário"
+
+#. Key:	LegendaTreino
+#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapScreen.cpp(234)
+#: Source/BattleSquare/Private/UI/WorldMapScreen.cpp(234)
+msgctxt "MapaDoMundo,LegendaTreino"
+msgid "campo de treino (cor do atributo)"
+msgstr "campo de treino (cor do atributo)"
+
+#. Key:	LegendaEscuro
+#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapScreen.cpp(263)
+#: Source/BattleSquare/Private/UI/WorldMapScreen.cpp(263)
+msgctxt "MapaDoMundo,LegendaEscuro"
+msgid "o escuro é o que você ainda não viu"
+msgstr "o escuro é o que você ainda não viu"
 
 #. Key:	SemPet
 #. SourceLocation:	Source/BattleSquare/Private/World/WorldStatusReadout.cpp(29)

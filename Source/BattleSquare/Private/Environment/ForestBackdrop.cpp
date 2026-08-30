@@ -4,6 +4,7 @@
 
 #include "Battle/DeterministicSpread.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
+#include "World/WorldObstacleBreaking.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Environment/ScenaryPalette.h"
@@ -158,6 +159,7 @@ AForestBackdrop::AForestBackdrop()
 	}
 
 	SpeciesClusters.Reset();
+	SpeciesRoles.Reset();
 	for (int32 Indice = 0; Indice < TotalDeEspecies; ++Indice)
 	{
 		const FEspecie& Especie = Especies[Indice];
@@ -181,6 +183,12 @@ AForestBackdrop::AForestBackdrop()
 		}
 
 		SpeciesClusters.Add(Grupo);
+
+		// O PAPEL viaja junto do agrupamento. Sem isto, saber se uma instância
+		// é árvore ou capim exigiria reconsultar a tabela de espécies por
+		// índice — uma segunda leitura da mesma lista, que discorda dela na
+		// primeira reordenação.
+		SpeciesRoles.Add(Especie.Papel);
 	}
 }
 
@@ -359,4 +367,128 @@ void AForestBackdrop::ApplyGroundMaterial()
 			Tinta->SetVectorParameterValue(TEXT("Color"), ScenaryPalette::GroundColor());
 		}
 	}
+}
+
+namespace
+{
+	/**
+	 * A chave opaca junta AGRUPAMENTO e INSTÂNCIA num inteiro.
+	 *
+	 * Mil instâncias por agrupamento é folga larga sobre as poucas dezenas que
+	 * existem, e um par empacotado evita expor a estrutura da mata a quem só
+	 * quer bater numa árvore.
+	 */
+	constexpr int32 InstanciasPorAgrupamento = 1000;
+
+	int32 EmpacotarChave(int32 Agrupamento, int32 Instancia)
+	{
+		return Agrupamento * InstanciasPorAgrupamento + Instancia;
+	}
+
+	void DesempacotarChave(int32 Chave, int32& Agrupamento, int32& Instancia)
+	{
+		Agrupamento = Chave / InstanciasPorAgrupamento;
+		Instancia = Chave % InstanciasPorAgrupamento;
+	}
+}
+
+TArray<FWorldObstacleCandidate> AForestBackdrop::CollectObstaclesNear(
+	const FVector& WorldLocation, float RadiusUnits, TArray<int32>& OutHandles) const
+{
+	TArray<FWorldObstacleCandidate> Candidatos;
+	OutHandles.Reset();
+
+	const float RaioAoQuadrado = RadiusUnits * RadiusUnits;
+
+	for (int32 Agrupamento = 0; Agrupamento < SpeciesClusters.Num(); ++Agrupamento)
+	{
+		const UHierarchicalInstancedStaticMeshComponent* Grupo = SpeciesClusters[Agrupamento];
+		if (!Grupo || !SpeciesRoles.IsValidIndex(Agrupamento))
+		{
+			continue;
+		}
+
+		const EScenaryRole Papel = SpeciesRoles[Agrupamento];
+		const int32 VidaCheia = FWorldObstacleBreaking::StartingHealthFor(Papel);
+		if (VidaCheia <= 0)
+		{
+			// Capim e flor não são obstáculo. Devolvê-los faria o golpe
+			// escolher grama por ela estar mais perto que a árvore.
+			continue;
+		}
+
+		for (int32 Instancia = 0; Instancia < Grupo->GetInstanceCount(); ++Instancia)
+		{
+			FTransform Onde;
+			if (!Grupo->GetInstanceTransform(Instancia, Onde, /*bWorldSpace=*/true))
+			{
+				continue;
+			}
+
+			if (FVector::DistSquared2D(Onde.GetLocation(), WorldLocation) > RaioAoQuadrado)
+			{
+				continue;
+			}
+
+			const int32 Chave = EmpacotarChave(Agrupamento, Instancia);
+
+			FWorldObstacleCandidate Candidato;
+			Candidato.Location = Onde.GetLocation();
+			Candidato.Role = Papel;
+			// Ausente do mapa significa INTEIRO: só o que apanhou é guardado.
+			Candidato.RemainingHealth = ObstacleHealthByHandle.Contains(Chave)
+				? ObstacleHealthByHandle[Chave]
+				: VidaCheia;
+
+			Candidatos.Add(Candidato);
+			OutHandles.Add(Chave);
+		}
+	}
+
+	return Candidatos;
+}
+
+bool AForestBackdrop::DamageObstacle(int32 Handle, int32 Damage)
+{
+	int32 Agrupamento = 0;
+	int32 Instancia = 0;
+	DesempacotarChave(Handle, Agrupamento, Instancia);
+
+	if (!SpeciesClusters.IsValidIndex(Agrupamento) || !SpeciesRoles.IsValidIndex(Agrupamento))
+	{
+		return false;
+	}
+
+	UHierarchicalInstancedStaticMeshComponent* Grupo = SpeciesClusters[Agrupamento];
+	if (!Grupo || Instancia >= Grupo->GetInstanceCount())
+	{
+		return false;
+	}
+
+	const int32 VidaCheia = FWorldObstacleBreaking::StartingHealthFor(SpeciesRoles[Agrupamento]);
+	const int32 Antes = ObstacleHealthByHandle.Contains(Handle)
+		? ObstacleHealthByHandle[Handle]
+		: VidaCheia;
+
+	const int32 Depois = Antes - FMath::Max(0, Damage);
+	ObstacleHealthByHandle.Add(Handle, Depois);
+
+	if (Depois > 0)
+	{
+		return false;
+	}
+
+	// ENCOLHE em vez de remover: RemoveInstance desloca o índice de todas as
+	// instâncias seguintes, e as chaves já entregues passariam a apontar para
+	// outra árvore. Um obstáculo derrubado que vira o vizinho é pior que um
+	// que não cai.
+	FTransform Onde;
+	if (Grupo->GetInstanceTransform(Instancia, Onde, /*bWorldSpace=*/false))
+	{
+		Onde.SetScale3D(FVector::ZeroVector);
+		Grupo->UpdateInstanceTransform(Instancia, Onde, /*bWorldSpace=*/false,
+			/*bMarkRenderStateDirty=*/true, /*bTeleport=*/true);
+	}
+
+	return true;
 }

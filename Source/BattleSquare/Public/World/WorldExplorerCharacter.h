@@ -59,6 +59,24 @@ public:
 	void CheckFallGuard();
 
 	/** Registra a posição atual como terra firme, se ele estiver no chão. */
+	/**
+	 * Botão esquerdo: derruba a árvore ou pedra à frente.
+	 *
+	 * A força vem de StrikeMusculature, que é a musculatura do pet do jogador
+	 * — o mundo e a arena usam o MESMO atributo, e treinar num campo se sente
+	 * nos dois lugares.
+	 */
+	void StrikeForward();
+
+	/**
+	 * Musculatura que o golpe do mundo usa.
+	 *
+	 * Preenchida por quem conhece a coleção; zero é um pet sem treino, que
+	 * ainda derruba — devagar. Fica aqui, e não numa consulta ao save a cada
+	 * clique, porque ler disco por golpe seria I/O em input.
+	 */
+	int32 StrikeMusculature = 0;
+
 	/** M: abre e fecha o mapa completo. O minimapa não sai. */
 	void ToggleWorldMap();
 

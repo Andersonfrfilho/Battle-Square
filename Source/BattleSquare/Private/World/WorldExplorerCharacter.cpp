@@ -11,6 +11,10 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "UI/WorldMapScreen.h"
+#include "Debug/BattleDebugScreen.h"
+#include "Environment/ForestBackdrop.h"
+#include "EngineUtils.h"
+#include "World/WorldObstacleBreaking.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/PlayerController.h"
@@ -200,6 +204,13 @@ void AWorldExplorerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerI
 	// vezes eram as amarradas fora do pawn.
 	PlayerInputComponent->BindKey(EKeys::M, IE_Pressed, this, &AWorldExplorerCharacter::ToggleWorldMap);
 
+	// Botão esquerdo: golpe no mundo. É o que derruba árvore e pedra — a
+	// mesma regra da arena, onde força derruba o obstáculo do tabuleiro. Um
+	// pet que derruba a pedra lá e não derruba a árvore aqui ensinaria duas
+	// coisas contraditórias sobre o mesmo bicho.
+	PlayerInputComponent->BindKey(EKeys::LeftMouseButton, IE_Pressed,
+		this, &AWorldExplorerCharacter::StrikeForward);
+
 	if (MoveAction)
 	{
 		EnhancedInput->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AWorldExplorerCharacter::HandleMove);
@@ -266,6 +277,59 @@ void AWorldExplorerCharacter::BeginPlay()
 			Material->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.95f, 0.95f, 0.95f));
 		}
 	}
+}
+
+void AWorldExplorerCharacter::StrikeForward()
+{
+	UWorld* Mundo = GetWorld();
+	if (!Mundo)
+	{
+		return;
+	}
+
+	AForestBackdrop* Mata = nullptr;
+	for (TActorIterator<AForestBackdrop> It(Mundo); It; ++It)
+	{
+		if (IsValid(*It))
+		{
+			Mata = *It;
+			break;
+		}
+	}
+
+	if (!Mata)
+	{
+		return;
+	}
+
+	TArray<int32> Chaves;
+	const TArray<FWorldObstacleCandidate> Candidatos = Mata->CollectObstaclesNear(
+		GetActorLocation(), FWorldObstacleBreaking::ReachUnits, Chaves);
+
+	const int32 Alvo = FWorldObstacleBreaking::FindTarget(
+		GetActorLocation(), GetActorForwardVector(), Candidatos);
+
+	if (Alvo == INDEX_NONE || !Chaves.IsValidIndex(Alvo))
+	{
+		// GOLPE NO VAZIO É DITO. Sem isto, bater sem alvo e bater num alvo
+		// indestrutível produzem o mesmo silêncio, e o jogador conclui que o
+		// botão não funciona.
+		FBattleDebugScreen::Show(TEXT("golpe no vazio"), 2.0f, FColor::Silver, /*Key=*/760);
+		return;
+	}
+
+	const int32 Dano = FWorldObstacleBreaking::DamageFromMusculature(StrikeMusculature);
+	const bool bCaiu = Mata->DamageObstacle(Chaves[Alvo], Dano);
+
+	// O PROGRESSO aparece, e não só o fim. Bater três vezes numa árvore sem
+	// nenhum sinal é indistinguível de bater no vazio — e aí o jogador para
+	// antes do golpe que a derrubaria.
+	const int32 QueFalta = FMath::Max(0, Candidatos[Alvo].RemainingHealth - Dano);
+	FBattleDebugScreen::Show(
+		bCaiu
+			? TEXT("derrubou!")
+			: *FString::Printf(TEXT("golpe: %d de dano, falta %d"), Dano, QueFalta),
+		2.0f, bCaiu ? FColor::Green : FColor::Yellow, /*Key=*/760);
 }
 
 void AWorldExplorerCharacter::ToggleWorldMap()

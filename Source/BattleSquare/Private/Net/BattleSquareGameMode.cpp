@@ -16,6 +16,7 @@
 #include "Meta/PetProgressionService.h"
 #include "Meta/PetAttributeProgression.h"
 #include "World/WorldEncounterFlow.h"
+#include "World/WorldExplorerCharacter.h"
 #include "Environment/ForestBackdrop.h"
 #include "Environment/SceneLighting.h"
 #include "World/WorldStatusReadout.h"
@@ -850,6 +851,16 @@ void ABattleSquareGameMode::ReloadOwnedPetSnapshot()
 	}
 
 	CachedTrainer = FPetCollectionService::LoadTrainerProfile(PetCollectionSlotName);
+
+	// A força do golpe no MUNDO é a musculatura do pet, a mesma que a arena
+	// usa. Sem esta linha, treinar musculatura num campo não mudaria nada
+	// fora da batalha — e o jogador que treinou não veria diferença no lugar
+	// onde ele está.
+	if (AWorldExplorerCharacter* Explorador =
+		Cast<AWorldExplorerCharacter>(AcharPawnDoJogador(GetWorld())))
+	{
+		Explorador->StrikeMusculature = bHasCachedOwnedPet ? CachedOwnedPet.Musculature : 0;
+	}
 }
 
 bool ABattleSquareGameMode::LearnSpecialtyOfCurrentField()

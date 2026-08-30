@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Environment/ScenaryPalette.h"
 #include "GameFramework/Actor.h"
 #include "ForestBackdrop.generated.h"
 
@@ -54,6 +55,28 @@ public:
 
 	/** Espécies da mata, para o teste que exige asset atribuído em todas. */
 	const TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>>& GetSpeciesClusters() const { return SpeciesClusters; }
+
+	/**
+	 * Os obstáculos EM PÉ perto de um ponto, com a vida que ainda têm.
+	 *
+	 * Só o que é obstáculo entra: capim e flor não são derrubáveis, e
+	 * devolvê-los faria o golpe do jogador escolher grama por ela estar mais
+	 * perto que a árvore.
+	 *
+	 * O ÍNDICE devolvido é opaco de propósito — quem bate não precisa saber
+	 * que a mata guarda instâncias em agrupamentos por espécie, e depender
+	 * disso amarraria o combate à forma como a mata é desenhada.
+	 */
+	TArray<struct FWorldObstacleCandidate> CollectObstaclesNear(
+		const FVector& WorldLocation, float RadiusUnits, TArray<int32>& OutHandles) const;
+
+	/**
+	 * Tira vida de um obstáculo. Devolve true quando ele CAI neste golpe.
+	 *
+	 * Cair é sumir da tela e deixar de ser alvo; o que não pode acontecer é
+	 * bater e nada mudar.
+	 */
+	bool DamageObstacle(int32 Handle, int32 Damage);
 
 	/** O disco de chão que cobre o xadrez do template. */
 	UStaticMeshComponent* GetGroundMesh() const { return GroundMesh; }
@@ -111,4 +134,17 @@ private:
 
 	UPROPERTY()
 	TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>> SpeciesClusters;
+
+	/**
+	 * Vida de cada obstáculo já golpeado, pela chave opaca.
+	 *
+	 * Só o que APANHOU entra no mapa: guardar a vida cheia das 400 instâncias
+	 * desde o começo gastaria memória para dizer o que a tabela de papéis já
+	 * diz. Ausente significa "inteiro".
+	 */
+	UPROPERTY()
+	TMap<int32, int32> ObstacleHealthByHandle;
+
+	/** O papel de cada agrupamento, na mesma ordem de SpeciesClusters. */
+	TArray<EScenaryRole> SpeciesRoles;
 };

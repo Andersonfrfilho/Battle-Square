@@ -71,6 +71,10 @@ uint64 FBattleState::ComputeHash() const
 	{
 		Hash = CombineBattleHash(Hash, SkillTerrainRequirement[Indice]);
 		Hash = CombineBattleHash(Hash, SkillTerrainLevel[Indice]);
+		Hash = CombineBattleHash(Hash, TerrainSlipPercent[Indice]);
+		Hash = CombineBattleHash(Hash, TerrainSlowPercent[Indice]);
+		Hash = CombineBattleHash(Hash, TerrainDriesTo[Indice]);
+		Hash = CombineBattleHash(Hash, TerrainDryDelay[Indice]);
 	}
 
 	Hash = CombineBattleHash(Hash, GridColumns);

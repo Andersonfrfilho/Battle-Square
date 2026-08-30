@@ -26,6 +26,11 @@ enum class EBattlePostureFlags : uint8
 	// de determinismo de cenários que nem usam estas ações.
 	Revealing   = 1 << 5,  // saindo da camuflagem
 	Emerging    = 1 << 6,  // saindo do subsolo
+
+	// Atravessou a lama devagar. ÚLTIMO BIT do byte — quem precisar do
+	// próximo terá de alargar PostureFlags, e alargar é mudar o hash de todo
+	// snapshot de determinismo. Não é bloqueio, é aviso: a conta fecha aqui.
+	Slowed      = 1 << 7,
 };
 ENUM_CLASS_FLAGS(EBattlePostureFlags)
 
@@ -186,15 +191,26 @@ struct FPetState
 			Which == EBattleStat::Defesa ? Defense :
 			Which == EBattleStat::Velocidade ? Speed : 0;
 
+		// A LAMA entra ANTES da magia e sobrevive a ela: são causas
+		// diferentes, e uma não pode apagar a outra. Guardar o atraso no
+		// mesmo par (ActiveEffectStat, Percent) faria a lama zerar a magia
+		// que o jogador tinha acabado de lançar — e ele veria o efeito dele
+		// sumir sem nada explicar.
+		const bool bNaLama = Which == EBattleStat::Velocidade
+			&& (PostureFlags & static_cast<uint8>(EBattlePostureFlags::Slowed)) != 0;
+		const int32 ComLama = bNaLama
+			? FMath::Max(1, Base - (Base * MudSlowPercent) / 100)
+			: Base;
+
 		if (ActiveEffectSlotsRemaining == 0
 			|| static_cast<EBattleStat>(ActiveEffectStat) != Which)
 		{
-			return Base;
+			return ComLama;
 		}
 
 		// Piso de 1: um atributo zerado por magia faria o pet parar de existir
 		// como adversário, e perder assim não ensina nada a quem perdeu.
-		return FMath::Max(1, Base + (Base * ActiveEffectPercent) / 100);
+		return FMath::Max(1, ComLama + (ComLama * ActiveEffectPercent) / 100);
 	}
 
 	int32 GetEffectiveAttack() const { return GetEffectiveStat(EBattleStat::Ataque); }
@@ -374,6 +390,54 @@ struct FBattleState
 	uint8 SkillTerrainLevel[16] = { 0 };
 
 	/**
+	 * O que o CHÃO faz com quem tenta sair dele, em porcentagem.
+	 *
+	 * Escorregar é movimento PERDIDO — a ação foi gasta e o pet não saiu do
+	 * lugar. Atrasar é sair devagar: anda, mas age mais devagar no resto do
+	 * slot. O que sobra dos dois é atravessar firme.
+	 *
+	 * Não é o mesmo que casa bloqueada: ali o DESTINO tem corpo, e existe
+	 * derrubar e subir. Aqui é o chão de baixo que trai.
+	 *
+	 * Porcentagem, e não um booleano, porque é o que faz o GELO e a LAMA serem
+	 * o mesmo mecanismo com números diferentes: o gelo nega com certeza (100),
+	 * a lama é aposta (33/33). Dois códigos para isso produziriam duas regras
+	 * que concordam até a primeira edição, que é a duplicação por que este
+	 * projeto já pagou três vezes.
+	 */
+	UPROPERTY()
+	uint8 TerrainSlipPercent[16] = { 0 };
+
+	UPROPERTY()
+	uint8 TerrainSlowPercent[16] = { 0 };
+
+	/**
+	 * A CADEIA DE SECAGEM: no que cada terreno se transforma, e em quantos
+	 * slots. Indexado por ECellProperty.
+	 *
+	 * Gelo → poça → lama → chão seco. Escrita como dado, e não como uma
+	 * escada de `if` no encerramento do slot, porque é exatamente a forma que
+	 * o resto desta feature tomou — e porque a cadeia é a coisa mais provável
+	 * de alguém querer ajustar por balanço.
+	 *
+	 * Delay ZERO é "não seca sozinho", e é o que todo terreno é por padrão: o
+	 * rio não vira poça, a brasa não apaga, a casa de bônus não gasta.
+	 */
+	UPROPERTY()
+	uint8 TerrainDriesTo[16] = { 0 };
+
+	UPROPERTY()
+	uint8 TerrainDryDelay[16] = { 0 };
+
+	/** Este chão faz ALGUMA coisa com quem sai dele? */
+	bool TerrainAffectsDeparture(uint8 CellProperty) const
+	{
+		return CellProperty < 16
+			&& (TerrainSlipPercent[CellProperty] > 0
+				|| TerrainSlowPercent[CellProperty] > 0);
+	}
+
+	/**
 	 * O terreno da casa satisfaz o que aquela ação exige?
 	 *
 	 * Ação sem requisito passa sempre. Com requisito, a casa precisa ser
@@ -407,6 +471,34 @@ struct FBattleState
 	void ApplyDefaultTerrainRequirements()
 	{
 		RequireTerrainForSkill(EActionType::Submergir, ECellProperty::Water);
+
+		// No GELO se escorrega SEMPRE: o movimento é gasto e o pet fica onde
+		// estava. É o que faz congelar valer o slot de quem congelou — a
+		// recompensa é o que o OUTRO deixa de fazer, não o dano. Certeza, e
+		// não sorteio, porque quem gastou uma ação para congelar precisa
+		// saber o que comprou.
+		TerrainSlipPercent[static_cast<int32>(ECellProperty::Ice)] = 100;
+
+		// A LAMA é aposta: um terço escorrega, um terço atrasa, um terço
+		// atravessa firme. É o que a separa do gelo e o que a torna digna de
+		// ser o resto da água em vez de um golpe que alguém escolhe.
+		TerrainSlipPercent[static_cast<int32>(ECellProperty::Mud)] = MudSlipChancePercent;
+		TerrainSlowPercent[static_cast<int32>(ECellProperty::Mud)] = MudSlowChancePercent;
+
+		// A cadeia. O gelo derrete em POÇA, e não no que havia embaixo: gelo é
+		// água congelada, e derreter deixa água. Quem garante que um RIO
+		// congelado volte a ser rio é a comparação por WetterOf lá na
+		// secagem, não uma exceção aqui.
+		TerrainDriesTo[static_cast<int32>(ECellProperty::Ice)] =
+			static_cast<uint8>(ECellProperty::ShallowWater);
+
+		TerrainDriesTo[static_cast<int32>(ECellProperty::ShallowWater)] =
+			static_cast<uint8>(ECellProperty::Mud);
+		TerrainDryDelay[static_cast<int32>(ECellProperty::ShallowWater)] = 2;
+
+		TerrainDriesTo[static_cast<int32>(ECellProperty::Mud)] =
+			static_cast<uint8>(ECellProperty::None);
+		TerrainDryDelay[static_cast<int32>(ECellProperty::Mud)] = 2;
 	}
 
 	bool TerrainAllowsSkill(EActionType Action, uint8 CellProperty) const

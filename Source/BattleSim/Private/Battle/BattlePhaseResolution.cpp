@@ -159,11 +159,34 @@ void BattlePhases::ApplyResolution(
 			continue;
 		}
 
-		const uint8 Volta = State.CellRevertsTo.IsValidIndex(Indice)
+		const uint8 Atual = State.CellLayout[Indice];
+		const uint8 Embaixo = State.CellRevertsTo.IsValidIndex(Indice)
 			? State.CellRevertsTo[Indice]
 			: static_cast<uint8>(ECellProperty::None);
+		const uint8 Seco = Atual < 16
+			? State.TerrainDriesTo[Atual]
+			: static_cast<uint8>(ECellProperty::None);
+
+		// O MAIS MOLHADO dos dois vence, e é o que salva o rio.
+		//
+		// Gelo sobre chão seco derrete em poça (a cadeia manda); gelo sobre um
+		// RIO devolve o rio (o que havia embaixo manda). Fosse só a cadeia,
+		// congelar seria a maneira mais barata de secar um rio — o oposto do
+		// que o gelo é. Fosse só o de baixo, gelo sobre terra seca sumiria sem
+		// deixar água, e gelo que derrete sem molhar nada não é gelo.
+		const uint8 Volta = WetterOf(Embaixo, Seco);
 
 		State.CellLayout[Indice] = Volta;
+
+		// A cadeia CONTINUA sozinha: a poça que sobrou já nasce com o prazo
+		// dela para virar lama, e a lama com o dela para secar. Sem isto,
+		// cadeia seria só um nome para dois passos.
+		//
+		// E o que havia embaixo se perde aqui de propósito: a partir de agora
+		// a casa É o terreno novo, e guardar um fundo antigo faria a lama, ao
+		// secar, ressuscitar o rio que já tinha ido embora.
+		const uint8 PrazoSeguinte = Volta < 16 ? State.TerrainDryDelay[Volta] : 0;
+		State.CellCountdown[Indice] = PrazoSeguinte;
 		if (State.CellRevertsTo.IsValidIndex(Indice))
 		{
 			State.CellRevertsTo[Indice] = static_cast<uint8>(ECellProperty::None);

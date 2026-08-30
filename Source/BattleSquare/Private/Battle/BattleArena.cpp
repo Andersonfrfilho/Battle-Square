@@ -89,6 +89,17 @@ namespace ArenaGeometria
 	constexpr float SuperficieDoGelo = -1.5f;
 
 	/**
+	 * A LAMA fica logo abaixo do chão seco, e o pé afunda um pouco.
+	 *
+	 * Precisa ser distinguível da poça SEM material próprio: a poça reluz
+	 * acima do solo, a lama afunda abaixo dele. Fossem as duas na mesma
+	 * altura, o jogador veria a mesma casa e teria de descobrir a diferença
+	 * perdendo um movimento.
+	 */
+	constexpr float SuperficieDaLama = -5.0f;
+	constexpr float PeDentroDaLama = -9.0f;
+
+	/**
 	 * Casa sem regra nenhuma NÃO tem vão: ela é o próprio chão da clareira, e
 	 * quem delimita a grade é a linha desenhada. O vão em toda casa era o que
 	 * fazia o tabuleiro ler como placa quadriculada posta sobre o cenário.
@@ -234,6 +245,8 @@ float ABattleArena::GetCellSurfaceHeight(uint8 CellProperty)
 		return ArenaGeometria::LaminaDaPoca;
 	case ECellProperty::Ice:
 		return ArenaGeometria::SuperficieDoGelo;
+	case ECellProperty::Mud:
+		return ArenaGeometria::SuperficieDaLama;
 	case ECellProperty::Blocked:
 		return ArenaGeometria::SuperficieBloqueada;
 	default:
@@ -255,6 +268,7 @@ float ABattleArena::GetCellFootingHeight(uint8 CellProperty)
 	{
 	case ECellProperty::Water:        return ArenaGeometria::PeDentroDaAgua;
 	case ECellProperty::ShallowWater: return ArenaGeometria::PeDentroDaPoca;
+	case ECellProperty::Mud:          return ArenaGeometria::PeDentroDaLama;
 	default:                          return GetCellSurfaceHeight(CellProperty);
 	}
 }
@@ -572,6 +586,11 @@ UMaterialInterface* ABattleArena::ResolveTileMaterial(uint8 CellProperty) const
 	case ECellProperty::ShallowWater:
 	case ECellProperty::Ice:
 		return WaterTileMaterial.LoadSynchronous();
+	// A lama veste o terreno de DANO: é o material terroso que existe, e a
+	// altura é que a separa. Vestir a água faria a casa mais perigosa do
+	// campo parecer a mais inofensiva.
+	case ECellProperty::Mud:
+		return DamageTileMaterial.LoadSynchronous();
 	case ECellProperty::Damage:
 		return DamageTileMaterial.LoadSynchronous();
 	case ECellProperty::Buff:
@@ -2032,6 +2051,13 @@ void ABattleArena::DrawDebugGrid() const
 			case ECellProperty::Ice:
 				NomeDaCasa = TEXT(" GELO");
 				CorDoTerreno = FColor(210, 240, 255);
+				break;
+			case ECellProperty::Mud:
+				// Diz o RISCO na etiqueta: a lama é a única casa cujo efeito
+				// é sorteado, e descobrir isso perdendo o movimento seria
+				// aprender a regra pela punição.
+				NomeDaCasa = TEXT(" LAMA (escorrega?)");
+				CorDoTerreno = FColor(150, 110, 60);
 				break;
 			case ECellProperty::Damage:
 				NomeDaCasa = TEXT(" DANO");

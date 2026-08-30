@@ -36,7 +36,8 @@ namespace
 		return false;
 	}
 
-	void CollectIntent(FBattleState& State, uint8 Side, const FBattleAction& Action, TArray<FMoveIntent>& OutIntents)
+	void CollectIntent(FBattleState& State, uint8 Side, const FBattleAction& Action,
+		uint8 SlotIndex, TArray<FBattleEvent>& OutTrace, TArray<FMoveIntent>& OutIntents)
 	{
 		if (Action.Type != EActionType::Mover)
 		{
@@ -57,6 +58,65 @@ namespace
 			if ((Pet.PostureFlags & static_cast<uint8>(EBattlePostureFlags::Emerging)) != 0)
 			{
 				continue;
+			}
+
+			// O CHÃO DE BAIXO cobra de quem tenta sair dele.
+			//
+			// O sorteio só acontece onde há chance, e isso NÃO é otimização:
+			// tirar um número do gerador em chão seco deslocaria o fluxo
+			// aleatório de toda partida já gravada, e todo snapshot de
+			// determinismo passaria a divergir por uma regra que aquelas
+			// batalhas nem exercem.
+			const uint8 ChaoDaCasa = State.CellLayout[State.CellIndex(Pet.Column, Pet.Row)];
+			if (State.TerrainAffectsDeparture(ChaoDaCasa))
+			{
+				const int32 Sorte = State.Random.NextRange(1, 100);
+				const int32 ChanceDeEscorregar = State.TerrainSlipPercent[ChaoDaCasa];
+				const int32 ChanceDeAtrasar = State.TerrainSlowPercent[ChaoDaCasa];
+
+				if (Sorte <= ChanceDeEscorregar)
+				{
+					// Com evento, ao contrário do caso de emergir logo acima:
+					// ali o jogador já sabe que submergiu e por que não anda,
+					// enquanto aqui a ação simplesmente não aconteceria. Ação
+					// que some sem frase parece defeito, e este projeto já
+					// gastou rodadas com regra funcionando e parecendo
+					// quebrada (DP-atr-08).
+					FBattleEvent Escorregou;
+					Escorregou.Type = EBattleEventType::Escorregou;
+					Escorregou.SlotIndex = SlotIndex;
+					Escorregou.Phase = 3; // F3
+					Escorregou.ActorId = Pet.PetId;
+					Escorregou.TargetId = BattleEventNoActor;
+					Escorregou.FromCell = PackCell(Pet.Column, Pet.Row);
+					Escorregou.ToCell = Escorregou.FromCell;
+					Escorregou.Detail = ChaoDaCasa;
+					OutTrace.Add(Escorregou);
+					continue;
+				}
+
+				if (Sorte <= ChanceDeEscorregar + ChanceDeAtrasar)
+				{
+					// ANDA, mas devagar. A marca vive em PostureFlags e some
+					// no fim do slot com o resto das posturas — atraso que
+					// sobrevivesse ao slot seria um segundo efeito de
+					// atributo, com regra própria de expiração para manter.
+					Pet.PostureFlags |= static_cast<uint8>(EBattlePostureFlags::Slowed);
+
+					FBattleEvent Atrasou;
+					Atrasou.Type = EBattleEventType::AtravessouDevagar;
+					Atrasou.SlotIndex = SlotIndex;
+					Atrasou.Phase = 3; // F3
+					Atrasou.ActorId = Pet.PetId;
+					Atrasou.TargetId = BattleEventNoActor;
+					Atrasou.FromCell = PackCell(Pet.Column, Pet.Row);
+					Atrasou.Detail = ChaoDaCasa;
+					OutTrace.Add(Atrasou);
+				}
+
+				// O terceiro caso — atravessar firme — não emite nada, e é
+				// deliberado: linha em todo passo por chão comum afogaria as
+				// duas que importam. Quem atravessou firme vê o pet andar.
 			}
 
 			int8 DeltaColumn = 0;
@@ -167,8 +227,8 @@ void BattlePhases::ApplyMovement(
 	// Passo 1: coletar TODAS as intenções antes de aplicar qualquer uma —
 	// é o que torna o movimento simultâneo de verdade (design.md).
 	TArray<FMoveIntent> Intents;
-	CollectIntent(State, /*Side=*/0, LeftAction, Intents);
-	CollectIntent(State, /*Side=*/1, RightAction, Intents);
+	CollectIntent(State, /*Side=*/0, LeftAction, SlotIndex, OutTrace, Intents);
+	CollectIntent(State, /*Side=*/1, RightAction, SlotIndex, OutTrace, Intents);
 
 	// Passos 2–4 (obstáculo, validade de destino, colisão entre aliados) só
 	// têm sentido se alguém tentou se mover — mas o Passo 5 (dano de casa)

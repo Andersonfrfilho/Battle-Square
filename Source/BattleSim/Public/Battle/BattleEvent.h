@@ -75,7 +75,23 @@ enum class EBattleEventType : uint8
 	//
 	// No FIM do enum, pelo mesmo motivo dos anteriores: os valores existentes
 	// entram no hash do traço.
-	TerrenoDerreteu
+	TerrenoDerreteu,
+
+	// O pet tentou andar e o chão não deixou: movimento PERDIDO. Evento
+	// próprio, e não `MovimentoBloqueado`, porque o feed narra aquele como
+	// "esbarrou" — e esbarrar num limite é o jogador tendo mirado errado,
+	// enquanto escorregar é o terreno agindo sobre ele. Confundir os dois
+	// ensinaria a lição errada sobre o que a escolha dele fez.
+	//
+	// No FIM do enum, pelo mesmo motivo dos anteriores.
+	Escorregou,
+
+	// Atravessou a lama devagar: andou, mas age mais devagar no resto do
+	// slot. `Detail` carrega o terreno, que é o que permite à frase dizer
+	// ONDE — "na lama" e "no gelo" pedem palavras diferentes.
+	//
+	// No FIM do enum, pelo mesmo motivo dos anteriores.
+	AtravessouDevagar
 };
 
 // Sentinela para TargetId/ActorId quando não há alvo aplicável

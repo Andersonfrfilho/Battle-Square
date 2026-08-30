@@ -29,6 +29,7 @@ namespace
 			case ECellProperty::Water:        return LOCTEXT("TerrenoAguaFunda", "água funda");
 			case ECellProperty::ShallowWater: return LOCTEXT("TerrenoPoca", "poça");
 			case ECellProperty::Ice:          return LOCTEXT("TerrenoGelo", "gelo");
+			case ECellProperty::Mud:          return LOCTEXT("TerrenoLama", "lama");
 			case ECellProperty::Damage:       return LOCTEXT("TerrenoBrasa", "brasa");
 			case ECellProperty::Buff:         return LOCTEXT("TerrenoBonus", "terreno de bônus");
 			case ECellProperty::Blocked:      return LOCTEXT("TerrenoObstaculo", "obstáculo");
@@ -138,6 +139,32 @@ FText FBattleNarration::Describe(const FBattleEvent& Event, const FString& Actor
 		// nome ali faria o jogador procurar o que o outro tinha feito.
 		return FText::Format(LOCTEXT("TerrenoDerreteu",
 			"o gelo derreteu — a casa voltou a ser {Terreno}"), ArgsFim);
+	}
+
+	case EBattleEventType::Escorregou:
+	{
+		// Diz a CONSEQUÊNCIA, não a física: "escorregou" sozinho poderia ser
+		// dano, tontura ou casa trocada. O que o jogador precisa saber é que
+		// a ação foi gasta e ele está onde estava.
+		//
+		// E diz ONDE, porque o gelo e a lama pedem leituras diferentes: no
+		// gelo escorregar era certo e ele podia ter previsto; na lama foi
+		// aposta perdida. Uma frase só para os dois ensinaria a lição errada
+		// sobre o que a escolha dele valeu.
+		FFormatNamedArguments ArgsChao = Args;
+		ArgsChao.Add(TEXT("Terreno"), DescribeTerrain(static_cast<uint8>(Event.Detail)));
+		return FText::Format(LOCTEXT("Escorregou",
+			"{Actor} escorregou na {Terreno} — perdeu o movimento"), ArgsChao);
+	}
+
+	case EBattleEventType::AtravessouDevagar:
+	{
+		FFormatNamedArguments ArgsChao = Args;
+		ArgsChao.Add(TEXT("Terreno"), DescribeTerrain(static_cast<uint8>(Event.Detail)));
+		// Diz o que ele PERDE, não que "ficou lento": velocidade sozinha é
+		// número, e o jogador precisa ligar isto ao turno que vem pela frente.
+		return FText::Format(LOCTEXT("AtravessouDevagar",
+			"{Actor} atolou na {Terreno} — atravessou, mas devagar"), ArgsChao);
 	}
 
 	case EBattleEventType::EsquivouPorReflexo:

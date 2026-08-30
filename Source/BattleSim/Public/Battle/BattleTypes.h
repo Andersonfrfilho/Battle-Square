@@ -229,8 +229,62 @@ enum class ECellProperty : uint8
 	 * da duração, porque duas casas de gelo que duram o mesmo e diferem num
 	 * número abstrato seriam indistinguíveis para quem joga.
 	 */
-	Ice
+	Ice,
+
+	/**
+	 * LAMA: terra encharcada. O terreno INCERTO do jogo.
+	 *
+	 * Andar nela dá em uma de três coisas — escorregar, atravessar firme, ou
+	 * atravessar devagar. É o que a separa do gelo: o gelo nega com CERTEZA, e
+	 * é por isso que congelar vale um slot; a lama é aposta, e é por isso que
+	 * ela é o que SOBRA da água em vez de ser um golpe que alguém escolhe.
+	 *
+	 * Ao FIM do enum, pelo mesmo motivo dos anteriores.
+	 */
+	Mud
 };
+
+/**
+ * Quão MOLHADA está esta casa: 3 rio, 2 poça, 1 lama, 0 seco.
+ *
+ * Serve à secagem, que precisa comparar dois candidatos e ficar com o mais
+ * molhado: gelo derretendo sobre chão seco deixa poça, mas gelo derretendo
+ * sobre um RIO tem de devolver o rio. Sem a comparação, a cadeia de secagem
+ * transformaria todo rio congelado numa poça — o gelo viraria a maneira de
+ * secar o campo, que é o oposto do que ele é.
+ *
+ * O gelo fica de fora: ele não é uma casa molhada, é uma casa DURA.
+ */
+FORCEINLINE int32 WetnessOf(uint8 CellProperty)
+{
+	switch (static_cast<ECellProperty>(CellProperty))
+	{
+		case ECellProperty::Water:        return 3;
+		case ECellProperty::ShallowWater: return 2;
+		case ECellProperty::Mud:          return 1;
+		default:                          return 0;
+	}
+}
+
+/** Dos dois, o mais molhado. */
+FORCEINLINE uint8 WetterOf(uint8 A, uint8 B)
+{
+	return WetnessOf(A) >= WetnessOf(B) ? A : B;
+}
+
+/**
+ * A lama dá em uma de três coisas, e a proporção é BALANÇO, não física.
+ *
+ * Um terço para cada é o que mantém a aposta legível: o jogador aprende
+ * depressa que a lama é risco, sem precisar de tabela. Escorregar mais raro
+ * que atravessar faria a lama parecer chão comum na maioria das vezes, e a
+ * decisão de entrar nela deixaria de existir.
+ */
+inline constexpr int32 MudSlipChancePercent = 33;
+inline constexpr int32 MudSlowChancePercent = 33;
+
+/** Quanto a lama tira da velocidade de quem atravessa devagar. */
+inline constexpr int32 MudSlowPercent = 50;
 
 /** Esta casa é água, de qualquer fundura? */
 FORCEINLINE bool IsAnyWater(uint8 CellProperty)

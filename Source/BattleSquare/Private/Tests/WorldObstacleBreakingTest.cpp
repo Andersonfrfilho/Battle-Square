@@ -88,23 +88,23 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FTargetIsAheadAndWithinReachTest::RunTest(const FString& Parameters)
 {
-	const float Alcance = FWorldObstacleBreaking::ReachUnits;
+	const float AlcanceDoGolpe = FWorldObstacleBreaking::ReachUnits;
 
 	// À frente e perto: acerta.
 	TestEqual(TEXT("Árvore à frente é o alvo"),
 		FWorldObstacleBreaking::FindTarget(FVector::ZeroVector, ParaONorte,
-			{ Obstaculo(FVector(Alcance * 0.5f, 0.0f, 0.0f), EScenaryRole::ForestTree) }), 0);
+			{ Obstaculo(FVector(AlcanceDoGolpe * 0.5f, 0.0f, 0.0f), EScenaryRole::ForestTree) }), 0);
 
 	// Atrás: não.
 	TestEqual(TEXT("Árvore ATRÁS não é alvo"),
 		FWorldObstacleBreaking::FindTarget(FVector::ZeroVector, ParaONorte,
-			{ Obstaculo(FVector(-Alcance * 0.5f, 0.0f, 0.0f), EScenaryRole::ForestTree) }),
+			{ Obstaculo(FVector(-AlcanceDoGolpe * 0.5f, 0.0f, 0.0f), EScenaryRole::ForestTree) }),
 		INDEX_NONE);
 
 	// Fora do alcance: não.
 	TestEqual(TEXT("Árvore longe não é alvo"),
 		FWorldObstacleBreaking::FindTarget(FVector::ZeroVector, ParaONorte,
-			{ Obstaculo(FVector(Alcance * 2.0f, 0.0f, 0.0f), EScenaryRole::ForestTree) }),
+			{ Obstaculo(FVector(AlcanceDoGolpe * 2.0f, 0.0f, 0.0f), EScenaryRole::ForestTree) }),
 		INDEX_NONE);
 
 	// JÁ CAÍDA não é alvo: continuar batendo no toco daria resposta de acerto

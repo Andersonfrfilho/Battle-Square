@@ -720,3 +720,18 @@ find "$HOME/Library/Logs/Unreal Engine/BattleSquareEditor" Saved/Logs -newer <ma
 **O que fiz:** as duas funções passaram a reler a metade que não é delas, e `SavingOneHalfKeepsTheOther` grava especialidade → grava coleção → confere que a especialidade sobreviveu, e o contrário.
 
 **Previne:** ao acrescentar um campo a um `USaveGame` já existente, procurar **toda** função que monta esse save do zero. E ao juntar dois dados num arquivo, o teste que importa é o que **cruza** os caminhos de escrita — nunca os dois testes separados, que continuam verdes enquanto um apaga o outro.
+
+
+### B-010: os cubos do teste de streaming vivem no MAPA, e o editor está fora de alcance
+
+**Descoberto:** 2026-08-30, quando o usuário perguntou por que havia blocos no mapa aberto.
+
+**O que são:** 225 cubos com 25 tonalidades, criados em M5 para **provar que o World Partition carrega e descarrega células** — cada cor marca uma célula. Nunca foram conteúdo de jogo. Ninguém os removeu porque, até a mata existir, o mundo não tinha mais nada.
+
+**Por que não dá para remover direito:** eles estão dentro de `Content/Maps/WorldStreamingTest.umap`. Quem os apaga é o editor — World Outliner, filtro `Cube`, apagar, salvar. O `unreal-mcp` está com a conexão recusada nesta sessão, e sem ele não há como tocar em asset.
+
+**O paliativo, e por que ele é barulhento:** `ABattleSquareGameMode::RemoveStreamingTestCubes` os destrói em tempo de jogo, com assinatura estreita (`AStaticMeshActor` com a malha de cubo da engine — nada que este projeto cria no mundo se parece com isso). Ele **avisa na tela e no log** quantos removeu, com a instrução de apagá-los no mapa.
+
+O barulho é a parte importante: **paliativo silencioso vira permanente.** Ninguém lembra de apagar o que não incomoda, e no dia em que alguém puser um cubo de propósito ele sumiria sem explicação.
+
+**Resolução:** apagar os cubos no editor e remover a função junto do `bRemoveStreamingTestCubes`. Enquanto isso não acontece, o aviso na tela é o lembrete.

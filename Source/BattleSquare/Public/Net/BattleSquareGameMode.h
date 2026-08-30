@@ -111,6 +111,27 @@ public:
 	 */
 	void WarmUpHeavyAssets();
 
+	/**
+	 * Retira os cubos do teste de streaming (M5) do nível.
+	 *
+	 * PALIATIVO, e o único caminho disponível: eles são conteúdo do MAPA, e
+	 * quem os apaga de verdade é o editor — três passos no World Outliner,
+	 * filtrando por `Cube`. O `unreal-mcp` está com a conexão recusada, e sem
+	 * ele não há como tocar em asset.
+	 *
+	 * Por isso ele é BARULHENTO: diz na tela e no log quantos removeu. Um
+	 * paliativo silencioso vira permanente — ninguém lembra de apagar o que
+	 * não incomoda, e no dia em que alguém puser um cubo de propósito ele
+	 * some sem explicação.
+	 *
+	 * QUANDO O MAPA ESTIVER LIMPO: apagar esta função e o bRemoveStreamingTestCubes.
+	 */
+	void RemoveStreamingTestCubes();
+
+	/** Desligue quando o mapa estiver limpo — e apague o código junto. */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
+	bool bRemoveStreamingTestCubes = true;
+
 	void SpawnWorldScenery();
 
 	/**

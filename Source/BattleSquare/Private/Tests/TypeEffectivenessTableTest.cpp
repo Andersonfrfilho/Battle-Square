@@ -1,5 +1,6 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
+#include "Balance/PetTypeIdentity.h"
 #include "Balance/TypeEffectivenessTable.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/FileHelper.h"
@@ -92,18 +93,17 @@ bool FTypeEffectivenessTableLoadFromJsonTest::RunTest(const FString& Parameters)
 	return true;
 }
 
-// A tabela de SETE tipos tem estrutura, e a estrutura é o que a torna
-// decorável: dois triângulos e um elo, não quarenta e duas exceções soltas.
+// A tabela de DOIS EIXOS se compõe, e é o composto que decide o dano.
 //
-// O teste lê o arquivo REAL de configuração. Um teste sobre uma tabela
-// inventada aqui provaria que o código funciona e não que o jogo está certo —
-// e é o jogo que se joga.
+// O teste lê o arquivo REAL. Um teste sobre uma tabela inventada aqui provaria
+// que o código multiplica, e não que o jogo está equilibrado — e é o jogo que
+// se joga.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FShippedTypeChartHoldsItsShapeTest,
-	"BattleSquare.Balance.TypeEffectiveness.ShippedChartHoldsItsShape",
+	FShippedTypeChartComposesTwoAxesTest,
+	"BattleSquare.Balance.TypeEffectiveness.ShippedChartComposesTwoAxes",
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
 
-bool FShippedTypeChartHoldsItsShapeTest::RunTest(const FString& Parameters)
+bool FShippedTypeChartComposesTwoAxesTest::RunTest(const FString& Parameters)
 {
 	FTypeEffectivenessTable Tabela;
 	const FString Caminho = FPaths::Combine(FPaths::ProjectConfigDir(), TEXT("TypeEffectiveness.json"));
@@ -113,47 +113,54 @@ bool FShippedTypeChartHoldsItsShapeTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	// Ciclo natural, o de sempre.
-	TestEqual(TEXT("Fogo queima Planta"), Tabela.GetPercent(TEXT("Fogo"), TEXT("Planta")), 150);
-	TestEqual(TEXT("Planta bebe Água"), Tabela.GetPercent(TEXT("Planta"), TEXT("Agua")), 150);
-	TestEqual(TEXT("Água apaga Fogo"), Tabela.GetPercent(TEXT("Agua"), TEXT("Fogo")), 150);
+	// Mesmo elemento, escolas diferentes: só o eixo da escola pesa.
+	TestEqual(TEXT("Natural bate Física no eixo da escola"),
+		Tabela.GetPercent(TEXT("Natural/Fogo"), TEXT("Fisica/Fogo")), 120);
 
-	// Ciclo oculto: a mente atravessa a pedra, o teto desaba sobre o enxame, e
-	// o enxame não tem mente única para dominar.
-	TestEqual(TEXT("Psíquico atravessa Caverna"), Tabela.GetPercent(TEXT("Psiquico"), TEXT("Caverna")), 150);
-	TestEqual(TEXT("Caverna esmaga Inseto"), Tabela.GetPercent(TEXT("Caverna"), TEXT("Inseto")), 150);
-	TestEqual(TEXT("Inseto confunde Psíquico"), Tabela.GetPercent(TEXT("Inseto"), TEXT("Psiquico")), 150);
+	// Mesma escola, elementos diferentes: só o eixo do elemento pesa.
+	TestEqual(TEXT("Água apaga Fogo no eixo do elemento"),
+		Tabela.GetPercent(TEXT("Natural/Agua"), TEXT("Natural/Fogo")), 150);
 
-	// O ELO. Mágico domina o material e se perde no que não é material — e a
-	// simetria é o que impede que ele seja simplesmente o melhor tipo.
-	const TCHAR* Naturais[] = { TEXT("Fogo"), TEXT("Agua"), TEXT("Planta") };
-	for (const TCHAR* Natural : Naturais)
+	// OS DOIS de uma vez, que é o ponto da composição.
+	TestEqual(TEXT("Vantagem dupla compõe: 150 × 120 ÷ 100"),
+		Tabela.GetPercent(TEXT("Natural/Agua"), TEXT("Fisica/Fogo")), 180);
+	TestEqual(TEXT("Desvantagem dupla também: 50 × 80 ÷ 100"),
+		Tabela.GetPercent(TEXT("Fisica/Fogo"), TEXT("Natural/Agua")), 40);
+
+	// Vantagem num eixo e desvantagem no outro quase se anulam — e é isso que
+	// impede que um tipo seja bom contra tudo.
+	TestEqual(TEXT("Eixos opostos se cancelam quase por completo"),
+		Tabela.GetPercent(TEXT("Psiquica/Fogo"), TEXT("Fisica/Agua")), 40);
+
+	// O MÁGICO deixou de ser especial, e este é o número que prova.
+	//
+	// Ele tinha 150% contra os três tipos naturais. Agora é psíquico de fogo
+	// como qualquer outro, e contra um natural de fogo tem 120 — o eixo suave.
+	TestEqual(TEXT("Psíquico contra natural do MESMO elemento é só 120"),
+		Tabela.GetPercent(TEXT("Psiquica/Fogo"), TEXT("Natural/Fogo")), 120);
+
+	// Nomes ANTIGOS continuam valendo: eles já foram assinados.
+	TestEqual(TEXT("'Magico' contra 'Fogo' resolve pelo par traduzido"),
+		Tabela.GetPercent(TEXT("Magico"), TEXT("Fogo")), 120);
+	TestEqual(TEXT("'Agua' contra 'Fogo' continua sendo 150"),
+		Tabela.GetPercent(TEXT("Agua"), TEXT("Fogo")), 150);
+
+	// NENHUM tipo é forte contra todos. Tipo sem fraqueza é tipo que todo
+	// mundo escolhe, e aí a tabela inteira deixa de decidir alguma coisa.
+	TArray<FString> Todos;
+	for (const FString& Escola : FPetTypeIdentity::AllSchools())
 	{
-		TestEqual(*FString::Printf(TEXT("Mágico domina %s"), Natural),
-			Tabela.GetPercent(TEXT("Magico"), Natural), 150);
-		TestEqual(*FString::Printf(TEXT("E %s pouco arranha Mágico"), Natural),
-			Tabela.GetPercent(Natural, TEXT("Magico")), 50);
+		for (const FString& Elemento : FPetTypeIdentity::AllElements())
+		{
+			Todos.Add(FString::Printf(TEXT("%s/%s"), *Escola, *Elemento));
+		}
 	}
+	TestEqual(TEXT("São doze tipos possíveis"), Todos.Num(), 12);
 
-	const TCHAR* Ocultos[] = { TEXT("Psiquico"), TEXT("Caverna"), TEXT("Inseto") };
-	for (const TCHAR* Oculto : Ocultos)
-	{
-		TestEqual(*FString::Printf(TEXT("Mágico se perde em %s"), Oculto),
-			Tabela.GetPercent(TEXT("Magico"), Oculto), 50);
-		TestEqual(*FString::Printf(TEXT("E %s domina Mágico"), Oculto),
-			Tabela.GetPercent(Oculto, TEXT("Magico")), 150);
-	}
-
-	// NENHUM tipo é forte contra todos. Um tipo sem fraqueza é um tipo que
-	// todo mundo escolhe, e aí a tabela inteira deixa de decidir alguma coisa.
-	const TCHAR* Todos[] = {
-		TEXT("Fogo"), TEXT("Agua"), TEXT("Planta"),
-		TEXT("Psiquico"), TEXT("Magico"), TEXT("Inseto"), TEXT("Caverna"),
-	};
-	for (const TCHAR* Atacante : Todos)
+	for (const FString& Atacante : Todos)
 	{
 		bool bTemFraqueza = false;
-		for (const TCHAR* Defensor : Todos)
+		for (const FString& Defensor : Todos)
 		{
 			if (Tabela.GetPercent(Defensor, Atacante) > 100)
 			{
@@ -161,7 +168,7 @@ bool FShippedTypeChartHoldsItsShapeTest::RunTest(const FString& Parameters)
 				break;
 			}
 		}
-		TestTrue(*FString::Printf(TEXT("%s tem ao menos um tipo que o supera"), Atacante),
+		TestTrue(*FString::Printf(TEXT("%s tem ao menos um tipo que o supera"), *Atacante),
 			bTemFraqueza);
 	}
 

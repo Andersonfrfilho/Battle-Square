@@ -1,33 +1,29 @@
 {
-  "_comment": "Efetividade por tipo, em porcentagem (100 = neutro, ausente = 100). A ESTRUTURA e dois triangulos e um elo, e nao uma lista de excecoes: com sete tipos, quarenta e duas excecoes soltas nao se decoram nem se equilibram. NATURAIS (Fogo, Agua, Planta) mantem o ciclo de sempre. OCULTOS (Psiquico, Caverna, Inseto) tem o proprio ciclo: a mente atravessa a pedra, o teto desaba sobre o enxame, e o enxame nao tem mente unica para dominar. MAGICO e o elo: domina os tres naturais e se perde nos tres ocultos. Inseto conta como oculto na TABELA por causa do ciclo, ainda que a cor dele seja natural — e isso e proposital: ele e a ponte entre os dois mundos.",
-  "types": ["Fogo", "Agua", "Planta", "Psiquico", "Magico", "Inseto", "Caverna"],
-  "effectiveness": [
-    { "attacker": "Fogo", "defender": "Planta", "percent": 150 },
-    { "attacker": "Fogo", "defender": "Agua", "percent": 50 },
-    { "attacker": "Agua", "defender": "Fogo", "percent": 150 },
-    { "attacker": "Agua", "defender": "Planta", "percent": 50 },
-    { "attacker": "Planta", "defender": "Agua", "percent": 150 },
-    { "attacker": "Planta", "defender": "Fogo", "percent": 50 },
+  "_comment": "Efetividade em DOIS EIXOS, compostos por multiplicacao: escola x elemento / 100. Duas tabelas de quatro linhas cobrem os doze tipos possiveis; a matriz equivalente teria 144 celulas, e ninguem equilibra o que nao consegue ler de uma vez.",
 
-    { "attacker": "Psiquico", "defender": "Caverna", "percent": 150 },
-    { "attacker": "Psiquico", "defender": "Inseto", "percent": 50 },
-    { "attacker": "Caverna", "defender": "Inseto", "percent": 150 },
-    { "attacker": "Caverna", "defender": "Psiquico", "percent": 50 },
-    { "attacker": "Inseto", "defender": "Psiquico", "percent": 150 },
-    { "attacker": "Inseto", "defender": "Caverna", "percent": 50 },
+  "_comment_escola": "A ESCOLA diz o que a magia daquele pet FAZ: Fisica causa dano, Natural muda o terreno, Psiquica mexe nos atributos. O ciclo: o golpe interrompe a concentracao, a mente comanda o elemento, o elemento corroi a materia. Numeros SUAVES (120/80) de proposito — este eixo e o de menor peso, e foi ele que substituiu o 150% que o Magico tinha contra todo tipo natural. A vantagem do psiquico agora esta no que a magia dele FAZ, nao em quanto ela machuca.",
 
-    { "attacker": "Magico", "defender": "Fogo", "percent": 150 },
-    { "attacker": "Magico", "defender": "Agua", "percent": 150 },
-    { "attacker": "Magico", "defender": "Planta", "percent": 150 },
-    { "attacker": "Magico", "defender": "Psiquico", "percent": 50 },
-    { "attacker": "Magico", "defender": "Caverna", "percent": 50 },
-    { "attacker": "Magico", "defender": "Inseto", "percent": 50 },
+  "_comment_elemento": "O ELEMENTO e o eixo alto (150/50) porque e o intuitivo: agua apaga fogo sem ninguem precisar decorar. Ciclo de quatro: Fogo queima Planta, Planta racha Terra, Terra bebe Agua, Agua apaga Fogo. As DIAGONAIS (Fogo-Terra, Planta-Agua) sao neutras, e isso e escolha: um ciclo de quatro com diagonais tambem definidas vira uma matriz que ninguem lembra.",
 
-    { "attacker": "Fogo", "defender": "Magico", "percent": 50 },
-    { "attacker": "Agua", "defender": "Magico", "percent": 50 },
-    { "attacker": "Planta", "defender": "Magico", "percent": 50 },
-    { "attacker": "Psiquico", "defender": "Magico", "percent": 150 },
-    { "attacker": "Caverna", "defender": "Magico", "percent": 150 },
-    { "attacker": "Inseto", "defender": "Magico", "percent": 150 }
+  "_comment_composicao": "O extremo e 150x120/100 = 180 e 50x80/100 = 40. Antes, um unico par ja dava 150 e o Magico tinha 150 contra tres tipos de uma vez.",
+
+  "schools": [
+    { "attacker": "Fisica",   "defender": "Psiquica", "percent": 120 },
+    { "attacker": "Psiquica", "defender": "Fisica",   "percent": 80  },
+    { "attacker": "Psiquica", "defender": "Natural",  "percent": 120 },
+    { "attacker": "Natural",  "defender": "Psiquica", "percent": 80  },
+    { "attacker": "Natural",  "defender": "Fisica",   "percent": 120 },
+    { "attacker": "Fisica",   "defender": "Natural",  "percent": 80  }
+  ],
+
+  "elements": [
+    { "attacker": "Fogo",   "defender": "Planta", "percent": 150 },
+    { "attacker": "Planta", "defender": "Fogo",   "percent": 50  },
+    { "attacker": "Planta", "defender": "Terra",  "percent": 150 },
+    { "attacker": "Terra",  "defender": "Planta", "percent": 50  },
+    { "attacker": "Terra",  "defender": "Agua",   "percent": 150 },
+    { "attacker": "Agua",   "defender": "Terra",  "percent": 50  },
+    { "attacker": "Agua",   "defender": "Fogo",   "percent": 150 },
+    { "attacker": "Fogo",   "defender": "Agua",   "percent": 50  }
   ]
 }

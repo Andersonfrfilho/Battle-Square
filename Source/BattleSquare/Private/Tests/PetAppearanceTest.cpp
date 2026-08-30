@@ -1,5 +1,6 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
+#include "Balance/PetTypeIdentity.h"
 #include "Battle/PetAppearance.h"
 #include "Misc/AutomationTest.h"
 
@@ -15,18 +16,26 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FPetAppearanceDistinguishesTypesTest::RunTest(const FString& Parameters)
 {
-	// Os três tipos que Config/PetSkills.json usa para dar skill.
+	// Os três elementos que Config/PetSkills.json usa para dar skill.
 	const FPetAppearance Fogo = FPetAppearance::ForType(TEXT("Fogo"));
 	const FPetAppearance Agua = FPetAppearance::ForType(TEXT("Agua"));
 	const FPetAppearance Planta = FPetAppearance::ForType(TEXT("Planta"));
 
-	TestTrue(TEXT("Fogo tem chama"), Fogo.CrestShape == EPetCrestShape::Chama);
-	TestTrue(TEXT("Agua tem barbatana"), Agua.CrestShape == EPetCrestShape::Barbatana);
-	TestTrue(TEXT("Planta tem folha"), Planta.CrestShape == EPetCrestShape::Folha);
+	// Os três são NATURAIS, então partilham a malha — a malha virou a escola
+	// quando o tipo ganhou dois eixos. O que os separa em silhueta é o TOMBO.
+	TestTrue(TEXT("Os naturais partilham a malha da escola"),
+		Fogo.CrestShape == Agua.CrestShape && Agua.CrestShape == Planta.CrestShape);
 
-	// Forma E cor: quem não distingue as formas no ângulo do diorama ainda
-	// distingue a cor, e vice-versa. Uma só das duas deixaria metade dos
-	// jogadores sem a informação.
+	// SILHUETA e cor, e é por isso que o tombo existe: quem não distingue as
+	// cores ainda distingue a inclinação, e vice-versa. Uma só das duas
+	// deixaria metade dos jogadores sem a informação.
+	TestFalse(TEXT("Fogo e Agua não têm o mesmo tombo"),
+		FMath::IsNearlyEqual(Fogo.CrestRotation.Roll, Agua.CrestRotation.Roll, 1.0f));
+	TestFalse(TEXT("Agua e Planta não têm o mesmo tombo"),
+		FMath::IsNearlyEqual(Agua.CrestRotation.Roll, Planta.CrestRotation.Roll, 1.0f));
+	TestFalse(TEXT("Fogo e Planta não têm o mesmo tombo"),
+		FMath::IsNearlyEqual(Fogo.CrestRotation.Roll, Planta.CrestRotation.Roll, 1.0f));
+
 	TestFalse(TEXT("Fogo e Agua não compartilham a cor de acento"),
 		Fogo.AccentColor.Equals(Agua.AccentColor, 0.01f));
 	TestFalse(TEXT("Agua e Planta não compartilham a cor de acento"),
@@ -105,80 +114,111 @@ bool FPetAppearanceTellsDogFromCatTest::RunTest(const FString& Parameters)
 	return true;
 }
 
-// SETE tipos, e cada um precisa ser distinguível dos outros seis.
+// DOZE tipos, e cada um distinguível — com três formas e quatro cores.
 //
-// Com três tipos a matiz bastava sozinha. Com sete, dois problemas aparecem
-// juntos: o olho não separa sete matizes num bicho em movimento, e sete matizes
-// distintas não cabem sem encostar nas cores que o TERRENO já usa.
-//
-// A saída foi pôr a SILHUETA para identificar e a cor para agrupar. Este teste
-// protege as duas metades: nenhum par de tipos partilha forma E cor.
+// É o ponto do modelo de dois eixos: alfabetos pequenos que se combinam. Sete
+// nomes soltos precisavam de sete matizes e já não cabiam; três silhuetas e
+// quatro cores cobrem doze e sobra espaço.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FEverySevenTypesAreTellableApartTest,
-	"BattleSquare.Battle.PetAppearance.EverySevenTypesAreTellableApart",
+	FEveryTypePairIsTellableApartTest,
+	"BattleSquare.Battle.PetAppearance.EveryTypePairIsTellableApart",
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
 
-bool FEverySevenTypesAreTellableApartTest::RunTest(const FString& Parameters)
+bool FEveryTypePairIsTellableApartTest::RunTest(const FString& Parameters)
 {
-	const TCHAR* Tipos[] = {
-		TEXT("Fogo"), TEXT("Agua"), TEXT("Planta"),
-		TEXT("Inseto"), TEXT("Psiquico"), TEXT("Magico"), TEXT("Caverna"),
-	};
-	constexpr int32 Quantos = UE_ARRAY_COUNT(Tipos);
-
-	for (int32 A = 0; A < Quantos; ++A)
+	TArray<FString> Todos;
+	for (const FString& Escola : FPetTypeIdentity::AllSchools())
 	{
-		const FPetAppearance PrimeiraAparencia = FPetAppearance::ForType(Tipos[A]);
-
-		for (int32 B = A + 1; B < Quantos; ++B)
+		for (const FString& Elemento : FPetTypeIdentity::AllElements())
 		{
-			const FPetAppearance SegundaAparencia = FPetAppearance::ForType(Tipos[B]);
+			Todos.Add(FString::Printf(TEXT("%s/%s"), *Escola, *Elemento));
+		}
+	}
 
-			const bool bMesmaForma = PrimeiraAparencia.CrestShape == SegundaAparencia.CrestShape;
-			const bool bMesmaCor = PrimeiraAparencia.AccentColor.Equals(SegundaAparencia.AccentColor, 0.001f);
+	for (int32 A = 0; A < Todos.Num(); ++A)
+	{
+		const FPetAppearance Primeira = FPetAppearance::ForType(Todos[A]);
+		for (int32 B = A + 1; B < Todos.Num(); ++B)
+		{
+			const FPetAppearance Segunda = FPetAppearance::ForType(Todos[B]);
 
-			TestFalse(
-				*FString::Printf(TEXT("%s e %s não têm forma E cor iguais"), Tipos[A], Tipos[B]),
-				bMesmaForma && bMesmaCor);
+			// SILHUETA = malha + tombo. Dois tipos podem partilhar a malha
+			// (mesma escola) desde que o tombo os separe.
+			const bool bMesmaSilhueta = Primeira.CrestShape == Segunda.CrestShape
+				&& FMath::IsNearlyEqual(Primeira.CrestRotation.Roll, Segunda.CrestRotation.Roll, 1.0f);
+			const bool bMesmaCor = Primeira.AccentColor.Equals(Segunda.AccentColor, 0.001f);
+
+			// A SILHUETA identifica o tipo INTEIRO — os doze são únicos nela,
+			// e é o canal completo. Quem não distingue cor não perde nada.
+			TestFalse(*FString::Printf(TEXT("%s e %s não têm a mesma silhueta"),
+				*Todos[A], *Todos[B]), bMesmaSilhueta);
+
+			// A COR identifica só o ELEMENTO, e isso é deliberado: são quatro
+			// cores para doze tipos, e forçar doze matizes foi exatamente o que
+			// não coube. Ela é o canal RÁPIDO e parcial — dois tipos do mesmo
+			// elemento partilham a cor de propósito.
+			const bool bMesmoElemento =
+				FPetTypeIdentity::Parse(Todos[A]).Element == FPetTypeIdentity::Parse(Todos[B]).Element;
+			TestEqual(*FString::Printf(TEXT("%s e %s partilham a cor exatamente quando partilham o elemento"),
+				*Todos[A], *Todos[B]), bMesmaCor, bMesmoElemento);
 		}
 	}
 
 	return true;
 }
 
-// Tipo NOVO não pode sair igual ao pet sem tipo.
-//
-// O ramo padrão devolve a aparência neutra, então um nome escrito errado —
-// "Psíquico" com acento, "magico" noutra grafia — produz um bicho que existe,
-// luta e parece genérico. É o modo de falhar de L-045: o ramo existe, o dado
-// nunca cai nele, e nada avisa.
+// A SILHUETA é a escola e a COR é o elemento — e é essa separação que faz o
+// sistema crescer. Se as duas viessem do mesmo eixo, doze tipos exigiriam doze
+// de alguma coisa.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FNewTypesDoNotFallBackToNeutralTest,
-	"BattleSquare.Battle.PetAppearance.NewTypesDoNotFallBackToNeutral",
+	FShapeIsSchoolAndColorIsElementTest,
+	"BattleSquare.Battle.PetAppearance.ShapeIsSchoolAndColorIsElement",
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
 
-bool FNewTypesDoNotFallBackToNeutralTest::RunTest(const FString& Parameters)
+bool FShapeIsSchoolAndColorIsElementTest::RunTest(const FString& Parameters)
 {
-	const FPetAppearance Neutro = FPetAppearance::ForType(TEXT("tipo-que-nao-existe"));
+	// Mesma escola, elementos diferentes: MESMA forma, cores diferentes.
+	const FPetAppearance FisicaFogo = FPetAppearance::ForType(TEXT("Fisica/Fogo"));
+	const FPetAppearance FisicaAgua = FPetAppearance::ForType(TEXT("Fisica/Agua"));
+	TestTrue(TEXT("Mesma escola dá a mesma silhueta"),
+		FisicaFogo.CrestShape == FisicaAgua.CrestShape);
+	TestFalse(TEXT("E elementos diferentes dão cores diferentes"),
+		FisicaFogo.AccentColor.Equals(FisicaAgua.AccentColor, 0.001f));
 
-	const TCHAR* Novos[] = {
-		TEXT("Inseto"), TEXT("Psiquico"), TEXT("Magico"), TEXT("Caverna"),
-	};
+	// Mesmo elemento, escolas diferentes: MESMA cor, formas diferentes.
+	const FPetAppearance PsiquicaFogo = FPetAppearance::ForType(TEXT("Psiquica/Fogo"));
+	TestTrue(TEXT("Mesmo elemento dá a mesma cor"),
+		FisicaFogo.AccentColor.Equals(PsiquicaFogo.AccentColor, 0.001f));
+	TestFalse(TEXT("E escolas diferentes dão silhuetas diferentes"),
+		FisicaFogo.CrestShape == PsiquicaFogo.CrestShape);
 
-	for (const TCHAR* Tipo : Novos)
+	// Nome ANTIGO chega à mesma aparência do par que ele virou.
+	const FPetAppearance Magico = FPetAppearance::ForType(TEXT("Magico"));
+	TestTrue(TEXT("'Magico' tem a silhueta de Psiquica/Fogo"),
+		Magico.CrestShape == PsiquicaFogo.CrestShape);
+	TestTrue(TEXT("E a cor de Psiquica/Fogo"),
+		Magico.AccentColor.Equals(PsiquicaFogo.AccentColor, 0.001f));
+
+	return true;
+}
+
+// Tipo irreconhecível não pode sair parecendo um tipo válido.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FUnknownTypeIsVisiblyUnknownTest,
+	"BattleSquare.Battle.PetAppearance.UnknownTypeIsVisiblyUnknown",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FUnknownTypeIsVisiblyUnknownTest::RunTest(const FString& Parameters)
+{
+	const FPetAppearance Desconhecido = FPetAppearance::ForType(TEXT("Natural/Telepatia"));
+
+	for (const FString& Elemento : FPetTypeIdentity::AllElements())
 	{
-		const FPetAppearance Aparencia = FPetAppearance::ForType(Tipo);
-		TestFalse(
-			*FString::Printf(TEXT("%s não cai no ramo neutro"), Tipo),
-			Aparencia.CrestShape == Neutro.CrestShape
-				&& Aparencia.AccentColor.Equals(Neutro.AccentColor, 0.001f));
+		const FPetAppearance Valido =
+			FPetAppearance::ForType(FString::Printf(TEXT("Natural/%s"), *Elemento));
+		TestFalse(*FString::Printf(TEXT("Não se confunde com Natural/%s"), *Elemento),
+			Desconhecido.AccentColor.Equals(Valido.AccentColor, 0.001f));
 	}
-
-	// E o nome é casado sem diferenciar maiúscula: o catálogo do backend não
-	// promete grafia, e um pet "PSIQUICO" não pode virar genérico por isso.
-	TestTrue(TEXT("A grafia em caixa alta encontra o mesmo tipo"),
-		FPetAppearance::ForType(TEXT("PSIQUICO")).CrestShape
-			== FPetAppearance::ForType(TEXT("Psiquico")).CrestShape);
 
 	return true;
 }

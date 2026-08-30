@@ -25,7 +25,7 @@ import { createPetSchema, type CreatePetDeclaration } from '../pet.validation';
 export const PET_CATALOG_SEED: CreatePetDeclaration[] = [
   {
     name: 'Faísca',
-    type: 'Fogo',
+    type: 'Natural/Fogo',
     attack: 55,
     defense: 40,
     speed: 60,
@@ -41,7 +41,7 @@ export const PET_CATALOG_SEED: CreatePetDeclaration[] = [
   },
   {
     name: 'Cinza',
-    type: 'Fogo',
+    type: 'Natural/Fogo',
     attack: 70,
     defense: 30,
     speed: 45,
@@ -55,7 +55,7 @@ export const PET_CATALOG_SEED: CreatePetDeclaration[] = [
   },
   {
     name: 'Brisa',
-    type: 'Planta',
+    type: 'Natural/Planta',
     attack: 45,
     defense: 60,
     speed: 50,
@@ -69,7 +69,7 @@ export const PET_CATALOG_SEED: CreatePetDeclaration[] = [
   },
   {
     name: 'Musgo',
-    type: 'Planta',
+    type: 'Natural/Planta',
     attack: 40,
     defense: 75,
     speed: 35,
@@ -83,7 +83,7 @@ export const PET_CATALOG_SEED: CreatePetDeclaration[] = [
   },
   {
     name: 'Maré',
-    type: 'Agua',
+    type: 'Natural/Agua',
     attack: 50,
     defense: 55,
     speed: 55,
@@ -99,7 +99,7 @@ export const PET_CATALOG_SEED: CreatePetDeclaration[] = [
   },
   {
     name: 'Corrente',
-    type: 'Agua',
+    type: 'Natural/Agua',
     attack: 65,
     defense: 45,
     speed: 70,
@@ -113,7 +113,7 @@ export const PET_CATALOG_SEED: CreatePetDeclaration[] = [
   },
   {
     name: 'Zunido',
-    type: 'Inseto',
+    type: 'Fisica/Planta',
     attack: 60,
     defense: 35,
     speed: 80,
@@ -128,7 +128,7 @@ export const PET_CATALOG_SEED: CreatePetDeclaration[] = [
   },
   {
     name: 'Vigília',
-    type: 'Psiquico',
+    type: 'Psiquica/Agua',
     attack: 65,
     defense: 45,
     speed: 65,
@@ -143,7 +143,7 @@ export const PET_CATALOG_SEED: CreatePetDeclaration[] = [
   },
   {
     name: 'Alfarrábio',
-    type: 'Magico',
+    type: 'Psiquica/Fogo',
     attack: 75,
     defense: 30,
     speed: 60,
@@ -159,7 +159,7 @@ export const PET_CATALOG_SEED: CreatePetDeclaration[] = [
   },
   {
     name: 'Estalagmite',
-    type: 'Caverna',
+    type: 'Fisica/Terra',
     attack: 55,
     defense: 75,
     speed: 35,

@@ -2,31 +2,28 @@
 
 #include "Battle/PetAppearance.h"
 
+#include "Balance/PetTypeIdentity.h"
+
 namespace
 {
-	/** Nomes de tipo como aparecem no catálogo de pets e em PetSkills.json. */
-	const FString TipoFogo = TEXT("Fogo");
-	const FString TipoAgua = TEXT("Agua");
-	const FString TipoPlanta = TEXT("Planta");
+	/**
+	 * Os nomes de tipo do jogo NÃO moram mais aqui: quem os conhece é
+	 * FPetTypeIdentity, e ele é quem traduz tanto a forma nova
+	 * (`Natural/Fogo`) quanto os nomes antigos já assinados.
+	 *
+	 * Cachorro sobra porque não é tipo de jogo — é o pet do espelho de
+	 * fixture, e ele existe para provar que a aparência chega à tela.
+	 */
 	const FString TipoCachorro = TEXT("Dog");
-
-	// Tipos acrescentados em 30/08/2026.
-	const FString TipoPsiquico = TEXT("Psiquico");
-	const FString TipoMagico = TEXT("Magico");
-	const FString TipoInseto = TEXT("Inseto");
-	const FString TipoCaverna = TEXT("Caverna");
 }
 
 FPetAppearance FPetAppearance::ForType(const FString& PetType)
 {
 	FPetAppearance Aparencia;
 
-	// Cachorro é o ÚNICO tipo do espelho de fixture que não é gato, e até aqui
-	// saía idêntico a um: o sistema de tipos existia sem nunca aparecer na
-	// tela, que é o modo de falhar que este projeto já pagou três vezes.
-	//
-	// A orelha CAI em vez de apontar — é o que distingue os dois de longe, e é
-	// o único par de tipos que os dados de hoje conseguem pôr lado a lado.
+	// Cachorro é do espelho de fixture e não entra no sistema de dois eixos:
+	// ele não é um elemento nem uma escola, é o pet que existe para provar que
+	// a tabela de aparência chega à tela (L-045).
 	if (PetType.Equals(TipoCachorro, ESearchCase::IgnoreCase))
 	{
 		Aparencia.AccentColor = FLinearColor(0.62f, 0.42f, 0.22f);
@@ -36,85 +33,74 @@ FPetAppearance FPetAppearance::ForType(const FString& PetType)
 		return Aparencia;
 	}
 
-	if (PetType.Equals(TipoFogo, ESearchCase::IgnoreCase))
+	const FPetTypeIdentity Identidade = FPetTypeIdentity::Parse(PetType);
+	if (!Identidade.IsValid())
 	{
-		Aparencia.AccentColor = FLinearColor(0.95f, 0.35f, 0.05f);
+		// Tipo irreconhecível fica NEUTRO, e neutro precisa ser visível: o
+		// ouro-palha não aparece em terreno nenhum, então um pet mal
+		// cadastrado se destaca em vez de sumir no chão.
+		Aparencia.AccentColor = FLinearColor(0.79f, 0.64f, 0.15f);
+		Aparencia.CrestShape = EPetCrestShape::Orelha;
+		return Aparencia;
+	}
+
+	// --- A SILHUETA é a ESCOLA -----------------------------------------
+	//
+	// A forma diz o que aquele bicho FAZ com a magia dele — dano, terreno ou
+	// atributo — e é a informação que decide o turno. Ela vai para o contorno
+	// porque o olho separa três contornos num bicho em movimento, e não separa
+	// doze matizes.
+	if (Identidade.School == TEXT("Fisica"))
+	{
+		Aparencia.CrestShape = EPetCrestShape::Cristal;
+		Aparencia.CrestScale = FVector(0.20f, 0.20f, 0.22f);
+	}
+	else if (Identidade.School == TEXT("Psiquica"))
+	{
+		Aparencia.CrestShape = EPetCrestShape::Orbe;
+		Aparencia.CrestScale = FVector(0.15f, 0.15f, 0.15f);
+	}
+	else
+	{
 		Aparencia.CrestShape = EPetCrestShape::Chama;
 		Aparencia.CrestScale = FVector(0.18f, 0.18f, 0.46f);
-		Aparencia.CrestRotation = FRotator(0.0f, 0.0f, -10.0f);
-		return Aparencia;
 	}
 
-	if (PetType.Equals(TipoAgua, ESearchCase::IgnoreCase))
+	// --- A COR é o ELEMENTO --------------------------------------------
+	//
+	// Fogo é laranja porque fogo é laranja. Este eixo não se aprende, se
+	// reconhece — e é por isso que ele fica com a cor, que é o canal que
+	// funciona antes de qualquer explicação.
+	// O TOMBO também é o elemento, e isto não é enfeite.
+	//
+	// O teste que este arquivo tinha desde o começo dizia por quê: quem não
+	// distingue as formas ainda distingue a cor, e VICE-VERSA — uma só das
+	// duas deixa metade dos jogadores sem a informação. Com escola na malha e
+	// elemento só na cor, o daltônico perderia o elemento inteiro.
+	//
+	// Quatro inclinações da mesma malha se separam em silhueta pura, e o
+	// jogador lê o elemento sem depender de matiz nenhuma.
+	if (Identidade.Element == TEXT("Fogo"))
+	{
+		Aparencia.AccentColor = FLinearColor(0.95f, 0.35f, 0.05f);
+		Aparencia.CrestRotation = FRotator(0.0f, 0.0f, -6.0f);   // ereto, sobe
+	}
+	else if (Identidade.Element == TEXT("Agua"))
 	{
 		Aparencia.AccentColor = FLinearColor(0.10f, 0.70f, 0.90f);
-		Aparencia.CrestShape = EPetCrestShape::Barbatana;
-		// Achatada no eixo de frente: barbatana é lâmina, não espinho.
-		Aparencia.CrestScale = FVector(0.06f, 0.30f, 0.30f);
-		Aparencia.CrestRotation = FRotator(0.0f, 0.0f, -55.0f);
-		return Aparencia;
+		Aparencia.CrestRotation = FRotator(0.0f, 0.0f, -52.0f);  // deitado, escorre
 	}
-
-	if (PetType.Equals(TipoPlanta, ESearchCase::IgnoreCase))
+	else if (Identidade.Element == TEXT("Planta"))
 	{
 		Aparencia.AccentColor = FLinearColor(0.20f, 0.78f, 0.25f);
-		Aparencia.CrestShape = EPetCrestShape::Folha;
-		Aparencia.CrestScale = FVector(0.32f, 0.07f, 0.38f);
-		Aparencia.CrestRotation = FRotator(0.0f, 0.0f, -34.0f);
-		return Aparencia;
+		Aparencia.CrestRotation = FRotator(0.0f, 0.0f, -28.0f);  // aberto, cresce
 	}
-
-	// --- OS QUATRO OCULTOS, e o inseto ---------------------------------
-	//
-	// A paleta agora tem DUAS famílias, e isso é informação, não arranjo: as
-	// matizes quentes e verdes são do mundo natural; violeta, magenta e índigo
-	// são do que não é natural. Antes de saber QUAL tipo é, o jogador já sabe
-	// com que espécie de coisa está lidando.
-	//
-	// É a extensão de "cor tem dono": com três tipos a matiz bastava sozinha;
-	// com sete, ela agrupa e a SILHUETA identifica.
-
-	if (PetType.Equals(TipoInseto, ESearchCase::IgnoreCase))
+	else // Terra
 	{
-		// Chartreuse: natural, e o único ponto do verde-amarelo que não é nem
-		// a Planta nem o ouro do pet sem tipo.
-		Aparencia.AccentColor = FLinearColor(0.61f, 0.76f, 0.12f);
-		Aparencia.CrestShape = EPetCrestShape::Antena;
-		Aparencia.CrestScale = FVector(0.05f, 0.05f, 0.52f);
-		Aparencia.CrestRotation = FRotator(0.0f, 0.0f, -18.0f);
-		return Aparencia;
-	}
-
-	if (PetType.Equals(TipoPsiquico, ESearchCase::IgnoreCase))
-	{
-		Aparencia.AccentColor = FLinearColor(0.88f, 0.23f, 0.59f);
-		Aparencia.CrestShape = EPetCrestShape::Orbe;
-		// PEQUENO e redondo: o orbe é o oposto do chifre — não ameaça, paira.
-		Aparencia.CrestScale = FVector(0.15f, 0.15f, 0.15f);
-		Aparencia.CrestRotation = FRotator(0.0f, 0.0f, 0.0f);
-		return Aparencia;
-	}
-
-	if (PetType.Equals(TipoMagico, ESearchCase::IgnoreCase))
-	{
-		Aparencia.AccentColor = FLinearColor(0.48f, 0.31f, 0.85f);
-		Aparencia.CrestShape = EPetCrestShape::Ponta;
-		// Apontando para BAIXO: nada na natureza cresce assim, e é justamente
-		// isso que a forma precisa dizer.
-		Aparencia.CrestScale = FVector(0.12f, 0.12f, 0.42f);
-		Aparencia.CrestRotation = FRotator(0.0f, 0.0f, 168.0f);
-		return Aparencia;
-	}
-
-	if (PetType.Equals(TipoCaverna, ESearchCase::IgnoreCase))
-	{
-		Aparencia.AccentColor = FLinearColor(0.29f, 0.36f, 0.77f);
-		Aparencia.CrestShape = EPetCrestShape::Cristal;
-		// Baixo e largo: peso, não alcance. É a silhueta que menos se parece
-		// com todas as outras, que são altas e finas.
-		Aparencia.CrestScale = FVector(0.20f, 0.20f, 0.22f);
-		Aparencia.CrestRotation = FRotator(0.0f, 0.0f, -22.0f);
-		return Aparencia;
+		// Púrpura-pedra, e não marrom: marrom é a cor do CHÃO, e um pet da
+		// cor do chão é tão invisível quanto um sem malha.
+		Aparencia.AccentColor = FLinearColor(0.55f, 0.30f, 0.72f);
+		Aparencia.CrestRotation = FRotator(0.0f, 0.0f, -80.0f);  // quase rente, pesa
 	}
 
 	return Aparencia;

@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Balance/PetSkillCatalog.h"
+#include "Balance/PetTypeIdentity.h"
 
 #include "Dom/JsonObject.h"
 #include "Misc/FileHelper.h"
@@ -101,10 +102,26 @@ bool FPetSkillCatalog::LoadFromJson(const FString& FilePath, FPetSkillCatalog& O
 
 TArray<EActionType> FPetSkillCatalog::GetSkillsForType(const FString& PetType) const
 {
+	// O nome EXATO vem primeiro: um arquivo que declare `Natural/Fogo` — ou o
+	// `Dog` do espelho de fixture — precisa continuar sendo encontrado.
 	if (const TArray<EActionType>* Encontradas = SkillsByType.Find(PetType))
 	{
 		return *Encontradas;
 	}
+
+	// Depois, pelo ELEMENTO. A skill é coisa do corpo, e o corpo é feito do
+	// elemento: `Fisica/Fogo` e `Psiquica/Fogo` voam pelo mesmo motivo, que é
+	// serem os dois de fogo. Ligar a skill à escola faria todo psíquico voar
+	// por nenhum motivo.
+	const FPetTypeIdentity Identidade = FPetTypeIdentity::Parse(PetType);
+	if (!Identidade.Element.IsEmpty())
+	{
+		if (const TArray<EActionType>* PorElemento = SkillsByType.Find(Identidade.Element))
+		{
+			return *PorElemento;
+		}
+	}
+
 	return {};
 }
 

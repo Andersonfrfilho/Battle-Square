@@ -194,8 +194,18 @@ bool FPetViewShowsItsTypeTest::RunTest(const FString& Parameters)
 	Apresentacao.Type = TEXT("Agua");
 	Agua->SetInitialState(State.Pets[1], Apresentacao);
 
-	TestFalse(TEXT("tipos diferentes não ficam com o mesmo adorno"),
-		Fogo->CrestLeft->GetRelativeScale3D().Equals(Agua->CrestLeft->GetRelativeScale3D(), 0.001f));
+	// O TOMBO chega à tela, e é ele que separa dois elementos da MESMA escola.
+	//
+	// A escala não serve para esta pergunta: ela vem do corpo, e dois pets do
+	// mesmo corpo teriam adornos do mesmo tamanho sendo de elementos
+	// diferentes. Foi a inclinação que passou a carregar o elemento quando o
+	// tipo ganhou dois eixos — e sem ela, quem não distingue cor perderia o
+	// elemento inteiro.
+	TestFalse(TEXT("elementos diferentes não ficam com o mesmo tombo na tela"),
+		FMath::IsNearlyEqual(
+			Fogo->CrestLeft->GetRelativeRotation().Roll,
+			Agua->CrestLeft->GetRelativeRotation().Roll,
+			1.0f));
 
 	World->DestroyWorld(false);
 	GEngine->DestroyWorldContext(World);

@@ -28,6 +28,20 @@ public:
 	// em memória diretamente (testes, ferramentas).
 	void SetPercent(const FString& AttackerType, const FString& DefenderType, int32 Percent);
 
+	/**
+	 * Compõe os DOIS eixos num percentual só.
+	 *
+	 * `escola × elemento ÷ 100`. Duas tabelas de quatro linhas cobrem doze
+	 * tipos; a matriz equivalente teria cento e quarenta e quatro células, e
+	 * ninguém equilibra o que não consegue ler de uma vez.
+	 *
+	 * Eixo desconhecido vale NEUTRO, não zero: um tipo que esta versão não
+	 * conhece precisa lutar normalmente, não deixar de causar dano.
+	 */
+	int32 GetComposedPercent(const FString& AttackerType, const FString& DefenderType) const;
+
 private:
 	TMap<TPair<FString, FString>, int32> Entries;
+	TMap<TPair<FString, FString>, int32> SchoolEntries;
+	TMap<TPair<FString, FString>, int32> ElementEntries;
 };

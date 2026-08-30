@@ -313,18 +313,33 @@ void APetView::RefreshCrests()
 
 	CrestLeft->SetStaticMesh(Malha);
 	CrestRight->SetStaticMesh(Malha);
-	// A FORMA continua vindo do tipo — é ela que diz o tipo na tela. O
-	// TAMANHO e o tombo vêm do corpo deste bicho: decoração varia, informação
-	// não.
+
+	// O TAMANHO vem do corpo deste bicho — decoração varia com quem ele é.
 	CrestLeft->SetRelativeScale3D(Morphology.CrestScale);
 	CrestRight->SetRelativeScale3D(Morphology.CrestScale);
 
+	// A MALHA e o TOMBO vêm do TIPO, e são os dois canais de silhueta.
+	//
+	// Antes, só a malha dizia o tipo, e bastava: eram três tipos e três
+	// malhas. Com escola e elemento são DOZE, e uma malha por escola deixaria
+	// o elemento existindo apenas na cor — quem não distingue matiz perderia
+	// metade da informação, que é justamente o que o teste desta tela sempre
+	// proibiu.
+	//
+	// O tombo do CORPO continua entrando: ele é somado, não substituído, então
+	// um bicho de pescoço torto segue com o adorno torto, e a diferença ENTRE
+	// elementos continua a mesma para todos os corpos.
+	const FRotator TomboDoTipo(
+		Morphology.CrestRotation.Pitch + Aparencia.CrestRotation.Pitch,
+		Morphology.CrestRotation.Yaw + Aparencia.CrestRotation.Yaw,
+		Morphology.CrestRotation.Roll + Aparencia.CrestRotation.Roll);
+
 	CrestLeft->SetRelativeLocationAndRotation(
 		CrestRelativeLocation(Morphology, -1.0f),
-		CrestRotationForSide(Morphology.CrestRotation, -1.0f));
+		CrestRotationForSide(TomboDoTipo, -1.0f));
 	CrestRight->SetRelativeLocationAndRotation(
 		CrestRelativeLocation(Morphology, 1.0f),
-		CrestRotationForSide(Morphology.CrestRotation, 1.0f));
+		CrestRotationForSide(TomboDoTipo, 1.0f));
 }
 
 void APetView::LookAtLocation(const FVector& TargetLocation)

@@ -100,6 +100,52 @@ namespace PaletaDoCenario
 	 */
 	const FLinearColor ChaoDaCaverna(0.353f, 0.310f, 0.259f);
 
+	// Os biomas de fora da mata. Cada um se anuncia pela TEMPERATURA da cor
+	// antes de se anunciar pelo que tem plantado: quem chega ao deserto vê
+	// ocre antes de reparar que não há árvore.
+
+	/** Areia do deserto: ocre, quente, e mais CLARA que qualquer verde. */
+	const FLinearColor OcreDaAreia(0.702f, 0.549f, 0.310f);
+
+	/**
+	 * Pedra do deserto.
+	 *
+	 * O mesmo cinza da mata puxado para o quente, e um degrau mais claro. Não
+	 * pode ser o cinza frio: contra a areia ocre ele lê como sujeira, e a
+	 * pedra some — que é o oposto do que uma pedra no deserto faz.
+	 */
+	const FLinearColor BegeDaPedraSeca(0.478f, 0.408f, 0.322f);
+
+	/**
+	 * O gelo do chão da geleira: branco AZUL.
+	 *
+	 * Mais escuro que a touca do cume de propósito. Gelo de piso com o branco
+	 * do cume estoura a tela inteira, e sem nada mais escuro por perto quem
+	 * anda perde a noção de onde o chão acaba.
+	 */
+	const FLinearColor AzulDoGelo(0.706f, 0.792f, 0.859f);
+
+	/**
+	 * Basalto do vulcão: o mais escuro que existe fora da caverna — e ainda
+	 * assim NÃO preto.
+	 *
+	 * Preto de verdade encosta na luminância do chão da mata, e a fronteira
+	 * entre a floresta e o vulcão viraria uma mancha escura só. Escuro o
+	 * bastante para a lava ter contra o que brilhar, claro o bastante para se
+	 * ler como outro lugar.
+	 */
+	const FLinearColor PretoDoBasalto(0.176f, 0.145f, 0.141f);
+
+	/**
+	 * A areia da praia: FRIA e um degrau mais escura que a duna do deserto.
+	 *
+	 * É areia MOLHADA — o mar acabou de lavá-la, e areia molhada é mais
+	 * escura que areia seca. A diferença não é enfeite: é ela que separa a
+	 * beira do deserto quando os dois se encostam, que acontece em toda volta
+	 * da ilha.
+	 */
+	const FLinearColor PalidoDaPraia(0.694f, 0.655f, 0.549f);
+
 	// Acentos: pontos pequenos, saturados, que só funcionam porque o resto
 	// do quadro é dessaturado.
 
@@ -200,6 +246,24 @@ FLinearColor ScenaryPalette::ColorFor(EScenaryRole Role, FName MaterialSlot)
 
 	case EScenaryRole::CaveFloor:
 		return ChaoDaCaverna;
+
+	case EScenaryRole::DesertSand:
+		return OcreDaAreia;
+
+	case EScenaryRole::DesertRock:
+		return BegeDaPedraSeca;
+
+	case EScenaryRole::GlacierIce:
+		return AzulDoGelo;
+
+	case EScenaryRole::VolcanicRock:
+		return PretoDoBasalto;
+
+	case EScenaryRole::BeachSand:
+		return PalidoDaPraia;
+
+	case EScenaryRole::Count:
+		break;
 	}
 
 	return VerdeDaMata;

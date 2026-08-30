@@ -152,3 +152,106 @@ bool FScenaryPaletteKeepsBarkConsistentAcrossRolesTest::RunTest(const FString& P
 
 	return true;
 }
+
+/**
+ * A armadilha que este projeto já pagou três vezes, agora fechada por teste.
+ *
+ * `ColorFor` termina em `return VerdeDaMata`. Papel novo que entre no enum e
+ * NÃO ganhe `case` cai ali: compila, passa em todo teste de lógica, e só
+ * aparece na tela — como verde de mata no meio do deserto. O sentinela
+ * `Count` existe para este laço poder cobrar `case` de cada papel.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FScenaryPaletteGivesEveryRoleItsOwnCaseTest,
+	"BattleSquare.ScenaryPalette.GivesEveryRoleItsOwnCase",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FScenaryPaletteGivesEveryRoleItsOwnCaseTest::RunTest(const FString& Parameters)
+{
+	// Comparar contra a cor DA MATA, não contra a constante interna: o teste
+	// cobra o comportamento observável, e a paleta segue livre para trocar o
+	// tom do verde sem quebrá-lo.
+	const FLinearColor VerdeDeQuemCaiuNoFim =
+		ScenaryPalette::ColorFor(EScenaryRole::ForestTree, NAME_None);
+
+	for (uint8 Papel = 0; Papel < static_cast<uint8>(EScenaryRole::Count); ++Papel)
+	{
+		const EScenaryRole Qual = static_cast<EScenaryRole>(Papel);
+		if (Qual == EScenaryRole::ForestTree)
+		{
+			continue;
+		}
+
+		TestNotEqual(
+			FString::Printf(TEXT("o papel %d tem case proprio, nao cai no verde da mata"), Papel),
+			ScenaryPalette::ColorFor(Qual, NAME_None),
+			VerdeDeQuemCaiuNoFim);
+	}
+
+	return true;
+}
+
+/**
+ * Andar de um bioma para o outro precisa SER VISÍVEL no chão.
+ *
+ * Quem atravessa a ilha não lê legenda: percebe que o piso mudou. Se dois
+ * biomas vizinhos pisam na mesma luminância, a travessia acontece e ninguém
+ * vê — que é o mesmo defeito do verde-água, um mapa depois.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FScenaryPaletteSeparatesTheBiomeGroundsTest,
+	"BattleSquare.ScenaryPalette.SeparatesTheBiomeGrounds",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FScenaryPaletteSeparatesTheBiomeGroundsTest::RunTest(const FString& Parameters)
+{
+	// O chão da mata entra na lista porque a floresta é vizinha de TODOS: é
+	// dela que se sai e é nela que se chega.
+	const TArray<TPair<FString, FLinearColor>> Chaos = {
+		{ TEXT("mata"),     ScenaryPalette::GroundColor() },
+		{ TEXT("deserto"),  ScenaryPalette::ColorFor(EScenaryRole::DesertSand, NAME_None) },
+		{ TEXT("pedra seca"), ScenaryPalette::ColorFor(EScenaryRole::DesertRock, NAME_None) },
+		{ TEXT("geleira"),  ScenaryPalette::ColorFor(EScenaryRole::GlacierIce, NAME_None) },
+		{ TEXT("vulcao"),   ScenaryPalette::ColorFor(EScenaryRole::VolcanicRock, NAME_None) },
+		{ TEXT("praia"),    ScenaryPalette::ColorFor(EScenaryRole::BeachSand, NAME_None) },
+	};
+
+	for (int32 Primeiro = 0; Primeiro < Chaos.Num(); ++Primeiro)
+	{
+		for (int32 Segundo = Primeiro + 1; Segundo < Chaos.Num(); ++Segundo)
+		{
+			TestTrue(
+				FString::Printf(TEXT("o chao de %s se distingue do chao de %s"),
+					*Chaos[Primeiro].Key, *Chaos[Segundo].Key),
+				SeparacaoDePaleta(Chaos[Primeiro].Value, Chaos[Segundo].Value) >= SeparacaoMinima);
+		}
+	}
+
+	return true;
+}
+
+/**
+ * O gelo do CHÃO não é a touca do CUME.
+ *
+ * São a mesma matéria e papéis diferentes: um é visto de longe contra o céu,
+ * o outro de perto contra os pés. Pintados do mesmo branco, a geleira lê como
+ * um cume deitado — e quem anda nela perde a noção de onde o chão acaba.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FScenaryPaletteKeepsGlacierFloorBelowPeakSnowTest,
+	"BattleSquare.ScenaryPalette.KeepsGlacierFloorBelowPeakSnow",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FScenaryPaletteKeepsGlacierFloorBelowPeakSnowTest::RunTest(const FString& Parameters)
+{
+	const FLinearColor ToucaDoCume = ScenaryPalette::ColorFor(EScenaryRole::MountainSnow, NAME_None);
+	const FLinearColor PisoDaGeleira = ScenaryPalette::ColorFor(EScenaryRole::GlacierIce, NAME_None);
+
+	TestTrue(TEXT("o piso da geleira e' mais escuro que a touca do cume"),
+		SeparacaoDePaleta(ToucaDoCume, PisoDaGeleira) >= SeparacaoMinima);
+
+	TestTrue(TEXT("e o gelo puxa para o azul: nenhum dos dois e' branco morto"),
+		PisoDaGeleira.B > PisoDaGeleira.R);
+
+	return true;
+}

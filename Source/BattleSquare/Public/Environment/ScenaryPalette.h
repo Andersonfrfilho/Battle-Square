@@ -69,7 +69,46 @@ enum class EScenaryRole : uint8
 	CaveRock,
 
 	/** O chão da caverna, claro o bastante para o corredor se ler. */
-	CaveFloor
+	CaveFloor,
+
+	/**
+	 * A areia do DESERTO: ocre quente, seca.
+	 *
+	 * Separada da areia da praia porque a diferença entre as duas é o que
+	 * conta a travessia. Uma cor só para "areia" faria o deserto e a beira
+	 * lerem como o mesmo lugar, e quem anda do meio da ilha até o mar não
+	 * veria que chegou.
+	 */
+	DesertSand,
+
+	/** Pedra do deserto: o cinza da mata puxado para o quente e para o claro. */
+	DesertRock,
+
+	/**
+	 * O gelo do CHÃO da geleira.
+	 *
+	 * Não é `MountainSnow`: aquele é a touca do cume, vista de longe e contra
+	 * o céu; este é piso, visto de perto e contra os pés. Pintar os dois com o
+	 * mesmo branco faria a geleira parecer um cume deitado.
+	 */
+	GlacierIce,
+
+	/** Rocha do vulcão: basalto, o mais escuro que existe fora da caverna. */
+	VolcanicRock,
+
+	/** A areia MOLHADA da praia: fria, e mais escura que a duna do deserto. */
+	BeachSand,
+
+	/**
+	 * Quantos papéis existem. Não é papel nenhum.
+	 *
+	 * Existe para o teste poder percorrer a lista inteira e cobrar `case` de
+	 * cada um. Sem ela, papel novo sem `case` cai no retorno final de
+	 * `ColorFor` e sai VERDE DE MATA — passa em todo teste de lógica, e o
+	 * defeito só aparece na tela, que é o modo de falhar que este projeto já
+	 * pagou três vezes.
+	 */
+	Count
 };
 
 /**

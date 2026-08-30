@@ -6,6 +6,7 @@
 #include "Environment/MountainRange.h"
 #include "Environment/ScenaryClimate.h"
 #include "Environment/SceneLighting.h"
+#include "Environment/WorldTimeOfDay.h"
 #include "Environment/ScenaryPalette.h"
 #include "Battle/DeterministicSpread.h"
 #include "Battle/PetOwnerView.h"
@@ -41,6 +42,17 @@ namespace ArenaGeometria
 {
 	/** Aresta do cubo da engine. Toda escala abaixo é fração disto. */
 	constexpr float CuboDaEngine = 100.0f;
+
+	/**
+	 * A hora do mapa de arena sozinho, sem mundo em volta.
+	 *
+	 * Oito da manhã põe o sol a uns 46° acima do horizonte — a altura que
+	 * deixou a mata com volume em vez de silhueta. Está como HORA e não como
+	 * ângulo de propósito: o ângulo sai da mesma conta que o mundo usa, então
+	 * mexer na curva do sol move os dois juntos em vez de deixar o mapa de
+	 * teste iluminado por uma segunda regra (L-032).
+	 */
+	constexpr float HoraDaArenaSemMundo = 8.0f;
 
 	/**
 	 * Fundo comum de todas as lajes. A altura por terreno mexe no TOPO, nunca
@@ -331,6 +343,14 @@ void ABattleArena::SpawnSceneLighting()
 	Parametros.Owner = this;
 	SceneLighting = World->SpawnActor<ABattleSceneLighting>(
 		ABattleSceneLighting::StaticClass(), GetActorLocation(), FRotator::ZeroRotator, Parametros);
+
+	// Meio da manhã, e parado. Sem mundo em volta não há relógio a seguir, e
+	// esta é a hora cuja altura de sol foi a que deixou a mata legível em vez
+	// de silhueta — ela vem da conta do relógio, não de um ângulo à mão.
+	if (SceneLighting)
+	{
+		SceneLighting->ApplyHour(ArenaGeometria::HoraDaArenaSemMundo);
+	}
 
 	FBattleDebugScreen::Show(
 		FString::Printf(

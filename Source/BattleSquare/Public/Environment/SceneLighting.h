@@ -30,6 +30,42 @@ class BATTLESQUARE_API ABattleSceneLighting : public AActor
 public:
 	ABattleSceneLighting();
 
+	virtual void Tick(float DeltaSeconds) override;
+
+	/**
+	 * Põe o sol na posição, na cor e no brilho desta hora.
+	 *
+	 * É a ÚNICA porta por onde a hora vira luz. Quem quiser um instante
+	 * específico chama isto e pronto; quem quiser o dia inteiro passando
+	 * liga o ciclo, que chama isto a cada quadro. Duas portas fariam a
+	 * arena e o mundo desenharem meio-dias diferentes (L-032).
+	 */
+	void ApplyHour(float Hour);
+
+	/**
+	 * Faz o dia correr, começando nesta hora.
+	 *
+	 * Quem liga é o MUNDO, e ele é o único: a hora é uma só, e a batalha que
+	 * acontece dentro do mundo simplesmente herda o sol que já está lá — 30
+	 * segundos de luta adiantam o relógio meia hora, o que se vê como a luz
+	 * esquentando um pouco, e é o que deve acontecer.
+	 *
+	 * O mapa de arena SOZINHO (sem mundo, para verificar tabuleiro) não liga:
+	 * ele chama `ApplyHour` uma vez e para. Não é economia — é que ali não
+	 * existe relógio de mundo a seguir, e um sol girando num mapa de teste é
+	 * uma variável a mais entre a pergunta e a resposta.
+	 */
+	void StartDayCycle(float StartHour);
+
+	/** A hora que este ator está desenhando agora. */
+	float GetHour() const { return CurrentHour; }
+
+	/** Verdadeiro quando o dia está correndo — falso na arena, por projeto. */
+	bool IsDayCycleRunning() const { return bDayCycleRunning; }
+
+	/** Quantos segundos de relógio de parede um dia inteiro leva. */
+	void SetSecondsPerDay(float Seconds);
+
 	UDirectionalLightComponent* GetSunLight() const { return SunLight; }
 	USkyLightComponent* GetSkyLight() const { return SkyLight; }
 	USkyAtmosphereComponent* GetSkyAtmosphere() const { return SkyAtmosphere; }
@@ -69,6 +105,13 @@ public:
 	static int32 DimLightingAuthoredInMap(UWorld* World);
 
 private:
+	/** A hora desenhada. Única fonte: a cor e o giro saem dela por função. */
+	float CurrentHour = 12.0f;
+
+	bool bDayCycleRunning = false;
+
+	float SecondsPerDay = 1200.0f;
+
 	UPROPERTY()
 	TObjectPtr<USceneComponent> LightingRoot;
 

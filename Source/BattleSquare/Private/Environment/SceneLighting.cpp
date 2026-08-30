@@ -2,6 +2,8 @@
 
 #include "Environment/SceneLighting.h"
 
+#include "Environment/WorldTimeOfDay.h"
+
 #include "Components/DirectionalLightComponent.h"
 #include "Components/ExponentialHeightFogComponent.h"
 #include "Components/LightComponentBase.h"
@@ -46,13 +48,26 @@ namespace LuzDaCena
 
 	/** Nenhum ponto de exposição somado por fora — ver o construtor. */
 	constexpr float SemRealceExtra = 0.0f;
+
+	/**
+	 * O piso de luz ambiente da noite.
+	 *
+	 * A exposição está TRAVADA (ver acima), então noite sem piso é noite em
+	 * que não se enxerga a própria mão — e quem joga conclui que o jogo
+	 * travou, não que anoiteceu. O piso é ambiente, não sol: ele clareia sem
+	 * projetar sombra, que é justamente como a noite se parece.
+	 */
+	constexpr float IntensidadeDoLuar = 0.35f;
 }
 
 ABattleSceneLighting::ABattleSceneLighting()
 {
 	using namespace LuzDaCena;
 
-	PrimaryActorTick.bCanEverTick = false;
+	// Pode tiquetaquear, mas só começa a correr quando alguém liga o ciclo —
+	// e a arena, por projeto, nunca liga.
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bStartWithTickEnabled = false;
 
 	LightingRoot = CreateDefaultSubobject<USceneComponent>(TEXT("LightingRoot"));
 	SetRootComponent(LightingRoot);
@@ -98,6 +113,54 @@ ABattleSceneLighting::ABattleSceneLighting()
 	// tom lavado que apareceu na tela.
 	SceneExposure->Settings.bOverride_AutoExposureBias = true;
 	SceneExposure->Settings.AutoExposureBias = SemRealceExtra;
+}
+
+void ABattleSceneLighting::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (!bDayCycleRunning || SecondsPerDay <= 0.0f)
+	{
+		return;
+	}
+
+	const float HorasPassadas = DeltaSeconds / SecondsPerDay * WorldTimeOfDay::HoursPerDay;
+	ApplyHour(CurrentHour + HorasPassadas);
+}
+
+void ABattleSceneLighting::ApplyHour(float Hour)
+{
+	using namespace LuzDaCena;
+
+	CurrentHour = FMath::Fmod(FMath::Fmod(Hour, WorldTimeOfDay::HoursPerDay) + WorldTimeOfDay::HoursPerDay,
+		WorldTimeOfDay::HoursPerDay);
+
+	if (SunLight)
+	{
+		SunLight->SetRelativeRotation(WorldTimeOfDay::SunRotation(CurrentHour));
+		SunLight->SetLightColor(WorldTimeOfDay::SunColor(CurrentHour));
+		SunLight->SetIntensity(IntensidadeDoSol * WorldTimeOfDay::SunBrightness(CurrentHour));
+	}
+
+	if (SkyLight)
+	{
+		// O céu escurece junto com o sol, mas nunca abaixo do luar.
+		SkyLight->SetIntensity(FMath::Max(
+			IntensidadeDoCeu * WorldTimeOfDay::SunBrightness(CurrentHour),
+			IntensidadeDoLuar));
+	}
+}
+
+void ABattleSceneLighting::StartDayCycle(float StartHour)
+{
+	bDayCycleRunning = true;
+	PrimaryActorTick.SetTickFunctionEnable(true);
+	ApplyHour(StartHour);
+}
+
+void ABattleSceneLighting::SetSecondsPerDay(float Seconds)
+{
+	SecondsPerDay = FMath::Max(Seconds, 1.0f);
 }
 
 bool ABattleSceneLighting::WorldAlreadyHasSun(const UWorld* World)

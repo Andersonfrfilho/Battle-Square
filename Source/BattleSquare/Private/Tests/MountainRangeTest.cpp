@@ -6,6 +6,7 @@
 #include "Engine/Engine.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
+#include "Environment/IslandGeography.h"
 #include "Environment/ScenaryClimate.h"
 #include "Misc/AutomationTest.h"
 
@@ -241,5 +242,53 @@ bool FScenaryClimateReadsNameTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("nome desconhecido cai na mata, não em vazio"),
 		ScenaryClimate::ClimateFromName(FName(TEXT("Jupiter"))) == EScenaryClimate::Temperate);
 
+	return true;
+}
+
+/**
+ * A serra atravessa os setores, e o gelo acompanha o RUMO de cada pico.
+ *
+ * Com um clima só para a serra inteira, o pedido "montanha depende do tamanho
+ * para formar gelo, exceto se o ambiente for de deserto" só podia valer para o
+ * mundo todo de uma vez: ou tudo nevado, ou nada. Aqui o mesmo sorteio produz
+ * cume branco no rumo da geleira e pedra pelada no rumo do deserto.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FMountainRangeSnowFollowsSectorTest,
+	"BattleSquare.Environment.MountainRange.GeloSegueOSetor",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FMountainRangeSnowFollowsSectorTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateMountainTestWorld();
+	AMountainRange* Serra = World->SpawnActor<AMountainRange>();
+	if (!Serra)
+	{
+		DestroyMountainTestWorld(World);
+		AddError(TEXT("a serra não nasceu"));
+		return false;
+	}
+
+	Serra->BuildRange(EScenaryClimate::Cold, SementeDaSerra);
+	const int32 TudoFrio = Serra->GetSnowCapCount();
+	const int32 CorposNoFrio = Serra->GetPeakCount();
+
+	Serra->BuildRange(EScenaryClimate::Desert, SementeDaSerra);
+	const int32 TudoDeserto = Serra->GetSnowCapCount();
+
+	Serra->BuildRangeAcrossIsland(SementeDaSerra);
+	const int32 PelaIlha = Serra->GetSnowCapCount();
+
+	// A forma não muda: só o gelo é decidido pelo rumo. Mesma semente, mesmos
+	// corpos — se o número de picos mudasse, o sorteio teria sido consumido em
+	// ordem diferente e a serra vista ontem não seria a de hoje.
+	TestEqual(TEXT("a montagem pela ilha ergue os mesmos corpos"),
+		Serra->GetPeakCount(), CorposNoFrio);
+
+	TestTrue(TEXT("no frio a serra tem gelo"), TudoFrio > 0);
+	TestTrue(TEXT("pela ilha há menos gelo que num mundo todo frio"), PelaIlha < TudoFrio);
+	TestTrue(TEXT("pela ilha há mais gelo que num mundo todo deserto"), PelaIlha > TudoDeserto);
+
+	DestroyMountainTestWorld(World);
 	return true;
 }

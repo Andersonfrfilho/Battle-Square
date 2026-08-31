@@ -5,6 +5,7 @@
 #include "Battle/DeterministicSpread.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "Environment/IslandGeography.h"
 #include "Environment/ScenaryPalette.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -131,6 +132,24 @@ AMountainRange::AMountainRange()
 
 void AMountainRange::BuildRange(EScenaryClimate Climate, uint32 Seed)
 {
+	BuildRangeWith(Seed, [Climate](const FVector&) { return Climate; });
+}
+
+void AMountainRange::BuildRangeAcrossIsland(uint32 Seed)
+{
+	// A base do pico é RELATIVA ao ator; a geografia responde em coordenada do
+	// mundo. Somar a posição do ator é o que faz a serra plantada no norte
+	// perguntar pelo norte.
+	const FVector Origem = GetActorLocation();
+	BuildRangeWith(Seed, [Origem](const FVector& Base)
+	{
+		return IslandGeography::SectorClimateAt(FVector2D(Origem + Base));
+	});
+}
+
+void AMountainRange::BuildRangeWith(uint32 Seed,
+	TFunctionRef<EScenaryClimate(const FVector&)> ClimateAtBase)
+{
 	if (!RockPeaks || !SnowCaps)
 	{
 		return;
@@ -176,6 +195,11 @@ void AMountainRange::BuildRange(EScenaryClimate Climate, uint32 Seed)
 			FMath::Cos(Angulo) * DistanciaMetros * UnitsPerMeter,
 			FMath::Sin(Angulo) * DistanciaMetros * UnitsPerMeter,
 			0.0f);
+
+		// O clima sai do PICO, uma vez, e os contrafortes herdam: eles são a
+		// saia da mesma montanha, e perguntar por corpo deixaria um ombro
+		// nevado ao lado de um cume pelado do mesmo pico.
+		const EScenaryClimate Climate = ClimateAtBase(Base);
 
 		RaiseBody(Base, AlturaMetros, RaioMetros, Achatamento, Giro, Climate);
 

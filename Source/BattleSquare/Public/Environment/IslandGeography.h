@@ -103,6 +103,18 @@ namespace IslandGeography
 	/** O clima de um ponto — o que substitui a leitura global do `.ini`. */
 	BATTLESQUARE_API EScenaryClimate ClimateAt(const FVector2D& PositionUnits);
 
+	/**
+	 * O clima do SETOR para onde a posição aponta, sem olhar a distância.
+	 *
+	 * A serra do horizonte fica a quilômetros da ilha — muito além da praia e
+	 * da água. `ClimateAt` responderia "praia" para todos os picos, e a
+	 * geleira perderia o gelo por estar longe demais de si mesma.
+	 *
+	 * Aqui a direção é que manda: o horizonte ao norte é o horizonte DO setor
+	 * que fica ao norte, esteja ele a seis mil unidades ou a um milhão.
+	 */
+	BATTLESQUARE_API EScenaryClimate SectorClimateAt(const FVector2D& PositionUnits);
+
 	/** Está fora da terra, na água. */
 	BATTLESQUARE_API bool IsOnLand(const FVector2D& PositionUnits);
 

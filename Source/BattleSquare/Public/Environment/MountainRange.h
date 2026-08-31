@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Environment/ScenaryClimate.h"
 #include "GameFramework/Actor.h"
+#include "Templates/Function.h"
 #include "MountainRange.generated.h"
 
 class UHierarchicalInstancedStaticMeshComponent;
@@ -49,6 +50,15 @@ public:
 	 */
 	void BuildRange(EScenaryClimate Climate, uint32 Seed);
 
+	/**
+	 * Ergue a serra deixando cada pico perguntar o clima do LUGAR onde ele caiu.
+	 *
+	 * A roda de montanhas tem quilômetros de raio e atravessa os setores de
+	 * bioma da ilha: um clima só para a serra inteira poria neve no pico que
+	 * nasceu dentro do deserto e deixaria pelado o que nasceu no glaciar.
+	 */
+	void BuildRangeAcrossIsland(uint32 Seed);
+
 	/** Quantas montanhas a última montagem ergueu. */
 	int32 GetPeakCount() const;
 
@@ -76,6 +86,15 @@ private:
 	 */
 	void RaiseBody(const FVector& BaseLocation, float HeightMeters,
 		float BaseRadiusMeters, float FlatteningY, float YawDegrees, EScenaryClimate Climate);
+
+	/**
+	 * O corpo da montagem, com o clima entrando por PERGUNTA em vez de valor.
+	 *
+	 * As duas portas públicas diferem só nisso, e um lugar só as atende porque
+	 * duas cópias do sorteio se desencontrariam na primeira edição — e a serra
+	 * que já foi vista mudaria de forma sem ninguém pedir (L-032).
+	 */
+	void BuildRangeWith(uint32 Seed, TFunctionRef<EScenaryClimate(const FVector&)> ClimateAtBase);
 
 	UPROPERTY()
 	TObjectPtr<USceneComponent> RangeRoot;

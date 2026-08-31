@@ -2,6 +2,7 @@
 
 #include "World/EncounterMatchAssembler.h"
 #include "Battle/BattleArena.h"
+#include "Environment/IslandGeography.h"
 #include "Environment/ScenaryClimate.h"
 #include "Misc/Paths.h"
 #include "Balance/TypeEffectivenessTable.h"
@@ -69,8 +70,14 @@ bool FEncounterMatchAssembler::AssembleFromEncounter(const FEncounterMatchParams
 	// A UMIDADE do lugar entra no estado: é ela que decide se a poça vira lama
 	// ou seca. Vem do mesmo clima que põe neve na serra — dois números
 	// diferentes sobre o mesmo lugar, e não duas ideias de clima.
+	//
+	// E o LUGAR é onde o encontro aconteceu, não uma linha de `.ini`. Quem
+	// tropeça no inimigo dentro do deserto luta num campo seco; quem tropeça
+	// na mata luta na lama. A mesma coordenada que monta o terreno responde
+	// pelo clima, então o chão e a umidade não podem discordar.
 	OutInitialState.Humidity = static_cast<uint8>(FMath::Clamp(
-		ScenaryClimate::HumidityPercent(ScenaryClimate::ConfiguredClimate()), 0, 100));
+		ScenaryClimate::HumidityPercent(
+			IslandGeography::ClimateAt(FVector2D(Params.EncounterLocation))), 0, 100));
 
 	// A ARENA É O LUGAR. Antes ela era sorteada de um catálogo, e o jogador
 	// topava com um inimigo na beira do lago para cair num "Campo Aberto" —

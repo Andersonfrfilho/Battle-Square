@@ -177,6 +177,28 @@ namespace
 		return nullptr;
 	}
 
+	/**
+	 * O clima do LUGAR onde o jogador está.
+	 *
+	 * A ilha tem cinco setores de bioma e vinte mil unidades de raio: um clima
+	 * lido do `.ini` para o mundo inteiro faria o deserto chover e o glaciar
+	 * suar. Quem responde é a geografia, pela posição.
+	 *
+	 * Sem pawn a resposta é a da origem — que é a casa, mata temperada, o
+	 * mesmo que o `.ini` dizia antes. O padrão não muda; só deixa de ser o
+	 * único.
+	 */
+	FVector2D OndeOJogadorEsta(UWorld* World)
+	{
+		const APawn* Jogador = AcharPawnDoJogador(World);
+		return Jogador ? FVector2D(Jogador->GetActorLocation()) : FVector2D::ZeroVector;
+	}
+
+	EScenaryClimate ClimaOndeOJogadorEsta(UWorld* World)
+	{
+		return IslandGeography::ClimateAt(OndeOJogadorEsta(World));
+	}
+
 	TArray<uint8> MirrorKeyHexToBytes(const FString& Hex)
 	{
 		TArray<uint8> Bytes;
@@ -610,7 +632,7 @@ void ABattleSquareGameMode::HandleRoomReady(const FString& Code)
 	// ou seca. Vem do mesmo clima que põe neve na serra — dois números
 	// diferentes sobre o mesmo lugar, e não duas ideias de clima.
 	InitialState.Humidity = static_cast<uint8>(FMath::Clamp(
-		ScenaryClimate::HumidityPercent(ScenaryClimate::ConfiguredClimate()), 0, 100));
+		ScenaryClimate::HumidityPercent(ClimaOndeOJogadorEsta(GetWorld())), 0, 100));
 
 
 	TArray<FPetPresentationInfo> Presentations;
@@ -847,9 +869,11 @@ void ABattleSquareGameMode::MostrarTempoDoMundo()
 	// O tempo é função da semente do mundo, do clima do lugar e das horas
 	// corridas. Quem sorteia é esta conta, uma só: o ator de luz recebe o
 	// resultado, e o painel escreve o MESMO resultado (L-032).
+	const EScenaryClimate Clima = ClimaOndeOJogadorEsta(GetWorld());
+
 	const EWeather Tempo = WorldWeather::WeatherAt(
 		static_cast<uint32>(WorldScenerySeed),
-		ScenaryClimate::ConfiguredClimate(),
+		Clima,
 		CenaDoMundo->GetElapsedHours());
 
 	CenaDoMundo->SetWeather(Tempo);
@@ -866,11 +890,14 @@ void ABattleSquareGameMode::MostrarTempoDoMundo()
 	// A umidade entra na linha porque é ela que atravessa para a batalha: ver
 	// o número subir na chuva é ver, antes de lutar, que o campo vai estar
 	// enlameado.
-	const int32 Umidade = WorldWeather::HumidityPercent(ScenaryClimate::ConfiguredClimate(), Tempo);
+	const int32 Umidade = WorldWeather::HumidityPercent(Clima, Tempo);
 
 	FBattleDebugScreen::Show(
-		FString::Printf(TEXT("tempo: %s — umidade %d%%%s"),
-			WorldWeather::WeatherDebugName(Tempo), Umidade,
+		FString::Printf(TEXT("tempo: %s em %s — umidade %d%%%s"),
+			WorldWeather::WeatherDebugName(Tempo),
+			IslandGeography::BiomeDebugName(
+				IslandGeography::BiomeAt(OndeOJogadorEsta(GetWorld()))),
+			Umidade,
 			Umidade >= MudMinHumidity ? TEXT(" (campo de LAMA)") : TEXT("")),
 		0.0f, CorDoTempo, /*Key=*/751);
 }
@@ -1370,13 +1397,14 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 		AMountainRange::StaticClass(), Onde, FRotator::ZeroRotator, Parametros);
 	if (Serra)
 	{
-		const EScenaryClimate Clima = ScenaryClimate::ConfiguredClimate();
-		Serra->BuildRange(Clima, static_cast<uint32>(WorldScenerySeed));
+		Serra->BuildRangeAcrossIsland(static_cast<uint32>(WorldScenerySeed));
 
+		// Sem "neve acima de X m": a serra atravessa os setores, e cada pico
+		// tem a sua linha. Um número só aqui seria o de um clima que já não
+		// existe, e mentira na tela é pior que silêncio.
 		FBattleDebugScreen::Show(
-			FString::Printf(TEXT("serra: %d corpos, %d com gelo (neve acima de %.0f m)"),
-				Serra->GetPeakCount(), Serra->GetSnowCapCount(),
-				ScenaryClimate::SnowLineMeters(Clima)),
+			FString::Printf(TEXT("serra: %d corpos, %d com gelo (linha da neve por setor)"),
+				Serra->GetPeakCount(), Serra->GetSnowCapCount()),
 			0.0f, FColor::Cyan, /*Key=*/725);
 	}
 

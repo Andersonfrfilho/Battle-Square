@@ -128,6 +128,11 @@ namespace IslandGeography
 		return ClimateOf(BiomeAt(PositionUnits));
 	}
 
+	EScenaryClimate SectorClimateAt(const FVector2D& PositionUnits)
+	{
+		return ClimateOf(BiomeOfSector(SectorAt(PositionUnits)));
+	}
+
 	bool IsOnLand(const FVector2D& PositionUnits)
 	{
 		return PositionUnits.Size() <= LandRadiusUnits();

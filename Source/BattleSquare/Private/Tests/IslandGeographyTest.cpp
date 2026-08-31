@@ -247,4 +247,63 @@ bool FIslandGeographyWaterIsNotLandTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+/**
+ * O horizonte pertence ao SETOR, não à distância.
+ *
+ * A serra fica a quilômetros da praia. Se o clima dela saísse de `ClimateAt`,
+ * todo pico responderia "praia" — e a geleira ficaria sem gelo por estar longe
+ * demais de si mesma.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FIslandGeographySectorClimateIgnoresDistanceTest,
+	"BattleSquare.Environment.IslandGeography.ClimaDoSetorIgnoraDistancia",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FIslandGeographySectorClimateIgnoresDistanceTest::RunTest(const FString& Parameters)
+{
+	const float RaioDoMeio =
+		(IslandGeography::HomeRadiusUnits() + IslandGeography::LandRadiusUnits()) * 0.5f;
+
+	// Longe o bastante para ser a distância da serra do horizonte.
+	const float RaioDoHorizonte = IslandGeography::LandRadiusUnits() * 50.0f;
+
+	bool bAchouSetorQueMuda = false;
+
+	for (int32 Grau = 0; Grau < 360; Grau += 5)
+	{
+		const FVector2D Perto = PontoDaIlha(static_cast<float>(Grau), RaioDoMeio);
+		const FVector2D Longe = PontoDaIlha(static_cast<float>(Grau), RaioDoHorizonte);
+
+		TestEqual(TEXT("a direção decide, e a distância não muda a resposta"),
+			static_cast<int32>(IslandGeography::SectorClimateAt(Longe)),
+			static_cast<int32>(IslandGeography::SectorClimateAt(Perto)));
+
+		// A prova de que o defeito existia: no MESMO ângulo, longe da ilha,
+		// `ClimateAt` responde outra coisa.
+		if (IslandGeography::ClimateAt(Longe) != IslandGeography::SectorClimateAt(Longe))
+		{
+			bAchouSetorQueMuda = true;
+		}
+	}
+
+	TestTrue(TEXT("longe da ilha o clima por posição realmente difere do clima do setor"),
+		bAchouSetorQueMuda);
+
+	// E o horizonte inteiro não pode ser um clima só: é isso que dá gelo a uns
+	// picos e deixa outros pelados.
+	TSet<int32> ClimasDoHorizonte;
+	for (int32 Grau = 0; Grau < 360; Grau += 5)
+	{
+		ClimasDoHorizonte.Add(static_cast<int32>(IslandGeography::SectorClimateAt(
+			PontoDaIlha(static_cast<float>(Grau), RaioDoHorizonte))));
+	}
+
+	TestTrue(TEXT("o horizonte tem frio em algum rumo"),
+		ClimasDoHorizonte.Contains(static_cast<int32>(EScenaryClimate::Cold)));
+	TestTrue(TEXT("o horizonte tem deserto em algum rumo"),
+		ClimasDoHorizonte.Contains(static_cast<int32>(EScenaryClimate::Desert)));
+
+	return true;
+}
+
 #endif

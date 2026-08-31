@@ -27,6 +27,7 @@
 DEFINE_LOG_CATEGORY(LogBattleArena);
 #include "Camera/CameraComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInterface.h"
 #include "Components/PrimitiveComponent.h"
@@ -893,10 +894,17 @@ void ABattleArena::ShowScenaryPanelLine()
 	// Painel de desenvolvimento, não texto de jogador: some no Shipping.
 	// O nome do bioma sai de `ResolveEncounterBiome`, o MESMO que o plantio
 	// consultou — dizer "floresta" fixo fazia a tela contradizer o cenário.
+	// As poças entram na MESMA linha, e não numa nova: quem lê o painel quer
+	// saber se a arena pegou o cenário, e cenário é uma coisa só. Zero poças
+	// num pântano é o defeito aparecendo por escrito antes de aparecer na tela.
+	const UHierarchicalInstancedStaticMeshComponent* Pocas = ForestBackdrop->GetSwampPools();
+	const int32 LajesDePoca = Pocas ? Pocas->GetInstanceCount() : 0;
+
 	FBattleDebugScreen::Show(
-		FString::Printf(TEXT("cenario: mata de %s com %d elementos"),
+		FString::Printf(TEXT("cenario: mata de %s com %d elementos, %d lajes de poca"),
 			IslandGeography::BiomeDebugName(ResolveEncounterBiome()),
-			ForestBackdrop->GetPlantedCount()),
+			ForestBackdrop->GetPlantedCount(),
+			LajesDePoca),
 		0.0f, FColor::Green, /*Key=*/21);
 }
 

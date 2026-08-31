@@ -181,6 +181,14 @@ public:
 	UHierarchicalInstancedStaticMeshComponent* GetRiverTrail() const;
 
 	/**
+	 * As poças do brejo — vazias em todo bioma que não é pântano.
+	 *
+	 * Existe para o teste poder cobrar as duas metades da regra: que o pântano
+	 * TEM água na tela, e que os outros biomas não herdam a poça do vizinho.
+	 */
+	UHierarchicalInstancedStaticMeshComponent* GetSwampPools() const;
+
+	/**
 	 * O papel de paleta do chão deste pedaço; `Count` quando não é pedaço.
 	 *
 	 * Existe para o teste poder cobrar que cada bioma pinta o SEU chão. A cor
@@ -276,6 +284,16 @@ private:
 	 */
 	void LimparAguaDoce();
 
+	/**
+	 * Apaga as poças do brejo.
+	 *
+	 * Em componente próprio, e não junto do rio, porque as duas águas têm
+	 * vidas diferentes: o rio atravessa qualquer bioma que esteja no caminho
+	 * dele, a poça só existe onde há pântano. No mesmo componente, limpar uma
+	 * apagaria a outra.
+	 */
+	void LimparBrejo();
+
 	UPROPERTY()
 	TObjectPtr<USceneComponent> ForestRoot;
 
@@ -319,6 +337,15 @@ private:
 	TObjectPtr<UHierarchicalInstancedStaticMeshComponent> RiverFallFoam;
 	UPROPERTY()
 	TObjectPtr<UHierarchicalInstancedStaticMeshComponent> RiverTrail;
+
+	/**
+	 * A ÁGUA PARADA do brejo: lâminas achatadas e sobrepostas, rentes ao chão.
+	 *
+	 * Sem colisão, como toda água deste ator. Poça que barra o passo é degrau,
+	 * e degrau na água foi o que produziu "parte da agua ele afunda".
+	 */
+	UPROPERTY()
+	TObjectPtr<UHierarchicalInstancedStaticMeshComponent> SwampPools;
 
 	/**
 	 * A malha QUADRADA do chão, para quem é ladrilho.

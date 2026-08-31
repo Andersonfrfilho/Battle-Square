@@ -252,6 +252,16 @@ namespace MataDoCenario
 		int32 MontesPorPedaco;
 		float LarguraDoMonteEmCasas;
 		float AlturaDoMonteEmCasas;
+
+		/**
+		 * Quanto uma planta deste bioma pode TOMBAR, em graus.
+		 *
+		 * Quatro graus é o jitter que impede a fileira de postes; ninguém o
+		 * lê como inclinação. O brejo pede o contrário: tronco torto é a
+		 * assinatura dele — a raiz que não achou chão firme —, e sem tombo
+		 * visível o pântano fica sendo uma mata escura com poças no chão.
+		 */
+		float TomboMaximoEmGraus;
 	};
 
 	FPresencaDoBioma PresencaDe(EIslandBiome Bioma)
@@ -262,25 +272,29 @@ namespace MataDoCenario
 			// Nem capim nem flor: a duna é pedra e areia, e um único tufo
 			// verde no meio dela desfaz o deserto inteiro.
 			return { EScenaryRole::DesertSand, EScenaryRole::DesertRock, 0, 0, 6, 25, 70, 0,
-				/*Montes=*/14, /*Largura=*/26.0f, /*Altura=*/3.0f };
+				/*Montes=*/14, /*Largura=*/26.0f, /*Altura=*/3.0f,
+				/*Tombo=*/4.0f };
 
 		case EIslandBiome::Glacier:
 			// A conífera resiste ao frio, e é ela que dá altura à geleira —
 			// sem nada em pé, o gelo vira um plano branco sem escala.
 			return { EScenaryRole::GlacierIce, EScenaryRole::MountainRock, 0, 0, 0, 10, 55, 18,
-				/*Montes=*/10, /*Largura=*/15.0f, /*Altura=*/3.6f };
+				/*Montes=*/10, /*Largura=*/15.0f, /*Altura=*/3.6f,
+				/*Tombo=*/4.0f };
 
 		case EIslandBiome::Volcano:
 			// Pedra sobre pedra. O tronco morto que sobra é o que diz que
 			// aqui já houve mata.
 			return { EScenaryRole::VolcanicRock, EScenaryRole::MountainRock, 0, 0, 0, 15, 85, 0,
-				/*Montes=*/8, /*Largura=*/12.0f, /*Altura=*/2.4f };
+				/*Montes=*/8, /*Largura=*/12.0f, /*Altura=*/2.4f,
+				/*Tombo=*/4.0f };
 
 		case EIslandBiome::Beach:
 			// Rala de propósito: a praia é a faixa por onde se ANDA até o
 			// mar, e enchê-la de arbusto fecharia justamente a passagem.
 			return { EScenaryRole::BeachSand, EScenaryRole::Rock, 12, 0, 8, 20, 35, 0,
-				/*Montes=*/0, /*Largura=*/0.0f, /*Altura=*/0.0f };
+				/*Montes=*/0, /*Largura=*/0.0f, /*Altura=*/0.0f,
+				/*Tombo=*/4.0f };
 
 		case EIslandBiome::Swamp:
 			// O brejo é a mata que NÃO drenou, e a diferença entre os dois é
@@ -288,13 +302,16 @@ namespace MataDoCenario
 			// caído é o que mais aparece, e a copa alta some. Mata fechada
 			// com chão escuro seria só uma mata à noite.
 			//
-			// As poucas pedras viram POÇA — mesma malha, pintada com a água
-			// parada. Pântano sem água visível é floresta parda, e este era
-			// justamente o defeito: a geografia sabia que ali era brejo, o
-			// clima sabia, o mapa sabia, e só a tela não.
-			return { EScenaryRole::SwampMud, EScenaryRole::SwampWater,
+			// A pedra é PEDRA, e o cinza da serra é o que a lê tanto contra a
+			// lama quanto contra a água. Ela já foi pintada com a cor da água
+			// parada aqui, para o pântano ter alguma água na tela: o que
+			// aquilo produziu foi uma pedra em forma de pedra e cor de poça —
+			// nem uma coisa nem a outra. Água agora é `SwampPools`, que é uma
+			// lâmina deitada no chão, e é o que água parada parece.
+			return { EScenaryRole::SwampMud, EScenaryRole::MountainRock,
 				90, 60, 70, 100, 18, 25,
-				/*Montes=*/0, /*Largura=*/0.0f, /*Altura=*/0.0f };
+				/*Montes=*/0, /*Largura=*/0.0f, /*Altura=*/0.0f,
+				/*Tombo=*/14.0f };
 
 		case EIslandBiome::Forest:
 			break;
@@ -303,7 +320,8 @@ namespace MataDoCenario
 		// A mata é a tabela inteira, sem filtro — e o `Count` no chão diz
 		// "use a cor de chão de sempre", que é a mesma da arena.
 		return { EScenaryRole::Count, EScenaryRole::Rock, 100, 100, 100, 100, 100, 100,
-			/*Montes=*/0, /*Largura=*/0.0f, /*Altura=*/0.0f };
+			/*Montes=*/0, /*Largura=*/0.0f, /*Altura=*/0.0f,
+			/*Tombo=*/4.0f };
 	}
 
 	/**
@@ -316,13 +334,13 @@ namespace MataDoCenario
 	 */
 	FTransform PousoDaPlanta(
 		uint32 SementeDaEspecie, int32 Planta, int32 Tentativa,
-		const FVector2D& Posicao, float EscalaBase)
+		const FVector2D& Posicao, float EscalaBase, float TomboMaximoEmGraus)
 	{
 		const float Giro = BattleSpread::Fraction(
 			SementeDaEspecie, FluxoDaPlanta(Planta, Tentativa, ESorteio::Giro)) * 360.0f;
 		const float Tamanho = EscalaBase * BattleSpread::Between(0.78f, 1.28f,
 			BattleSpread::Fraction(SementeDaEspecie, FluxoDaPlanta(Planta, Tentativa, ESorteio::Tamanho)));
-		const float Inclinacao = BattleSpread::Between(-4.0f, 4.0f,
+		const float Inclinacao = BattleSpread::Between(-TomboMaximoEmGraus, TomboMaximoEmGraus,
 			BattleSpread::Fraction(SementeDaEspecie, FluxoDaPlanta(Planta, Tentativa, ESorteio::Inclinacao)));
 
 		return FTransform(
@@ -460,6 +478,43 @@ namespace MataDoCenario
 	constexpr float AlturaDaTrilhaDoRio = 2.0f;
 	constexpr float EspessuraDaTrilhaDoRio = 6.0f;
 
+	/**
+	 * Quantas POÇAS um ladrilho de brejo recebe.
+	 *
+	 * Poça, e não lago: brejo é água RASA e espalhada, com mato saindo de
+	 * dentro dela. Uma lâmina só cobrindo o ladrilho seria um lago com
+	 * árvores plantadas no fundo, que é a leitura oposta.
+	 */
+	constexpr int32 PocasPorPedacoDeBrejo = 9;
+
+	/**
+	 * Lajes por poça — a poça é um AMONTOADO de lajes, não uma laje.
+	 *
+	 * Laje única deixaria um quadrado de água no meio do mato, e quadrado não
+	 * lê como poça em nenhuma distância. O contorno irregular é o que faz a
+	 * lâmina passar por água parada.
+	 */
+	constexpr int32 LajesPorPoca = 5;
+
+	constexpr float LarguraDaPocaUnidades = 520.0f;
+	constexpr float EspalhamentoDaPocaUnidades = 300.0f;
+
+	/**
+	 * A lâmina do brejo é mais rente ao chão que a do rio.
+	 *
+	 * Água parada não corre, e por isso não precisa da altura que o rio pediu
+	 * para não brigar com a espuma da orla. Rente é o que faz a lama aparecer
+	 * pelas beiradas da poça em vez de sumir debaixo dela.
+	 */
+	constexpr float AlturaDaLaminaDoBrejo = 6.0f;
+	constexpr float EspessuraDaLaminaDoBrejo = 6.0f;
+
+	/** Onde começam os fluxos de sorteio das poças — longe dos outros. */
+	constexpr int32 PrimeiroFluxoDaPoca = 2900000;
+
+	/** Grandezas sorteadas por laje de poça: dois desvios, porte e giro. */
+	constexpr int32 SorteiosPorLajeDaPoca = 4;
+
 	/** Se este ponto do mundo cai dentro do ladrilho, e onde ele cai. */
 	bool PontoNoPedaco(const FVector2D& Mundo, const FVector2D& CentroDoPedaco,
 		float Meio, FVector2D& OutLocal)
@@ -566,6 +621,110 @@ namespace MataDoCenario
 						FreshWater::TrailHalfWidthUnits() * 2.0f,
 						TopoDoChao + AlturaDaTrilhaDoRio, EspessuraDaTrilhaDoRio);
 				}
+			}
+		}
+	}
+
+	/**
+	 * Espalha as POÇAS do brejo por este ladrilho.
+	 *
+	 * Cada poça é um punhado de lajes achatadas, deslocadas, giradas e de
+	 * portes diferentes, sobrepostas de propósito — é a sobreposição que dá o
+	 * contorno irregular, e é o contorno que faz a lâmina ler como água
+	 * parada em vez de como um azulejo.
+	 *
+	 * Não pergunta a posição no mundo, e é essa a diferença dela para a orla e
+	 * para o rio: poça não tem curso nem linha d'água. Ela é uma propriedade
+	 * do BIOMA, e nasce onde o brejo estiver — inclusive dentro do diorama da
+	 * arena, que é o único jeito de uma batalha no pântano ter pântano na tela.
+	 *
+	 * `RaioDoDisco` zero ou menos quer dizer "não sou disco, sou ladrilho", e
+	 * então só o quadrado limita. `FolgaCentral` é o que nenhuma poça invade —
+	 * o tabuleiro, na arena. Poça debaixo do tabuleiro não seria vista, e
+	 * ainda apareceria pelas beiradas das casas como um vazamento.
+	 *
+	 * Rente ao chão e sem colisão, como a lâmina do rio. Poça que barra o
+	 * passo é degrau, e degrau na água foi exatamente o que produziu "parte da
+	 * agua ele afunda".
+	 */
+	void PlantarBrejo(UHierarchicalInstancedStaticMeshComponent* Pocas,
+		float MeioDoQuadrado, float RaioDoDisco, float FolgaCentral, uint32 Semente)
+	{
+		if (!Pocas || !Pocas->GetStaticMesh() || MeioDoQuadrado <= KINDA_SMALL_NUMBER)
+		{
+			return;
+		}
+
+		const float Meio = MeioDoQuadrado;
+		const float AlturaLocal = AForestBackdrop::GroundTopLocalZ() + AlturaDaLaminaDoBrejo;
+
+		// Na BEIRA do disco é o centro da poça que se limita, e com o alcance
+		// inteiro dela descontado — o espalhamento das lajes mais a metade da
+		// mais larga. Limitar laje por laje ali deixaria a poça mordida sem
+		// nada tapando a mordida, o que lê como recorte, não como beira; e
+		// descontar menos que o alcance deixaria a laje passar do disco e
+		// flutuar fora do chão.
+		const float RaioDoCentro = (RaioDoDisco > KINDA_SMALL_NUMBER)
+			? RaioDoDisco - (EspalhamentoDaPocaUnidades + LarguraDaPocaUnidades * 0.5f)
+			: 0.0f;
+
+		for (int32 Poca = 0; Poca < PocasPorPedacoDeBrejo; ++Poca)
+		{
+			const int32 FluxoDaPoca = PrimeiroFluxoDaPoca
+				+ Poca * (2 + LajesPorPoca * SorteiosPorLajeDaPoca);
+
+			const float CentroX = BattleSpread::Between(-Meio, Meio,
+				BattleSpread::Fraction(Semente, FluxoDaPoca));
+			const float CentroY = BattleSpread::Between(-Meio, Meio,
+				BattleSpread::Fraction(Semente, FluxoDaPoca + 1));
+
+			const float DoCentro = FVector2D(CentroX, CentroY).Size();
+			if (RaioDoCentro > 0.0f && DoCentro > RaioDoCentro)
+			{
+				continue;
+			}
+			for (int32 Laje = 0; Laje < LajesPorPoca; ++Laje)
+			{
+				const int32 Fluxo = FluxoDaPoca + 2 + Laje * SorteiosPorLajeDaPoca;
+
+				// A PRIMEIRA laje fica no centro exato. Sem ela, cinco lajes
+				// todas sorteadas podem deixar o furo justo no meio — e poça
+				// com furo no meio é anel, não é poça.
+				const float Afastamento = (Laje == 0) ? 0.0f : EspalhamentoDaPocaUnidades;
+				const float DesvioX = BattleSpread::Between(-Afastamento, Afastamento,
+					BattleSpread::Fraction(Semente, Fluxo));
+				const float DesvioY = BattleSpread::Between(-Afastamento, Afastamento,
+					BattleSpread::Fraction(Semente, Fluxo + 1));
+				const float Porte = BattleSpread::Between(0.55f, 1.0f,
+					BattleSpread::Fraction(Semente, Fluxo + 2));
+				const float Giro = BattleSpread::Between(0.0f, 360.0f,
+					BattleSpread::Fraction(Semente, Fluxo + 3));
+
+				const float Largura = LarguraDaPocaUnidades * Porte;
+				const FVector2D Onde(CentroX + DesvioX, CentroY + DesvioY);
+
+				// A folga do TABULEIRO se cobra laje por laje, e não no centro
+				// da poça: aqui morder a poça é o certo, porque quem tapa a
+				// mordida é o próprio tabuleiro. Cobrar no centro deixaria a
+				// beira da laje entrando por baixo das casas, e poça por baixo
+				// do tabuleiro aparece pelas frestas como vazamento.
+				//
+				// Zero é "não há tabuleiro aqui" — o ladrilho do mundo. Sem
+				// esta comparação, ele nasceria com um furo redondo no meio por
+				// causa de uma folga que ali não protege coisa alguma.
+				if (FolgaCentral > 0.0f && Onde.Size() < FolgaCentral + Largura * 0.5f)
+				{
+					continue;
+				}
+
+				FTransform Pouso;
+				Pouso.SetLocation(FVector(Onde.X, Onde.Y, AlturaLocal));
+				Pouso.SetRotation(FQuat(FRotator(0.0f, Giro, 0.0f)));
+				Pouso.SetScale3D(FVector(
+					Largura / CilindroDaEngineUnidades,
+					Largura / CilindroDaEngineUnidades,
+					EspessuraDaLaminaDoBrejo / CilindroDaEngineUnidades));
+				Pocas->AddInstance(Pouso);
 			}
 		}
 	}
@@ -785,12 +944,23 @@ AForestBackdrop::AForestBackdrop()
 	RiverTrail->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	RiverTrail->SetCastShadow(false);
 
+	// A AGUA PARADA do brejo. Componente proprio, e nao mais instancias da
+	// lamina do rio: rio e poca sao limpos em momentos diferentes -- o rio
+	// atravessa bioma nenhum importa qual, a poca so existe onde ha brejo --,
+	// e um componente para os dois faria a limpeza de um apagar o outro.
+	SwampPools = CreateDefaultSubobject<UHierarchicalInstancedStaticMeshComponent>(
+		TEXT("SwampPools"));
+	SwampPools->SetupAttachment(ForestRoot);
+	SwampPools->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	SwampPools->SetCastShadow(false);
+
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CuboDoRio(CuboDaEngine);
 	if (CuboDoRio.Succeeded())
 	{
 		RiverSurface->SetStaticMesh(CuboDoRio.Object);
 		RiverFallFoam->SetStaticMesh(CuboDoRio.Object);
 		RiverTrail->SetStaticMesh(CuboDoRio.Object);
+		SwampPools->SetStaticMesh(CuboDoRio.Object);
 	}
 
 	SpeciesClusters.Reset();
@@ -915,6 +1085,18 @@ void AForestBackdrop::BuildForest(float CellSize, uint32 Seed, const FVector2D& 
 	const float FolgaDoTabuleiro = BoardClearanceInCells * CellSize;
 	const float FolgaDaCamera = CameraClearanceInCells * CellSize;
 
+	// POÇA, sim — e é a única água que o diorama recebe. A diferença dela para
+	// o rio é que poça não precisa saber onde fica no mundo: ela é do bioma. Se
+	// a batalha caiu no brejo, a arena tem brejo, e era exatamente isso que
+	// faltava quando o jogador disse que a arena não pegou o cenário.
+	LimparBrejo();
+	if (Biome == EIslandBiome::Swamp)
+	{
+		PlantarBrejo(SwampPools, RaioDoChao, /*RaioDoDisco=*/RaioDoChao,
+			/*FolgaCentral=*/FolgaDoTabuleiro, Seed);
+		ScenaryPalette::PaintComponent(SwampPools, EScenaryRole::SwampWater);
+	}
+
 	for (int32 Indice = 0; Indice < TotalDeEspecies && Indice < SpeciesClusters.Num(); ++Indice)
 	{
 		const FEspecie& Especie = Especies[Indice];
@@ -1008,7 +1190,8 @@ void AForestBackdrop::BuildForest(float CellSize, uint32 Seed, const FVector2D& 
 					continue;
 				}
 
-				Grupo->AddInstance(PousoDaPlanta(SementeDaEspecie, Planta, Tentativa, Posicao, EscalaBase));
+				Grupo->AddInstance(PousoDaPlanta(SementeDaEspecie, Planta, Tentativa,
+					Posicao, EscalaBase, Presenca.TomboMaximoEmGraus));
 				break;
 			}
 		}
@@ -1086,6 +1269,17 @@ void AForestBackdrop::BuildRegion(float CellSize, uint32 Seed, EIslandBiome Biom
 		// A trilha de beira é a MESMA coisa que a trilha da montanha: chão
 		// pisado. Cor própria diria ao jogador que são dois tipos de caminho.
 		ScenaryPalette::PaintComponent(RiverTrail, EScenaryRole::MountainTrail);
+	}
+
+	// AS POÇAS são do brejo e de mais ninguém. Limpar sempre, plantar só no
+	// pântano: o mesmo ator vira geleira no pedaço seguinte, e uma poça
+	// esquecida seria água parada sobre o gelo.
+	LimparBrejo();
+	if (Biome == EIslandBiome::Swamp)
+	{
+		PlantarBrejo(SwampPools, SideUnits * 0.5f,
+			/*RaioDoDisco=*/0.0f, /*FolgaCentral=*/0.0f, Seed);
+		ScenaryPalette::PaintComponent(SwampPools, EScenaryRole::SwampWater);
 	}
 
 	// A vida dos obstáculos é POSICIONAL: a chave aponta para um agrupamento e
@@ -1170,7 +1364,8 @@ void AForestBackdrop::BuildRegion(float CellSize, uint32 Seed, EIslandBiome Biom
 				BattleSpread::Between(-Meio, Meio, BattleSpread::Fraction(
 					SementeDaEspecie, FluxoDaPlanta(Planta, 0, ESorteio::Raio))));
 
-			Grupo->AddInstance(PousoDaPlanta(SementeDaEspecie, Planta, 0, Posicao, EscalaBase));
+			Grupo->AddInstance(PousoDaPlanta(SementeDaEspecie, Planta, 0,
+				Posicao, EscalaBase, Presenca.TomboMaximoEmGraus));
 		}
 	}
 }
@@ -1248,6 +1443,16 @@ UHierarchicalInstancedStaticMeshComponent* AForestBackdrop::GetRiverFallFoam() c
 UHierarchicalInstancedStaticMeshComponent* AForestBackdrop::GetRiverTrail() const
 {
 	return RiverTrail;
+}
+
+UHierarchicalInstancedStaticMeshComponent* AForestBackdrop::GetSwampPools() const
+{
+	return SwampPools;
+}
+
+void AForestBackdrop::LimparBrejo()
+{
+	if (SwampPools) { SwampPools->ClearInstances(); }
 }
 
 void AForestBackdrop::LimparAguaDoce()

@@ -5,6 +5,7 @@
 #include "Environment/FreshWater.h"
 #include "Environment/IslandGeography.h"
 #include "Environment/RegionResidency.h"
+#include "Environment/ScenaryPalette.h"
 #include "Battle/BattleArena.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -1524,6 +1525,336 @@ bool FForestRiverLeavesNoWaterBehindTest::RunTest(const FString& Parameters)
 	Mata->BuildForest(CasaDeTeste, 7u, CameraDeTeste);
 	TestEqual(TEXT("a arena não tem rio"),
 		Mata->GetRiverSurface()->GetInstanceCount(), 0);
+
+	DestroyForestTestWorld(World);
+	return true;
+}
+
+namespace
+{
+	/**
+	 * O lado do cubo da engine, que é a unidade em que a escala da laje fala.
+	 *
+	 * Nome próprio (L-042). Escrito aqui e não importado porque a constante do
+	 * cenário é privada do `.cpp` dele — e um teste que enxerga o privado mede
+	 * a implementação, não o resultado.
+	 */
+	constexpr float CilindroDaEngineNoTeste = 100.0f;
+
+	/**
+	 * A maior inclinação, em graus, de qualquer planta plantada neste cenário.
+	 *
+	 * Nome próprio (L-042). Mede o TOMBO e não o giro: quem gira em torno de si
+	 * continua em pé, e árvore em pé é o que o pântano não tem.
+	 */
+	float MaiorTomboDoBrejoDeTeste(const AForestBackdrop* Mata)
+	{
+		float Maior = 0.0f;
+		for (const TObjectPtr<UHierarchicalInstancedStaticMeshComponent>& Grupo :
+			Mata->GetSpeciesClusters())
+		{
+			if (!Grupo)
+			{
+				continue;
+			}
+			for (int32 Instancia = 0; Instancia < Grupo->GetInstanceCount(); ++Instancia)
+			{
+				FTransform Onde;
+				Grupo->GetInstanceTransform(Instancia, Onde);
+				const FRotator Giro = Onde.GetRotation().Rotator();
+				Maior = FMath::Max(Maior,
+					static_cast<float>(FMath::Abs(Giro.Pitch)));
+			}
+		}
+		return Maior;
+	}
+
+	/**
+	 * Quantas FATIAS de planta estão pintadas com exatamente esta cor.
+	 *
+	 * A cor entra pronta, e não o papel: a paleta desvia madeira, folha e flor
+	 * pelo NOME da fatia antes de olhar o papel, então `ColorFor(papel, fatia)`
+	 * devolve marrom de casca para qualquer papel numa fatia de tronco. Cobrar
+	 * aquilo acusaria de água toda planta de madeira do bioma.
+	 */
+	int32 FatiasComACorDoBrejoDeTeste(const AForestBackdrop* Mata, const FLinearColor& Cor)
+	{
+		int32 Total = 0;
+		for (const TObjectPtr<UHierarchicalInstancedStaticMeshComponent>& Grupo :
+			Mata->GetSpeciesClusters())
+		{
+			if (!Grupo)
+			{
+				continue;
+			}
+			const int32 Fatias = Grupo->GetMaterialSlotNames().Num();
+			for (int32 Fatia = 0; Fatia < Fatias; ++Fatia)
+			{
+				UMaterialInstanceDynamic* Tinta =
+					Cast<UMaterialInstanceDynamic>(Grupo->GetMaterial(Fatia));
+				if (Tinta
+					&& Tinta->K2_GetVectorParameterValue(TEXT("Color")).Equals(Cor, 0.001f))
+				{
+					++Total;
+				}
+			}
+		}
+		return Total;
+	}
+}
+
+/**
+ * O PÂNTANO TEM ÁGUA NA TELA, e ela é uma superfície deitada no chão.
+ *
+ * O defeito que este teste tranca já esteve no jogo: a pedra do brejo era
+ * pintada com a cor da água parada, para haver "alguma água" no bioma. O que
+ * aquilo produzia era uma pedra em forma de pedra e cor de poça — nem uma coisa
+ * nem a outra —, e água de verdade não existia em lugar nenhum do pântano.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FForestSwampPoolsOnlyInTheSwampTest,
+	"BattleSquare.Environment.ForestBackdrop.SwampPoolsOnlyInTheSwamp",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FForestSwampPoolsOnlyInTheSwampTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateForestTestWorld();
+	if (!World)
+	{
+		AddError(TEXT("Sem mundo de teste"));
+		return false;
+	}
+
+	AForestBackdrop* Mata = World->SpawnActor<AForestBackdrop>();
+	if (!Mata)
+	{
+		DestroyForestTestWorld(World);
+		AddError(TEXT("Sem cenário"));
+		return false;
+	}
+
+	UHierarchicalInstancedStaticMeshComponent* Pocas = Mata->GetSwampPools();
+	if (!TestNotNull(TEXT("o cenário tem componente de poça"), Pocas))
+	{
+		DestroyForestTestWorld(World);
+		return false;
+	}
+
+	Mata->BuildRegion(CasaDeTeste, 31u, EIslandBiome::Swamp, LadoDoPedacoDeTeste);
+	TestTrue(TEXT("o pântano nasce com água parada na tela"),
+		Pocas->GetInstanceCount() > 0);
+
+	// A poça é uma SUPERFÍCIE: rente ao chão, achatada e sem colisão. Laje
+	// cúbica seria uma pedra azul, e laje que barra o passo é degrau — foi
+	// degrau na água que produziu "parte da agua ele afunda".
+	const float TopoDoChao = AForestBackdrop::GroundTopLocalZ();
+	int32 Afundadas = 0;
+	int32 Cubicas = 0;
+	for (int32 Instancia = 0; Instancia < Pocas->GetInstanceCount(); ++Instancia)
+	{
+		FTransform Onde;
+		Pocas->GetInstanceTransform(Instancia, Onde);
+		if (Onde.GetLocation().Z <= TopoDoChao)
+		{
+			++Afundadas;
+		}
+		const FVector Escala = Onde.GetScale3D();
+		if (Escala.Z >= Escala.X * 0.25 || !FMath::IsNearlyEqual(Escala.X, Escala.Y, 0.001))
+		{
+			++Cubicas;
+		}
+	}
+	TestEqual(TEXT("nenhuma laje de poça afunda no chão"), Afundadas, 0);
+	TestEqual(TEXT("toda laje de poça é uma lâmina achatada, não um cubo"), Cubicas, 0);
+	TestEqual(TEXT("a poça não tem colisão"),
+		static_cast<int32>(Pocas->GetCollisionEnabled()),
+		static_cast<int32>(ECollisionEnabled::NoCollision));
+
+	// E a água é do BREJO: o mesmo ator vira geleira no pedaço seguinte, e poça
+	// esquecida seria água parada sobre o gelo.
+	Mata->BuildRegion(CasaDeTeste, 31u, EIslandBiome::Glacier, LadoDoPedacoDeTeste);
+	TestEqual(TEXT("a geleira não herda a poça do pântano"),
+		Pocas->GetInstanceCount(), 0);
+
+	Mata->BuildRegion(CasaDeTeste, 31u, EIslandBiome::Forest, LadoDoPedacoDeTeste);
+	TestEqual(TEXT("nem a floresta"), Pocas->GetInstanceCount(), 0);
+
+	DestroyForestTestWorld(World);
+	return true;
+}
+
+/**
+ * A cor da ÁGUA PARADA veste a água, e nenhuma planta.
+ *
+ * É a metade da regra que o contador de poças não cobre: se a pedra voltar a
+ * ser pintada de poça, o pântano volta a ter duas coisas erradas em vez de uma
+ * certa, e a tela fica igualzinha à de antes.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FForestSwampRocksAreNotPaintedAsWaterTest,
+	"BattleSquare.Environment.ForestBackdrop.SwampRocksAreNotPaintedAsWater",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FForestSwampRocksAreNotPaintedAsWaterTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateForestTestWorld();
+	if (!World)
+	{
+		AddError(TEXT("Sem mundo de teste"));
+		return false;
+	}
+
+	AForestBackdrop* Mata = World->SpawnActor<AForestBackdrop>();
+	if (!Mata)
+	{
+		DestroyForestTestWorld(World);
+		AddError(TEXT("Sem cenário"));
+		return false;
+	}
+
+	Mata->BuildRegion(CasaDeTeste, 77u, EIslandBiome::Swamp, LadoDoPedacoDeTeste);
+
+	// `NAME_None` é de propósito: é a fatia que não dispara nenhum desvio por
+	// nome, então o que volta é a cor CRUA da água parada.
+	const FLinearColor CorDaAguaParada =
+		ScenaryPalette::ColorFor(EScenaryRole::SwampWater, NAME_None);
+
+	TestEqual(TEXT("nenhuma planta do pântano se faz passar por água parada"),
+		FatiasComACorDoBrejoDeTeste(Mata, CorDaAguaParada), 0);
+
+	UHierarchicalInstancedStaticMeshComponent* Pocas = Mata->GetSwampPools();
+	if (TestNotNull(TEXT("o cenário tem componente de poça"), Pocas))
+	{
+		UMaterialInstanceDynamic* Tinta =
+			Cast<UMaterialInstanceDynamic>(Pocas->GetMaterial(0));
+		const TArray<FName> Fatias = Pocas->GetMaterialSlotNames();
+		if (TestNotNull(TEXT("a poça sai da nossa paleta"), Tinta) && Fatias.Num() > 0)
+		{
+			TestTrue(TEXT("e a cor dela é a da água parada"),
+				Tinta->K2_GetVectorParameterValue(TEXT("Color"))
+					.Equals(CorDaAguaParada, 0.001f));
+		}
+	}
+
+	DestroyForestTestWorld(World);
+	return true;
+}
+
+/**
+ * No brejo o tronco TOMBA, e é isso que separa pântano de mata escura.
+ *
+ * O tombo era fixo em quatro graus para todo bioma — um jitter que impede a
+ * fileira de postes e que ninguém lê como inclinação. Sem tombo visível, o
+ * pântano ficava sendo uma floresta com poças no chão.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FForestSwampTrunksLeanMoreThanTheForestTest,
+	"BattleSquare.Environment.ForestBackdrop.SwampTrunksLeanMoreThanTheForest",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FForestSwampTrunksLeanMoreThanTheForestTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateForestTestWorld();
+	if (!World)
+	{
+		AddError(TEXT("Sem mundo de teste"));
+		return false;
+	}
+
+	AForestBackdrop* NoBrejo = World->SpawnActor<AForestBackdrop>();
+	AForestBackdrop* NaMata = World->SpawnActor<AForestBackdrop>();
+	if (!NoBrejo || !NaMata)
+	{
+		DestroyForestTestWorld(World);
+		AddError(TEXT("Sem cenário"));
+		return false;
+	}
+
+	// A MESMA semente nos dois: o que muda é o bioma, e é só o bioma que este
+	// teste está medindo.
+	NoBrejo->BuildRegion(CasaDeTeste, 909u, EIslandBiome::Swamp, LadoDoPedacoDeTeste);
+	NaMata->BuildRegion(CasaDeTeste, 909u, EIslandBiome::Forest, LadoDoPedacoDeTeste);
+
+	const float TomboDoBrejo = MaiorTomboDoBrejoDeTeste(NoBrejo);
+	const float TomboDaMata = MaiorTomboDoBrejoDeTeste(NaMata);
+
+	TestTrue(TEXT("a mata fica em pé — o desvio dela é jitter, não inclinação"),
+		TomboDaMata < 8.0f);
+	TestTrue(TEXT("e no brejo o tronco tomba bem mais que na mata"),
+		TomboDoBrejo > TomboDaMata * 2.0f);
+
+	DestroyForestTestWorld(World);
+	return true;
+}
+
+/**
+ * A BATALHA no pântano tem pântano na tela.
+ *
+ * É a resposta direta a "quando eu iniciei a arena ela não pegou a parte do
+ * cenario". O diorama recusa relevo, orla e rio de propósito — os três precisam
+ * saber onde ficam no mundo. A poça não: ela é propriedade do BIOMA, e nasce
+ * onde o brejo estiver.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FForestSwampArenaGetsPoolsTest,
+	"BattleSquare.Environment.ForestBackdrop.SwampArenaGetsPools",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FForestSwampArenaGetsPoolsTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateForestTestWorld();
+	if (!World)
+	{
+		AddError(TEXT("Sem mundo de teste"));
+		return false;
+	}
+
+	AForestBackdrop* Mata = World->SpawnActor<AForestBackdrop>();
+	if (!Mata)
+	{
+		DestroyForestTestWorld(World);
+		AddError(TEXT("Sem cenário"));
+		return false;
+	}
+
+	UHierarchicalInstancedStaticMeshComponent* Pocas = Mata->GetSwampPools();
+	if (!TestNotNull(TEXT("o cenário tem componente de poça"), Pocas))
+	{
+		DestroyForestTestWorld(World);
+		return false;
+	}
+
+	Mata->BuildForest(CasaDeTeste, 55u, CameraDeTeste, EIslandBiome::Swamp);
+	TestTrue(TEXT("a arena do pântano tem água parada"), Pocas->GetInstanceCount() > 0);
+
+	const float RaioDoChao = Mata->GroundRadiusInCells * CasaDeTeste;
+	const float FolgaDoTabuleiro = Mata->BoardClearanceInCells * CasaDeTeste;
+
+	int32 ForaDoDisco = 0;
+	int32 SobOTabuleiro = 0;
+	for (int32 Instancia = 0; Instancia < Pocas->GetInstanceCount(); ++Instancia)
+	{
+		FTransform Onde;
+		Pocas->GetInstanceTransform(Instancia, Onde);
+		const FVector2D Plano(Onde.GetLocation().X, Onde.GetLocation().Y);
+		// A METADE da laje é o que passa da borda, não o centro dela: laje
+		// flutuando meio corpo fora do disco é o mesmo defeito que a poça
+		// debaixo do tabuleiro, só do outro lado.
+		const float MeiaLaje =
+			static_cast<float>(Onde.GetScale3D().X) * CilindroDaEngineNoTeste * 0.5f;
+		if (Plano.Size() + MeiaLaje > RaioDoChao)
+		{
+			++ForaDoDisco;
+		}
+		if (Plano.Size() - MeiaLaje < FolgaDoTabuleiro)
+		{
+			++SobOTabuleiro;
+		}
+	}
+	TestEqual(TEXT("nenhuma laje de poça passa da borda do chão da arena"),
+		ForaDoDisco, 0);
+	TestEqual(TEXT("e nenhuma entra por baixo do tabuleiro"),
+		SobOTabuleiro, 0);
+
+	// E a arena que não é pântano continua seca.
+	Mata->BuildForest(CasaDeTeste, 55u, CameraDeTeste, EIslandBiome::Forest);
+	TestEqual(TEXT("a arena da floresta não tem poça"), Pocas->GetInstanceCount(), 0);
 
 	DestroyForestTestWorld(World);
 	return true;

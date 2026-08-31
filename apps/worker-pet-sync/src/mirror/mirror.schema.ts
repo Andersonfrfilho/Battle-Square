@@ -32,6 +32,7 @@ export type MirrorPetRow = {
     effectStat?: string;
     effectPercent?: number;
     terrainDuration?: number;
+    drainPercent?: number;
   }[];
   signature: string;
 };

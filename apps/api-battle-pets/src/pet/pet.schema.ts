@@ -73,6 +73,9 @@ export const petMoves = pgTable(
      * silencio o efeito de terreno de todo golpe que existe.
      */
     terrainDuration: integer('terrain_duration').notNull().default(0),
+
+    /** Quanto do dano o golpe devolve como vida. ZERO e o golpe de sempre. */
+    drainPercent: integer('drain_percent').notNull().default(0),
   },
   (table) => ({
     petSlotUnique: unique('pet_moves_pet_slot_unique').on(table.petId, table.slot),

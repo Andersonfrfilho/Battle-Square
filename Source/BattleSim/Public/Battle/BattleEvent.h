@@ -98,7 +98,14 @@ enum class EBattleEventType : uint8
 	// linha no feed, quem foi revelado apanharia sem entender por quê.
 	//
 	// No FIM do enum, pelo mesmo motivo dos anteriores.
-	Revelado
+	Revelado,
+
+	// O golpe devolveu vida a quem bateu. Evento PRÓPRIO, e não um
+	// `DanoAplicado` negativo: o feed narra dano como perda, e um número
+	// negativo ali faria a linha dizer o contrário do que aconteceu.
+	//
+	// No FIM do enum, pelo mesmo motivo dos anteriores.
+	VidaDrenada
 };
 
 // Sentinela para TargetId/ActorId quando não há alvo aplicável

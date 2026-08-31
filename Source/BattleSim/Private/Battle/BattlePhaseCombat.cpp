@@ -235,7 +235,8 @@ namespace
 
 	// Declarada antes porque ResolveAttackForSide a chama e ela vem depois.
 	void ApplyHitAgainst(FBattleState& State, FPetState& Attacker, FPetState& Target,
-		bool bIsMagic, int32 MovePower, FTerrainDeposit Deposito, uint8 SlotIndex, TArray<FBattleEvent>& OutTrace);
+		bool bIsMagic, int32 MovePower, FTerrainDeposit Deposito, int32 DrainPercent,
+		uint8 SlotIndex, TArray<FBattleEvent>& OutTrace);
 
 	FPetState* FindPetById(FBattleState& State, uint8 PetId)
 	{
@@ -312,7 +313,8 @@ namespace
 				OutTrace);
 		}
 
-		ApplyHitAgainst(State, *Attacker, *Target, bIsMagic, MovePower, Deposito, SlotIndex, OutTrace);
+		ApplyHitAgainst(State, *Attacker, *Target, bIsMagic, MovePower, Deposito,
+			Attacker->GetMoveDrainPercent(MoveIndex), SlotIndex, OutTrace);
 	}
 
 	/**
@@ -347,6 +349,7 @@ namespace
 		bool bIsMagic,
 		int32 MovePower,
 		FTerrainDeposit Deposito,
+		int32 DrainPercent,
 		uint8 SlotIndex,
 		TArray<FBattleEvent>& OutTrace)
 	{
@@ -465,6 +468,28 @@ namespace
 
 		EmitHit(OutTrace, SlotIndex, *AttackerPtr, *TargetPtr, Damage);
 
+		// DRENAR: parte do dano volta como vida. Acumula, não aplica — F5
+		// resolve as duas coisas no mesmo instante, e é isso que faz quem
+		// drena o golpe que o mataria sobreviver.
+		//
+		// Sai do dano REAL, e não do poder do golpe: drenar de um alvo que
+		// defendeu tem de render menos, senão a defesa dele viraria vantagem
+		// para quem bate.
+		if (DrainPercent > 0 && Damage > 0)
+		{
+			const int32 Recuperado = FMath::Max(1, (Damage * DrainPercent) / 100);
+			AttackerPtr->PendingHeal += Recuperado;
+
+			FBattleEvent Drenou;
+			Drenou.Type = EBattleEventType::VidaDrenada;
+			Drenou.SlotIndex = SlotIndex;
+			Drenou.Phase = 4;
+			Drenou.ActorId = AttackerPtr->PetId;
+			Drenou.TargetId = TargetPtr->PetId;
+			Drenou.Value = Recuperado;
+			OutTrace.Add(Drenou);
+		}
+
 		// O golpe DEIXA algo na casa que acertou.
 		//
 		// Só no ACERTO: terreno mudando num golpe que errou tiraria do jogador
@@ -547,8 +572,8 @@ void BattlePhases::ApplyCombat(
 		// físico padrão. Usar o golpe de alguém aqui faria a colisão ferir
 		// conforme uma escolha que ninguém fez.
 		ApplyHitAgainst(State, *Um, *Outro, /*bIsMagic=*/false, /*MovePower=*/0,
-			FTerrainDeposit{}, SlotIndex, OutTrace);
+			FTerrainDeposit{}, /*DrainPercent=*/0, SlotIndex, OutTrace);
 		ApplyHitAgainst(State, *Outro, *Um, /*bIsMagic=*/false, /*MovePower=*/0,
-			FTerrainDeposit{}, SlotIndex, OutTrace);
+			FTerrainDeposit{}, /*DrainPercent=*/0, SlotIndex, OutTrace);
 	}
 }

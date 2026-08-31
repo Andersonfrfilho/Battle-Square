@@ -24,6 +24,9 @@ struct FLoadedPetMove
 	 */
 	int32 TerrainDuration = 0;
 
+	/** Quanto do dano volta como vida. ZERO é o golpe de sempre. */
+	int32 DrainPercent = 0;
+
 	/**
 	 * Atributo exigido para usar o golpe, e o mínimo dele.
 	 *

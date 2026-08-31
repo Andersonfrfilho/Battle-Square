@@ -51,6 +51,12 @@ export const petMoveSchema = z.object({
    * quem decide arena e a montagem, nao um golpe.
    */
   terrainDuration: z.number().int().min(0).max(5).default(0),
+
+  /**
+   * Teto de 100: devolver MAIS vida que o dano causado faria um golpe fraco em
+   * alvo defendido render mais que um forte, e ninguem leria isso.
+   */
+  drainPercent: z.number().int().min(0).max(100).default(0),
 });
 
 export const createPetSchema = z.object({

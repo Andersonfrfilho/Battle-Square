@@ -166,6 +166,13 @@ void FBattleDataTranslator::TranslatePet(
 		OutBattleState.MoveTerrainDurations[Indice] = Source.Moves.IsValidIndex(Indice)
 			? static_cast<uint8>(FMath::Clamp(Source.Moves[Indice].TerrainDuration, 0, 5))
 			: 0;
+
+		// Teto de 100: devolver MAIS vida do que o dano causado faria um golpe
+		// fraco em alvo defendido render mais que um forte, e o jogador não
+		// teria como ler isso.
+		OutBattleState.MoveDrainPercents[Indice] = Source.Moves.IsValidIndex(Indice)
+			? static_cast<uint8>(FMath::Clamp(Source.Moves[Indice].DrainPercent, 0, 100))
+			: 0;
 	}
 
 }

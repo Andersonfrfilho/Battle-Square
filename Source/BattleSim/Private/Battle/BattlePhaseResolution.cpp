@@ -63,6 +63,16 @@ void BattlePhases::ApplyResolution(
 			EmitDamageApplied(OutTrace, SlotIndex, Pet, Pet.PendingDamage);
 			Pet.PendingDamage = 0;
 		}
+
+		// A CURA no mesmo passo do dano, e não depois: são simultâneas. Quem
+		// drena o golpe que o mataria sobrevive, e quem já estava cheio não
+		// ganha nada — o teto é a vida máxima, senão drenar viraria uma barra
+		// que cresce sem fim.
+		if (Pet.PendingHeal > 0)
+		{
+			Pet.Health = FMath::Min(Pet.MaxHealth, Pet.Health + Pet.PendingHeal);
+			Pet.PendingHeal = 0;
+		}
 	}
 
 	// Passo 2: checagem de morte, só depois de TODO dano aplicado.

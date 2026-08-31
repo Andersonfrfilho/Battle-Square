@@ -179,6 +179,16 @@ struct FPetState
 	uint8 MoveTerrainDurations[4] = { 0, 0, 0, 0 };
 
 	/**
+	 * Quanto do dano causado o golpe DEVOLVE como vida, em porcentagem.
+	 *
+	 * Zero é o golpe de sempre. Propriedade do GOLPE e não do tipo: assim
+	 * qualquer pet pode ter um, e o fantasma tem os dele pelo catálogo — que é
+	 * o mesmo caminho por onde a lama e o gelo entraram.
+	 */
+	UPROPERTY()
+	uint8 MoveDrainPercents[4] = { 0, 0, 0, 0 };
+
+	/**
 	 * O que cada golpe faz com ATRIBUTO, e em quem.
 	 *
 	 * O SINAL diz o alvo: positivo sobe o SEU atributo, negativo derruba o
@@ -264,6 +274,11 @@ struct FPetState
 		return MoveIndex < 4 ? MoveTerrainDurations[MoveIndex] : 0;
 	}
 
+	uint8 GetMoveDrainPercent(uint8 MoveIndex) const
+	{
+		return MoveIndex < 4 ? MoveDrainPercents[MoveIndex] : 0;
+	}
+
 	/** Poder do golpe naquele índice, ou 0 fora da faixa. */
 	int32 GetMovePower(uint8 MoveIndex) const
 	{
@@ -323,6 +338,17 @@ struct FPetState
 	// mesmo slot morrem os dois: nenhum "morre primeiro".
 	UPROPERTY()
 	int32 PendingDamage = 0;
+
+	/**
+	 * Vida a RECUPERAR, acumulada em F4 e aplicada em F5 junto do dano.
+	 *
+	 * Pelo mesmo motivo do dano (BTL-07): aplicar na hora faria a ordem de
+	 * resolução decidir quem sobrevive. Dois pets que se drenam no mesmo slot
+	 * precisam colher os dois — e quem drena o golpe que o mataria sobrevive,
+	 * porque as duas coisas acontecem no MESMO instante.
+	 */
+	UPROPERTY()
+	int32 PendingHeal = 0;
 
 	bool IsAlive() const { return Health > 0; }
 };

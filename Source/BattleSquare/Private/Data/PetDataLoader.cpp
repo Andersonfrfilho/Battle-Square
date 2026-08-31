@@ -75,6 +75,7 @@ namespace
 			// não muda a casa, e é assim que ele sempre se comportou.
 			(*Objeto)->TryGetStringField(TEXT("terrainEffect"), Golpe.TerrainEffect);
 			(*Objeto)->TryGetNumberField(TEXT("terrainDuration"), Golpe.TerrainDuration);
+			(*Objeto)->TryGetNumberField(TEXT("drainPercent"), Golpe.DrainPercent);
 
 			// Chaves ausentes ficam com o padrão do struct: golpe assinado
 			// antes do requisito existir não exige nada, e é assim que ele

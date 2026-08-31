@@ -167,6 +167,16 @@ FText FBattleNarration::Describe(const FBattleEvent& Event, const FString& Actor
 			"{Actor} atolou na {Terreno} — atravessou, mas devagar"), ArgsChao);
 	}
 
+	case EBattleEventType::VidaDrenada:
+	{
+		FFormatNamedArguments ArgsDreno = Args;
+		ArgsDreno.Add(TEXT("Quanto"), FText::AsNumber(Event.Value));
+		// Diz de QUEM veio: drenar é tirar do outro, e uma frase que só
+		// falasse em curar faria parecer que ele se tratou sozinho.
+		return FText::Format(LOCTEXT("VidaDrenada",
+			"{Actor} drenou {Quanto} de vida de {Target}"), ArgsDreno);
+	}
+
 	case EBattleEventType::Revelado:
 		// Diz o que MUDOU, não o que brilhou: "iluminou" sozinho seria efeito
 		// visual, e o jogador precisa entender que o golpe passou a acertar.

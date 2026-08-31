@@ -3,6 +3,8 @@
 #include "Environment/IslandGeography.h"
 
 #include "Misc/ConfigCacheIni.h"
+#include "World/RegionLayout.h"
+#include "World/VillageLayout.h"
 
 namespace GeografiaDaIlha
 {
@@ -73,6 +75,241 @@ namespace GeografiaDaIlha
 		EIslandBiome::Glacier,
 		EIslandBiome::Forest,
 	};
+}
+
+
+/**
+ * O relevo. Puro, determinístico e sem estado.
+ *
+ * Cada função responde por UMA camada do chão, e `GroundHeightAt` as compõe
+ * numa ordem que é a regra. Separadas assim, "o lote é plano" e "a rampa sobe
+ * o barranco" se leem uma de cada vez.
+ */
+namespace Relevo
+{
+	/**
+	 * Altura da terra firme sobre o mar, e a amplitude dos morros.
+	 *
+	 * A relação entre os dois é a regra, não os valores: **a ondulação tem de
+	 * ser menor que a altura da terra.** Da primeira vez ela era maior, e o
+	 * despejo do mapa mostrou altura mínima negativa — vales abaixo do nível
+	 * do mar, ou seja, buracos de água dentro da ilha. Há teste.
+	 */
+	constexpr float FracaoDaTerra = 0.026f;
+	constexpr float FracaoDaOndulacao = 0.015f;
+
+	/** Tamanho de um morro. Grande demais vira planície; pequeno, arrepio. */
+	constexpr float FracaoDaCelula = 0.11f;
+
+	/**
+	 * A MESA da cidade grande. Ela é o barranco de cidade que barra o passo.
+	 *
+	 * Centrada na CIDADE, e não na ilha — foi assim que eu errei da primeira
+	 * vez, e o despejo do mapa mostrou: planalto centrado na ilha separava o
+	 * interior da fronteira, que o ranking já separa. Portão duplo não barra
+	 * duas vezes; ele só faz o primeiro portão não significar nada.
+	 */
+	constexpr float FracaoDoPlanalto = 0.020f;
+	constexpr float FracaoDaBordaInterna = 0.025f;
+	constexpr float FracaoDaBordaExterna = 0.043f;
+
+	constexpr float MeiaLarguraDaRampa = 16.0f;
+
+	/** Onde o degrau do barranco começa e quanto da faixa ele ocupa. */
+	constexpr float InicioDoDegrau = 0.40f;
+	constexpr float LarguraDoDegrau = 0.20f;
+
+	/** O cone do vulcão sobe bem mais que qualquer morro: ele é O marco. */
+	constexpr float FracaoDoCone = 0.10f;
+
+	float AlturaDaTerra() { return IslandGeography::LandRadiusUnits() * FracaoDaTerra; }
+
+	/** Passo da medida de inclinação: um metro. */
+	float PassoDaMedida() { return 100.0f; }
+
+	FVector2D CentroDoPlanalto()
+	{
+		for (const FSettlementPlacement& Assentamento : RegionLayout::Plan())
+		{
+			if (Assentamento.Kind == ESettlementKind::CidadeGrande)
+			{
+				return Assentamento.CenterUnits;
+			}
+		}
+
+		return FVector2D::ZeroVector;
+	}
+
+	/**
+	 * A rampa olha para CASA.
+	 *
+	 * Não é um número: é o rumo da cidade para a vila inicial, calculado. Quem
+	 * chega de casa encontra a subida de frente, e não depois de contornar a
+	 * mesa inteira. Escrito como constante, ele mentiria no dia em que a
+	 * cidade mudasse de lugar.
+	 */
+	float RumoDaRampa()
+	{
+		const FVector2D ParaCasa = FVector2D::ZeroVector - CentroDoPlanalto();
+		if (ParaCasa.IsNearlyZero())
+		{
+			return 0.0f;
+		}
+
+		return FMath::RadiansToDegrees(FMath::Atan2(ParaCasa.Y, ParaCasa.X));
+	}
+
+	/** Hash inteiro determinístico. Mesma entrada, mesma saída, sempre. */
+	uint32 Embaralhar(int32 X, int32 Y)
+	{
+		uint32 Semente = static_cast<uint32>(X) * 374761393u
+			+ static_cast<uint32>(Y) * 668265263u;
+		Semente = (Semente ^ (Semente >> 13)) * 1274126177u;
+		return Semente ^ (Semente >> 16);
+	}
+
+	/** O valor de um canto da grade, entre -1 e 1. */
+	float ValorDoCanto(int32 X, int32 Y)
+	{
+		return (static_cast<float>(Embaralhar(X, Y) & 0xFFFFu) / 32768.0f) - 1.0f;
+	}
+
+	float Suavizar(float T) { return T * T * (3.0f - 2.0f * T); }
+
+	/**
+	 * Ruído de valor sobre uma grade. Não é `FMath::Rand`: é conta sobre a
+	 * POSIÇÃO, e por isso o mesmo lugar tem sempre a mesma altura — o mundo
+	 * nasce por pedaço, e relevo que muda entre visitas é o chão se mexendo.
+	 */
+	float Ondulacao(const FVector2D& Onde)
+	{
+		const float Lado = IslandGeography::LandRadiusUnits() * FracaoDaCelula;
+		const float EmX = Onde.X / Lado;
+		const float EmY = Onde.Y / Lado;
+
+		const int32 X0 = FMath::FloorToInt(EmX);
+		const int32 Y0 = FMath::FloorToInt(EmY);
+
+		const float FracaoX = Suavizar(EmX - static_cast<float>(X0));
+		const float FracaoY = Suavizar(EmY - static_cast<float>(Y0));
+
+		const float Baixo = FMath::Lerp(ValorDoCanto(X0, Y0), ValorDoCanto(X0 + 1, Y0), FracaoX);
+		const float Cima = FMath::Lerp(ValorDoCanto(X0, Y0 + 1), ValorDoCanto(X0 + 1, Y0 + 1), FracaoX);
+
+		return FMath::Lerp(Baixo, Cima, FracaoY)
+			* IslandGeography::LandRadiusUnits() * FracaoDaOndulacao;
+	}
+
+	float ConeDoVulcao(const FVector2D& Centro, float RaioQueimado, const FVector2D& Onde)
+	{
+		const float Distancia = FVector2D::Distance(Onde, Centro);
+		if (Distancia >= RaioQueimado)
+		{
+			return 0.0f;
+		}
+
+		const float Fracao = 1.0f - (Distancia / RaioQueimado);
+		return Fracao * Fracao * IslandGeography::LandRadiusUnits() * FracaoDoCone;
+	}
+
+	bool EstaNaRampa(const FVector2D& Centro, const FVector2D& Onde)
+	{
+		const FVector2D Daqui = Onde - Centro;
+		if (Daqui.IsNearlyZero())
+		{
+			return false;
+		}
+
+		const float Graus = FMath::RadiansToDegrees(FMath::Atan2(Daqui.Y, Daqui.X));
+		const float Diferenca = FMath::Abs(FMath::FindDeltaAngleDegrees(Graus, RumoDaRampa()));
+		return Diferenca <= MeiaLarguraDaRampa;
+	}
+
+	/**
+	 * O planalto da cidade, e o barranco por borda dele.
+	 *
+	 * O barranco é o que impede resolver a região correndo em linha reta: ou
+	 * se sobe pela rampa da trilha, ou se escala devagar. **Ele nunca é
+	 * parede** — a regra é que todo destino é alcançável a pé, e barranco
+	 * intransponível a transformaria em chave de porta.
+	 */
+	float ComPlanalto(float Altura, const FVector2D& Onde)
+	{
+		const float Interno = IslandGeography::BluffInnerRadiusUnits();
+		const float Externo = IslandGeography::BluffOuterRadiusUnits();
+		const float Distancia = FVector2D::Distance(Onde, CentroDoPlanalto());
+
+		if (Distancia >= Externo)
+		{
+			return Altura;
+		}
+
+		const float DoPlanalto = IslandGeography::PlateauHeightUnits();
+
+		if (Distancia <= Interno)
+		{
+			return Altura + DoPlanalto;
+		}
+
+		// Na faixa do barranco a subida é ABRUPTA — é o que faz custar. Na
+		// rampa ela é suave, e é por ali que a trilha entra.
+		//
+		// O barranco é um DEGRAU concentrado no meio da faixa, não uma curva.
+		// Da primeira vez usei a cúbica, e o teste mostrou que ela é mais
+		// MANSA que a rampa no meio: cúbica é suave onde eu queria penhasco,
+		// e íngreme só encostada no topo. Concentrar a subida em um quinto da
+		// faixa dá cinco vezes a inclinação da rampa, que é o que "barranco"
+		// quer dizer.
+		const float Fracao = (Externo - Distancia) / (Externo - Interno);
+		const float Perfil = EstaNaRampa(CentroDoPlanalto(), Onde)
+			? Fracao
+			: FMath::Clamp((Fracao - Relevo::InicioDoDegrau) / Relevo::LarguraDoDegrau, 0.0f, 1.0f);
+
+		return Altura + DoPlanalto * Perfil;
+	}
+
+	/**
+	 * Os lotes são PLANOS, e este passo vem por último.
+	 *
+	 * Prédio em chão inclinado fica com meia parede enterrada — a mesma
+	 * família de defeito do pet afundando no tabuleiro, que só apareceu quando
+	 * um humano olhou a tela.
+	 */
+	float ComLotesPlanos(float Altura, const FVector2D& Onde)
+	{
+		for (const FSettlementPlacement& Assentamento : RegionLayout::Plan())
+		{
+			const float Lote = VillageLayout::PlotHalfExtentUnitsFor(Assentamento.Kind);
+			const float Clareira = VillageLayout::ClearingHalfExtentUnitsFor(Assentamento.Kind);
+
+			const FVector2D Daqui = Onde - Assentamento.CenterUnits;
+			const float Longe = FMath::Max(FMath::Abs(Daqui.X), FMath::Abs(Daqui.Y));
+			if (Longe >= Clareira)
+			{
+				continue;
+			}
+
+			// A altura do lote é a do CENTRO dele sem os lotes — senão a conta
+			// se chamaria de volta sem fim.
+			float DoCentro = AlturaDaTerra();
+			DoCentro += Ondulacao(Assentamento.CenterUnits);
+			DoCentro += ConeDoVulcao(IslandGeography::VolcanoCenterUnits(),
+				IslandGeography::VolcanoScorchedRadiusUnits(), Assentamento.CenterUnits);
+			DoCentro = ComPlanalto(DoCentro, Assentamento.CenterUnits);
+
+			if (Longe <= Lote)
+			{
+				return DoCentro;
+			}
+
+			// Entre o lote e a clareira, o chão volta ao natural aos poucos:
+			// degrau na saída da vila seria um muro invisível.
+			const float Mistura = (Longe - Lote) / (Clareira - Lote);
+			return FMath::Lerp(DoCentro, Altura, Suavizar(Mistura));
+		}
+
+		return Altura;
+	}
 }
 
 namespace IslandGeography
@@ -255,5 +492,85 @@ namespace IslandGeography
 		}
 
 		return TEXT("mata");
+	}
+
+	// ---------------------------------------------------------------- relevo
+
+	float PlateauHeightUnits() { return LandRadiusUnits() * Relevo::FracaoDoPlanalto; }
+
+	float BluffInnerRadiusUnits() { return LandRadiusUnits() * Relevo::FracaoDaBordaInterna; }
+
+	float BluffOuterRadiusUnits() { return LandRadiusUnits() * Relevo::FracaoDaBordaExterna; }
+
+	float BluffRampAngleDegrees() { return Relevo::RumoDaRampa(); }
+
+	float BluffRampHalfWidthDegrees() { return Relevo::MeiaLarguraDaRampa; }
+
+	bool IsOnBluffRamp(const FVector2D& PositionUnits)
+	{
+		return Relevo::EstaNaRampa(Relevo::CentroDoPlanalto(), PositionUnits);
+	}
+
+	float GroundHeightAt(const FVector2D& PositionUnits)
+	{
+		// A ORDEM é a regra, e cada passo pode sobrescrever o anterior. Trocá-la
+		// põe morro dentro da praça.
+		const float Distancia = PositionUnits.Size();
+
+		// 1. Fora da terra é mar, e o mar é o zero de tudo.
+		if (Distancia >= LandRadiusUnits())
+		{
+			return 0.0f;
+		}
+
+		// 2. A praia sobe do mar até o nível da terra. Sem esta rampa, a ilha
+		//    seria um prato com parede — que foi exatamente o relato de jogo:
+		//    "ao chegar na água eu afundo para sempre".
+		const float Borda = LandRadiusUnits() - BeachWidthUnits();
+		const float DaOrla = (Distancia > Borda)
+			? FMath::Clamp((LandRadiusUnits() - Distancia) / BeachWidthUnits(), 0.0f, 1.0f)
+			: 1.0f;
+
+		float Altura = Relevo::AlturaDaTerra() * DaOrla;
+
+		// 3. As ondulações, ENCOLHIDAS pela mesma orla. É o que faz a caminhada
+		//    ter custo diferente por caminho, e é de onde a rota nasce.
+		//
+		//    O encolhimento não é enfeite: sem ele o vale de um morro na faixa
+		//    de praia descia abaixo do nível do mar, e a ilha ganhava buracos
+		//    de água. O teste mediu; eu tinha olhado só o miolo.
+		Altura += Relevo::Ondulacao(PositionUnits) * DaOrla;
+
+		// 4. O cone do vulcão, e ele vem antes do planalto porque o vulcão é o
+		//    marco mais alto: nada o achata.
+		Altura += Relevo::ConeDoVulcao(VolcanoCenterUnits(), VolcanoScorchedRadiusUnits(),
+			PositionUnits);
+
+		// 5. O PLANALTO da cidade grande, com o barranco por borda. É ele que
+		//    impede resolver a região correndo em linha reta: ou se sobe pela
+		//    rampa da trilha, ou se escala devagar.
+		Altura = Relevo::ComPlanalto(Altura, PositionUnits);
+
+		// 6. Os LOTES são planos, e este passo é o último de propósito: prédio
+		//    em chão inclinado fica com meia parede enterrada, que é a mesma
+		//    família de defeito do pet afundando no tabuleiro.
+		return Relevo::ComLotesPlanos(Altura, PositionUnits);
+	}
+
+	float GroundSlopeAt(const FVector2D& PositionUnits)
+	{
+		// Diferença nas quatro vizinhas, não derivada: o campo tem degrau de
+		// propósito (o barranco), e derivada de degrau é infinito.
+		const float Passo = Relevo::PassoDaMedida();
+
+		const float Leste = GroundHeightAt(PositionUnits + FVector2D(Passo, 0.0f));
+		const float Oeste = GroundHeightAt(PositionUnits - FVector2D(Passo, 0.0f));
+		const float Norte = GroundHeightAt(PositionUnits + FVector2D(0.0f, Passo));
+		const float Sul = GroundHeightAt(PositionUnits - FVector2D(0.0f, Passo));
+
+		const float PorX = (Leste - Oeste) / (2.0f * Passo);
+		const float PorY = (Norte - Sul) / (2.0f * Passo);
+
+		return FMath::Sqrt(PorX * PorX + PorY * PorY);
 	}
 }

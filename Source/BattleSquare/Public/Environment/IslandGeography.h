@@ -96,6 +96,50 @@ namespace IslandGeography
 	BATTLESQUARE_API float VolcanoScorchedRadiusUnits();
 
 	/**
+	 * A altura do chão num ponto. A FONTE ÚNICA do relevo.
+	 *
+	 * Existe porque a ilha era PLANA: as montanhas eram atores em cima de um
+	 * chão sem altura, e nenhuma função respondia "que altura tem aqui". Sem
+	 * isso, "subir cansa mais" não tinha como ser calculado nem testado, e
+	 * quem traça uma trilha não tinha como evitar a subida.
+	 *
+	 * Mora aqui, e é pura, pelo motivo de sempre: quem CONSTRÓI o relevo, quem
+	 * traça a trilha e quem cobra o cansaço precisam do mesmo número. Uma
+	 * segunda cópia concordaria até a primeira edição (L-032), e a divergência
+	 * sairia como uma trilha subindo um morro que ela deveria contornar.
+	 *
+	 * Determinística por construção — mesma posição, mesma altura, sempre. Ela
+	 * é consultada por vários pedaços do mundo que nascem em momentos
+	 * diferentes, e um relevo que muda entre visitas é o chão se mexendo.
+	 */
+	BATTLESQUARE_API float GroundHeightAt(const FVector2D& PositionUnits);
+
+	/**
+	 * A inclinação num ponto, em altura por unidade andada.
+	 *
+	 * Medida por diferença nas quatro vizinhas, e não por derivada analítica:
+	 * o campo tem degraus de propósito (os barrancos), e derivada de degrau é
+	 * infinito.
+	 */
+	BATTLESQUARE_API float GroundSlopeAt(const FVector2D& PositionUnits);
+
+	/** O terreno em volta da cidade grande é planalto — e o barranco é a borda dele. */
+	BATTLESQUARE_API float PlateauHeightUnits();
+	BATTLESQUARE_API float BluffInnerRadiusUnits();
+	BATTLESQUARE_API float BluffOuterRadiusUnits();
+
+	/**
+	 * Onde o barranco tem RAMPA — o único jeito de subir sem escalar.
+	 *
+	 * Barranco sem rampa é parede, e parede que só a montaria vence quebra a
+	 * regra de que todo destino é alcançável a pé. A rampa é onde a trilha
+	 * entra: o caminho no chão e o jeito de subir são a mesma coisa.
+	 */
+	BATTLESQUARE_API float BluffRampAngleDegrees();
+	BATTLESQUARE_API float BluffRampHalfWidthDegrees();
+	BATTLESQUARE_API bool IsOnBluffRamp(const FVector2D& PositionUnits);
+
+	/**
 	 * Largura da faixa de pântano, medida para dentro a partir da praia.
 	 *
 	 * Fração do raio pelo mesmo motivo da praia: um número fixo que hoje é um

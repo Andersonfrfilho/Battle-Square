@@ -24,6 +24,19 @@ enum class EIslandBiome : uint8
 	Volcano,
 	/** A borda molhada, onde a terra encontra o mar. */
 	Beach,
+
+	/**
+	 * O pântano: a mata que não consegue drenar para o mar.
+	 *
+	 * Entra no FIM porque a ordem daqui já foi lida por quem salva e por quem
+	 * desenha, e valor no meio renumera o que já está escrito.
+	 *
+	 * Não é setor, e é de propósito. Pântano não é uma direção da ilha, é uma
+	 * ALTURA: terra baixa e plana onde a água doce empoça antes de chegar na
+	 * areia. Por isso ele mora na faixa entre a mata e a praia, e só do lado
+	 * úmido — onde o deserto encontra o mar sai areia seca, não brejo.
+	 */
+	Swamp,
 };
 
 /**
@@ -57,6 +70,14 @@ namespace IslandGeography
 	BATTLESQUARE_API float BeachWidthUnits();
 
 	/**
+	 * Largura da faixa de pântano, medida para dentro a partir da praia.
+	 *
+	 * Fração do raio pelo mesmo motivo da praia: um número fixo que hoje é um
+	 * brejo vira uma poça quando a ilha crescer.
+	 */
+	BATTLESQUARE_API float SwampWidthUnits();
+
+	/**
 	 * Raio do miolo que continua sendo mata, aconteça o que acontecer.
 	 *
 	 * Os campos de treino, o ponto de nascimento e o caminho entre eles vivem
@@ -83,9 +104,11 @@ namespace IslandGeography
 	/**
 	 * O bioma de um ponto.
 	 *
-	 * A ordem importa: o miolo é mata, a borda é praia, e só entre os dois o
-	 * setor decide. Sem o miolo, a casa mudaria de bioma; sem a borda, o
-	 * deserto encostaria no mar sem areia molhada no meio.
+	 * A ordem importa: o miolo é mata, a borda é praia, logo atrás da praia
+	 * vem o pântano nos setores de mata, e só depois o setor decide. Sem o
+	 * miolo, a casa mudaria de bioma; sem a borda, o deserto encostaria no mar
+	 * sem areia molhada no meio; e sem o pântano vir ANTES do setor, ele nunca
+	 * seria alcançado, porque o setor de mata responderia mata primeiro.
 	 */
 	BATTLESQUARE_API EIslandBiome BiomeAt(const FVector2D& PositionUnits);
 

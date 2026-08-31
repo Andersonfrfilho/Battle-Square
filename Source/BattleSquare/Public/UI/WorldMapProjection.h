@@ -33,6 +33,8 @@ enum class EWorldMapTerrain : uint8
 	Gelo,
 	/** Rocha escura do vulcão. */
 	Lava,
+	/** Brejo: mata que não drena, entre o miolo e a praia. */
+	Pantano,
 
 	/**
 	 * Quantos terrenos existem. NÃO é terreno.

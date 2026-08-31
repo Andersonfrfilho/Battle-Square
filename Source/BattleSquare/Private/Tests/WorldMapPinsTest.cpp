@@ -116,16 +116,19 @@ bool FMarcaSaltaDoFundoTest::RunTest(const FString&)
 	// A marcação é o que o jogador PROCURA no mapa. Se ela fosse tão surda
 	// quanto o terreno, o mapa teria uma anotação que só se acha sabendo onde
 	// ela está — o que anula a anotação.
-	const EWorldMapTerrain Terrenos[] = {
-		EWorldMapTerrain::Clareira, EWorldMapTerrain::Mata,
-		EWorldMapTerrain::Margem, EWorldMapTerrain::Agua,
-		EWorldMapTerrain::Relevo };
-
+	// Varre ATÉ `Count`, e não uma lista à mão. A lista à mão parava em cinco
+	// terrenos enquanto o mapa já tinha oito: deserto, glaciar e vulcão nunca
+	// entravam na conta, e um terreno novo mais vivo que uma marcação apagaria
+	// a marcação sem nada aqui reclamar.
 	float TerrenoMaisForte = 0.0f;
-	for (const EWorldMapTerrain Terreno : Terrenos)
+	for (int32 Indice = 0; Indice < static_cast<int32>(EWorldMapTerrain::Count); ++Indice)
 	{
+		const EWorldMapTerrain Terreno = static_cast<EWorldMapTerrain>(Indice);
 		const FLinearColor Cor = FWorldMapProjection::ColorForTerrain(Terreno);
 		TerrenoMaisForte = FMath::Max(TerrenoMaisForte, Cor.R + Cor.G + Cor.B);
+
+		TestFalse(TEXT("Todo terreno tem nome na legenda"),
+			FWorldMapProjection::LabelForTerrain(Terreno).ToString().IsEmpty());
 	}
 
 	const EWorldPinKind Pinos[] = {

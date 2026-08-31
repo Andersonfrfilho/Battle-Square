@@ -22,7 +22,18 @@ enum class EScenaryClimate : uint8
 	/** Clima bom, ameno o ano inteiro — a serra fica verde até o cume. */
 	Mild,
 	/** Deserto: nenhuma montanha desta escala alcança o congelamento. */
-	Desert
+	Desert,
+
+	/**
+	 * Pântano: quente, parado e encharcado o ano inteiro.
+	 *
+	 * Este é o clima que o vulcão NÃO ganhou, e pela regra oposta. Um clima
+	 * novo só se paga quando RESPONDE diferente: o vulcão é seco como o
+	 * deserto, e responder igual não justifica uma linha a mais em quatro
+	 * tabelas. O pântano responde diferente exatamente onde importa — a
+	 * umidade — e é essa resposta que ele veio dar.
+	 */
+	Humid
 };
 
 /**

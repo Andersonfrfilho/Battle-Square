@@ -100,6 +100,7 @@ FLinearColor FWorldMapProjection::ColorForTerrain(EWorldMapTerrain Terrain)
 		case EWorldMapTerrain::Areia:    return FLinearColor(0.52f, 0.45f, 0.28f);
 		case EWorldMapTerrain::Gelo:     return FLinearColor(0.40f, 0.46f, 0.52f);
 		case EWorldMapTerrain::Lava:     return FLinearColor(0.30f, 0.12f, 0.10f);
+		case EWorldMapTerrain::Pantano:  return FLinearColor(0.20f, 0.22f, 0.12f);
 		case EWorldMapTerrain::Count:    break;
 	}
 
@@ -118,6 +119,7 @@ FText FWorldMapProjection::LabelForTerrain(EWorldMapTerrain Terrain)
 		case EWorldMapTerrain::Areia:    return LOCTEXT("MapaAreia", "deserto");
 		case EWorldMapTerrain::Gelo:     return LOCTEXT("MapaGelo", "glaciar");
 		case EWorldMapTerrain::Lava:     return LOCTEXT("MapaLava", "vulcão");
+		case EWorldMapTerrain::Pantano:  return LOCTEXT("MapaPantano", "pântano");
 		case EWorldMapTerrain::Count:    break;
 	}
 
@@ -135,6 +137,7 @@ EWorldMapTerrain FWorldMapProjection::TerrainForBiome(EIslandBiome Biome)
 		case EIslandBiome::Desert:  return EWorldMapTerrain::Areia;
 		case EIslandBiome::Glacier: return EWorldMapTerrain::Gelo;
 		case EIslandBiome::Volcano: return EWorldMapTerrain::Lava;
+		case EIslandBiome::Swamp:   return EWorldMapTerrain::Pantano;
 		case EIslandBiome::Forest:  break;
 	}
 

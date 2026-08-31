@@ -13,6 +13,7 @@ namespace ClimaDoCenario
 	constexpr float FrioCelsius = 3.0f;
 	constexpr float AmenoCelsius = 24.0f;
 	constexpr float DesertoCelsius = 34.0f;
+	constexpr float UmidoCelsius = 22.0f;
 }
 
 float ScenaryClimate::BaseTemperatureCelsius(EScenaryClimate Climate)
@@ -22,6 +23,7 @@ float ScenaryClimate::BaseTemperatureCelsius(EScenaryClimate Climate)
 	case EScenaryClimate::Cold:   return ClimaDoCenario::FrioCelsius;
 	case EScenaryClimate::Mild:   return ClimaDoCenario::AmenoCelsius;
 	case EScenaryClimate::Desert: return ClimaDoCenario::DesertoCelsius;
+	case EScenaryClimate::Humid:  return ClimaDoCenario::UmidoCelsius;
 	case EScenaryClimate::Temperate:
 		break;
 	}
@@ -72,6 +74,7 @@ EScenaryClimate ScenaryClimate::ClimateFromName(FName Name)
 	if (Name == FName(TEXT("Cold")))   { return EScenaryClimate::Cold; }
 	if (Name == FName(TEXT("Mild")))   { return EScenaryClimate::Mild; }
 	if (Name == FName(TEXT("Desert"))) { return EScenaryClimate::Desert; }
+	if (Name == FName(TEXT("Humid")))  { return EScenaryClimate::Humid; }
 	return EScenaryClimate::Temperate;
 }
 
@@ -103,6 +106,13 @@ int32 ScenaryClimate::HumidityPercent(EScenaryClimate Climate)
 
 		// Deserto: a poça evapora antes de encharcar coisa alguma.
 		case EScenaryClimate::Desert:    return 10;
+
+		// Pântano: o chão já começa quase saturado, e é isso que o separa da
+		// mata. Na mata é preciso CHUVA para o chão não aguentar mais água;
+		// aqui basta uma garoa. A diferença entre garoa e tempestade some no
+		// pântano — e um lugar onde a chuva não muda mais nada porque já está
+		// tudo encharcado é a definição do lugar.
+		case EScenaryClimate::Humid:     return 85;
 	}
 
 	return 50;

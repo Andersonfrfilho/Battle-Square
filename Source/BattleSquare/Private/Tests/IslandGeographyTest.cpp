@@ -306,4 +306,99 @@ bool FIslandGeographySectorClimateIgnoresDistanceTest::RunTest(const FString& Pa
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FIslandGeographySwampIsTheWetRimOfTheForestTest,
+	"BattleSquare.Environment.IslandGeography.OPantanoEAOrlaUmidaDaMata",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FIslandGeographySwampIsTheWetRimOfTheForestTest::RunTest(const FString& Parameters)
+{
+	// O brejo é ALTURA, não rumo: a faixa baixa logo atrás da praia. Por isso
+	// ele se mede por distância do centro, e não por setor.
+	const float BordaDaTerra =
+		IslandGeography::LandRadiusUnits() - IslandGeography::BeachWidthUnits();
+	const float DentroDoPantano = BordaDaTerra - IslandGeography::SwampWidthUnits() * 0.5f;
+	const float AntesDoPantano =
+		BordaDaTerra - IslandGeography::SwampWidthUnits() - TolerenciaDaIlha;
+
+	TestTrue(TEXT("a faixa de pântano tem largura"),
+		IslandGeography::SwampWidthUnits() > 0.0f);
+
+	// A faixa não pode comer a casa: quem nasce no meio do mapa nasceria com o
+	// pé na água, e o campo de treino junto.
+	TestTrue(TEXT("o pântano começa depois da casa"),
+		BordaDaTerra - IslandGeography::SwampWidthUnits() > IslandGeography::HomeRadiusUnits());
+
+	int32 SetoresComBrejo = 0;
+	int32 SetoresSecos = 0;
+	for (int32 Setor = 0; Setor < IslandGeography::SectorCount; ++Setor)
+	{
+		const float Graus =
+			(static_cast<float>(Setor) + 0.5f) * 360.0f / IslandGeography::SectorCount;
+		const EIslandBiome NoBrejo = IslandGeography::BiomeAt(PontoDaIlha(Graus, DentroDoPantano));
+		const EIslandBiome Atras = IslandGeography::BiomeAt(PontoDaIlha(Graus, AntesDoPantano));
+
+		if (IslandGeography::BiomeOfSector(Setor) == EIslandBiome::Forest)
+		{
+			++SetoresComBrejo;
+			TestEqual(TEXT("na mata, a orla é pântano"),
+				static_cast<int32>(NoBrejo), static_cast<int32>(EIslandBiome::Swamp));
+			TestEqual(TEXT("e logo atrás dela ainda é mata"),
+				static_cast<int32>(Atras), static_cast<int32>(EIslandBiome::Forest));
+		}
+		else
+		{
+			// Deserto encostando no mar dá areia, não brejo. Se o pântano
+			// ignorasse o setor, a ilha inteira ganharia uma cinta de lodo.
+			++SetoresSecos;
+			TestNotEqual(TEXT("setor seco não cria brejo na orla"),
+				static_cast<int32>(NoBrejo), static_cast<int32>(EIslandBiome::Swamp));
+		}
+	}
+
+	TestTrue(TEXT("há setor de mata para molhar"), SetoresComBrejo > 0);
+	TestTrue(TEXT("e setor seco para comparar"), SetoresSecos > 0);
+
+	// Entre o brejo e o mar continua havendo areia: sem isso o pântano teria
+	// comido a praia em vez de ficar atrás dela.
+	TestEqual(TEXT("a praia sobrevive ao pântano"),
+		static_cast<int32>(IslandGeography::BiomeAt(
+			PontoDaIlha(0.0f, IslandGeography::LandRadiusUnits() - TolerenciaDaIlha))),
+		static_cast<int32>(EIslandBiome::Beach));
+
+	TestEqual(TEXT("e o clima do brejo é o úmido"),
+		static_cast<int32>(IslandGeography::ClimateOf(EIslandBiome::Swamp)),
+		static_cast<int32>(EScenaryClimate::Humid));
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FIslandGeographySwampSaturatesBeforeTheForestTest,
+	"BattleSquare.Environment.IslandGeography.OBrejoSaturaAntesDaMata",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FIslandGeographySwampSaturatesBeforeTheForestTest::RunTest(const FString& Parameters)
+{
+	// É ISTO que paga o clima novo. Um clima que responde igual ao que já
+	// existe não é um lugar, é uma linha a mais em quatro tabelas. Na mata
+	// precisa CHOVER para o chão não aguentar mais água; no brejo basta uma
+	// garoa — uma graduação inteira antes.
+	const int32 BrejoNaGaroa = WorldWeather::HumidityPercent(
+		EScenaryClimate::Humid, EWeather::Drizzle);
+	const int32 MataNaGaroa = WorldWeather::HumidityPercent(
+		EScenaryClimate::Temperate, EWeather::Drizzle);
+
+	TestTrue(TEXT("o brejo já satura na garoa"), BrejoNaGaroa >= 100);
+	TestTrue(TEXT("a mata ainda não"), MataNaGaroa < 100);
+
+	// E seco ele continua mais molhado que a mata molhada — o brejo não é uma
+	// mata com chuva, é o que sobra depois que a chuva vai embora.
+	TestTrue(TEXT("brejo limpo é mais úmido que mata limpa"),
+		WorldWeather::HumidityPercent(EScenaryClimate::Humid, EWeather::Clear)
+		> WorldWeather::HumidityPercent(EScenaryClimate::Temperate, EWeather::Clear));
+
+	return true;
+}
+
 #endif

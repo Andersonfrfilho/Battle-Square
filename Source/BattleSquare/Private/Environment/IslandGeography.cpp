@@ -22,6 +22,15 @@ namespace GeografiaDaIlha
 	constexpr float FracaoDaPraia = 0.08f;
 
 	/**
+	 * O pântano é mais largo que a praia porque ele é o que se ATRAVESSA.
+	 *
+	 * A praia é uma orla: passa-se por ela para chegar na água. O brejo é
+	 * caminho, e uma faixa tão fina quanto a areia seria atravessada sem
+	 * ninguém reparar que mudou de lugar.
+	 */
+	constexpr float FracaoDoPantano = 0.10f;
+
+	/**
 	 * O miolo de mata, em unidades.
 	 *
 	 * É FIXO, e não fração: ele existe para caber os campos de treino, que têm
@@ -69,6 +78,11 @@ namespace IslandGeography
 		return LandRadiusUnits() * GeografiaDaIlha::FracaoDaPraia;
 	}
 
+	float SwampWidthUnits()
+	{
+		return LandRadiusUnits() * GeografiaDaIlha::FracaoDoPantano;
+	}
+
 	float HomeRadiusUnits()
 	{
 		// Numa ilha pequena demais para ter miolo E borda, a casa cede: ela
@@ -107,7 +121,20 @@ namespace IslandGeography
 		{
 			return EIslandBiome::Beach;
 		}
-		return BiomeOfSector(SectorAt(PositionUnits));
+
+		const EIslandBiome DoSetor = BiomeOfSector(SectorAt(PositionUnits));
+
+		// Brejo é mata que não drena. Onde o setor já é seco, a mesma faixa
+		// baixa continua sendo o que o setor diz: encostar o deserto no mar
+		// dá salina, não pântano.
+		const bool bAtrasDaPraia = Distancia
+			>= LandRadiusUnits() - BeachWidthUnits() - SwampWidthUnits();
+		if (bAtrasDaPraia && DoSetor == EIslandBiome::Forest)
+		{
+			return EIslandBiome::Swamp;
+		}
+
+		return DoSetor;
 	}
 
 	EScenaryClimate ClimateOf(EIslandBiome Biome)
@@ -118,9 +145,14 @@ namespace IslandGeography
 		case EIslandBiome::Volcano: return EScenaryClimate::Desert;
 		case EIslandBiome::Glacier: return EScenaryClimate::Cold;
 		case EIslandBiome::Beach:   return EScenaryClimate::Mild;
-		case EIslandBiome::Forest:
-		default:                    return EScenaryClimate::Temperate;
+		case EIslandBiome::Swamp:   return EScenaryClimate::Humid;
+		case EIslandBiome::Forest:  break;
 		}
+
+		// Sem `default:`, e é o ponto. Com ele, o pântano teria nascido
+		// temperado sem ninguém escrever nada errado — foi assim que o vulcão
+		// quase nasceu caverna. Bioma novo sem caso aqui não compila.
+		return EScenaryClimate::Temperate;
 	}
 
 	EScenaryClimate ClimateAt(const FVector2D& PositionUnits)
@@ -146,8 +178,10 @@ namespace IslandGeography
 		case EIslandBiome::Volcano: return TEXT("vulcao");
 		case EIslandBiome::Glacier: return TEXT("geleira");
 		case EIslandBiome::Beach:   return TEXT("praia");
-		case EIslandBiome::Forest:
-		default:                    return TEXT("mata");
+		case EIslandBiome::Swamp:   return TEXT("pantano");
+		case EIslandBiome::Forest:  break;
 		}
+
+		return TEXT("mata");
 	}
 }

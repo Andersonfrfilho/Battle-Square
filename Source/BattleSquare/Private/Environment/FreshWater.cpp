@@ -3,6 +3,7 @@
 #include "Environment/FreshWater.h"
 
 #include "Battle/DeterministicSpread.h"
+#include "Environment/CaveSystem.h"
 #include "Environment/IslandFeatureLayout.h"
 #include "Environment/IslandGeography.h"
 
@@ -64,6 +65,49 @@ namespace FreshWater
 		/** Quanto depois do fim do lago a água despenca. */
 		constexpr float MenorDegrau = 300.0f;
 		constexpr float MaiorDegrau = 1100.0f;
+
+		/**
+		 * A primeira distância tentada entre a queda e o centro da gruta, e o
+		 * passo com que ela cresce quando a mais perto não serve.
+		 *
+		 * Começar perto e crescer é o que faz a gruta ficar ENCOSTADA na
+		 * cachoeira: o primeiro lugar que serve ganha, e o primeiro lugar
+		 * tentado é o mais próximo. Sorteando a distância, metade das grutas
+		 * nasceria longe da única coisa que explica por que ela está ali.
+		 */
+		constexpr float PrimeiraDistanciaDaGruta = 1200.0f;
+		constexpr float PassoDaDistanciaDaGruta = 240.0f;
+		constexpr int32 DistanciasDaGruta = 12;
+
+		/**
+		 * Em quantas direções se procura ao redor da queda.
+		 *
+		 * Doze, como as horas de um relógio: perto do degrau o rio vem torto de
+		 * tanto serpentear, e as duas perpendiculares à corrente — que era o
+		 * que se tentava antes — apontam para a água em metade dos casos, porque
+		 * a torção dá componente RADIAL à perpendicular e joga a gruta rio
+		 * acima, dentro do lago.
+		 */
+		constexpr int32 RumosDaGruta = 12;
+
+		/**
+		 * A folga que um lugar precisa ter para ser aceito, em cima de caber.
+		 *
+		 * Sem ela a busca aceita o primeiro lugar que cabe, e "cabe" chegou a
+		 * ser cinco unidades de margem: uma gruta encostada na calha, que
+		 * qualquer mexida na serpentina do rio põe dentro da água. Caber não é
+		 * critério; caber com sobra é.
+		 */
+		constexpr float FolgaDaGruta = 300.0f;
+
+		/**
+		 * O passo com que se percorre o rio ao medir a distância até a água.
+		 *
+		 * O curso é uma curva, e não há fórmula fechada para a distância de um
+		 * ponto a ela: mede-se por amostragem. Passo curto custa tempo de
+		 * planejamento; passo longo passa por cima de uma volta da serpentina.
+		 */
+		constexpr float PassoDeSondagemDoRio = 60.0f;
 	}
 
 	float RiverHalfWidthUnits() { return MeiaCalhaDoRio; }
@@ -147,5 +191,123 @@ namespace FreshWater
 	bool IsFallAt(const FRiverCourse& Course, float RadiusUnits)
 	{
 		return FMath::Abs(RadiusUnits - Course.FallRadiusUnits) <= MeiaQueda;
+	}
+
+	namespace
+	{
+		/** A menor distância entre um ponto e a água doce de toda a ilha. */
+		float MargemDaAgua(const TArray<FRiverCourse>& Cursos, const FVector2D& Ponto)
+		{
+			float Menor = TNumericLimits<float>::Max();
+			for (const FRiverCourse& Curso : Cursos)
+			{
+				for (float Raio = Curso.SourceRadiusUnits; Raio <= Curso.MouthRadiusUnits;
+					Raio += PassoDeSondagemDoRio)
+				{
+					const float Daqui = static_cast<float>(
+						FVector2D::Distance(Ponto, PointAt(Curso, Raio))) - HalfWidthAt(Curso, Raio);
+					Menor = FMath::Min(Menor, Daqui);
+				}
+			}
+
+			return Menor;
+		}
+	}
+
+	TArray<IslandFeatureLayout::FFeaturePlacement> PlanGrottoes()
+	{
+		TArray<IslandFeatureLayout::FFeaturePlacement> Grutas;
+
+		const TArray<FRiverCourse> Cursos = Plan();
+		const TArray<IslandFeatureLayout::FFeaturePlacement> PecasDaIlha = IslandFeatureLayout::Plan();
+		const IslandFeatureLayout::FIslandBounds Limites;
+
+		for (int32 Indice = 0; Indice < Cursos.Num(); ++Indice)
+		{
+			const FVector2D NaQueda = PointAt(Cursos[Indice], Cursos[Indice].FallRadiusUnits);
+
+			IslandFeatureLayout::FFeaturePlacement Gruta;
+			Gruta.Feature = IslandFeatureLayout::EIslandFeature::Cave;
+			Gruta.CaveSide = ACaveSystem::GrottoCaveSide;
+			Gruta.ClearanceUnits = IslandFeatureLayout::CaveClearanceUnits(Gruta.CaveSide);
+
+			// Água, sempre, e sem passar pelo temperador do plano da ilha: ele
+			// dá água a quem está perto da ORLA, e a gruta da cachoeira tem água
+			// por causa da cachoeira. O motivo é outro, e o raio não o conhece.
+			Gruta.CaveFlavor = ECaveFlavor::Water;
+
+			const uint32 Semente = BattleSpread::SeedFromText(
+				FString::Printf(TEXT("gruta-da-queda-%d"), Indice));
+			const int32 PrimeiroRumo = BattleSpread::Below(Semente, 0, RumosDaGruta);
+
+			// O sorteio escolhe por onde COMEÇAR a procurar, não onde ficar. Era
+			// ele que decidia o lado antes, e decidir sem olhar é como a gruta
+			// ia para dentro do lago: a semente não sabe onde está a água.
+			bool bAchou = false;
+			for (int32 Tentativa = 0; Tentativa < DistanciasDaGruta && !bAchou; ++Tentativa)
+			{
+				const float Distancia = PrimeiraDistanciaDaGruta
+					+ PassoDaDistanciaDaGruta * static_cast<float>(Tentativa);
+
+				for (int32 Passo = 0; Passo < RumosDaGruta && !bAchou; ++Passo)
+				{
+					const float Rumo = 2.0f * PI
+						* static_cast<float>((PrimeiroRumo + Passo) % RumosDaGruta)
+						/ static_cast<float>(RumosDaGruta);
+
+					const FVector2D Centro = NaQueda
+						+ FVector2D(FMath::Cos(Rumo), FMath::Sin(Rumo)) * Distancia;
+
+					Gruta.AngleDegrees = FMath::RadiansToDegrees(
+						static_cast<float>(FMath::Atan2(Centro.Y, Centro.X)));
+					Gruta.RadiusUnits = static_cast<float>(Centro.Size());
+
+					// A folga entra ENGORDANDO a gruta para as perguntas, não
+					// afrouxando as perguntas: assim quem decide se duas coisas
+					// se tocam continua sendo o plano da ilha, uma vez só, e a
+					// gruta não carrega uma segunda cópia dessas contas (L-032).
+					IslandFeatureLayout::FFeaturePlacement Inflada = Gruta;
+					Inflada.ClearanceUnits = Gruta.ClearanceUnits + FolgaDaGruta;
+
+					if (MargemDaAgua(Cursos, Centro) <= Inflada.ClearanceUnits)
+					{
+						continue;
+					}
+					if (!IslandFeatureLayout::FitsOnLand(Inflada, Limites))
+					{
+						continue;
+					}
+					if (!IslandFeatureLayout::ClearsTrainingFields(Inflada, Limites))
+					{
+						continue;
+					}
+
+					bool bEncosta = false;
+					for (const IslandFeatureLayout::FFeaturePlacement& Peca : PecasDaIlha)
+					{
+						bEncosta = bEncosta || IslandFeatureLayout::Overlaps(Inflada, Peca);
+					}
+					for (const IslandFeatureLayout::FFeaturePlacement& Outra : Grutas)
+					{
+						bEncosta = bEncosta || IslandFeatureLayout::Overlaps(Inflada, Outra);
+					}
+					if (bEncosta)
+					{
+						continue;
+					}
+
+					bAchou = true;
+				}
+			}
+
+			// Sem lugar, sem gruta. Plantar onde não cabe devolveria o defeito
+			// que a busca existe para não ter: caverna com a quina na água.
+			if (bAchou)
+			{
+				Grutas.Add(Gruta);
+			}
+		}
+
+		return Grutas;
 	}
 }

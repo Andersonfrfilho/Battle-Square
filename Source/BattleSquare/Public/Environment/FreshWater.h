@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 
+#include "Environment/IslandFeatureLayout.h"
+
 /**
  * A água DOCE da ilha: os rios, os lagos e as quedas.
  *
@@ -92,4 +94,37 @@ namespace FreshWater
 
 	/** Se neste raio a água está despencando. */
 	BATTLESQUARE_API bool IsFallAt(const FRiverCourse& Course, float RadiusUnits);
+
+	/**
+	 * As grutas das cachoeiras — uma ao lado de cada queda.
+	 *
+	 * Ela sai como `FFeaturePlacement` de caverna, e não como um tipo novo,
+	 * porque é UMA CAVERNA: quem planta já sabe plantar caverna, e `Overlaps` e
+	 * `FitsOnLand` já sabem conferi-la. Um tipo próprio obrigaria a escrever de
+	 * novo o mesmo despacho e as mesmas conferências, e a segunda cópia
+	 * concorda com a primeira até alguém mexer numa delas (L-032).
+	 *
+	 * O caminho é de mão única: a gruta LÊ o plano da ilha, e o plano da ilha
+	 * nunca lê a água. Acrescentar a gruta ao `IslandFeatureLayout::Plan()`
+	 * fecharia o ciclo, já que é dele que os rios nascem.
+	 *
+	 * Ela fica ao LADO da queda: a água caindo ocupa o lugar imediatamente
+	 * abaixo, e uma gruta ali seria uma boca com o rio entrando por dentro. Do
+	 * lado, a queda fica à vista de quem está na boca — que é a única razão de a
+	 * gruta estar ali e não em qualquer outro lugar.
+	 *
+	 * O lugar é PROCURADO, não calculado. Tentou-se afastar da margem por uma
+	 * distância fixa, e não existe distância fixa que sirva: perto do degrau o
+	 * rio vem torto de tanto serpentear, a perpendicular à corrente ganha
+	 * componente radial e joga a gruta rio acima, dentro do lago. A busca anda
+	 * ao redor da queda, do mais perto para o mais longe, e para no primeiro
+	 * lugar que sobra da água, da terra, dos campos de treino e das outras
+	 * peças da ilha — com folga, porque um lugar que apenas cabe sai de lugar
+	 * na primeira mexida na serpentina do rio.
+	 *
+	 * Onde não houver lugar, não há gruta. A lista pode vir com menos grutas do
+	 * que quedas, e vir vazia é resposta válida: plantar onde não cabe devolve
+	 * exatamente a quina dentro da água que a busca existe para evitar.
+	 */
+	BATTLESQUARE_API TArray<IslandFeatureLayout::FFeaturePlacement> PlanGrottoes();
 }

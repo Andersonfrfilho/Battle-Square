@@ -37,7 +37,7 @@ olho humano no PIE · ⛔ ainda feio ou ainda inexistente.
 |---|---|---|---|
 | 11 | ✅ **Cavernas** | três sabores decididos pelo LUGAR: **de lava** (a 160°, dentro do calor do vulcão), **de água** (a 270°, na orla) e **seca**. Estalactite pendurada na verga da boca, estalagmite subindo do chão, poça no corredor, e uma brasa de verdade (`UPointLightComponent`) só na de lava — cor não brilha. A de lava tem a **boca tapada**, e a silhueta conta de longe que ali não se entra | feito em `ACaveSystem` + `IslandFeatureLayout::TemperaAsCavernas`; painel na chave 727 |
 | 12 | ✅ **Praia** | faixa de areia molhada acompanhando o ARCO da ilha, espuma logo além da linha d'água, e árvores finas tombadas para o mar | feito. O pacote não traz coqueiro: `tree_thin` inclinada é a silhueta mais próxima, e inclinar é metade do efeito |
-| 13 | ⛔ **Água doce** | não existe. Só há o mar da borda | rio que desce da montanha, lago no miolo, cachoeira onde o rio cruza um degrau — com trilha e gruta acompanhando, como foi pedido |
+| 13 | ✅ **Água doce** | um rio por montanha, descendo do pé dela até a orla: serpentina própria, lago engordando o leito no meio do curso, cachoeira num degrau logo depois, trilha de terra acompanhando a margem, e uma **gruta d’água ao lado de cada queda**. A superfície do rio não tem colisão e fica ACIMA do chão — ninguém mais afunda na água | feito em `FreshWater` + `ARiverCourseView`; a gruta é uma **toca de lado 3**, e o lugar dela é PROCURADO ao redor da queda, do mais perto para o mais longe, porque nenhuma distância fixa serve num rio torto |
 | 14 | ⛔ **Céu noturno** | o dia e a noite viram, mas o céu é vazio | lua com **fase**, eclipse lunar (que É a lua vermelha — um fenômeno, não dois), eclipse solar, estrelas e cometa |
 | 15 | ⛔ **Eventos de terra** | furacão, terremoto e tsunami não existem | irmãos do clima, mas com **lugar e hora**: furacão no mar e na praia, terremoto perto do vulcão, tsunami **depois** do terremoto |
 | 16 | ⛔ **Arena** | ela lê o bioma do `.ini`, não de onde o encontro aconteceu — lutar na geleira dá cenário de floresta | `EncounterLocation` chega até `ABattleArena`, e o cenário da luta é o do chão onde ela começou |
@@ -58,13 +58,24 @@ olho humano no PIE · ⛔ ainda feio ou ainda inexistente.
    as três cavernas moravam no mesmo anel, então nenhuma podia ser de mar nem
    de lava, e o sabor teria de ser escrito à mão. Regra derivada do LUGAR não
    admite peça mal colocada.
-5. ~~**Praia** (12)~~ ✅ e **Água doce** (13) — as duas bordas d'água.
+5. ~~**Praia** (12)~~ ✅ e ~~**Água doce** (13)~~ ✅ — as duas bordas d'água.
    A praia mostrou por que a orla não podia sair da cor do chão: o pedaço tem
    6400 de lado e a praia tem 1600 de largura, então **todo** pedaço de praia
    é meio areia e meio interior. Pintar o ladrilho inteiro molharia mata. A
    faixa nasce do ARCO de raio conhecido, recortado pelo quadrado do pedaço —
    e é a única parte do cenário que depende de ONDE o ator está, não só do
    bioma que lhe mandaram.
+   A água doce cobrou a mesma lição por outro lado: o curso inteiro tem 6560 de
+   comprimento, menos que o lado de um pedaço, então **nascente, lago, queda e
+   foz caem todos no mesmo ladrilho**. Nenhuma pergunta feita por pedaço separa
+   uma da outra — quem distingue é o RAIO de cada instância no mundo.
+   E a gruta ao lado da queda mostrou que constante fixa não coloca peça em
+   terreno torto: entre o lago que alaga rio acima e a praia que começa 1600
+   antes da orla sobram pouco mais de 2000 de terra, e a perpendicular à
+   corrente aponta para dentro do lago quando o rio vem serpenteado. O lugar
+   passou a ser **procurado**, do mais perto da queda para o mais longe, com
+   folga em cima de caber — e a caverna encolheu para lado 3, porque uma toca
+   ao lado de uma cachoeira nunca deveria ter sido um labirinto.
 6. **Céu** (14) e **Eventos** (15) — nenhum depende de terreno.
 7. **Arena** (16) — depende de tudo acima já parecer diferente entre si; antes
    disso, ligar o bioma da luta não mudaria nada visível.

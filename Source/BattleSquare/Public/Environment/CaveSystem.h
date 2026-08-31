@@ -113,6 +113,18 @@ public:
 	static constexpr int32 SmallCaveSide = 5;
 
 	/**
+	 * A gruta: uma toca, não um labirinto.
+	 *
+	 * Menor que a pequena de propósito. Ela nasce ENCOSTADA numa cachoeira, e
+	 * ali a ilha não tem folga: entre o lago que ainda alaga rio acima e a
+	 * praia que começa mil e seiscentas unidades antes da orla sobra pouco mais
+	 * de dois mil de terra. Um quadrado de lado cinco não cabe nessa faixa sem
+	 * encostar a quina na água — e uma cavidade ao lado de uma queda d'água não
+	 * deveria ser um labirinto de todo jeito.
+	 */
+	static constexpr int32 GrottoCaveSide = 3;
+
+	/**
 	 * As medidas com que uma caverna nasce.
 	 *
 	 * Estão aqui em cima, e não só como valor inicial do campo, porque QUEM

@@ -1,5 +1,6 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
+#include "Environment/CaveSystem.h"
 #include "Environment/FreshWater.h"
 
 #include "Environment/IslandFeatureLayout.h"
@@ -240,6 +241,216 @@ bool FFreshWaterRiversDoNotShareACourseTest::RunTest(const FString& Parameters)
 					FVector2D::Distance(Aqui, La) > Folga);
 			}
 		}
+	}
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FFreshWaterOpensAGrottoBesideEveryFallTest,
+	"BattleSquare.Environment.FreshWater.GrottoBesideEveryFall",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FFreshWaterOpensAGrottoBesideEveryFallTest::RunTest(const FString& Parameters)
+{
+	const TArray<FreshWater::FRiverCourse> Cursos = FreshWater::Plan();
+	const TArray<IslandFeatureLayout::FFeaturePlacement> Grutas = FreshWater::PlanGrottoes();
+
+	// A busca pode vir com menos grutas do que quedas — é resposta válida
+	// quando não sobra lugar. Este teste afirma que HOJE sobra para todas, e é
+	// justamente por isso que ele vale: encolher a ilha, engordar o lago ou
+	// alargar a praia apaga uma gruta em silêncio, e a contagem grita.
+	TestEqual(TEXT("ha uma gruta para cada cachoeira"), Grutas.Num(), Cursos.Num());
+	TestTrue(TEXT("ha pelo menos uma gruta"), Grutas.Num() > 0);
+
+	// Ela é uma TOCA, não um labirinto: o labirinto grande não caberia na faixa
+	// de terra que sobra entre o lago e a praia, e uma cavidade ao lado de uma
+	// queda d'água não deveria ser um labirinto de todo jeito.
+	for (const IslandFeatureLayout::FFeaturePlacement& Gruta : Grutas)
+	{
+		TestTrue(TEXT("a gruta e menor que a menor caverna da ilha"),
+			Gruta.CaveSide < ACaveSystem::SmallCaveSide);
+	}
+
+	for (const IslandFeatureLayout::FFeaturePlacement& Gruta : Grutas)
+	{
+		// Ela é uma CAVERNA no plano, e não um tipo novo: é isso que faz o
+		// GameMode plantá-la sem uma segunda cópia do despacho.
+		TestEqual(TEXT("a gruta entra no plano como caverna"),
+			static_cast<int32>(Gruta.Feature),
+			static_cast<int32>(IslandFeatureLayout::EIslandFeature::Cave));
+
+		// Água por causa da cachoeira, e não por causa do raio. O temperador do
+		// plano da ilha dá água a quem está perto da orla; aqui o motivo é
+		// outro, e não pode depender de a gruta cair perto do mar.
+		TestEqual(TEXT("a gruta da cachoeira tem agua dentro"),
+			static_cast<int32>(Gruta.CaveFlavor), static_cast<int32>(ECaveFlavor::Water));
+		TestTrue(TEXT("e por isso ela se explora"), IsCaveExplorable(Gruta.CaveFlavor));
+
+		TestTrue(TEXT("a gruta tem tamanho de labirinto"), Gruta.CaveSide > 0);
+		TestTrue(TEXT("e reserva espaco em volta"), Gruta.ClearanceUnits > 0.0f);
+	}
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FFreshWaterKeepsTheGrottoOutOfTheWaterTest,
+	"BattleSquare.Environment.FreshWater.GrottoStandsClearOfTheChannel",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FFreshWaterKeepsTheGrottoOutOfTheWaterTest::RunTest(const FString& Parameters)
+{
+	const TArray<FreshWater::FRiverCourse> Cursos = FreshWater::Plan();
+	const TArray<IslandFeatureLayout::FFeaturePlacement> Grutas = FreshWater::PlanGrottoes();
+
+	if (Cursos.Num() == 0 || Grutas.Num() != Cursos.Num())
+	{
+		AddError(TEXT("sem gruta para conferir"));
+		return false;
+	}
+
+	// A conferência é contra o curso INTEIRO, não contra o ponto da queda. O
+	// lago está rio acima e alcança daqui: encostar a quina da gruta na água
+	// alagada é a quina de caverna dentro de montanha com outro nome.
+	for (const IslandFeatureLayout::FFeaturePlacement& Gruta : Grutas)
+	{
+		const FVector2D Centro = Gruta.CenterUnits();
+
+		for (const FreshWater::FRiverCourse& Curso : Cursos)
+		{
+			for (float Raio = Curso.SourceRadiusUnits; Raio <= Curso.MouthRadiusUnits;
+				Raio += 60.0f)
+			{
+				const FVector2D NaAgua = FreshWater::PointAt(Curso, Raio);
+				const float Folga = FreshWater::HalfWidthAt(Curso, Raio) + Gruta.ClearanceUnits;
+
+				TestTrue(TEXT("nenhuma quina da gruta cai dentro da agua"),
+					FVector2D::Distance(Centro, NaAgua) > Folga);
+			}
+		}
+	}
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FFreshWaterGrottoWatchesTheFallTest,
+	"BattleSquare.Environment.FreshWater.GrottoWatchesTheFall",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FFreshWaterGrottoWatchesTheFallTest::RunTest(const FString& Parameters)
+{
+	const TArray<FreshWater::FRiverCourse> Cursos = FreshWater::Plan();
+	const TArray<IslandFeatureLayout::FFeaturePlacement> Grutas = FreshWater::PlanGrottoes();
+
+	if (Cursos.Num() == 0 || Grutas.Num() != Cursos.Num())
+	{
+		AddError(TEXT("sem gruta para conferir"));
+		return false;
+	}
+
+	// Estar fora da água não basta: fora da água é toda a ilha. A gruta precisa
+	// estar PERTO da queda do SEU rio, senão ela é uma caverna qualquer com um
+	// nome que promete cachoeira.
+	for (int32 Indice = 0; Indice < Grutas.Num(); ++Indice)
+	{
+		const FVector2D Centro = Grutas[Indice].CenterUnits();
+		const FVector2D NaQueda = FreshWater::PointAt(Cursos[Indice],
+			Cursos[Indice].FallRadiusUnits);
+
+		const FVector2D NoLago = FreshWater::PointAt(Cursos[Indice],
+			Cursos[Indice].LakeRadiusUnits);
+
+		// O teto vem do próprio rio, não de um múltiplo escolhido a dedo: a
+		// gruta é da CACHOEIRA, então ela tem de estar mais perto da queda do
+		// que do lago que a alimenta. Assim o limite acompanha o rio quando o
+		// serpenteado dele mudar, em vez de ficar valendo por coincidência.
+		const float Daqui = FVector2D::Distance(Centro, NaQueda);
+		TestTrue(TEXT("a gruta esta a vista da queda"),
+			Daqui < FVector2D::Distance(NaQueda, NoLago));
+
+		// E do lado, não embaixo: o lugar imediatamente abaixo do degrau é da
+		// água caindo, e uma boca ali teria o rio entrando por dentro.
+		TestTrue(TEXT("mas nao embaixo dela"),
+			Daqui > FreshWater::FallHalfLengthUnits());
+
+		// Ela é a gruta DESTE rio: a mais perto dela tem de ser a sua queda.
+		for (int32 Outro = 0; Outro < Cursos.Num(); ++Outro)
+		{
+			if (Outro == Indice)
+			{
+				continue;
+			}
+
+			const FVector2D QuedaAlheia = FreshWater::PointAt(Cursos[Outro],
+				Cursos[Outro].FallRadiusUnits);
+			TestTrue(TEXT("e nao a de outro rio"),
+				FVector2D::Distance(Centro, QuedaAlheia) > Daqui);
+		}
+	}
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FFreshWaterGrottoFitsTheIslandTest,
+	"BattleSquare.Environment.FreshWater.GrottoFitsBesideTheOtherFeatures",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FFreshWaterGrottoFitsTheIslandTest::RunTest(const FString& Parameters)
+{
+	const TArray<IslandFeatureLayout::FFeaturePlacement> Grutas = FreshWater::PlanGrottoes();
+	const TArray<IslandFeatureLayout::FFeaturePlacement> Pecas = IslandFeatureLayout::Plan();
+	const IslandFeatureLayout::FIslandBounds Medidas;
+
+	if (Grutas.Num() == 0)
+	{
+		AddError(TEXT("sem gruta para conferir"));
+		return false;
+	}
+
+	// As MESMAS conferências das outras peças, e é o ganho de a gruta ser uma
+	// caverna: nada disto precisou ser escrito de novo.
+	for (int32 Indice = 0; Indice < Grutas.Num(); ++Indice)
+	{
+		TestTrue(TEXT("a gruta cabe inteira na terra"),
+			IslandFeatureLayout::FitsOnLand(Grutas[Indice], Medidas));
+		TestTrue(TEXT("a gruta nao encosta em campo de treino"),
+			IslandFeatureLayout::ClearsTrainingFields(Grutas[Indice], Medidas));
+
+		for (const IslandFeatureLayout::FFeaturePlacement& Peca : Pecas)
+		{
+			TestFalse(TEXT("a gruta nao invade montanha, caverna nem vulcao"),
+				IslandFeatureLayout::Overlaps(Grutas[Indice], Peca));
+		}
+
+		for (int32 Outra = Indice + 1; Outra < Grutas.Num(); ++Outra)
+		{
+			TestFalse(TEXT("duas grutas nao se invadem"),
+				IslandFeatureLayout::Overlaps(Grutas[Indice], Grutas[Outra]));
+		}
+	}
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FFreshWaterGrottoPlanIsStableTest,
+	"BattleSquare.Environment.FreshWater.GrottoPlanIsDeterministic",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FFreshWaterGrottoPlanIsStableTest::RunTest(const FString& Parameters)
+{
+	const TArray<IslandFeatureLayout::FFeaturePlacement> Primeira = FreshWater::PlanGrottoes();
+	const TArray<IslandFeatureLayout::FFeaturePlacement> Segunda = FreshWater::PlanGrottoes();
+
+	TestEqual(TEXT("o mesmo plano devolve o mesmo tanto de grutas"),
+		Segunda.Num(), Primeira.Num());
+
+	// Gruta que muda de lugar a cada partida não é lugar: é o mapa deixando de
+	// ser algo que a pessoa aprende.
+	for (int32 Indice = 0; Indice < Primeira.Num() && Indice < Segunda.Num(); ++Indice)
+	{
+		TestEqual(TEXT("a gruta fica sempre no mesmo angulo"),
+			Segunda[Indice].AngleDegrees, Primeira[Indice].AngleDegrees);
+		TestEqual(TEXT("e sempre no mesmo raio"),
+			Segunda[Indice].RadiusUnits, Primeira[Indice].RadiusUnits);
 	}
 
 	return true;

@@ -14,7 +14,18 @@ namespace
 	 */
 	constexpr float FracaoDasVilas = 0.29f;
 	constexpr float FracaoDaCidade = 0.50f;
-	constexpr float FracaoDosPostos = 0.68f;
+	/**
+	 * Os postos vão para a COSTA, e não a 0.68 do raio como eu tinha posto.
+	 *
+	 * A ilha é redonda: não existe fronteira de terra. A fronteira é a praia,
+	 * e o que se atravessa é água — a ilha é a unidade de servidor, e sair
+	 * dela é embarcar. Um posto no meio do mato guardava uma linha que não
+	 * existe.
+	 *
+	 * Ele fica logo ATRÁS da faixa de praia: em cima da areia, a maré e a
+	 * rampa da orla o deixariam meio enterrado.
+	 */
+	constexpr float FracaoDaOrlaDoPosto = 0.5f;
 
 	/**
 	 * Os rumos. Nenhum deles é 180°, e isso não é gosto: 180° é onde o vulcão
@@ -52,7 +63,8 @@ float RegionLayout::DistanceFromCenterUnits(ESettlementKind Kind)
 		case ESettlementKind::VilaDaAcademia:  return Raio * FracaoDasVilas;
 		case ESettlementKind::VilaDoMercado:   return Raio * FracaoDasVilas;
 		case ESettlementKind::CidadeGrande:    return Raio * FracaoDaCidade;
-		case ESettlementKind::PostoDeFronteira: return Raio * FracaoDosPostos;
+		case ESettlementKind::PostoDeFronteira:
+			return Raio - IslandGeography::BeachWidthUnits() * (1.0f + FracaoDaOrlaDoPosto);
 	}
 
 	return 0.0f;

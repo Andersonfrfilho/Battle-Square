@@ -8,6 +8,7 @@
 #include "World/RegionLayout.h"
 #include "World/VillageLayout.h"
 #include "Environment/FreshWater.h"
+#include "World/TrailLayout.h"
 
 /**
  * Despeja o traçado da ilha em `Saved/IslandMap.json`.
@@ -117,6 +118,32 @@ bool FIslandMapDumpTest::RunTest(const FString& Parameters)
 			Indice + 1 < Rios.Num() ? TEXT(",") : TEXT(""));
 	}
 	Json += TEXT("  ],\n");
+
+	// As TRILHAS, com os pontos que o traçado achou. Elas não são retas, e
+	// isso se vê no desenho porque o terreno é que as entortou.
+	Json += TEXT("  \"trilhas\": [\n");
+	const TArray<FTrailRoute>& Trilhas = TrailLayout::Plan();
+	for (int32 Indice = 0; Indice < Trilhas.Num(); ++Indice)
+	{
+		Json += TEXT("    [");
+		for (int32 Ponto = 0; Ponto < Trilhas[Indice].PointsUnits.Num(); ++Ponto)
+		{
+			Json += FString::Printf(TEXT("%s[%.0f,%.0f]"),
+				Ponto == 0 ? TEXT("") : TEXT(","),
+				Trilhas[Indice].PointsUnits[Ponto].X, Trilhas[Indice].PointsUnits[Ponto].Y);
+		}
+		Json += FString::Printf(TEXT("]%s\n"), Indice + 1 < Trilhas.Num() ? TEXT(",") : TEXT(""));
+	}
+	Json += TEXT("  ],\n");
+
+	Json += TEXT("  \"pontes\": [");
+	const TArray<FVector2D> Pontes = TrailLayout::BridgePoints();
+	for (int32 Indice = 0; Indice < Pontes.Num(); ++Indice)
+	{
+		Json += FString::Printf(TEXT("%s[%.0f,%.0f]"),
+			Indice == 0 ? TEXT("") : TEXT(","), Pontes[Indice].X, Pontes[Indice].Y);
+	}
+	Json += TEXT("],\n");
 
 	// Os campos de treino, no anel que o GameMode usa.
 	Json += FString::Printf(TEXT("  \"anelDeTreino\": %.1f,\n"), 1800.0f);

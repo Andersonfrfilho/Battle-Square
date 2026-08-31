@@ -115,6 +115,14 @@ namespace Relevo
 
 	constexpr float MeiaLarguraDaRampa = 16.0f;
 
+	/**
+	 * O que a subida e a descida custam, em unidades de caminhada por unidade
+	 * de altura. A DESCIDA nunca é zero: é freio, não descanso — e quem desce
+	 * a serra sente os joelhos, não o fôlego.
+	 */
+	constexpr float PesoDaSubida = 7.0f;
+	constexpr float PesoDaDescida = 1.5f;
+
 	/** Onde o degrau do barranco começa e quanto da faixa ele ocupa. */
 	constexpr float InicioDoDegrau = 0.40f;
 	constexpr float LarguraDoDegrau = 0.20f;
@@ -555,6 +563,24 @@ namespace IslandGeography
 		//    em chão inclinado fica com meia parede enterrada, que é a mesma
 		//    família de defeito do pet afundando no tabuleiro.
 		return Relevo::ComLotesPlanos(Altura, PositionUnits);
+	}
+
+	float TravelCostBetween(const FVector2D& FromUnits, const FVector2D& ToUnits)
+	{
+		const float NoChao = FVector2D::Distance(FromUnits, ToUnits);
+		if (NoChao <= 0.0f)
+		{
+			return 0.0f;
+		}
+
+		const float Desnivel = GroundHeightAt(ToUnits) - GroundHeightAt(FromUnits);
+
+		// Subir custa muito; descer custa pouco, e NUNCA nada.
+		const float PelaSubida = (Desnivel > 0.0f)
+			? Desnivel * Relevo::PesoDaSubida
+			: (-Desnivel) * Relevo::PesoDaDescida;
+
+		return NoChao + PelaSubida;
 	}
 
 	float GroundSlopeAt(const FVector2D& PositionUnits)

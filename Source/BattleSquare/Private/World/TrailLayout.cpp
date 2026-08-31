@@ -1,0 +1,408 @@
+// Copyright 2026 Anderson. All Rights Reserved.
+
+#include "World/TrailLayout.h"
+#include "World/VillageLayout.h"
+#include "Environment/IslandGeography.h"
+#include "Environment/FreshWater.h"
+
+namespace
+{
+	/**
+	 * O passo do traçado, em fração do raio.
+	 *
+	 * Ele decide duas coisas ao mesmo tempo: a resolução do caminho e o custo
+	 * de calculá-lo. Passo grande dá trilha angulosa; passo pequeno dá uma
+	 * grade que não cabe no tempo de um teste.
+	 */
+	constexpr float FracaoDoPasso = 0.012f;
+
+	/** Quanto a trilha limpa para cada lado. */
+	constexpr float FracaoDaLargura = 0.55f;
+
+	/**
+	 * O que a trilha NÃO atravessa, e por que cada um.
+	 *
+	 * Não é lista de gosto: cada penalidade impede um caminho que seria
+	 * legível como defeito na tela.
+	 */
+	constexpr float PenalidadeDaRochaQueimada = 40.0f;
+	constexpr float PenalidadeDoBarranco = 25.0f;
+	/**
+	 * Atravessar o rio custa, mas NÃO é proibido — é aí que a ponte nasce.
+	 *
+	 * O número quase não importou, e descobrir isso foi o que consertou o
+	 * defeito: com 12 a região não tinha ponte nenhuma, e baixar para 3 não
+	 * mudou nada. **A penalidade nunca era aplicada.** O rio tem meia largura
+	 * de 170 a 1.250 unidades e o passo do traçado é 1.680 — o caminho passava
+	 * POR CIMA do rio sem nunca amostrar dentro dele.
+	 *
+	 * A correção não foi o peso: foi medir a água no TRECHO em vez de no
+	 * ponto. Ponto amostrado não vê o que é mais estreito que o passo.
+	 */
+	constexpr float PenalidadeDaAgua = 3.0f;
+
+	/** Quantas amostras dentro de um trecho, para ver o que é estreito. */
+	constexpr int32 AmostrasPorTrecho = 6;
+
+	float Passo() { return IslandGeography::LandRadiusUnits() * FracaoDoPasso; }
+
+	int32 LadoDaGrade()
+	{
+		return FMath::CeilToInt((IslandGeography::LandRadiusUnits() * 2.0f) / Passo()) + 1;
+	}
+
+	FVector2D PontoDaCelula(int32 Coluna, int32 Linha)
+	{
+		const float Raio = IslandGeography::LandRadiusUnits();
+		return FVector2D(-Raio + Coluna * Passo(), -Raio + Linha * Passo());
+	}
+
+	bool DentroDaGrade(int32 Coluna, int32 Linha)
+	{
+		const int32 Lado = LadoDaGrade();
+		return Coluna >= 0 && Linha >= 0 && Coluna < Lado && Linha < Lado;
+	}
+
+	/** Perto de um rio, e por isso caro: só se atravessa onde há ponte. */
+	bool NaAgua(const FVector2D& Onde)
+	{
+		for (const FreshWater::FRiverCourse& Rio : FreshWater::Plan())
+		{
+			const float Raio = Onde.Size();
+			if (Raio < Rio.SourceRadiusUnits || Raio > Rio.MouthRadiusUnits)
+			{
+				continue;
+			}
+
+			const FVector2D NoCurso = FreshWater::PointAt(Rio, Raio);
+			if (FVector2D::Distance(Onde, NoCurso) <= FreshWater::HalfWidthAt(Rio, Raio))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * O trecho inteiro cruza água.
+	 *
+	 * Perguntar só pelas PONTAS não serve: o rio é mais estreito que o passo
+	 * do traçado, e um trecho salta por cima dele com as duas pontas secas.
+	 */
+	bool TrechoCruzaAgua(const FVector2D& Daqui, const FVector2D& Prali)
+	{
+		for (int32 Amostra = 0; Amostra <= AmostrasPorTrecho; ++Amostra)
+		{
+			const float Onde = static_cast<float>(Amostra) / static_cast<float>(AmostrasPorTrecho);
+			if (NaAgua(FMath::Lerp(Daqui, Prali, Onde)))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * O custo de um passo. É `TravelCostBetween` mais o que a trilha evita.
+	 *
+	 * A conta base é a MESMA que cobra o cansaço de quem anda — é isso que faz
+	 * a trilha ser um conselho honesto em vez de uma linha bonita.
+	 */
+	float CustoDoPasso(const FVector2D& Daqui, const FVector2D& Prali)
+	{
+		float Custo = IslandGeography::TravelCostBetween(Daqui, Prali);
+
+		const float AteOVulcao =
+			FVector2D::Distance(Prali, IslandGeography::VolcanoCenterUnits());
+		if (AteOVulcao <= IslandGeography::VolcanoScorchedRadiusUnits())
+		{
+			Custo *= PenalidadeDaRochaQueimada;
+		}
+
+		// O barranco tem RAMPA, e a trilha deve achá-la sozinha. Penalizar a
+		// faixa inteira menos a rampa é o que faz o caminho contornar até
+		// encontrar a subida — em vez de eu apontar a rampa para ele.
+		const float AteACidade = FVector2D::Distance(Prali, IslandGeography::VolcanoCenterUnits());
+		(void)AteACidade;
+
+		if (!IslandGeography::IsOnBluffRamp(Prali))
+		{
+			const float DaMesa = IslandGeography::GroundSlopeAt(Prali);
+			if (DaMesa > 0.25f)
+			{
+				Custo *= PenalidadeDoBarranco;
+			}
+		}
+
+		if (TrechoCruzaAgua(Daqui, Prali))
+		{
+			Custo *= PenalidadeDaAgua;
+		}
+
+		return Custo;
+	}
+
+	/** Menor custo entre dois pontos, por Dijkstra sobre a grade. */
+	TArray<FVector2D> CaminhoBarato(const FVector2D& Daqui, const FVector2D& Prali)
+	{
+		const int32 Lado = LadoDaGrade();
+		const float MeioPasso = Passo() * 0.5f;
+		const float Raio = IslandGeography::LandRadiusUnits();
+
+		auto ParaCelula = [&](const FVector2D& Onde)
+		{
+			return FIntPoint(
+				FMath::Clamp(FMath::RoundToInt((Onde.X + Raio) / Passo()), 0, Lado - 1),
+				FMath::Clamp(FMath::RoundToInt((Onde.Y + Raio) / Passo()), 0, Lado - 1));
+		};
+
+		const FIntPoint Origem = ParaCelula(Daqui);
+		const FIntPoint Destino = ParaCelula(Prali);
+
+		TArray<float> Melhor;
+		Melhor.Init(TNumericLimits<float>::Max(), Lado * Lado);
+		TArray<int32> DeOndeVeio;
+		DeOndeVeio.Init(INDEX_NONE, Lado * Lado);
+
+		auto Indice = [Lado](const FIntPoint& Celula) { return Celula.Y * Lado + Celula.X; };
+
+		// Fila de prioridade simples: o heap da engine, ordenado por custo.
+		struct FNaFila
+		{
+			float Custo = 0.0f;
+			int32 Onde = 0;
+			bool operator<(const FNaFila& Outro) const { return Custo < Outro.Custo; }
+		};
+
+		TArray<FNaFila> Fila;
+		Melhor[Indice(Origem)] = 0.0f;
+		Fila.HeapPush(FNaFila{ 0.0f, Indice(Origem) });
+
+		const int32 NoDestino = Indice(Destino);
+
+		while (Fila.Num() > 0)
+		{
+			FNaFila Atual;
+			Fila.HeapPop(Atual, EAllowShrinking::No);
+
+			if (Atual.Onde == NoDestino)
+			{
+				break;
+			}
+			if (Atual.Custo > Melhor[Atual.Onde])
+			{
+				continue;
+			}
+
+			const int32 Coluna = Atual.Onde % Lado;
+			const int32 Linha = Atual.Onde / Lado;
+			const FVector2D Aqui = PontoDaCelula(Coluna, Linha);
+
+			for (int32 dY = -1; dY <= 1; ++dY)
+			{
+				for (int32 dX = -1; dX <= 1; ++dX)
+				{
+					if (dX == 0 && dY == 0 || !DentroDaGrade(Coluna + dX, Linha + dY))
+					{
+						continue;
+					}
+
+					const FVector2D Vizinho = PontoDaCelula(Coluna + dX, Linha + dY);
+
+					// Fora da terra não há trilha, e a praia é o limite: o
+					// caminho não passa pela água salgada.
+					if (Vizinho.Size() >= Raio - IslandGeography::BeachWidthUnits() + MeioPasso)
+					{
+						const bool bEhOFim = (Indice(FIntPoint(Coluna + dX, Linha + dY)) == NoDestino);
+						if (!bEhOFim)
+						{
+							continue;
+						}
+					}
+
+					const int32 Ali = Indice(FIntPoint(Coluna + dX, Linha + dY));
+					const float Custo = Atual.Custo + CustoDoPasso(Aqui, Vizinho);
+
+					if (Custo < Melhor[Ali])
+					{
+						Melhor[Ali] = Custo;
+						DeOndeVeio[Ali] = Atual.Onde;
+						Fila.HeapPush(FNaFila{ Custo, Ali });
+					}
+				}
+			}
+		}
+
+		TArray<FVector2D> Caminho;
+		if (Melhor[NoDestino] == TNumericLimits<float>::Max())
+		{
+			// Sem caminho barato, a linha reta. Nunca deve acontecer numa ilha
+			// conexa, e devolver vazio faria a trilha sumir sem dizer por quê.
+			Caminho.Add(Daqui);
+			Caminho.Add(Prali);
+			return Caminho;
+		}
+
+		for (int32 No = NoDestino; No != INDEX_NONE; No = DeOndeVeio[No])
+		{
+			Caminho.Add(PontoDaCelula(No % Lado, No / Lado));
+		}
+		Algo::Reverse(Caminho);
+
+		// As pontas são os CENTROS dos assentamentos, não o centro da célula:
+		// a trilha tem de encostar na praça, não parar a meio passo dela.
+		if (Caminho.Num() > 0)
+		{
+			Caminho[0] = Daqui;
+			Caminho.Last() = Prali;
+		}
+
+		return Caminho;
+	}
+
+	FVector2D CentroDe(ESettlementKind Tipo)
+	{
+		for (const FSettlementPlacement& Assentamento : RegionLayout::Plan())
+		{
+			if (Assentamento.Kind == Tipo)
+			{
+				return Assentamento.CenterUnits;
+			}
+		}
+
+		return FVector2D::ZeroVector;
+	}
+
+	TArray<FTrailRoute> Tracar()
+	{
+		TArray<FTrailRoute> Trilhas;
+
+		auto Ligar = [&Trilhas](ESettlementKind Daqui, const FVector2D& Origem,
+			ESettlementKind Prali, const FVector2D& Destino)
+		{
+			FTrailRoute Trilha;
+			Trilha.From = Daqui;
+			Trilha.To = Prali;
+			Trilha.PointsUnits = CaminhoBarato(Origem, Destino);
+			Trilhas.Add(MoveTemp(Trilha));
+		};
+
+		const FVector2D DeCasa = CentroDe(ESettlementKind::VilaInicial);
+		const FVector2D DaAcademia = CentroDe(ESettlementKind::VilaDaAcademia);
+		const FVector2D DoMercado = CentroDe(ESettlementKind::VilaDoMercado);
+		const FVector2D DaCidade = CentroDe(ESettlementKind::CidadeGrande);
+
+		// ESTRELA a partir de casa: o primeiro caminho que se aprende é o de
+		// sair de casa e voltar.
+		Ligar(ESettlementKind::VilaInicial, DeCasa, ESettlementKind::VilaDaAcademia, DaAcademia);
+		Ligar(ESettlementKind::VilaInicial, DeCasa, ESettlementKind::VilaDoMercado, DoMercado);
+		Ligar(ESettlementKind::VilaInicial, DeCasa, ESettlementKind::CidadeGrande, DaCidade);
+
+		// A ligação direta entre as duas vilas, porque a spec da região diz que
+		// elas ficam a quatro minutos de casa E UMA DA OUTRA. Sem ela, ir de
+		// uma à outra seria passar por casa.
+		Ligar(ESettlementKind::VilaDaAcademia, DaAcademia, ESettlementKind::VilaDoMercado, DoMercado);
+
+		// Os postos saem da CIDADE, não de casa: é a cidade que dá o ranking
+		// que abre a porta, e o caminho deve dizer isso.
+		for (const FSettlementPlacement& Assentamento : RegionLayout::Plan())
+		{
+			if (Assentamento.Kind == ESettlementKind::PostoDeFronteira)
+			{
+				Ligar(ESettlementKind::CidadeGrande, DaCidade,
+					ESettlementKind::PostoDeFronteira, Assentamento.CenterUnits);
+			}
+		}
+
+		return Trilhas;
+	}
+}
+
+float TrailLayout::StepUnits()
+{
+	return Passo();
+}
+
+float TrailLayout::HalfWidthUnits()
+{
+	return VillageLayout::PlotHalfExtentUnits() * FracaoDaLargura;
+}
+
+const TArray<FTrailRoute>& TrailLayout::Plan()
+{
+	// Traçado uma vez. Dijkstra sobre a ilha inteira não é conta para se
+	// refazer a cada árvore plantada — e `BlocksPlanting` pergunta por ponto.
+	static TArray<FTrailRoute> Trilhas = Tracar();
+	return Trilhas;
+}
+
+bool TrailLayout::IsOnTrail(const FVector2D& PositionUnits)
+{
+	const float Metade = HalfWidthUnits();
+	const float MetadeAoQuadrado = Metade * Metade;
+
+	for (const FTrailRoute& Trilha : Plan())
+	{
+		for (int32 Ponto = 1; Ponto < Trilha.PointsUnits.Num(); ++Ponto)
+		{
+			const FVector2D Daqui = Trilha.PointsUnits[Ponto - 1];
+			const FVector2D Prali = Trilha.PointsUnits[Ponto];
+			const FVector2D Trecho = Prali - Daqui;
+
+			const float Comprimento = Trecho.SizeSquared();
+			if (Comprimento <= 0.0f)
+			{
+				continue;
+			}
+
+			const float Onde = FMath::Clamp(
+				FVector2D::DotProduct(PositionUnits - Daqui, Trecho) / Comprimento, 0.0f, 1.0f);
+			const FVector2D MaisPerto = Daqui + Trecho * Onde;
+
+			if (FVector2D::DistSquared(PositionUnits, MaisPerto) <= MetadeAoQuadrado)
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+TArray<FVector2D> TrailLayout::BridgePoints()
+{
+	TArray<FVector2D> Pontes;
+
+	for (const FTrailRoute& Trilha : Plan())
+	{
+		bool bEstavaNaAgua = false;
+
+		// Amostrado FINO dentro de cada trecho: o rio é mais estreito que o
+		// passo do traçado, e olhar só os vértices não vê a travessia.
+		for (int32 Ponto = 1; Ponto < Trilha.PointsUnits.Num(); ++Ponto)
+		{
+			for (int32 Amostra = 0; Amostra <= AmostrasPorTrecho; ++Amostra)
+			{
+				const float Onde =
+					static_cast<float>(Amostra) / static_cast<float>(AmostrasPorTrecho);
+				const FVector2D Aqui = FMath::Lerp(
+					Trilha.PointsUnits[Ponto - 1], Trilha.PointsUnits[Ponto], Onde);
+
+				const bool bAgora = NaAgua(Aqui);
+
+				// A ponte fica na ENTRADA da água, uma por travessia. Uma por
+				// amostra molhada poria seis pontes empilhadas num rio largo.
+				if (bAgora && !bEstavaNaAgua)
+				{
+					Pontes.Add(Aqui);
+				}
+
+				bEstavaNaAgua = bAgora;
+			}
+		}
+	}
+
+	return Pontes;
+}

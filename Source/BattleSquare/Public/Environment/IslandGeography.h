@@ -140,6 +140,23 @@ namespace IslandGeography
 	BATTLESQUARE_API bool IsOnBluffRamp(const FVector2D& PositionUnits);
 
 	/**
+	 * O que custa ir de um ponto ao vizinho. A FONTE ÚNICA do custo de andar.
+	 *
+	 * Distância mais a inclinação, e **subir custa mais que descer — mas
+	 * descer não é de graça**. Se descer devolvesse o que subir tirou, toda
+	 * ida e volta se anularia e o relevo deixaria de existir para quem viaja:
+	 * o morro seria só desenho.
+	 *
+	 * Mora aqui, e é uma só, porque quem TRAÇA a trilha e quem COBRA o cansaço
+	 * precisam concordar. Se o traçador usasse outra conta, a trilha passaria
+	 * pelo caminho que ela mesma diz ser caro — e ninguém entenderia por quê.
+	 *
+	 * Só serve para passos CURTOS entre vizinhos: ela mede a subida entre as
+	 * duas pontas, e entre pontas distantes o morro do meio some da conta.
+	 */
+	BATTLESQUARE_API float TravelCostBetween(const FVector2D& FromUnits, const FVector2D& ToUnits);
+
+	/**
 	 * Largura da faixa de pântano, medida para dentro a partir da praia.
 	 *
 	 * Fração do raio pelo mesmo motivo da praia: um número fixo que hoje é um

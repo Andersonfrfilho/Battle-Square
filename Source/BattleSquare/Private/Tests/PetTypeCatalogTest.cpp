@@ -166,8 +166,26 @@ bool FShippedTypeCatalogLoadsTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	TestEqual(TEXT("Três escolas"), Catalogo.GetSchools().Num(), 3);
-	TestEqual(TEXT("Quatro elementos"), Catalogo.GetElements().Num(), 4);
+	// Por NOME, e não por contagem. O número fixo quebrava a cada tipo novo
+	// sem verificar nada que importasse — a pergunta útil é se cada eixo
+	// declarado no arquivo chegou ao jogo, e não quantos são.
+	const TCHAR* EscolasEsperadas[] = { TEXT("Fisica"), TEXT("Natural"),
+		TEXT("Psiquica"), TEXT("Espiritual") };
+	for (const TCHAR* Nome : EscolasEsperadas)
+	{
+		TestTrue(*FString::Printf(TEXT("A escola %s está no catálogo"), Nome),
+			Catalogo.GetSchools().ContainsByPredicate(
+				[Nome](const FPetSchoolDefinition& Escola) { return Escola.Name == Nome; }));
+	}
+
+	const TCHAR* ElementosEsperados[] = { TEXT("Fogo"), TEXT("Agua"), TEXT("Planta"),
+		TEXT("Terra"), TEXT("Fantasma"), TEXT("Luz") };
+	for (const TCHAR* Nome : ElementosEsperados)
+	{
+		TestTrue(*FString::Printf(TEXT("O elemento %s está no catálogo"), Nome),
+			Catalogo.GetElements().ContainsByPredicate(
+				[Nome](const FPetElementDefinition& Elemento) { return Elemento.Name == Nome; }));
+	}
 
 	// Cada elemento precisa dos DOIS canais: cor e tombo. Um elemento sem
 	// tombo próprio seria invisível para quem não distingue matiz.

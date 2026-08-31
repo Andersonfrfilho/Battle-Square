@@ -21,7 +21,27 @@ enum class EActionType : uint8
 	// DP-ia-04: esconder-se é AÇÃO, não estado ligado por fora.
 	Camuflar,
 	Voar,
-	Submergir
+	Submergir,
+
+	/**
+	 * ATRAVESSAR: o incorpóreo passa pelo que tem corpo.
+	 *
+	 * A skill do elemento Fantasma. Onde os outros esbarram na casa bloqueada
+	 * — ou gastam um slot derrubando o tronco — ele passa. Acrescentada ao FIM
+	 * do enum de propósito: os valores existentes viajam no commit de todo
+	 * turno (DP-golpe-04) e no hash do traço, e inserir no meio
+	 * reinterpretaria toda partida já gravada.
+	 */
+	Atravessar,
+
+	/**
+	 * ILUMINAR: a luz desfaz o que se esconde.
+	 *
+	 * A skill do elemento Luz, e a resposta ao fantasma. Sem ela, um pet que
+	 * fica invisível e que o físico não acerta não teria contra-jogo — e
+	 * "forte contra" viraria só um número na tabela.
+	 */
+	Iluminar
 };
 
 // As 8 direções da grade. Defender e Aguardar ignoram a direção.

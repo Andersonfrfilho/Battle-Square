@@ -24,6 +24,15 @@ EActionType FPetSkillCatalog::SkillFromName(const FString& SkillName)
 		return EActionType::Submergir;
 	}
 
+	if (SkillName.Equals(TEXT("atravessar"), ESearchCase::IgnoreCase))
+	{
+		return EActionType::Atravessar;
+	}
+	if (SkillName.Equals(TEXT("iluminar"), ESearchCase::IgnoreCase))
+	{
+		return EActionType::Iluminar;
+	}
+
 	// Nome desconhecido não vira ação nenhuma. Mapear para Aguardar daria ao
 	// pet uma ação que ninguém pediu, e o erro de digitação passaria calado.
 	return EActionType::Aguardar;

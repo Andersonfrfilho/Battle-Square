@@ -145,6 +145,20 @@ bool FShippedTypeChartComposesTwoAxesTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("'Agua' contra 'Fogo' continua sendo 150"),
 		Tabela.GetPercent(TEXT("Agua"), TEXT("Fogo")), 150);
 
+	// A LUZ é a resposta ao fantasma, e é o número mais alto da tabela: 200,
+	// acima do 150 do ciclo natural. "Bem efetivo" precisava ser mais que a
+	// vantagem comum, senão a luz seria só mais um elemento que vence outro.
+	TestEqual(TEXT("Luz contra Fantasma é 200"),
+		Tabela.GetPercent(TEXT("Natural/Luz"), TEXT("Natural/Fantasma")), 200);
+	TestEqual(TEXT("E o fantasma quase não arranha a luz"),
+		Tabela.GetPercent(TEXT("Natural/Fantasma"), TEXT("Natural/Luz")), 50);
+
+	// O fantasma NÃO é forte contra o ciclo natural. A força dele está no que
+	// ele FAZ — atravessa, não toca o chão, o físico não o acerta — e somar
+	// vantagem de tabela a isso faria um tipo bom contra tudo.
+	TestEqual(TEXT("Fantasma contra Fogo é neutro"),
+		Tabela.GetPercent(TEXT("Natural/Fantasma"), TEXT("Natural/Fogo")), 100);
+
 	// NENHUM tipo é forte contra todos. Tipo sem fraqueza é tipo que todo
 	// mundo escolhe, e aí a tabela inteira deixa de decidir alguma coisa.
 	TArray<FString> Todos;
@@ -155,7 +169,12 @@ bool FShippedTypeChartComposesTwoAxesTest::RunTest(const FString& Parameters)
 			Todos.Add(FString::Printf(TEXT("%s/%s"), *Escola, *Elemento));
 		}
 	}
-	TestEqual(TEXT("São doze tipos possíveis"), Todos.Num(), 12);
+	// A conta sai dos EIXOS, e não de um número escrito aqui: era doze, virou
+	// vinte e quatro com a escola espiritual e os elementos fantasma e luz, e
+	// um literal aqui só diria que alguém esqueceu de editar o teste.
+	TestEqual(TEXT("Todo par de escola e elemento é um tipo"), Todos.Num(),
+		FPetTypeIdentity::AllSchools().Num() * FPetTypeIdentity::AllElements().Num());
+	TestTrue(TEXT("E há tipos de sobra para a tabela decidir algo"), Todos.Num() >= 12);
 
 	for (const FString& Atacante : Todos)
 	{

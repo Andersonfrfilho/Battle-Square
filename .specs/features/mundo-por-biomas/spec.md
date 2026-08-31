@@ -194,6 +194,63 @@ para a próxima.
 Assim nenhum trecho passa de uns dois minutos a pé, e a região inteira se
 percorre sem que a caminhada vire espera.
 
+
+## A ilha é a unidade de SERVIDOR
+
+**Decidido em 31/08/2026.** Cresce-se acrescentando ilhas, não enchendo uma.
+
+Cada ilha é uma instância. "Servidor" passa a significar "ilha", e duzentos mil
+jogadores são duas mil ilhas — não uma ilha lotada.
+
+Isso já estava implícito em tudo o que foi decidido: uma ilha, uma aventura, um
+mapa; espécies próprias por região; fronteira que exige o ranking. **A ilha já
+era a unidade de conteúdo; ela vira a unidade de servidor também.**
+
+### Quantos jogadores por ilha
+
+**Recomendação: 60 a 100, com 80 como alvo.**
+
+O número saiu de comparar com jogos reais, e ele **corrigiu para baixo** um
+palpite anterior de 100 que eu tinha feito olhando só a distância de visão:
+
+| jogo | mapa | jogadores | m² por jogador |
+|---|---|---|---|
+| Palworld (servidor dedicado) | ~4 km² | 32 | 125.000 |
+| ARK, mapa da ilha | ~36 km² | 50 | 720.000 |
+| Rust, servidor médio | ~16 km² | 150 | 107.000 |
+| Rust, servidor cheio | ~16 km² | 400 | 40.000 |
+| **nossa ilha a 80** | **3,14 km²** | **80** | **39.000** |
+| nossa ilha a 400 | 3,14 km² | 400 | 7.850 |
+
+**A 80 já estamos na densidade de um Rust cheio.** A 400 seríamos CINCO VEZES
+mais densos que ele — e Rust é um jogo desenhado para conflito constante, que
+não é o que este é.
+
+### Por que 400 não serve
+
+Não é limite de máquina. O combate é por turnos com commit simultâneo e custa
+quase nada; o custo é replicar mundo, e ele cresce linear.
+
+**O que quebra antes é a COLETA.** Quatrocentos jogadores tirando madeira, pedra
+e barro de 3,14 km² esgotam a mata mais rápido que qualquer rebrota razoável — e
+aí volta a tragédia dos comuns que o desenho de bosques e pomares existe para
+evitar.
+
+### O que salva a densidade é a CONCENTRAÇÃO
+
+As quatro cidades puxam gente. Com 80 jogadores, se um terço estiver nas
+cidades, são ~7 por cidade (viva, não cheia) e os outros espalhados por 3 km² —
+o mato continua sendo seu.
+
+É esse desenho que permite densidade de Rust sem sensação de Rust: **cidade
+cheia, mato vazio.**
+
+### O que ainda NÃO foi medido
+
+A capacidade de CPU e de rede. Os números acima são de DENSIDADE — calculados, e
+confio neles. Carga real precisa de teste com servidor dedicado, que hoje
+esbarra em B-004: a engine instalada não compila `TargetType.Server`.
+
 ## Perguntas em aberto
 
 - **Quantas vilas iniciais?** Uma por bioma, ou só nos que fazem sentido para

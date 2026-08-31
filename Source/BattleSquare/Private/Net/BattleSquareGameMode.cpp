@@ -40,6 +40,7 @@
 #include "Environment/WorldBoundaryWater.h"
 #include "Environment/WorldEvents.h"
 #include "World/WorldTrainingField.h"
+#include "World/Village.h"
 #include "Battle/PetView.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -379,6 +380,7 @@ FString ABattleSquareGameMode::SetUpWorldEncounterFlow()
 	const double AntesDosEncontros = FPlatformTime::Seconds();
 	SpawnRoamingEncounters();
 	SpawnTrainingFields();
+	SpawnStartingVillage();
 	Progresso.bEncountersPlaced = true;
 	FWorldLoadingScreen::Update(Progresso);
 
@@ -790,6 +792,40 @@ void ABattleSquareGameMode::TearDownBattleUi()
 	}
 
 	FBattleDebugToolbar::Hide();
+}
+
+void ABattleSquareGameMode::SpawnStartingVillage()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	// Vila posta à mão manda — mesmo critério dos encontros, da mata e dos
+	// campos de treino. Quem colocou uma no editor quis aquela.
+	if (TActorIterator<AVillage>(World))
+	{
+		return;
+	}
+
+	// No CENTRO do bloco 0,0, que é onde o jogador nasce. A vila fica DEBAIXO
+	// dele em vez de ao lado: sair de casa é o primeiro passo do jogo, e
+	// nascer a duzentos metros da vila faria o primeiro passo ser uma
+	// caminhada até o começo.
+	FActorSpawnParameters Parametros;
+	Parametros.ObjectFlags |= RF_Transient;
+
+	AVillage* Vila = World->SpawnActor<AVillage>(AVillage::StaticClass(),
+		FVector::ZeroVector, FRotator::ZeroRotator, Parametros);
+	if (!Vila)
+	{
+		return;
+	}
+
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("vila inicial: %d prédios de pé"), Vila->GetBuiltCount()),
+		0.0f, FColor(200, 180, 120), /*Key=*/744);
 }
 
 void ABattleSquareGameMode::SpawnTrainingFields()

@@ -212,6 +212,16 @@ public:
 
 	void BuildWorldTerrainTiles();
 
+	/**
+	 * Ergue a vila inicial no bloco 0,0.
+	 *
+	 * Antes dela, o jogador nascia num descampado com cinco clareiras — e a
+	 * primeira sessão jogada disse exatamente isso: o mundo não parecia um
+	 * lugar. A vila é o primeiro lugar que existe por decisão, e não por
+	 * geração.
+	 */
+	void SpawnStartingVillage();
+
 public:
 	/**
 	 * Marca o lugar onde o jogador está — ou apaga, se já houver marcação aqui.

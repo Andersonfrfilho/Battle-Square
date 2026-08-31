@@ -89,3 +89,33 @@ bool FAVilaNaoSeAtravessaTest::RunTest(const FString&)
 	VilaEmPeTeste::DestruirMundo(Mundo);
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAVilaNasceOndeOJogadorNasceTest,
+	"BattleSquare.World.Vila.NasceOndeOJogadorNasce",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FAVilaNasceOndeOJogadorNasceTest::RunTest(const FString&)
+{
+	// A vila fica DEBAIXO do jogador, não ao lado. Sair de casa é o primeiro
+	// passo do jogo; nascer a duzentos metros da vila faria o primeiro passo
+	// ser uma caminhada até o começo.
+	//
+	// E o lote inteiro precisa caber no bloco 0,0 — senão a vila transborda
+	// para o bloco vizinho, que é conteúdo de outro pedaço do mundo.
+	const float MeioLote = VillageLayout::PlotHalfExtentUnits();
+
+	for (const FVillagePlacement& Peca : VillageLayout::Plan())
+	{
+		const float MaisLonge = FMath::Max(
+			FMath::Abs(Peca.OffsetUnits.X) + Peca.HalfExtentUnits.X,
+			FMath::Abs(Peca.OffsetUnits.Y) + Peca.HalfExtentUnits.Y);
+
+		TestTrue(TEXT("Nenhum prédio sai do lote em volta da origem"),
+			MaisLonge <= MeioLote + KINDA_SMALL_NUMBER);
+	}
+
+	// E o jogador nasce DENTRO do lote: na origem, que é o centro da praça.
+	TestTrue(TEXT("A origem cai dentro da vila"), MeioLote > 0.0f);
+
+	return true;
+}

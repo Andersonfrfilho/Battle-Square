@@ -127,9 +127,33 @@ defeito mais visível do elenco único.
 
 ---
 
-## Bioma 6 — PÂNTANO ⛔
+## Bioma 6 — PÂNTANO 👁
 
 **Silhueta pretendida:** água parada entre troncos finos, cogumelo, nada de flor.
+
+**Feito em 31/08/2026.** Escolhido como o segundo bioma porque é o único que o
+Kenney Nature Kit cobre inteiro — lama, tronco caído, toco, moita, cogumelo e
+água parada já existem no pacote. Em praia, deserto, geleira e vulcão falta
+justamente o prop que DEFINE o bioma (palmeira, cacto, gelo), e nenhum arranjo
+das 29 peças de hoje o substitui.
+
+Três coisas o separam da mata, e as três se veem de longe:
+
+| O que entrou | Como |
+|---|---|
+| **Poças de água parada** | lâminas rasas de 6 unidades, 9 por pedaço × 5 lajes, sem colisão, no nível do chão. São SUPERFÍCIE, não rocha — a escala achatada é o que prova isso no teste |
+| **Troncos tombados** | o teto de inclinação do bioma sobe de 4° para 14°. Árvore em pé é o que o pântano não tem |
+| **Pedra de volta a ser pedra** | o papel da pedra era `SwampWater`; pedra com cor de água não lê como água, lê como pedra estranha. Agora só a poça carrega a cor da água |
+
+As duas bordas da poça se cobram de formas diferentes, de propósito: na beira
+do **disco** limita-se o CENTRO da poça, com o alcance inteiro dela descontado
+(laje passando do disco flutua fora do chão); na folga do **tabuleiro** cobra-se
+laje por laje, porque morder ali é o certo — quem tapa a mordida é o próprio
+tabuleiro, e poça por baixo das casas vaza pelas frestas.
+
+O painel da arena (chave 21) conta as lajes plantadas, na mesma linha do
+cenário: zero poças num pântano é o defeito aparecendo por escrito antes de
+aparecer na tela.
 
 | Papel | Espécies DESTE bioma | Proporção | O que precisa dizer |
 |---|---|---|---|
@@ -160,5 +184,11 @@ Um bioma por vez, e o olho humano entre eles. Fazer os seis de uma vez foi o
 que produziu "montanhas pontudas extremamente esquisitas": seis lugares
 errados ao mesmo tempo, e nenhum jeito de saber qual ajuste consertou o quê.
 
-1. **Floresta** — elenco próprio + tirar dela o que é dos outros
-2. Praia · 3. Deserto · 4. Geleira · 5. Vulcão · 6. Pântano
+1. **Floresta** ✅ — elenco próprio + tirar dela o que é dos outros
+2. **Pântano** ✅ — trocou de lugar com a praia: é o único bioma que o pacote
+   de hoje cobre inteiro, e fazer o coberto primeiro adia a compra sem adiar o
+   progresso
+3. Praia · 4. Deserto · 5. Geleira · 6. Vulcão — **travados na busca de um
+   segundo pacote CC0** com palmeira, cacto, rocha de gelo e árvore morta. Sem
+   ele, cada um desses quatro nasce sem o prop que o define, e o resultado é
+   floresta repintada — exatamente o que esta lista existe para não repetir

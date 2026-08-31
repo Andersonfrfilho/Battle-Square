@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "World/RegionLayout.h"
 
 /**
  * O que cada prédio da vila É.
@@ -42,7 +43,24 @@ enum class EVillageBuilding : uint8
 	 * E a regra que vem junto: casa sem função não tem porta. Porta que não
 	 * abre é promessa quebrada.
 	 */
-	Casa
+	Casa,
+
+	/**
+	 * Academia: treino PAGO e rápido de alguns atributos.
+	 *
+	 * Vai para o FIM da lista pelo motivo de sempre — a ordem daqui já foi
+	 * lida por quem salva e por quem desenha.
+	 *
+	 * E ela não existe na vila inicial. Essa ausência é o desenho: é ela que
+	 * dá motivo à primeira viagem.
+	 */
+	Academia,
+
+	/** Mercado: troca de pets por raridade, e o quadro de trabalhos. */
+	Mercado,
+
+	/** O portão do posto de fronteira. Só abre para quem venceu o ranking. */
+	Portao
 };
 
 struct BATTLESQUARE_API FVillagePlacement
@@ -88,6 +106,24 @@ namespace VillageLayout
 	 * ninguém lê.
 	 */
 	BATTLESQUARE_API TArray<FVillagePlacement> Plan();
+
+	/**
+	 * O traçado de UM tipo de assentamento.
+	 *
+	 * Cada tipo tem prédios próprios, e é isso que faz a viagem valer. Um
+	 * traçado só, repetido quatro vezes, seria a mesma vila quatro vezes — e
+	 * a spec chama isso de imposto de caminhada.
+	 */
+	BATTLESQUARE_API TArray<FVillagePlacement> PlanFor(ESettlementKind Kind);
+
+	/** O lote de um tipo. A cidade grande é MAIOR; o posto é quase só portão. */
+	BATTLESQUARE_API float PlotHalfExtentUnitsFor(ESettlementKind Kind);
+
+	/** A pegada cabe no lote DAQUELE tipo. */
+	BATTLESQUARE_API bool FitsInPlotFor(ESettlementKind Kind, const FVillagePlacement& Placement);
+
+	/** A clareira de um tipo: o lote dele mais a folga. */
+	BATTLESQUARE_API float ClearingHalfExtentUnitsFor(ESettlementKind Kind);
 
 	/** Os dois prédios que não podem faltar, porque tiram regra do console. */
 	BATTLESQUARE_API bool HasBuilding(const TArray<FVillagePlacement>& Placements,

@@ -36,6 +36,14 @@ public:
 	/** Ergue a vila. Idempotente: chamar de novo refaz do zero. */
 	void BuildVillage();
 
+	/**
+	 * Que assentamento este é. Decide o traçado, e por isso vem ANTES de
+	 * `BuildVillage` — mudar depois de erguido não move prédio nenhum.
+	 */
+	void SetSettlementKind(ESettlementKind NewKind) { Kind = NewKind; }
+
+	ESettlementKind GetSettlementKind() const { return Kind; }
+
 	/** Quantos prédios existem em cena. */
 	int32 GetBuiltCount() const { return BuiltMeshes.Num(); }
 
@@ -48,6 +56,9 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
+	UPROPERTY()
+	ESettlementKind Kind = ESettlementKind::VilaInicial;
+
 	UPROPERTY()
 	TObjectPtr<USceneComponent> VillageRoot;
 

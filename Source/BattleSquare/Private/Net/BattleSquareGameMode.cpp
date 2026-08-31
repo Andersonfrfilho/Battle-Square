@@ -41,6 +41,7 @@
 #include "Environment/WorldEvents.h"
 #include "World/WorldTrainingField.h"
 #include "World/Village.h"
+#include "World/RegionLayout.h"
 #include "Battle/PetView.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -802,29 +803,45 @@ void ABattleSquareGameMode::SpawnStartingVillage()
 		return;
 	}
 
-	// Vila posta à mão manda — mesmo critério dos encontros, da mata e dos
-	// campos de treino. Quem colocou uma no editor quis aquela.
+	// Assentamento posto à mão manda — mesmo critério dos encontros, da mata e
+	// dos campos de treino. Quem colocou um no editor quis aquele.
 	if (TActorIterator<AVillage>(World))
 	{
 		return;
 	}
 
-	// No CENTRO do bloco 0,0, que é onde o jogador nasce. A vila fica DEBAIXO
-	// dele em vez de ao lado: sair de casa é o primeiro passo do jogo, e
-	// nascer a duzentos metros da vila faria o primeiro passo ser uma
-	// caminhada até o começo.
 	FActorSpawnParameters Parametros;
 	Parametros.ObjectFlags |= RF_Transient;
 
-	AVillage* Vila = World->SpawnActor<AVillage>(AVillage::StaticClass(),
-		FVector::ZeroVector, FRotator::ZeroRotator, Parametros);
-	if (!Vila)
+	int32 Erguidos = 0;
+	int32 Predios = 0;
+
+	// A REGIÃO inteira, e não só a vila de casa. Uma vila só faz o resto do
+	// mapa ser paisagem: sem academia paga, sem mercado e sem a arena da
+	// região, andar 700 metros não leva a lugar nenhum — e este projeto já
+	// pagou por regra completa que ninguém alcançava (L-041).
+	for (const FSettlementPlacement& Assentamento : RegionLayout::Plan())
 	{
-		return;
+		const FVector Onde(Assentamento.CenterUnits.X, Assentamento.CenterUnits.Y, 0.0f);
+
+		AVillage* Vila = World->SpawnActor<AVillage>(AVillage::StaticClass(),
+			Onde, FRotator::ZeroRotator, Parametros);
+		if (!Vila)
+		{
+			continue;
+		}
+
+		// O tipo ANTES de erguer: ele decide o traçado, e mudá-lo depois não
+		// move prédio nenhum.
+		Vila->SetSettlementKind(Assentamento.Kind);
+		Vila->BuildVillage();
+
+		++Erguidos;
+		Predios += Vila->GetBuiltCount();
 	}
 
 	FBattleDebugScreen::Show(
-		FString::Printf(TEXT("vila inicial: %d prédios de pé"), Vila->GetBuiltCount()),
+		FString::Printf(TEXT("regiao: %d assentamentos, %d predios de pe"), Erguidos, Predios),
 		0.0f, FColor(200, 180, 120), /*Key=*/744);
 }
 

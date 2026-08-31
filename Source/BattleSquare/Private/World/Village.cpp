@@ -35,6 +35,12 @@ namespace Vila
 			case EVillageBuilding::Marco:               return FLinearColor(0.70f, 0.72f, 0.75f);
 			case EVillageBuilding::Praca:               return FLinearColor(0.52f, 0.47f, 0.38f);
 			case EVillageBuilding::Casa:                return FLinearColor(0.58f, 0.50f, 0.42f);
+			// Cores próprias, e é o que faz reconhecer o assentamento de longe
+			// sem placa: verde de academia, roxo de mercado, pedra escura de
+			// portão.
+			case EVillageBuilding::Academia:            return FLinearColor(0.35f, 0.75f, 0.45f);
+			case EVillageBuilding::Mercado:             return FLinearColor(0.62f, 0.40f, 0.78f);
+			case EVillageBuilding::Portao:              return FLinearColor(0.30f, 0.32f, 0.36f);
 		}
 		return FLinearColor(0.5f, 0.5f, 0.5f);
 	}
@@ -108,7 +114,7 @@ void AVillage::BuildVillage()
 	}
 
 	int32 Indice = 0;
-	for (const FVillagePlacement& Peca : VillageLayout::Plan())
+	for (const FVillagePlacement& Peca : VillageLayout::PlanFor(Kind))
 	{
 		UStaticMeshComponent* Parede = NewObject<UStaticMeshComponent>(this,
 			*FString::Printf(TEXT("Predio_%d"), Indice));

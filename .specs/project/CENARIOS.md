@@ -35,7 +35,7 @@ olho humano no PIE · ⛔ ainda feio ou ainda inexistente.
 
 | # | Cenário | O defeito, dito sem panos quentes | O que ele precisa virar |
 |---|---|---|---|
-| 11 | ⛔ **Cavernas** | existem e têm labirinto, mas são caixas de pedra: sem estalactite, sem lava, sem água, e sem diferença entre a que se explora e a que só se olha | três sabores — **seca**, **de lava** (perto do vulcão) e **de água** (perto do mar) — com estalactite pendurada e uma boca que diz de longe se dá para entrar |
+| 11 | ✅ **Cavernas** | três sabores decididos pelo LUGAR: **de lava** (a 160°, dentro do calor do vulcão), **de água** (a 270°, na orla) e **seca**. Estalactite pendurada na verga da boca, estalagmite subindo do chão, poça no corredor, e uma brasa de verdade (`UPointLightComponent`) só na de lava — cor não brilha. A de lava tem a **boca tapada**, e a silhueta conta de longe que ali não se entra | feito em `ACaveSystem` + `IslandFeatureLayout::TemperaAsCavernas`; painel na chave 727 |
 | 12 | ⛔ **Praia** | tabela rala de propósito, mas hoje é rala **e sem nada**: areia com pedrinha | faixa molhada mais escura na beira, espuma na linha d'água, e algo em pé — coqueiro ou tronco trazido pelo mar |
 | 13 | ⛔ **Água doce** | não existe. Só há o mar da borda | rio que desce da montanha, lago no miolo, cachoeira onde o rio cruza um degrau — com trilha e gruta acompanhando, como foi pedido |
 | 14 | ⛔ **Céu noturno** | o dia e a noite viram, mas o céu é vazio | lua com **fase**, eclipse lunar (que É a lua vermelha — um fenômeno, não dois), eclipse solar, estrelas e cometa |
@@ -52,9 +52,13 @@ olho humano no PIE · ⛔ ainda feio ou ainda inexistente.
    só (chão plano), uma cura só (monte enterrado até o meio). A **aurora** da
    geleira ficou de fora, e ela pertence ao céu (14), não ao terreno.
 3. ~~**Vulcão** (10)~~ — feito, e ele corrigiu esta própria lista: o item
-   afirmava que faltava lava, e a lava estava lá desde o começo. Falta ainda
-   **Cavernas** (11), vizinha de mapa e de material.
-4. **Praia** (12) e **Água doce** (13) — as duas bordas d'água.
-5. **Céu** (14) e **Eventos** (15) — nenhum depende de terreno.
-6. **Arena** (16) — depende de tudo acima já parecer diferente entre si; antes
+   afirmava que faltava lava, e a lava estava lá desde o começo.
+4. ~~**Cavernas** (11)~~ — feito na sequência, como previsto: vizinha do vulcão
+   em mapa e em material. Ela cobrou uma mudança de *layout*, não só de malha —
+   as três cavernas moravam no mesmo anel, então nenhuma podia ser de mar nem
+   de lava, e o sabor teria de ser escrito à mão. Regra derivada do LUGAR não
+   admite peça mal colocada.
+5. **Praia** (12) e **Água doce** (13) — as duas bordas d'água.
+6. **Céu** (14) e **Eventos** (15) — nenhum depende de terreno.
+7. **Arena** (16) — depende de tudo acima já parecer diferente entre si; antes
    disso, ligar o bioma da luta não mudaria nada visível.

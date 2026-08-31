@@ -3,14 +3,59 @@
 #include "Environment/CaveSystem.h"
 
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Engine/StaticMesh.h"
 #include "UObject/ConstructorHelpers.h"
 
+#include "Battle/DeterministicSpread.h"
 #include "Environment/ScenaryPalette.h"
 
 namespace CavernaDaIlha
 {
 	const TCHAR* MalhaDaPedra = TEXT("/Engine/BasicShapes/Cube.Cube");
+
+	/** O cone da engine: estalactite é literalmente esta forma, de ponta-cabeça. */
+	const TCHAR* MalhaDaPonta = TEXT("/Engine/BasicShapes/Cone.Cone");
+
+	/** Os fluxos de sorteio, um por assunto e bem separados. */
+	constexpr int32 PrimeiroFluxoDaPoca = 3000;
+	constexpr int32 PrimeiroFluxoDaEstalagmite = 9000;
+	constexpr int32 PrimeiroFluxoDaEstalactite = 15000;
+
+	/** Quanto do vão de um corredor uma poça ocupa. */
+	constexpr float LarguraDaPoca = 0.82f;
+
+	/** A menor ponta de pedra, em fração da maior. */
+	constexpr float MenorPontaDaMaior = 0.45f;
+
+	/** A grossura da base de uma ponta, em fração da altura dela. */
+	constexpr float GrossuraDaPonta = 0.34f;
+
+	/** A pedra que forra a caverna, conforme o sabor. */
+	EScenaryRole PedraDoSabor(ECaveFlavor Sabor)
+	{
+		return Sabor == ECaveFlavor::Lava ? EScenaryRole::VolcanicRock : EScenaryRole::CaveRock;
+	}
+
+	/** O chão, conforme o sabor. */
+	EScenaryRole ChaoDoSabor(ECaveFlavor Sabor)
+	{
+		return Sabor == ECaveFlavor::Lava ? EScenaryRole::VolcanicRock : EScenaryRole::CaveFloor;
+	}
+
+	/** O que se acumula no chão. A caverna seca não acumula nada. */
+	EScenaryRole PocaDoSabor(ECaveFlavor Sabor)
+	{
+		switch (Sabor)
+		{
+		case ECaveFlavor::Lava:
+			return EScenaryRole::LavaGlow;
+		case ECaveFlavor::Water:
+			return EScenaryRole::CaveWater;
+		default:
+			return EScenaryRole::CaveFloor;
+		}
+	}
 }
 
 ACaveSystem::ACaveSystem()
@@ -30,6 +75,41 @@ ACaveSystem::ACaveSystem()
 
 	Shell = CreateDefaultSubobject<UHierarchicalInstancedStaticMeshComponent>(TEXT("CaveShell"));
 	Shell->SetupAttachment(CaveRoot);
+
+	Spikes = CreateDefaultSubobject<UHierarchicalInstancedStaticMeshComponent>(TEXT("CaveSpikes"));
+	Spikes->SetupAttachment(CaveRoot);
+
+	Pools = CreateDefaultSubobject<UHierarchicalInstancedStaticMeshComponent>(TEXT("CavePools"));
+	Pools->SetupAttachment(CaveRoot);
+
+	// A brasa nasce apagada. Acender é decisão de `BuildCave`, que é quem sabe o
+	// sabor; um componente que já nasce aceso ilumina caverna seca.
+	LavaGlow = CreateDefaultSubobject<UPointLightComponent>(TEXT("CaveLavaGlow"));
+	LavaGlow->SetupAttachment(CaveRoot);
+	LavaGlow->SetLightColor(FLinearColor(1.0f, 0.38f, 0.10f));
+	LavaGlow->SetCastShadows(false);
+	LavaGlow->SetIntensity(0.0f);
+
+	ConstructorHelpers::FObjectFinder<UStaticMesh> Cone(CavernaDaIlha::MalhaDaPonta);
+	if (Cone.Succeeded())
+	{
+		Spikes->SetStaticMesh(Cone.Object);
+	}
+
+	if (Cubo.Succeeded())
+	{
+		Pools->SetStaticMesh(Cubo.Object);
+	}
+
+	// Poça e ponta de pedra não param ninguém: a poça é lâmina no chão, e a ponta
+	// que bloqueia corredor transforma o labirinto medido num labirinto com
+	// obstáculo que nenhum teste de caminho conhece.
+	UHierarchicalInstancedStaticMeshComponent* Enfeites[2] = { Spikes, Pools };
+	for (UHierarchicalInstancedStaticMeshComponent* Enfeite : Enfeites)
+	{
+		Enfeite->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Enfeite->SetCanEverAffectNavigation(false);
+	}
 
 	UHierarchicalInstancedStaticMeshComponent* Pedras[3] = { Floor, Walls, Shell };
 	for (UHierarchicalInstancedStaticMeshComponent* Pedra : Pedras)
@@ -121,21 +201,32 @@ void ACaveSystem::AddSlab(UHierarchicalInstancedStaticMeshComponent* Alvo,
 	Alvo->AddInstance(Bloco);
 }
 
-void ACaveSystem::BuildCave(int32 Columns, int32 Rows, uint32 Seed)
+void ACaveSystem::BuildCave(const FCaveRecipe& Recipe)
 {
+	Flavor = Recipe.Flavor;
+
 	Floor->ClearInstances();
 	Walls->ClearInstances();
 	Shell->ClearInstances();
+	Spikes->ClearInstances();
+	Pools->ClearInstances();
+	LavaGlow->SetIntensity(0.0f);
 
-	ScenaryPalette::PaintComponent(Floor, EScenaryRole::CaveFloor);
-	ScenaryPalette::PaintComponent(Walls, EScenaryRole::CaveRock);
-	ScenaryPalette::PaintComponent(Shell, EScenaryRole::CaveRock);
+	ScenaryPalette::PaintComponent(Floor, CavernaDaIlha::ChaoDoSabor(Flavor));
+	ScenaryPalette::PaintComponent(Walls, CavernaDaIlha::PedraDoSabor(Flavor));
+	ScenaryPalette::PaintComponent(Shell, CavernaDaIlha::PedraDoSabor(Flavor));
+	ScenaryPalette::PaintComponent(Spikes, CavernaDaIlha::PedraDoSabor(Flavor));
+	ScenaryPalette::PaintComponent(Pools, CavernaDaIlha::PocaDoSabor(Flavor));
 
-	Grid = CaveLabyrinth::Carve(Columns, Rows, Seed);
+	Grid = CaveLabyrinth::Carve(Recipe.Columns, Recipe.Rows, Recipe.Seed);
 	if (!Grid.IsValid())
 	{
 		return;
 	}
+
+	const uint32 Semente = Recipe.Seed;
+	const bool bTemPoca = Flavor != ECaveFlavor::Dry;
+	const float MaiorPonta = WallHeightUnits * FMath::Clamp(StalactiteReachOfWall, 0.0f, 1.0f);
 
 	const float Meia = 0.5f * CellSizeUnits;
 
@@ -148,6 +239,30 @@ void ACaveSystem::BuildCave(int32 Columns, int32 Rows, uint32 Seed)
 			AddSlab(Floor,
 				Centro - FVector(0.0f, 0.0f, 0.5f * FloorThicknessUnits),
 				FVector(CellSizeUnits, CellSizeUnits, FloorThicknessUnits));
+
+			const int32 Casa = Grid.Index(Coluna, Linha);
+			const bool bNaBoca = (Linha == 0 && Coluna == Grid.EntranceColumn);
+
+			// A boca fica limpa: poça e ponta de pedra logo na entrada leem como
+			// "não passe", e a caverna que se explora não devia dizer isso.
+			if (bTemPoca && !bNaBoca
+				&& BattleSpread::Fraction(Semente, CavernaDaIlha::PrimeiroFluxoDaPoca + Casa) < PoolChance)
+			{
+				const float Lado = CorridorWidthUnits() * CavernaDaIlha::LarguraDaPoca;
+				AddSlab(Pools,
+					Centro + FVector(0.0f, 0.0f, 0.5f * PoolThicknessUnits),
+					FVector(Lado, Lado, PoolThicknessUnits));
+			}
+
+			if (!bNaBoca
+				&& BattleSpread::Fraction(Semente, CavernaDaIlha::PrimeiroFluxoDaEstalagmite + Casa * 2)
+					< FloorStalagmiteChance)
+			{
+				const float Altura = BattleSpread::Between(
+					MaiorPonta * CavernaDaIlha::MenorPontaDaMaior, MaiorPonta,
+					BattleSpread::Fraction(Semente, CavernaDaIlha::PrimeiroFluxoDaEstalagmite + Casa * 2 + 1));
+				AddSpike(Centro, Altura, /*bPendurada=*/false);
+			}
 
 			// Cada segmento de parede é desenhado UMA vez. Norte e leste sempre;
 			// sul e oeste só na borda, onde não há vizinho para desenhá-los.
@@ -210,4 +325,93 @@ void ACaveSystem::BuildCave(int32 Columns, int32 Rows, uint32 Seed)
 	AddSlab(Shell,
 		Boca + FVector(0.0f, 0.0f, WallHeightUnits + 0.5f * AlturaDaVerga),
 		FVector(CellSizeUnits + ShellThicknessUnits, ShellThicknessUnits, AlturaDaVerga));
+
+	HangMouthStalactites(Boca, Semente);
+
+	// A tampa. Ela não é um portão fechado: é rocha, do chão até a verga, e é o
+	// que faz a silhueta dizer de longe que ali não se entra.
+	if (!IsExplorable())
+	{
+		AddSlab(Shell,
+			Boca + FVector(0.0f, 0.0f, 0.5f * WallHeightUnits),
+			FVector(CellSizeUnits + ShellThicknessUnits, ShellThicknessUnits, WallHeightUnits));
+	}
+
+	if (Flavor == ECaveFlavor::Lava)
+	{
+		// A luz mora na altura do peito das paredes, e não no chão: no chão ela
+		// acende a laje e deixa a pedra em volta preta, que é a mesma caverna de
+		// antes com uma mancha laranja.
+		LavaGlow->SetRelativeLocation(FVector(0.0, 0.0, 0.5 * WallHeightUnits));
+		LavaGlow->SetAttenuationRadius(FootprintUnits());
+		LavaGlow->SetIntensity(LavaGlowIntensity);
+	}
+}
+
+void ACaveSystem::HangMouthStalactites(const FVector& Boca, uint32 Seed)
+{
+	if (MouthStalactiteCount <= 0)
+	{
+		return;
+	}
+
+	const float MaiorPonta = WallHeightUnits * FMath::Clamp(StalactiteReachOfWall, 0.0f, 1.0f);
+	const float Vao = CellSizeUnits;
+	const float Passo = Vao / static_cast<float>(MouthStalactiteCount + 1);
+
+	for (int32 Qual = 0; Qual < MouthStalactiteCount; ++Qual)
+	{
+		const int32 Fluxo = CavernaDaIlha::PrimeiroFluxoDaEstalactite + Qual * 2;
+		const float Altura = BattleSpread::Between(
+			MaiorPonta * CavernaDaIlha::MenorPontaDaMaior, MaiorPonta,
+			BattleSpread::Fraction(Seed, Fluxo));
+
+		// Espalhadas ao longo do vão, com um empurrão para o lado para não saírem
+		// alinhadas como dentes de pente.
+		const float Deslocamento = -0.5f * Vao + Passo * static_cast<float>(Qual + 1)
+			+ BattleSpread::Between(-0.2f * Passo, 0.2f * Passo,
+				BattleSpread::Fraction(Seed, Fluxo + 1));
+
+		AddSpike(Boca + FVector(Deslocamento, 0.0f, WallHeightUnits), Altura, /*bPendurada=*/true);
+	}
+}
+
+void ACaveSystem::AddSpike(const FVector& Apoio, float Altura, bool bPendurada)
+{
+	if (Spikes == nullptr || Spikes->GetStaticMesh() == nullptr || Altura <= 0.0f)
+	{
+		return;
+	}
+
+	const FBox Caixa = Spikes->GetStaticMesh()->GetBoundingBox();
+	const FVector TamanhoDoCone = Caixa.GetSize();
+	if (TamanhoDoCone.X <= 0.0f || TamanhoDoCone.Y <= 0.0f || TamanhoDoCone.Z <= 0.0f)
+	{
+		return;
+	}
+
+	const float Largura = Altura * CavernaDaIlha::GrossuraDaPonta;
+	const FVector Escala(
+		Largura / TamanhoDoCone.X,
+		Largura / TamanhoDoCone.Y,
+		Altura / TamanhoDoCone.Z);
+
+	FTransform Ponta;
+	Ponta.SetScale3D(Escala);
+	Ponta.SetRotation(FQuat(FRotator(0.0f, 0.0f, bPendurada ? 180.0f : 0.0f)));
+
+	// O apoio é a BASE de quem sobe e o TETO de quem pende. Mirar o centro da
+	// instância direto enterraria metade da ponta na pedra — e o cone da engine
+	// nem tem o centro da caixa na origem, então a conta é medida, não suposta.
+	const FVector Alvo = Apoio
+		+ FVector(0.0f, 0.0f, bPendurada ? -0.5f * Altura : 0.5f * Altura);
+	const FVector Desvio = Ponta.GetRotation().RotateVector(Caixa.GetCenter() * Escala);
+	Ponta.SetLocation(Alvo - Desvio);
+
+	Spikes->AddInstance(Ponta);
+}
+
+UPointLightComponent* ACaveSystem::GetLavaGlow() const
+{
+	return LavaGlow;
 }

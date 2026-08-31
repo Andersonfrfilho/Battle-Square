@@ -1441,6 +1441,9 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 	int32 MontanhasPlantadas = 0;
 	int32 CavernasPlantadas = 0;
 	int32 MaiorCavernaPlantada = 0;
+	int32 CavernasDeLava = 0;
+	int32 CavernasDeAgua = 0;
+	int32 CavernasFechadas = 0;
 	int32 PatamaresDaTrilhaMaisLonga = 0;
 	int32 VulcoesPlantados = 0;
 	int32 DerramesDoVulcao = 0;
@@ -1481,9 +1484,18 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 				ACaveSystem::StaticClass(), OndeNaIlha, FRotator::ZeroRotator, Parametros);
 			if (Caverna)
 			{
-				Caverna->BuildCave(Peca.CaveSide, Peca.CaveSide, SementeDaPeca);
+				FCaveRecipe Receita;
+				Receita.Columns = Peca.CaveSide;
+				Receita.Rows = Peca.CaveSide;
+				Receita.Seed = SementeDaPeca;
+				Receita.Flavor = Peca.CaveFlavor;
+				Caverna->BuildCave(Receita);
+
 				++CavernasPlantadas;
 				MaiorCavernaPlantada = FMath::Max(MaiorCavernaPlantada, Peca.CaveSide);
+				CavernasDeLava += (Peca.CaveFlavor == ECaveFlavor::Lava) ? 1 : 0;
+				CavernasDeAgua += (Peca.CaveFlavor == ECaveFlavor::Water) ? 1 : 0;
+				CavernasFechadas += IsCaveExplorable(Peca.CaveFlavor) ? 0 : 1;
 			}
 			break;
 		}
@@ -1509,8 +1521,10 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 		0.0f, FColor::Yellow, /*Key=*/726);
 
 	FBattleDebugScreen::Show(
-		FString::Printf(TEXT("cavernas: %d com labirinto (a maior é %dx%d)"),
-			CavernasPlantadas, MaiorCavernaPlantada, MaiorCavernaPlantada),
+		FString::Printf(
+			TEXT("cavernas: %d (maior %dx%d) — %d de lava, %d de água, %d de boca fechada"),
+			CavernasPlantadas, MaiorCavernaPlantada, MaiorCavernaPlantada,
+			CavernasDeLava, CavernasDeAgua, CavernasFechadas),
 		0.0f, FColor::Orange, /*Key=*/727);
 
 	FBattleDebugScreen::Show(

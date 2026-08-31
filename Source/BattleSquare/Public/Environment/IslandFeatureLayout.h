@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Environment/CaveFlavor.h"
 #include "Environment/IslandGeography.h"
 
 /**
@@ -58,6 +59,15 @@ namespace IslandFeatureLayout
 
 		/** Lado do labirinto quando é caverna; zero quando é montanha. */
 		int32 CaveSide = 0;
+
+		/**
+		 * O que a caverna tem dentro. Ignorado pelas outras peças.
+		 *
+		 * Mora AQUI porque é o planejador quem sabe onde o vulcão e o mar ficam.
+		 * Redecidir isso na hora de plantar seria a segunda cópia da regra, e a
+		 * segunda cópia concorda com a primeira até alguém mexer numa delas.
+		 */
+		ECaveFlavor CaveFlavor = ECaveFlavor::Dry;
 
 		FVector2D CenterUnits() const;
 	};

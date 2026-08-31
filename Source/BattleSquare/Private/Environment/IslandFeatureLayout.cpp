@@ -50,6 +50,37 @@ namespace IslandFeatureLayout
 		constexpr float AnelDoVulcao = 15000.0f;
 		constexpr float AnguloDoVulcao = 180.0f;
 
+		/**
+		 * A caverna pequena mora na orla, e é por isso que ela tem água.
+		 *
+		 * Ela estava no anel da borda com as outras, e ali dentro nenhuma das
+		 * três podia ser caverna de mar: água salgada a oito mil unidades da
+		 * praia é cenário mentindo sobre onde a pessoa está.
+		 */
+		constexpr float AnelDaCavernaDaAgua = 17000.0f;
+
+		/**
+		 * A caverna média é a de lava, e por isso ela vive perto do vulcão.
+		 *
+		 * Estava a 150° no anel da borda, o que a punha a mais de sete mil
+		 * unidades do monte — longe demais para o calor alcançar, e o resultado
+		 * era uma ilha com três cavernas e nenhuma de lava.
+		 *
+		 * 160° e 13000 a põem a cerca de cinco mil do vulcão: dentro do calor,
+		 * e ainda com mais de mil de folga sobre a soma das duas bases.
+		 */
+		constexpr float AnelDaCavernaDeLava = 13000.0f;
+		constexpr float AnguloDaCavernaDeLava = 160.0f;
+
+		/**
+		 * Até onde o calor do vulcão chega.
+		 *
+		 * Medido do centro do vulcão ao centro da caverna. Maior que isso e a
+		 * caverna de lava ficaria longe demais do monte para alguém ligar as
+		 * duas coisas olhando.
+		 */
+		constexpr float AlcanceDoCalor = 6000.0f;
+
 		FFeaturePlacement Montanha(float AnguloEmGraus)
 		{
 			FFeaturePlacement Peca;
@@ -105,6 +136,54 @@ namespace IslandFeatureLayout
 		return 0.5f * ACaveSystem::FootprintForSide(Side) * UE_SQRT_2;
 	}
 
+	namespace
+	{
+		/**
+		 * Dá sabor às cavernas do plano, pelo LUGAR de cada uma.
+		 *
+		 * Escrever o sabor à mão ao lado do ângulo funcionaria hoje e mentiria
+		 * na primeira vez que alguém movesse uma peça: o texto continuaria
+		 * dizendo "lava" com o vulcão do outro lado da ilha.
+		 */
+		void TemperaAsCavernas(TArray<FFeaturePlacement>& Pecas)
+		{
+			const FFeaturePlacement* Vulcao = Pecas.FindByPredicate(
+				[](const FFeaturePlacement& Peca)
+				{
+					return Peca.Feature == EIslandFeature::Volcano;
+				});
+
+			// A orla e um pouco antes dela: a caverna de mar precisa estar perto
+			// o bastante da água para a água fazer sentido lá dentro.
+			const float ComecoDaOrla = IslandGeography::LandRadiusUnits()
+				- 2.0f * IslandGeography::BeachWidthUnits();
+
+			for (FFeaturePlacement& Peca : Pecas)
+			{
+				if (Peca.Feature != EIslandFeature::Cave)
+				{
+					continue;
+				}
+
+				const bool bNoCalor = Vulcao != nullptr
+					&& FVector2D::Distance(Peca.CenterUnits(), Vulcao->CenterUnits()) <= AlcanceDoCalor;
+
+				if (bNoCalor)
+				{
+					Peca.CaveFlavor = ECaveFlavor::Lava;
+				}
+				else if (Peca.RadiusUnits >= ComecoDaOrla)
+				{
+					Peca.CaveFlavor = ECaveFlavor::Water;
+				}
+				else
+				{
+					Peca.CaveFlavor = ECaveFlavor::Dry;
+				}
+			}
+		}
+	}
+
 	TArray<FFeaturePlacement> Plan()
 	{
 		// Três montanhas bem separadas, e as cavernas nos vãos entre elas: quem
@@ -113,11 +192,13 @@ namespace IslandFeatureLayout
 		TArray<FFeaturePlacement> Pecas;
 		Pecas.Add(Caverna(AnguloDaCavernaGrande, AnelDaCavernaGrande, ACaveSystem::LargeCaveSide));
 		Pecas.Add(Montanha(90.0f));
-		Pecas.Add(Caverna(150.0f, AnelDaBorda, ACaveSystem::MediumCaveSide));
+		Pecas.Add(Caverna(AnguloDaCavernaDeLava, AnelDaCavernaDeLava, ACaveSystem::MediumCaveSide));
 		Pecas.Add(Montanha(210.0f));
-		Pecas.Add(Caverna(270.0f, AnelDaBorda, ACaveSystem::SmallCaveSide));
+		Pecas.Add(Caverna(270.0f, AnelDaCavernaDaAgua, ACaveSystem::SmallCaveSide));
 		Pecas.Add(Montanha(330.0f));
 		Pecas.Add(Vulcao(AnguloDoVulcao, AnelDoVulcao));
+
+		TemperaAsCavernas(Pecas);
 		return Pecas;
 	}
 

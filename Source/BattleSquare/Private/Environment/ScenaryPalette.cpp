@@ -149,6 +149,9 @@ namespace PaletaDoCenario
 	/** A fumaça: cinza puxando para o quente, porque nasce do fogo. */
 	const FLinearColor CinzaDaFumaca(0.545f, 0.522f, 0.510f);
 
+	/** A poça da caverna: azul quase preto, do fundo que não recebe luz. */
+	const FLinearColor AzulDaPocaEscura(0.043f, 0.153f, 0.196f);
+
 	/**
 	 * A areia da praia: FRIA e um degrau mais escura que a duna do deserto.
 	 *
@@ -299,6 +302,9 @@ FLinearColor ScenaryPalette::ColorFor(EScenaryRole Role, FName MaterialSlot)
 
 	case EScenaryRole::AshPlume:
 		return CinzaDaFumaca;
+
+	case EScenaryRole::CaveWater:
+		return AzulDaPocaEscura;
 
 	case EScenaryRole::Count:
 		break;

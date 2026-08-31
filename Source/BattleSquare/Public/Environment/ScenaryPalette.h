@@ -140,6 +140,14 @@ enum class EScenaryRole : uint8
 	AshPlume,
 
 	/**
+	 * A poça de água parada no fundo da caverna.
+	 *
+	 * Mais escura que o mar: ali dentro não bate sol, e água clara num buraco de
+	 * pedra lê como piso pintado de azul em vez de água.
+	 */
+	CaveWater,
+
+	/**
 	 * Quantos papéis existem. Não é papel nenhum.
 	 *
 	 * Existe para o teste poder percorrer a lista inteira e cobrar `case` de

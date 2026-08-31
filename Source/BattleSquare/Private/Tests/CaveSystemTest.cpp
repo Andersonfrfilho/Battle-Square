@@ -3,9 +3,12 @@
 #include "Environment/CaveSystem.h"
 
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Engine/Engine.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
+#include "Environment/ScenaryPalette.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "Misc/AutomationTest.h"
 #include "PhysicsEngine/BodySetup.h"
 
@@ -116,14 +119,38 @@ namespace
 		return Posicoes;
 	}
 
-	ACaveSystem* PlantaCavernaDeTeste(UWorld* World, int32 Colunas, int32 Linhas, uint32 Semente)
+	/**
+	 * Planta uma caverna com o sabor pedido.
+	 *
+	 * Funil ÚNICO: os testes de sabor e os de geometria precisam sair do mesmo
+	 * lugar, senão o dia em que `FCaveRecipe` ganhar um campo só metade dos
+	 * testes passa a exercitá-lo.
+	 */
+	ACaveSystem* PlantaCavernaComSabor(UWorld* World, int32 Colunas, int32 Linhas,
+		uint32 Semente, ECaveFlavor Sabor)
 	{
 		ACaveSystem* Caverna = World->SpawnActor<ACaveSystem>();
 		if (Caverna)
 		{
-			Caverna->BuildCave(Colunas, Linhas, Semente);
+			FCaveRecipe Receita;
+			Receita.Columns = Colunas;
+			Receita.Rows = Linhas;
+			Receita.Seed = Semente;
+			Receita.Flavor = Sabor;
+			Caverna->BuildCave(Receita);
 		}
 		return Caverna;
+	}
+
+	ACaveSystem* PlantaCavernaDeTeste(UWorld* World, int32 Colunas, int32 Linhas, uint32 Semente)
+	{
+		return PlantaCavernaComSabor(World, Colunas, Linhas, Semente, ECaveFlavor::Dry);
+	}
+
+	/** Quantas instâncias um componente tem, sem estourar em ponteiro nulo. */
+	int32 QuantasInstanciasNaCaverna(const UHierarchicalInstancedStaticMeshComponent* Pedra)
+	{
+		return Pedra ? Pedra->GetInstanceCount() : -1;
 	}
 }
 
@@ -392,6 +419,189 @@ bool FCaveSystemInvalidGridBuildsNothingTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Nenhum chão"), Caverna->GetFloor()->GetInstanceCount(), 0);
 	TestEqual(TEXT("Nenhuma parede"), Caverna->GetWalls()->GetInstanceCount(), 0);
 	TestEqual(TEXT("Nenhuma muralha"), Caverna->GetShell()->GetInstanceCount(), 0);
+
+	DestroyCaveSystemTestWorld(World);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCaveSystemPaintsEachFlavorItsOwnStoneTest,
+	"BattleSquare.CaveSystem.PaintsEachFlavorItsOwnStone",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FCaveSystemPaintsEachFlavorItsOwnStoneTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateCaveSystemTestWorld();
+
+	// A pedra da caverna de lava é a pedra do vulcão, e não a pedra cinza das
+	// outras: se as três saíssem da mesma cor, o sabor viraria um campo que só
+	// o código enxerga.
+	ACaveSystem* Seca = PlantaCavernaComSabor(World, ACaveSystem::SmallCaveSide,
+		ACaveSystem::SmallCaveSide, SementeDaCaverna, ECaveFlavor::Dry);
+	ACaveSystem* DeLava = PlantaCavernaComSabor(World, ACaveSystem::SmallCaveSide,
+		ACaveSystem::SmallCaveSide, SementeDaCaverna, ECaveFlavor::Lava);
+
+	if (!TestNotNull(TEXT("A seca nasceu"), Seca) || !TestNotNull(TEXT("A de lava nasceu"), DeLava))
+	{
+		DestroyCaveSystemTestWorld(World);
+		return false;
+	}
+
+	UMaterialInstanceDynamic* PedraSeca =
+		Cast<UMaterialInstanceDynamic>(Seca->GetWalls()->GetMaterial(0));
+	UMaterialInstanceDynamic* PedraDeLava =
+		Cast<UMaterialInstanceDynamic>(DeLava->GetWalls()->GetMaterial(0));
+
+	if (TestNotNull(TEXT("A parede seca foi pintada"), PedraSeca)
+		&& TestNotNull(TEXT("A parede de lava foi pintada"), PedraDeLava))
+	{
+		const FLinearColor CorSeca = PedraSeca->K2_GetVectorParameterValue(TEXT("Color"));
+		const FLinearColor CorDeLava = PedraDeLava->K2_GetVectorParameterValue(TEXT("Color"));
+		TestFalse(TEXT("A pedra da lava não é a pedra seca"), CorSeca.Equals(CorDeLava, 0.001f));
+	}
+
+	TestEqual(TEXT("O sabor fica guardado"),
+		static_cast<int32>(DeLava->GetFlavor()), static_cast<int32>(ECaveFlavor::Lava));
+
+	DestroyCaveSystemTestWorld(World);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCaveSystemPoolsOnlyWhereThereIsSomethingToPoolTest,
+	"BattleSquare.CaveSystem.PoolsOnlyWhereThereIsSomethingToPool",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FCaveSystemPoolsOnlyWhereThereIsSomethingToPoolTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateCaveSystemTestWorld();
+
+	ACaveSystem* Seca = PlantaCavernaComSabor(World, ACaveSystem::LargeCaveSide,
+		ACaveSystem::LargeCaveSide, SementeDaCaverna, ECaveFlavor::Dry);
+	ACaveSystem* DeAgua = PlantaCavernaComSabor(World, ACaveSystem::LargeCaveSide,
+		ACaveSystem::LargeCaveSide, SementeDaCaverna, ECaveFlavor::Water);
+
+	if (!TestNotNull(TEXT("A seca nasceu"), Seca) || !TestNotNull(TEXT("A de água nasceu"), DeAgua))
+	{
+		DestroyCaveSystemTestWorld(World);
+		return false;
+	}
+
+	// Poça na caverna seca seria uma lâmina de nada: o chão pintado de azul sem
+	// que exista água nenhuma naquele lugar do mapa.
+	TestEqual(TEXT("A seca não tem poça"), QuantasInstanciasNaCaverna(Seca->GetPools()), 0);
+	TestTrue(TEXT("A de água tem poça"), QuantasInstanciasNaCaverna(DeAgua->GetPools()) > 0);
+
+	DestroyCaveSystemTestWorld(World);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCaveSystemLightsOnlyTheLavaTest,
+	"BattleSquare.CaveSystem.LightsOnlyTheLava",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FCaveSystemLightsOnlyTheLavaTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateCaveSystemTestWorld();
+
+	ACaveSystem* Seca = PlantaCavernaComSabor(World, ACaveSystem::MediumCaveSide,
+		ACaveSystem::MediumCaveSide, SementeDaCaverna, ECaveFlavor::Dry);
+	ACaveSystem* DeLava = PlantaCavernaComSabor(World, ACaveSystem::MediumCaveSide,
+		ACaveSystem::MediumCaveSide, SementeDaCaverna, ECaveFlavor::Lava);
+
+	if (!TestNotNull(TEXT("A seca nasceu"), Seca) || !TestNotNull(TEXT("A de lava nasceu"), DeLava))
+	{
+		DestroyCaveSystemTestWorld(World);
+		return false;
+	}
+
+	// A brasa existe nas duas — o componente é sempre criado, para ninguém ter
+	// de lembrar de checar ponteiro nulo — mas só ACENDE numa.
+	if (TestNotNull(TEXT("A brasa da seca existe"), Seca->GetLavaGlow())
+		&& TestNotNull(TEXT("A brasa da lava existe"), DeLava->GetLavaGlow()))
+	{
+		TestEqual(TEXT("A seca fica apagada"), Seca->GetLavaGlow()->Intensity, 0.0f);
+		TestTrue(TEXT("A de lava acende"), DeLava->GetLavaGlow()->Intensity > 0.0f);
+
+		// No chão ela acenderia a laje e deixaria a pedra em volta preta.
+		TestTrue(TEXT("A brasa fica na altura da parede"),
+			DeLava->GetLavaGlow()->GetRelativeLocation().Z > 0.0);
+	}
+
+	DestroyCaveSystemTestWorld(World);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCaveSystemSealsTheMouthOfWhatCannotBeEnteredTest,
+	"BattleSquare.CaveSystem.SealsTheMouthOfWhatCannotBeEntered",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FCaveSystemSealsTheMouthOfWhatCannotBeEnteredTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateCaveSystemTestWorld();
+
+	ACaveSystem* Aberta = PlantaCavernaComSabor(World, ACaveSystem::MediumCaveSide,
+		ACaveSystem::MediumCaveSide, SementeDaCaverna, ECaveFlavor::Dry);
+	ACaveSystem* Fechada = PlantaCavernaComSabor(World, ACaveSystem::MediumCaveSide,
+		ACaveSystem::MediumCaveSide, SementeDaCaverna, ECaveFlavor::Lava);
+
+	if (!TestNotNull(TEXT("A aberta nasceu"), Aberta) || !TestNotNull(TEXT("A fechada nasceu"), Fechada))
+	{
+		DestroyCaveSystemTestWorld(World);
+		return false;
+	}
+
+	TestTrue(TEXT("A seca se explora"), Aberta->IsExplorable());
+	TestFalse(TEXT("A de lava não se explora"), Fechada->IsExplorable());
+
+	// A tampa é UMA laje a mais na muralha, e é ela que conta de longe que ali
+	// não se entra. Deixar entrar e barrar na porta seria caminhar até lá para
+	// descobrir que não valia.
+	TestEqual(TEXT("A boca fechada é exatamente uma laje a mais"),
+		QuantasInstanciasNaCaverna(Fechada->GetShell()),
+		QuantasInstanciasNaCaverna(Aberta->GetShell()) + 1);
+
+	DestroyCaveSystemTestWorld(World);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCaveSystemGrowsStoneSpikesInsideTheRockTest,
+	"BattleSquare.CaveSystem.GrowsStoneSpikesInsideTheRock",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FCaveSystemGrowsStoneSpikesInsideTheRockTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateCaveSystemTestWorld();
+
+	ACaveSystem* Caverna = PlantaCavernaComSabor(World, ACaveSystem::LargeCaveSide,
+		ACaveSystem::LargeCaveSide, SementeDaCaverna, ECaveFlavor::Dry);
+
+	if (!TestNotNull(TEXT("A caverna nasceu"), Caverna))
+	{
+		DestroyCaveSystemTestWorld(World);
+		return false;
+	}
+
+	const TArray<FVector> Pontas = PosicoesDasLajesDaCaverna(Caverna->GetSpikes());
+	if (!TestTrue(TEXT("Há pontas de pedra"), Pontas.Num() > 0))
+	{
+		DestroyCaveSystemTestWorld(World);
+		return false;
+	}
+
+	// Nenhuma pode ficar abaixo do chão nem acima da verga: pedra flutuando é o
+	// mesmo erro de usar a primitiva como se fosse a coisa.
+	bool bTodasDentro = true;
+	for (const FVector& Ponta : Pontas)
+	{
+		bTodasDentro = bTodasDentro && Ponta.Z > -1.0 && Ponta.Z < 1000.0;
+	}
+	TestTrue(TEXT("Toda ponta está dentro da pedra"), bTodasDentro);
+
+	// A mesma semente tem de dar a mesma caverna: sorteio que muda a cada
+	// carregamento faz o mundo esquecer onde ficava o quê.
+	ACaveSystem* Gemea = PlantaCavernaComSabor(World, ACaveSystem::LargeCaveSide,
+		ACaveSystem::LargeCaveSide, SementeDaCaverna, ECaveFlavor::Dry);
+	TestEqual(TEXT("A mesma semente dá as mesmas pontas"),
+		QuantasInstanciasNaCaverna(Gemea->GetSpikes()), Pontas.Num());
 
 	DestroyCaveSystemTestWorld(World);
 	return true;

@@ -224,4 +224,91 @@ bool FIslandFeatureLayoutPutsTheVolcanoInItsSectorTest::RunTest(const FString& P
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FIslandFeatureLayoutSeasonsTheCavesByPlaceTest,
+	"BattleSquare.IslandFeatureLayout.SeasonsTheCavesByPlace",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FIslandFeatureLayoutSeasonsTheCavesByPlaceTest::RunTest(const FString& Parameters)
+{
+	const TArray<IslandFeatureLayout::FFeaturePlacement> Pecas = IslandFeatureLayout::Plan();
+
+	const IslandFeatureLayout::FFeaturePlacement* Vulcao = Pecas.FindByPredicate(
+		[](const IslandFeatureLayout::FFeaturePlacement& Peca)
+		{
+			return Peca.Feature == IslandFeatureLayout::EIslandFeature::Volcano;
+		});
+
+	if (!TestNotNull(TEXT("A ilha tem vulcao"), Vulcao))
+	{
+		return false;
+	}
+
+	const IslandFeatureLayout::FFeaturePlacement* DeLava = nullptr;
+	const IslandFeatureLayout::FFeaturePlacement* DeAgua = nullptr;
+	int32 Secas = 0;
+
+	for (const IslandFeatureLayout::FFeaturePlacement& Peca : Pecas)
+	{
+		if (Peca.Feature != IslandFeatureLayout::EIslandFeature::Cave)
+		{
+			continue;
+		}
+
+		switch (Peca.CaveFlavor)
+		{
+		case ECaveFlavor::Lava:
+			DeLava = &Peca;
+			break;
+		case ECaveFlavor::Water:
+			DeAgua = &Peca;
+			break;
+		case ECaveFlavor::Dry:
+			++Secas;
+			break;
+		}
+	}
+
+	// Os tres sabores existem na ilha. Um sabor que o codigo conhece e o mapa
+	// nunca produz e uma promessa que ninguem cumpre.
+	if (!TestNotNull(TEXT("Ha uma caverna de lava"), DeLava)
+		|| !TestNotNull(TEXT("Ha uma caverna de agua"), DeAgua))
+	{
+		return false;
+	}
+	TestTrue(TEXT("Ha ao menos uma caverna seca"), Secas > 0);
+
+	// A de lava e a mais perto do vulcao, e a de agua e a mais perto do mar.
+	// Sem isso o sabor seria um rotulo escrito a mao, que continua dizendo
+	// "lava" no dia em que alguem mover a peca.
+	for (const IslandFeatureLayout::FFeaturePlacement& Peca : Pecas)
+	{
+		if (Peca.Feature != IslandFeatureLayout::EIslandFeature::Cave)
+		{
+			continue;
+		}
+
+		if (&Peca != DeLava)
+		{
+			TestTrue(*FString::Printf(TEXT("%s esta mais longe do vulcao que a de lava"),
+					*NomeDaPecaDaIlha(Peca)),
+				FVector2D::Distance(Peca.CenterUnits(), Vulcao->CenterUnits())
+					> FVector2D::Distance(DeLava->CenterUnits(), Vulcao->CenterUnits()));
+		}
+
+		if (&Peca != DeAgua)
+		{
+			TestTrue(*FString::Printf(TEXT("%s esta mais longe da orla que a de agua"),
+					*NomeDaPecaDaIlha(Peca)),
+				Peca.RadiusUnits < DeAgua->RadiusUnits);
+		}
+	}
+
+	// A de lava nao se explora, e e a unica assim: e ela que da sentido a
+	// distincao, e a agua salgada nao e motivo para fechar buraco nenhum.
+	TestFalse(TEXT("A de lava nao se explora"), IsCaveExplorable(DeLava->CaveFlavor));
+	TestTrue(TEXT("A de agua se explora"), IsCaveExplorable(DeAgua->CaveFlavor));
+
+	return true;
+}
+
 #endif

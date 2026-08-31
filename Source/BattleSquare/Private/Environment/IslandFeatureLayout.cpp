@@ -15,10 +15,15 @@ namespace IslandFeatureLayout
 		 *
 		 * Longe o bastante para o raio da peça não alcançar os campos de treino
 		 * em ângulo nenhum, e perto o bastante para a peça inteira ainda cair
-		 * na terra. Entre esses dois limites não sobra faixa larga: a ilha tem
-		 * sessenta metros de raio e o miolo já está ocupado.
+		 * na terra.
+		 *
+		 * Foi 4400 enquanto a ilha tinha 6000 de raio. A ilha passou a ter
+		 * 20000 e os números ficaram — o resultado foi todo o relevo amontoado
+		 * num miolo de um quinto do mapa, com quatro quintos de nada em volta.
+		 * A 12000 a distância entre peças vizinhas é maior que a maior peça,
+		 * e andar de uma à outra volta a ser viagem.
 		 */
-		constexpr float AnelDaBorda = 4400.0f;
+		constexpr float AnelDaBorda = 12000.0f;
 
 		/**
 		 * A caverna grande vem mais para dentro, e encaixada num vão.
@@ -29,21 +34,20 @@ namespace IslandFeatureLayout
 		 * e é por isso que o ângulo dela não é livre: 36° é o meio do vão
 		 * entre os campos de 0° e 72°.
 		 */
-		constexpr float AnelDaCavernaGrande = 3900.0f;
+		constexpr float AnelDaCavernaGrande = 10500.0f;
 		constexpr float AnguloDaCavernaGrande = 36.0f;
 
 		/**
 		 * O vulcão mora sozinho, muito mais para fora que o resto.
 		 *
-		 * Não é gosto: com 26 metros de raio ele precisaria de 41 metros de
-		 * separação de uma montanha, e no anel da borda os 30° que sobram entre
-		 * as peças dão 22. Ou ele sai do anel, ou o anel inteiro se redesenha —
-		 * e redesenhar o anel é mexer em seis peças que já estão certas.
+		 * Ele é a peça mais larga, e continua fora do anel mesmo agora que o
+		 * anel tem folga: sozinho num raio maior, ele é o marco que se avista
+		 * de longe e diz de que lado fica o setor de fogo.
 		 *
 		 * 180° é o meio do setor de vulcão da geografia (144° a 216°), para o
 		 * marco cair no bioma que ele anuncia em vez de perto da divisa.
 		 */
-		constexpr float AnelDoVulcao = 9000.0f;
+		constexpr float AnelDoVulcao = 15000.0f;
 		constexpr float AnguloDoVulcao = 180.0f;
 
 		FFeaturePlacement Montanha(float AnguloEmGraus)

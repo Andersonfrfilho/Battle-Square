@@ -51,6 +51,15 @@ namespace MataDoCenario
 	 */
 	constexpr float ProfundidadeDoChao = 200.0f;
 
+	/**
+	 * Quanto o chão de um pedaço passa das bordas dele.
+	 *
+	 * Quatro por cento de 6400 é 256 unidades de cada lado — bem mais que o
+	 * passo de um personagem, que é a medida que importa: a fresta só engole
+	 * quem cabe nela.
+	 */
+	constexpr float TransbordoDoChao = 1.04f;
+
 	/** Quantas vezes tentar reposicionar uma planta antes de desistir dela. */
 	constexpr int32 TentativasPorPlanta = 8;
 
@@ -455,9 +464,10 @@ void AForestBackdrop::BuildRegion(float CellSize, uint32 Seed, EIslandBiome Biom
 		GroundMesh->SetStaticMesh(SquareGroundAsset);
 	}
 
+	const float LadoDoChao = RegionGroundSideUnits(SideUnits);
 	GroundMesh->SetRelativeScale3D(FVector(
-		SideUnits / CilindroDaEngineUnidades,
-		SideUnits / CilindroDaEngineUnidades,
+		LadoDoChao / CilindroDaEngineUnidades,
+		LadoDoChao / CilindroDaEngineUnidades,
 		ProfundidadeDoChao / CilindroDaEngineUnidades));
 
 	// O mesmo abaixamento do disco: o TOPO fica onde `GroundTopLocalZ()` diz,
@@ -579,6 +589,11 @@ TArray<FVector> AForestBackdrop::GetPlantedLocations() const
 		}
 	}
 	return Posicoes;
+}
+
+float AForestBackdrop::RegionGroundSideUnits(float SideUnits)
+{
+	return SideUnits * MataDoCenario::TransbordoDoChao;
 }
 
 float AForestBackdrop::GroundTopLocalZ()

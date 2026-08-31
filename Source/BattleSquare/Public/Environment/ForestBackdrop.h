@@ -133,6 +133,19 @@ public:
 	static float GroundTopLocalZ();
 
 	/**
+	 * O lado do chão de um pedaço, dado o lado do pedaço.
+	 *
+	 * MAIOR que o pedaço, de propósito. Dois pedaços de 6400 numa grade de
+	 * 6400 apenas se ENCOSTAM, e encostar não é cobrir: na diagonal, onde
+	 * quatro cantos se tocam, sobra uma fresta — e foi por uma fresta dessas
+	 * que o jogador afundou perto da água.
+	 *
+	 * Existe como função, e não como número na montagem, para o teste poder
+	 * cobrar a sobreposição sem instanciar mundo.
+	 */
+	static float RegionGroundSideUnits(float SideUnits);
+
+	/**
 	 * Veste o chão com o material que o mundo emprestou.
 	 *
 	 * Nulo devolve o chão à paleta própria da mata. Quem empresta é a arena,

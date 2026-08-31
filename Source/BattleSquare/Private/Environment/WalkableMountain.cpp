@@ -6,16 +6,25 @@
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "Environment/MountainProfile.h"
 #include "Environment/ScenaryPalette.h"
 #include "UObject/ConstructorHelpers.h"
 
 namespace MontanhaDaIlha
 {
-	/** O cone da engine, o mesmo da serra: forma de montanha sem escultura. */
-	const TCHAR* MalhaDoCorpo = TEXT("/Engine/BasicShapes/Cone.Cone");
+	/**
+	 * O cilindro da engine, uma fatia de cada vez.
+	 *
+	 * Não é o cone: cone escalado continua cone, e foi o cone que o jogador
+	 * chamou de esquisito. Curva se obtém empilhando raios diferentes.
+	 */
+	const TCHAR* MalhaDoCorpo = TEXT("/Engine/BasicShapes/Cylinder.Cylinder");
 
 	/** O cubo da engine vira patamar quando achatado. */
 	const TCHAR* MalhaDoPatamar = TEXT("/Engine/BasicShapes/Cube.Cube");
+
+	/** A pedra esculpida do kit — o que dá curva onde o cilindro dá aresta. */
+	const TCHAR* MalhaDoCostado = TEXT("/Game/Environment/Nature/rock_largeA.rock_largeA");
 
 	/**
 	 * Quanto o patamar passa da distância até o vizinho.
@@ -34,6 +43,31 @@ namespace MontanhaDaIlha
 	 * passo é o teto para os patamares não trocarem de ordem.
 	 */
 	constexpr float SerpenteioMaximo = 0.25f;
+
+	/**
+	 * Quanto cada fatia transborda a de baixo, na vertical.
+	 *
+	 * Fatias que apenas se encostam deixam a mesma fresta diagonal dos
+	 * patamares, e ali a fresta é pior: é por dentro da montanha que se cai.
+	 */
+	constexpr float TransbordoDaFatia = 1.08f;
+
+	/** Quantas pedras rodeiam cada fatia. */
+	constexpr int32 PedrasPorFatia = 5;
+
+	/** Tamanho da pedra como fração da altura da fatia. */
+	constexpr float PedraMinima = 0.55f;
+	constexpr float PedraMaxima = 1.35f;
+
+	/** Quantas fatias do topo ficam sem costado, para o cume continuar limpo. */
+	constexpr int32 FatiasLimpasNoCume = 2;
+
+	/** Um fluxo de sorteio por pedra, para uma não roubar o número da outra. */
+	int32 FluxoDaPedra(int32 Fatia, int32 Pedra, int32 Passo)
+	{
+		constexpr int32 SorteiosPorPedra = 4;
+		return 1000 + (Fatia * PedrasPorFatia + Pedra) * SorteiosPorPedra + Passo;
+	}
 }
 
 AWalkableMountain::AWalkableMountain()
@@ -45,24 +79,35 @@ AWalkableMountain::AWalkableMountain()
 
 	// Malha atribuída no construtor, não na montagem: componente sem asset
 	// passa em todo teste de lógica e não existe na tela.
-	ConstructorHelpers::FObjectFinder<UStaticMesh> Cone(MontanhaDaIlha::MalhaDoCorpo);
+	ConstructorHelpers::FObjectFinder<UStaticMesh> Cilindro(MontanhaDaIlha::MalhaDoCorpo);
 	ConstructorHelpers::FObjectFinder<UStaticMesh> Cubo(MontanhaDaIlha::MalhaDoPatamar);
+	ConstructorHelpers::FObjectFinder<UStaticMesh> Pedra(MontanhaDaIlha::MalhaDoCostado);
 
-	Body = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MountainBody"));
+	Body = CreateDefaultSubobject<UHierarchicalInstancedStaticMeshComponent>(
+		TEXT("MountainBody"));
 	Body->SetupAttachment(MountainRoot);
 
 	Trail = CreateDefaultSubobject<UHierarchicalInstancedStaticMeshComponent>(
 		TEXT("MountainTrail"));
 	Trail->SetupAttachment(MountainRoot);
 
-	if (Cone.Succeeded())
+	Boulders = CreateDefaultSubobject<UHierarchicalInstancedStaticMeshComponent>(
+		TEXT("MountainBoulders"));
+	Boulders->SetupAttachment(MountainRoot);
+
+	if (Cilindro.Succeeded())
 	{
-		Body->SetStaticMesh(Cone.Object);
+		Body->SetStaticMesh(Cilindro.Object);
 	}
 
 	if (Cubo.Succeeded())
 	{
 		Trail->SetStaticMesh(Cubo.Object);
+	}
+
+	if (Pedra.Succeeded())
+	{
+		Boulders->SetStaticMesh(Pedra.Object);
 	}
 
 	// A montanha da ilha existe para ser TOCADA — é o que a separa da serra do
@@ -73,6 +118,19 @@ AWalkableMountain::AWalkableMountain()
 	Trail->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	Trail->SetCollisionResponseToAllChannels(ECR_Block);
 	Trail->SetCanEverAffectNavigation(false);
+
+	// O costado é ENFEITE. Se ele colidisse, a trilha teria pedra no meio do
+	// caminho em posição sorteada — e trilha com obstáculo sorteado é trilha
+	// que às vezes não passa.
+	Boulders->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Boulders->SetCanEverAffectNavigation(false);
+}
+
+UStaticMeshComponent* AWalkableMountain::GetBody() const
+{
+	// Fora de linha porque o cabeçalho só declara o HISM adiantadamente, e sem
+	// a definição o compilador não sabe que ele deriva de UStaticMeshComponent.
+	return Body.Get();
 }
 
 float AWalkableMountain::RadiusAtHeight(float ZUnits) const
@@ -82,20 +140,24 @@ float AWalkableMountain::RadiusAtHeight(float ZUnits) const
 		return 0.0f;
 	}
 
-	return BaseRadiusUnits * (1.0f - FMath::Max(0.0f, ZUnits) / HeightUnits);
+	return BaseRadiusUnits
+		* MountainProfile::RadiusFractionAt(FMath::Max(0.0f, ZUnits) / HeightUnits);
 }
 
 void AWalkableMountain::BuildMountain(uint32 Seed)
 {
-	if (!Body || !Trail)
+	if (!Body || !Trail || !Boulders)
 	{
 		return;
 	}
 
+	Body->ClearInstances();
+	Boulders->ClearInstances();
 	Trail->ClearInstances();
 	TrailSteps.Reset();
 
 	ScenaryPalette::PaintComponent(Body, EScenaryRole::ClimbableRock);
+	ScenaryPalette::PaintComponent(Boulders, EScenaryRole::MountainRock);
 	ScenaryPalette::PaintComponent(Trail, EScenaryRole::MountainTrail);
 
 	UStaticMesh* MalhaDoCorpo = Body->GetStaticMesh().Get();
@@ -104,20 +166,33 @@ void AWalkableMountain::BuildMountain(uint32 Seed)
 		return;
 	}
 
-	// Escala do corpo a partir da caixa MEDIDA: o dia em que o cone da engine
-	// mudar de tamanho, a montanha continua com a altura que a trilha usou.
-	const FBox CaixaDoCone = MalhaDoCorpo->GetBoundingBox();
-	const FVector TamanhoDoCone = CaixaDoCone.GetSize();
-	if (TamanhoDoCone.X <= 0.0 || TamanhoDoCone.Y <= 0.0 || TamanhoDoCone.Z <= 0.0)
+	// Escala a partir da caixa MEDIDA: o dia em que o cilindro da engine mudar
+	// de tamanho, a montanha continua com a altura que a trilha usou.
+	const FVector TamanhoDoCilindro = MalhaDoCorpo->GetBoundingBox().GetSize();
+	if (TamanhoDoCilindro.X <= 0.0 || TamanhoDoCilindro.Y <= 0.0 || TamanhoDoCilindro.Z <= 0.0)
 	{
 		return;
 	}
 
-	const float EscalaZ = HeightUnits / static_cast<float>(TamanhoDoCone.Z);
-	const float EscalaXY = (2.0f * BaseRadiusUnits) / static_cast<float>(TamanhoDoCone.X);
+	const float AlturaDaFatia = HeightUnits * MountainProfile::SliceHeightFraction();
 
-	Body->SetRelativeScale3D(FVector(EscalaXY, EscalaXY, EscalaZ));
-	Body->SetRelativeLocation(FVector(0.0, 0.0, -CaixaDoCone.Min.Z * EscalaZ));
+	for (int32 Fatia = 0; Fatia < MountainProfile::SliceCount; ++Fatia)
+	{
+		const float Raio = BaseRadiusUnits * MountainProfile::SliceRadiusFraction(Fatia);
+		const float Base = Fatia * AlturaDaFatia;
+		const float Altura = AlturaDaFatia * MontanhaDaIlha::TransbordoDaFatia;
+
+		FTransform Cilindro;
+		Cilindro.SetScale3D(FVector(
+			(2.0f * Raio) / static_cast<float>(TamanhoDoCilindro.X),
+			(2.0f * Raio) / static_cast<float>(TamanhoDoCilindro.Y),
+			Altura / static_cast<float>(TamanhoDoCilindro.Z)));
+		Cilindro.SetLocation(FVector(0.0, 0.0, Base + 0.5f * Altura));
+
+		Body->AddInstance(Cilindro);
+	}
+
+	CladSlopeWithBoulders(Seed, AlturaDaFatia);
 
 	const float AlturaDaTrilha = HeightUnits * TrailTopFraction;
 	const int32 Passos = FMath::Max(2,
@@ -168,9 +243,9 @@ void AWalkableMountain::BuildMountain(uint32 Seed)
 			Vizinhanca * MontanhaDaIlha::SobreposicaoDoPatamar);
 	}
 
-	// O cume é um PATAMAR, não a ponta do cone: ponta não se pisa, e uma
-	// trilha que termina num lugar onde não se para não terminou em lugar
-	// nenhum.
+	// O cume é um PATAMAR, e agora ele cobre a calota inteira: a fatia de cima
+	// tem largura, e uma trilha que termina numa borda estreita de um platô
+	// termina a um passo de cair.
 	UStaticMesh* MalhaDoPatamar = Trail->GetStaticMesh().Get();
 	const FVector TamanhoDoCubo = MalhaDoPatamar
 		? MalhaDoPatamar->GetBoundingBox().GetSize() : FVector::ZeroVector;
@@ -189,6 +264,58 @@ void AWalkableMountain::BuildMountain(uint32 Seed)
 	Cume.SetLocation(FVector(0.0, 0.0, AlturaDaTrilha - 0.5f * TrailThicknessUnits));
 	Trail->AddInstance(Cume);
 	TrailSteps.Add(Cume);
+}
+
+void AWalkableMountain::CladSlopeWithBoulders(uint32 Seed, float SliceHeightUnits)
+{
+	UStaticMesh* Malha = Boulders ? Boulders->GetStaticMesh().Get() : nullptr;
+	if (!Malha)
+	{
+		return;
+	}
+
+	const FVector Tamanho = Malha->GetBoundingBox().GetSize();
+	const float MaiorLado = static_cast<float>(FMath::Max3(Tamanho.X, Tamanho.Y, Tamanho.Z));
+	if (MaiorLado <= 0.0f)
+	{
+		return;
+	}
+
+	const int32 UltimaFatia =
+		MountainProfile::SliceCount - MontanhaDaIlha::FatiasLimpasNoCume;
+
+	for (int32 Fatia = 0; Fatia < UltimaFatia; ++Fatia)
+	{
+		const float Raio = BaseRadiusUnits * MountainProfile::SliceRadiusFraction(Fatia);
+		const float Topo = (Fatia + 1) * SliceHeightUnits;
+
+		for (int32 Pedra = 0; Pedra < MontanhaDaIlha::PedrasPorFatia; ++Pedra)
+		{
+			const float Angulo = 2.0f * PI * BattleSpread::Fraction(
+				Seed, MontanhaDaIlha::FluxoDaPedra(Fatia, Pedra, 0));
+			const float Escala = SliceHeightUnits * BattleSpread::Between(
+				MontanhaDaIlha::PedraMinima, MontanhaDaIlha::PedraMaxima,
+				BattleSpread::Fraction(Seed, MontanhaDaIlha::FluxoDaPedra(Fatia, Pedra, 1)))
+				/ MaiorLado;
+			const float Giro = 360.0f * BattleSpread::Fraction(
+				Seed, MontanhaDaIlha::FluxoDaPedra(Fatia, Pedra, 2));
+			// A pedra sobe ou desce um pouco em relação ao degrau: alinhadas
+			// todas na mesma altura, cinco pedras por fatia desenhariam de
+			// volta exatamente a aresta que elas existem para esconder.
+			const float Desnivel = SliceHeightUnits * BattleSpread::Between(-0.35f, 0.15f,
+				BattleSpread::Fraction(Seed, MontanhaDaIlha::FluxoDaPedra(Fatia, Pedra, 3)));
+
+			FTransform Bloco;
+			Bloco.SetScale3D(FVector(Escala));
+			Bloco.SetRotation(FRotator(0.0f, Giro, 0.0f).Quaternion());
+			Bloco.SetLocation(FVector(
+				FMath::Cos(Angulo) * Raio,
+				FMath::Sin(Angulo) * Raio,
+				Topo + Desnivel));
+
+			Boulders->AddInstance(Bloco);
+		}
+	}
 }
 
 void AWalkableMountain::CarveStep(float ZUnits, float AngleRadians, float TangentialLengthUnits)

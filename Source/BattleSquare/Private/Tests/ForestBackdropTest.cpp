@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Environment/ForestBackdrop.h"
+#include "Environment/RegionResidency.h"
 #include "Battle/BattleArena.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -511,8 +512,11 @@ bool FForestRegionPlantsInsideItsSquareTest::RunTest(const FString& Parameters)
 	const UStaticMeshComponent* Chao = Mata->GetGroundMesh();
 	TestTrue(TEXT("O chão do pedaço é o cubo, não o cilindro"),
 		Chao->GetStaticMesh() && Chao->GetStaticMesh()->GetName().Contains(TEXT("Cube")));
-	TestEqual(TEXT("E ele mede o lado pedido em X"),
-		static_cast<float>(Chao->GetRelativeScale3D().X) * 100.0f, LadoDoPedacoDeTeste);
+	// Ele mede MAIS que o pedaço, e a diferença é o que costura a grade: dois
+	// ladrilhos que só se encostam deixam fresta na diagonal.
+	TestEqual(TEXT("E ele mede o lado transbordado em X"),
+		static_cast<float>(Chao->GetRelativeScale3D().X) * 100.0f,
+		AForestBackdrop::RegionGroundSideUnits(LadoDoPedacoDeTeste));
 	TestEqual(TEXT("E o mesmo em Y — quadrado, não retângulo"),
 		static_cast<float>(Chao->GetRelativeScale3D().Y),
 		static_cast<float>(Chao->GetRelativeScale3D().X));
@@ -713,5 +717,41 @@ bool FForestRegionRepeatsForTheSameSeedTest::RunTest(const FString& Parameters)
 		Outra.Num() != Primeira.Num() || !Outra[0].Equals(Primeira[0], 0.01));
 
 	DestroyForestTestWorld(World);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FForestRegionGroundOverlapsItsNeighbourTest,
+	"BattleSquare.Environment.ForestBackdrop.OChaoDeUmPedacoInvadeOVizinho",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FForestRegionGroundOverlapsItsNeighbourTest::RunTest(const FString& Parameters)
+{
+	// Encostar não é cobrir. Dois pedaços do mesmo lado numa grade daquele
+	// lado dividem uma aresta exata, e na diagonal quatro cantos dividem um
+	// PONTO — que é por onde se cai. O chão precisa passar da borda.
+	const float LadoDoPedaco = RegionResidency::ChunkSideUnits();
+	const float LadoDoChao = AForestBackdrop::RegionGroundSideUnits(LadoDoPedaco);
+
+	if (!TestTrue(TEXT("O chão é maior que o pedaço que ele cobre"),
+		LadoDoChao > LadoDoPedaco))
+	{
+		return false;
+	}
+
+	// Dois vizinhos, centros a um lado de distância. A borda de um passa da
+	// borda do outro pela metade do transbordo, de cada lado.
+	const float MetadeDoChao = 0.5f * LadoDoChao;
+	const float Invasao = 2.0f * MetadeDoChao - LadoDoPedaco;
+
+	TestTrue(TEXT("E a invasão é larga o bastante para ninguém caber na fresta"),
+		Invasao >= 100.0f);
+
+	// Crescer o mundo não pode encolher a costura: a sobreposição é uma
+	// FRAÇÃO do lado, não um número fixo que um dia vira desprezível.
+	const float LadoGrande = AForestBackdrop::RegionGroundSideUnits(4.0f * LadoDoPedaco);
+	TestTrue(TEXT("Pedaço maior transborda proporcionalmente mais"),
+		LadoGrande - 4.0f * LadoDoPedaco > Invasao);
+
 	return true;
 }

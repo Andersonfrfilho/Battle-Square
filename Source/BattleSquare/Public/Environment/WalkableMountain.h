@@ -19,9 +19,18 @@ class UStaticMeshComponent;
  * porque ninguém chega nele. Trilha só existe onde há chão para caminhar até a
  * base, e isso obrigou uma montanha NOVA, plantada dentro da ilha.
  *
- * O corpo é um cone que BLOQUEIA, e o bloqueio é o ponto: a encosta tem 58° de
- * inclinação contra os 44° que a engine deixa andar, então subir pela rocha não
- * é uma opção ruim, é uma opção que não existe. Quem quer o cume usa a trilha.
+ * O corpo é uma PILHA DE FATIAS que BLOQUEIA, e o bloqueio é o ponto: cada
+ * fatia é uma parede vertical, então subir pela rocha não é uma opção ruim, é
+ * uma opção que não existe. Quem quer o cume usa a trilha.
+ *
+ * Foi um cone até o jogador olhar e chamar de "montanhas pontudas extremamente
+ * esquisitas". Cone passa em todo teste numérico e é chapéu de festa na tela.
+ * O raio de cada fatia sai de `MountainProfile`, que é a mesma curva que a
+ * trilha lê — silhueta e trilha discordando é trilha flutuando no ar.
+ *
+ * Por cima das fatias vai um COSTADO de pedras do kit, sem colisão. Ele existe
+ * porque cilindro empilhado tem degrau, e degrau regular lê como escada. As
+ * pedras quebram a borda e é delas que vêm as curvas que se enxergam.
  *
  * A trilha é feita de PATAMARES, não de rampa. Rampa depende do ângulo caber no
  * limite de piso andável, e um ângulo que cabe na subida é um ângulo raso demais
@@ -64,11 +73,21 @@ public:
 	/** O patamar do cume — o último, e o único no eixo da montanha. */
 	int32 GetSummitStepIndex() const { return TrailSteps.Num() - 1; }
 
-	/** Raio do cone na altura dada. Zero acima do cume. */
+	/**
+	 * Raio da encosta na altura dada. Zero acima do cume.
+	 *
+	 * Lê a curva CONTÍNUA do perfil, e não o raio da fatia: a trilha sobe de
+	 * trinta em trinta unidades e as fatias têm mais de cem, então cravar a
+	 * trilha no raio da fatia faria dois patamares vizinhos saltarem de raio
+	 * no meio da subida.
+	 */
 	float RadiusAtHeight(float ZUnits) const;
 
-	UStaticMeshComponent* GetBody() const { return Body; }
+	UStaticMeshComponent* GetBody() const;
 	UHierarchicalInstancedStaticMeshComponent* GetTrail() const { return Trail; }
+
+	/** O costado de pedras que arredonda a encosta. Não colide com ninguém. */
+	UHierarchicalInstancedStaticMeshComponent* GetBoulders() const { return Boulders; }
 
 	/**
 	 * O degrau que a engine deixa subir andando.
@@ -85,24 +104,43 @@ public:
 	 * Público pelo mesmo motivo das medidas da caverna: quem decide ONDE
 	 * plantar precisa do tamanho antes de haver montanha para perguntar.
 	 */
-	static constexpr float DefaultBaseRadiusUnits = 1500.0f;
+	static constexpr float DefaultBaseRadiusUnits = 2400.0f;
 
 private:
 	/** Um patamar da trilha, em coordenadas locais da montanha. */
 	void CarveStep(float ZUnits, float AngleRadians, float TangentialLengthUnits);
 
+	/** Espalha as pedras do costado pelas bordas das fatias. */
+	void CladSlopeWithBoulders(uint32 Seed, float SliceHeightUnits);
+
 	UPROPERTY()
 	TObjectPtr<USceneComponent> MountainRoot;
 
+	/**
+	 * O corpo é um grupo de INSTÂNCIAS, não uma malha só.
+	 *
+	 * O tipo continua sendo lido como `UStaticMeshComponent` por `GetBody()`
+	 * porque é disso que quem pergunta precisa saber: que há malha e que ela
+	 * bloqueia. Quantas fatias formam a silhueta é assunto daqui.
+	 */
 	UPROPERTY()
-	TObjectPtr<UStaticMeshComponent> Body;
+	TObjectPtr<UHierarchicalInstancedStaticMeshComponent> Body;
 
 	UPROPERTY()
 	TObjectPtr<UHierarchicalInstancedStaticMeshComponent> Trail;
 
-	/** Altura do cone. */
+	UPROPERTY()
+	TObjectPtr<UHierarchicalInstancedStaticMeshComponent> Boulders;
+
+	/**
+	 * Altura do cume.
+	 *
+	 * Mais baixa e MUITO mais larga que a versão em cone: 2100 de altura para
+	 * 2400 de raio é um maciço; 2400 por 1500 era uma agulha. Montanha larga
+	 * lê como terra; montanha estreita lê como objeto plantado no chão.
+	 */
 	UPROPERTY(EditAnywhere, Category = "Montanha")
-	float HeightUnits = 2400.0f;
+	float HeightUnits = 2100.0f;
 
 	/** Raio da base. */
 	UPROPERTY(EditAnywhere, Category = "Montanha")
@@ -110,7 +148,7 @@ private:
 
 	/** Até que fração da altura a trilha sobe. */
 	UPROPERTY(EditAnywhere, Category = "Montanha")
-	float TrailTopFraction = 0.86f;
+	float TrailTopFraction = 0.88f;
 
 	/** Quanto cada patamar sobe em relação ao anterior. */
 	UPROPERTY(EditAnywhere, Category = "Montanha")

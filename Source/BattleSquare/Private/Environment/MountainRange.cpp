@@ -11,8 +11,19 @@
 
 namespace SerraDoHorizonte
 {
-	/** O cone da engine — a única forma que já é uma montanha sem escultura. */
-	const TCHAR* MalhaDoCorpo = TEXT("/Engine/BasicShapes/Cone.Cone");
+	/**
+	 * A rocha esculpida do kit, e o cone da engine como reserva.
+	 *
+	 * Foi só o cone por muito tempo, e o jogador leu a serra inteira como
+	 * "montanhas pontudas extremamente esquisitas": 22 picos com três cones
+	 * cada dá 66 chapéus de festa no horizonte. O cone passa em todo teste
+	 * numérico porque teste não olha silhueta.
+	 *
+	 * A reserva não é zelo: componente sem asset é invisível, e uma serra
+	 * invisível some do horizonte sem quebrar um teste sequer.
+	 */
+	const TCHAR* MalhaDoCorpo = TEXT("/Game/Environment/Nature/rock_tallA.rock_tallA");
+	const TCHAR* MalhaDeReserva = TEXT("/Engine/BasicShapes/Cone.Cone");
 
 	/** Quantas montanhas em volta. */
 	constexpr int32 NumeroDePicos = 22;
@@ -63,7 +74,7 @@ namespace SerraDoHorizonte
 	 * piscam conforme a câmera anda. Dois centésimos resolvem, e a essa
 	 * distância ninguém mede a borda.
 	 */
-	constexpr float FolgaDoGelo = 1.02f;
+	constexpr float FolgaDoGelo = 1.06f;
 
 	/** Os sorteios do corpo principal. */
 	enum class ESorteio : int32
@@ -104,7 +115,8 @@ AMountainRange::AMountainRange()
 	// A malha é atribuída AQUI, no construtor, e não na montagem. Componente
 	// criado sem asset passa em todo teste de lógica e não existe na tela —
 	// o padrão que já custou três defeitos a este projeto.
-	ConstructorHelpers::FObjectFinder<UStaticMesh> Cone(SerraDoHorizonte::MalhaDoCorpo);
+	ConstructorHelpers::FObjectFinder<UStaticMesh> Rocha(SerraDoHorizonte::MalhaDoCorpo);
+	ConstructorHelpers::FObjectFinder<UStaticMesh> Cone(SerraDoHorizonte::MalhaDeReserva);
 
 	RockPeaks = CreateDefaultSubobject<UHierarchicalInstancedStaticMeshComponent>(
 		TEXT("MountainRockPeaks"));
@@ -114,10 +126,12 @@ AMountainRange::AMountainRange()
 		TEXT("MountainSnowCaps"));
 	SnowCaps->SetupAttachment(RangeRoot);
 
-	if (Cone.Succeeded())
+	UStaticMesh* Silhueta = Rocha.Succeeded() ? Rocha.Object
+		: (Cone.Succeeded() ? Cone.Object : nullptr);
+	if (Silhueta)
 	{
-		RockPeaks->SetStaticMesh(Cone.Object);
-		SnowCaps->SetStaticMesh(Cone.Object);
+		RockPeaks->SetStaticMesh(Silhueta);
+		SnowCaps->SetStaticMesh(Silhueta);
 	}
 
 	for (UHierarchicalInstancedStaticMeshComponent* Grupo : { RockPeaks.Get(), SnowCaps.Get() })
@@ -282,9 +296,11 @@ void AMountainRange::RaiseBody(const FVector& BaseLocation, float HeightMeters,
 		return;
 	}
 
-	// O cume é o PRÓPRIO corpo reduzido à fatia que passa da linha da neve:
-	// um cone escalado por `Fatia` tem exatamente o raio que o corpo tem
-	// naquela altura. Por isso o gelo encaixa sem cálculo separado.
+	// O cume é o PRÓPRIO corpo reduzido à fatia que passa da linha da neve, e
+	// erguido até ela. Com o cone o encaixe era exato, porque o cone afina em
+	// linha reta; com a rocha esculpida ele é APROXIMADO — a folga existe para
+	// o gelo transbordar um pouco em vez de deixar rocha aparecendo por fora,
+	// que é o erro que se enxerga.
 	const float EscalaZDoGelo = EscalaZ * Fatia;
 	FTransform Cume;
 	Cume.SetScale3D(FVector(

@@ -84,7 +84,77 @@ está na lista, e prende.
 E ele resolve um problema do desenho: sem polícia, caçar criminoso seria tarefa
 só de jogador — e num servidor vazio de madrugada, ninguém caçaria ninguém.
 
-## Perguntas em aberto
+
+## O pet roubado se denuncia na BATALHA
+
+**Decidido em 31/08/2026, e é o coração do sistema.**
+
+Existem compradores de pet roubado, e eles são escondidos. Mas a venda **não
+limpa nada**: o pet continua identificável, e quem o revela é a BATALHA.
+
+Quando um jogador que viu a lista de procurados enfrenta quem está com o pet
+roubado — o ladrão ou quem comprou dele —, o pet é reconhecido. A partir daí:
+
+- **Quem carrega o pet é sinalizado no mapa.**
+- **O DONO é avisado** de que o pet dele apareceu, e onde.
+- Quem viu pode **chamar a polícia**, e o comprador é punido.
+
+Três coisas boas saem disso, e nenhuma precisou ser inventada à parte:
+
+1. **A lista de procurados vira objeto de jogo.** Ler o poste da praça deixa de
+   ser sabor e passa a ser o que te dá o poder de reconhecer. Quem não leu, não
+   vê.
+2. **A comunidade é a rede de detecção.** O jogo não precisa vigiar ninguém — os
+   jogadores reconhecem, e é por isso que o sistema funciona num servidor
+   pequeno.
+3. **Receptação é crime.** Comprar sabendo é punido, e isso é o que torna o
+   comprador escondido um risco em vez de uma saída limpa.
+
+### E o pet roubado é um ATIVO RUIM
+
+Junte com o envelhecimento: usar o pet roubado o expõe, **não usar não o
+impede de envelhecer**. Quem rouba fica com uma coisa que não pode mostrar e
+que decai na mão.
+
+É o desenho que faz o crime não compensar sem que nenhuma regra diga "roubar é
+proibido".
+
+### O risco, dito na cara
+
+**Sinalizar jogador no mapa é ferramenta de perseguição.** Um marcador
+permanente sobre alguém é convite para um grupo cercá-lo, e isso deixa de ser
+justiça e vira assédio. A sinalização precisa **durar pouco** e vir do
+reconhecimento — não de estar na lista.
+
+## Envelhecer, abandonar e reivindicar
+
+**Pets envelhecem, e envelhecem mais rápido quando malcuidados.** É uma
+variável constante, não um evento — o que muda a relação com o pet: ele deixa
+de ser inventário e passa a ser algo que se mantém.
+
+**Pet abandonado pode ser REIVINDICADO** por quem o trate e cuide dele. É o
+caminho de volta para o pet que ninguém quer, e dá função ao abrigo do Centro
+de Recuperação além de guardar coleção.
+
+E dá ao criminoso uma saída que não é perdão barato: abandonar o roubado, e
+alguém o recupera.
+
+### O que isso exige
+
+Uma variável de IDADE e outra de CUIDADO por pet, correndo com o tempo real ou
+com o tempo de jogo — e essa escolha é pesada. Com tempo real, quem some por
+uma semana volta e encontra o pet envelhecido, e isso pune ausência em vez de
+punir descuido.
+
+## Perguntas em aberto (acrescentadas)
+
+- **A idade tem fim?** Pet que morre de velho é perda permanente, e perda
+  permanente afasta muita gente. Ou ele só decai até um piso?
+- **O tempo corre offline?** Punir quem não joga é o modo mais rápido de fazer
+  alguém não voltar.
+- **Cuidar é ativo ou passivo?** Se exige visita diária, o jogo vira tarefa.
+
+## Perguntas em aberto (do desenho original)
 
 - **Quanto tempo dura a marca de procurado?** Eterna transforma um erro numa
   sentença; curta demais faz o crime valer a pena.

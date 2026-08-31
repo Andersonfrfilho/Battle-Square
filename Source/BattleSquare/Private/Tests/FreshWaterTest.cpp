@@ -33,10 +33,12 @@ bool FFreshWaterGivesEveryMountainOneRiverTest::RunTest(const FString& Parameter
 {
 	const TArray<FreshWater::FRiverCourse> Cursos = FreshWater::Plan();
 
-	// Um rio POR MONTANHA. É o que amarra o curso ao relevo: quem mudar o anel
-	// dos montes leva os rios junto, em vez de deixá-los brotando do nada.
-	TestEqual(TEXT("ha um rio para cada montanha caminhavel"),
-		Cursos.Num(), ContarMontanhasDaIlhaParaOsRios());
+	// Os rios saem DAS MONTANHAS. É o que amarra o curso ao relevo: quem mudar
+	// o anel dos montes leva os rios junto, em vez de deixá-los brotando do
+	// nada. São dois por monte, um em cada flanco.
+	TestEqual(TEXT("ha rios para cada montanha caminhavel"),
+		Cursos.Num(),
+		ContarMontanhasDaIlhaParaOsRios() * FreshWater::RiversPerMountain());
 	TestTrue(TEXT("ha pelo menos um rio"), Cursos.Num() > 0);
 
 	return true;

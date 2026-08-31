@@ -351,9 +351,19 @@ public:
 	 */
 	bool LearnSpecialtyOfCurrentField();
 
-	/** Raio em que os campos nascem em volta do ponto de partida. */
+	/**
+	 * Raio do anel dos campos de treino.
+	 *
+	 * Era 1.800 — dezoito metros numa ilha de mil e quatrocentos. Os cinco
+	 * cabiam num ponto, e a spec já dizia o efeito disso: "as cinco clareiras
+	 * estão todas a 18 metros do centro, e por isso nenhuma é uma viagem".
+	 *
+	 * A carta do mundo mostrou o tamanho do problema, e o conserto é um número
+	 * só. Fica FORA da clareira da vila e bem dentro do anel das outras vilas:
+	 * cada campo vira destino, e a trilha para eles é caminhada, não passo.
+	 */
 	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
-	float TrainingFieldRingRadiusUnits = 1800.0f;
+	float TrainingFieldRingRadiusUnits = 22000.0f;
 
 	/** Zero desliga os campos de treino. */
 	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")

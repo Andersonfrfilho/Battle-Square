@@ -17,22 +17,50 @@ namespace FreshWater
 		 * Larga o bastante para ser um rio visto de cima, e estreita o bastante
 		 * para ainda se atravessar a pé: um rio que corta a ilha em duas sem
 		 * ponte não é paisagem, é muro.
+		 *
+		 * A largura é FRAÇÃO do raio, e não unidades escritas à mão — a mesma
+		 * armadilha que deixou os anéis das peças da ilha para trás quando o
+		 * raio cresceu. Com 170 fixos numa ilha de 1,4 km, o rio tinha 1,7 m:
+		 * um córrego que o passo do traçado de trilha nem enxergava.
 		 */
-		constexpr float MeiaCalhaDoRio = 170.0f;
+		constexpr float FracaoDaCalhaDoRio = 0.0055f;
 
-		/** O lago no auge: sete vezes o rio, o que já é lago e não poça. */
-		constexpr float MeiaCalhaDoLago = 1250.0f;
+		/** O lago no auge: seis vezes o rio, o que já é lago e não poça. */
+		constexpr float FracaoDaCalhaDoLago = 0.033f;
+
+		float MeiaCalhaDoRio() { return IslandGeography::LandRadiusUnits() * FracaoDaCalhaDoRio; }
+		float MeiaCalhaDoLago() { return IslandGeography::LandRadiusUnits() * FracaoDaCalhaDoLago; }
+
+		/**
+		 * Quantos rios desce cada monte.
+		 *
+		 * Dois, em flancos opostos: a montanha derrama para os dois lados, e
+		 * um rio só por monte deixava a ilha inteira com três fios de água.
+		 */
+		constexpr int32 RiosPorMonte = 2;
+
+		/** Quanto os dois rios de um monte se afastam, em graus. */
+		constexpr float AberturaEntreIrmaos = 26.0f;
+
+
+
+
 
 		/**
 		 * Sobre quantas unidades de raio o rio engorda até virar lago.
 		 *
 		 * A transição é longa de propósito. Alargamento curto lê como um
 		 * quadrado grudado no rio; longo lê como a água parando.
+		 *
+		 * Como a largura, ele é FRAÇÃO da calha do lago — e maior que ela, para
+		 * o lago ser mais COMPRIDO que largo. Alargar a água sem alongar junto
+		 * fez o lago virar uma bolha que engoliu a cachoeira do próprio rio, e
+		 * três das seis grutas ficaram sem chão seco para nascer.
 		 */
-		constexpr float AlcanceDoLago = 1700.0f;
+		float AlcanceDoLago() { return MeiaCalhaDoLago() * 1.7f; }
 
 		/** Metade do comprimento da queda, medido no raio. */
-		constexpr float MeiaQueda = 240.0f;
+		float MeiaQueda() { return MeiaCalhaDoRio() * 0.32f; }
 
 		/** Da margem até o meio da trilha. */
 		constexpr float AfastamentoDaTrilha = 260.0f;
@@ -63,8 +91,8 @@ namespace FreshWater
 		constexpr float UltimoLago = 0.46f;
 
 		/** Quanto depois do fim do lago a água despenca. */
-		constexpr float MenorDegrau = 300.0f;
-		constexpr float MaiorDegrau = 1100.0f;
+		float MenorDegrau() { return MeiaCalhaDoLago() * 0.65f; }
+		float MaiorDegrau() { return MeiaCalhaDoLago() * 2.4f; }
 
 		/**
 		 * A primeira distância tentada entre a queda e o centro da gruta, e o
@@ -74,10 +102,19 @@ namespace FreshWater
 		 * cachoeira: o primeiro lugar que serve ganha, e o primeiro lugar
 		 * tentado é o mais próximo. Sorteando a distância, metade das grutas
 		 * nasceria longe da única coisa que explica por que ela está ali.
+		 *
+		 * As distâncias saem da LARGURA DO RIO, não de unidades escritas à mão
+		 * — e é do RIO, não do lago. A gruta é da CACHOEIRA, e na queda o rio
+		 * já voltou a ser estreito; escalar pelo lago mandava a busca começar
+		 * mais longe da queda do que o teste permite a gruta ficar.
+		 *
+		 * Errei as duas vezes pelo mesmo motivo em dois passos: primeiro o
+		 * número era absoluto, depois era relativo à água errada. Relativo não
+		 * basta — tem de ser relativo à coisa CERTA.
 		 */
-		constexpr float PrimeiraDistanciaDaGruta = 1200.0f;
-		constexpr float PassoDaDistanciaDaGruta = 240.0f;
-		constexpr int32 DistanciasDaGruta = 12;
+		float PrimeiraDistanciaDaGruta() { return MeiaCalhaDoRio() * 1.6f; }
+		float PassoDaDistanciaDaGruta() { return MeiaCalhaDoRio() * 0.32f; }
+		constexpr int32 DistanciasDaGruta = 16;
 
 		/**
 		 * Em quantas direções se procura ao redor da queda.
@@ -110,11 +147,13 @@ namespace FreshWater
 		constexpr float PassoDeSondagemDoRio = 60.0f;
 	}
 
-	float RiverHalfWidthUnits() { return MeiaCalhaDoRio; }
-	float LakeHalfWidthUnits() { return MeiaCalhaDoLago; }
-	float FallHalfLengthUnits() { return MeiaQueda; }
+	float RiverHalfWidthUnits() { return MeiaCalhaDoRio(); }
+	float LakeHalfWidthUnits() { return MeiaCalhaDoLago(); }
+	float FallHalfLengthUnits() { return MeiaQueda(); }
 	float TrailOffsetUnits() { return AfastamentoDaTrilha; }
 	float TrailHalfWidthUnits() { return MeiaTrilha; }
+
+	int32 RiversPerMountain() { return RiosPorMonte; }
 
 	TArray<FRiverCourse> Plan()
 	{
@@ -129,34 +168,45 @@ namespace FreshWater
 				continue;
 			}
 
-			FRiverCourse Curso;
-			Curso.SourceRadiusUnits = Peca.RadiusUnits + Peca.ClearanceUnits * SaiaDaNascente;
-			Curso.MouthRadiusUnits = Foz;
-			Curso.BearingRadians = FMath::DegreesToRadians(Peca.AngleDegrees);
+			// DOIS rios por monte, em flancos opostos: a montanha derrama para
+			// os dois lados, e um por monte deixava a ilha com três fios de
+			// água que nenhuma trilha jamais cruzava.
+			for (int32 Irmao = 0; Irmao < RiosPorMonte; ++Irmao)
+			{
+				FRiverCourse Curso;
+				Curso.SourceRadiusUnits = Peca.RadiusUnits + Peca.ClearanceUnits * SaiaDaNascente;
+				Curso.MouthRadiusUnits = Foz;
 
-			// A semente sai do ÍNDICE, não do ângulo: ângulo é float, e float
-			// virando semente é a receita de o rio mudar de curva porque alguém
-			// mexeu na terceira casa decimal do anel dos montes.
-			const uint32 Semente = BattleSpread::SeedFromText(
-				FString::Printf(TEXT("rio-da-montanha-%d"), Indice));
+				const float Desvio = (static_cast<float>(Irmao)
+					- (RiosPorMonte - 1) * 0.5f) * AberturaEntreIrmaos;
+				Curso.BearingRadians =
+					FMath::DegreesToRadians(Peca.AngleDegrees + Desvio);
 
-			Curso.MeanderRadians = BattleSpread::Between(MenorSerpente, MaiorSerpente,
-				BattleSpread::Fraction(Semente, 0));
-			Curso.MeanderTurns = BattleSpread::Between(MenosCurvas, MaisCurvas,
-				BattleSpread::Fraction(Semente, 1));
+				// A semente sai do ÍNDICE, não do ângulo: ângulo é float, e
+				// float virando semente é a receita de o rio mudar de curva
+				// porque alguém mexeu na terceira casa decimal do anel.
+				const uint32 Semente = BattleSpread::SeedFromText(
+					FString::Printf(TEXT("rio-da-montanha-%d"), Indice));
 
-			const float Percurso = FMath::Max(0.0f, Curso.MouthRadiusUnits - Curso.SourceRadiusUnits);
-			Curso.LakeRadiusUnits = Curso.SourceRadiusUnits + Percurso * BattleSpread::Between(
-				PrimeiroLago, UltimoLago, BattleSpread::Fraction(Semente, 2));
+				Curso.MeanderRadians = BattleSpread::Between(MenorSerpente, MaiorSerpente,
+					BattleSpread::Fraction(Semente, 0));
+				Curso.MeanderTurns = BattleSpread::Between(MenosCurvas, MaisCurvas,
+					BattleSpread::Fraction(Semente, 1));
 
-			// A queda vem SEMPRE depois do lago, e por soma em vez de sorteio
-			// independente: sorteados à parte, um dia sairia uma cachoeira no
-			// meio do lago, que é água caindo dentro de água parada.
-			Curso.FallRadiusUnits = Curso.LakeRadiusUnits + AlcanceDoLago + BattleSpread::Between(
-				MenorDegrau, MaiorDegrau, BattleSpread::Fraction(Semente, 3));
+				const float Percurso =
+					FMath::Max(0.0f, Curso.MouthRadiusUnits - Curso.SourceRadiusUnits);
+				Curso.LakeRadiusUnits = Curso.SourceRadiusUnits + Percurso * BattleSpread::Between(
+					PrimeiroLago, UltimoLago, BattleSpread::Fraction(Semente, 2));
 
-			Cursos.Add(Curso);
-			++Indice;
+				// A queda vem SEMPRE depois do lago, e por soma em vez de
+				// sorteio independente: sorteados à parte, um dia sairia uma
+				// cachoeira no meio do lago — água caindo dentro de água parada.
+				Curso.FallRadiusUnits = Curso.LakeRadiusUnits + AlcanceDoLago() + BattleSpread::Between(
+					MenorDegrau(), MaiorDegrau(), BattleSpread::Fraction(Semente, 3));
+
+				Cursos.Add(Curso);
+				++Indice;
+			}
 		}
 
 		return Cursos;
@@ -178,19 +228,19 @@ namespace FreshWater
 	float HalfWidthAt(const FRiverCourse& Course, float RadiusUnits)
 	{
 		const float Distancia = FMath::Abs(RadiusUnits - Course.LakeRadiusUnits);
-		if (Distancia >= AlcanceDoLago)
+		if (Distancia >= AlcanceDoLago())
 		{
-			return MeiaCalhaDoRio;
+			return MeiaCalhaDoRio();
 		}
 
-		const float Subida = 1.0f - Distancia / AlcanceDoLago;
+		const float Subida = 1.0f - Distancia / AlcanceDoLago();
 		const float Suave = Subida * Subida * (3.0f - 2.0f * Subida);
-		return MeiaCalhaDoRio + (MeiaCalhaDoLago - MeiaCalhaDoRio) * Suave;
+		return MeiaCalhaDoRio() + (MeiaCalhaDoLago() - MeiaCalhaDoRio()) * Suave;
 	}
 
 	bool IsFallAt(const FRiverCourse& Course, float RadiusUnits)
 	{
-		return FMath::Abs(RadiusUnits - Course.FallRadiusUnits) <= MeiaQueda;
+		return FMath::Abs(RadiusUnits - Course.FallRadiusUnits) <= MeiaQueda();
 	}
 
 	namespace
@@ -246,8 +296,8 @@ namespace FreshWater
 			bool bAchou = false;
 			for (int32 Tentativa = 0; Tentativa < DistanciasDaGruta && !bAchou; ++Tentativa)
 			{
-				const float Distancia = PrimeiraDistanciaDaGruta
-					+ PassoDaDistanciaDaGruta * static_cast<float>(Tentativa);
+				const float Distancia = PrimeiraDistanciaDaGruta()
+					+ PassoDaDistanciaDaGruta() * static_cast<float>(Tentativa);
 
 				for (int32 Passo = 0; Passo < RumosDaGruta && !bAchou; ++Passo)
 				{

@@ -4,6 +4,7 @@
 #include "World/VillageLayout.h"
 #include "Environment/IslandGeography.h"
 #include "Environment/FreshWater.h"
+#include "Environment/IslandFeatureLayout.h"
 
 namespace
 {
@@ -43,6 +44,13 @@ namespace
 
 	/** Quantas amostras dentro de um trecho, para ver o que é estreito. */
 	constexpr int32 AmostrasPorTrecho = 6;
+
+	/**
+	 * Quantas vezes cortar os cantos. Duas já tiram a escadinha; mais que isso
+	 * começa a encurtar a curva e a trilha deixa de passar por onde o traçado
+	 * decidiu que ela deveria.
+	 */
+	constexpr int32 PassadasDeArredondamento = 2;
 
 	float Passo() { return IslandGeography::LandRadiusUnits() * FracaoDoPasso; }
 
@@ -142,6 +150,49 @@ namespace
 		}
 
 		return Custo;
+	}
+
+	/**
+	 * Arredonda os cantos do caminho.
+	 *
+	 * O traçado anda em GRADE, com oito vizinhos, e por isso produz escadinha
+	 * de 45° em terreno plano. Isso é artefato da grade, não do mundo: nenhuma
+	 * trilha pisada por gente tem canto reto.
+	 *
+	 * O corte de cantos é aplicado em passadas: cada uma substitui cada canto
+	 * por dois pontos a um quarto e a três quartos do trecho. As PONTAS ficam
+	 * onde estavam, porque elas são os centros dos assentamentos.
+	 *
+	 * Arredondar move a linha para dentro da curva, então ela pode encostar em
+	 * algo que o traçado evitava — e é por isso que os testes de "não corta a
+	 * rocha queimada" e "não sai da terra" olham o caminho DEPOIS disto.
+	 */
+	TArray<FVector2D> Arredondar(const TArray<FVector2D>& Caminho)
+	{
+		TArray<FVector2D> Atual = Caminho;
+
+		for (int32 Passada = 0; Passada < PassadasDeArredondamento; ++Passada)
+		{
+			if (Atual.Num() < 3)
+			{
+				break;
+			}
+
+			TArray<FVector2D> Macio;
+			Macio.Reserve(Atual.Num() * 2);
+			Macio.Add(Atual[0]);
+
+			for (int32 Ponto = 0; Ponto + 1 < Atual.Num(); ++Ponto)
+			{
+				Macio.Add(FMath::Lerp(Atual[Ponto], Atual[Ponto + 1], 0.25f));
+				Macio.Add(FMath::Lerp(Atual[Ponto], Atual[Ponto + 1], 0.75f));
+			}
+
+			Macio.Add(Atual.Last());
+			Atual = MoveTemp(Macio);
+		}
+
+		return Atual;
 	}
 
 	/** Menor custo entre dois pontos, por Dijkstra sobre a grade. */
@@ -259,7 +310,7 @@ namespace
 			Caminho.Last() = Prali;
 		}
 
-		return Caminho;
+		return Arredondar(Caminho);
 	}
 
 	FVector2D CentroDe(ESettlementKind Tipo)
@@ -280,13 +331,45 @@ namespace
 		TArray<FTrailRoute> Trilhas;
 
 		auto Ligar = [&Trilhas](ESettlementKind Daqui, const FVector2D& Origem,
-			ESettlementKind Prali, const FVector2D& Destino)
+			ESettlementKind Prali, const FVector2D& Destino,
+			ETrailDestination Tipo = ETrailDestination::Assentamento)
 		{
 			FTrailRoute Trilha;
 			Trilha.From = Daqui;
 			Trilha.To = Prali;
+			Trilha.Destination = Tipo;
 			Trilha.PointsUnits = CaminhoBarato(Origem, Destino);
 			Trilhas.Add(MoveTemp(Trilha));
+		};
+
+		/**
+		 * Quem PARTE para o marco natural é o assentamento mais perto dele.
+		 *
+		 * Puxar tudo de casa faria seis trilhas saindo da mesma praça e
+		 * atravessando a ilha inteira. O caminho até a cachoeira sai de onde
+		 * alguém que a queira ver estaria.
+		 */
+		auto MaisPertoDe = [](const FVector2D& Alvo)
+		{
+			FSettlementPlacement Escolhido = RegionLayout::Plan()[0];
+			float Menor = TNumericLimits<float>::Max();
+
+			for (const FSettlementPlacement& Assentamento : RegionLayout::Plan())
+			{
+				if (Assentamento.Kind == ESettlementKind::PostoDeFronteira)
+				{
+					continue;
+				}
+
+				const float Daqui = FVector2D::Distance(Assentamento.CenterUnits, Alvo);
+				if (Daqui < Menor)
+				{
+					Menor = Daqui;
+					Escolhido = Assentamento;
+				}
+			}
+
+			return Escolhido;
 		};
 
 		const FVector2D DeCasa = CentroDe(ESettlementKind::VilaInicial);
@@ -314,6 +397,59 @@ namespace
 				Ligar(ESettlementKind::CidadeGrande, DaCidade,
 					ESettlementKind::PostoDeFronteira, Assentamento.CenterUnits);
 			}
+		}
+
+		// AS CACHOEIRAS. Cada uma ganha caminho, e é aqui que a ponte nasce: um
+		// caminho até a queda tem de chegar na margem do rio.
+		//
+		// A trilha para na MARGEM, afastada pela largura da água mais a folga
+		// da faixa limpa. Mirar o ponto exato da queda mandaria o traçado para
+		// dentro do rio, e ele pagaria a penalidade da água até o fim.
+		for (const FreshWater::FRiverCourse& Rio : FreshWater::Plan())
+		{
+			const FVector2D NaQueda = FreshWater::PointAt(Rio, Rio.FallRadiusUnits);
+			const float Afastar = FreshWater::HalfWidthAt(Rio, Rio.FallRadiusUnits)
+				+ TrailLayout::HalfWidthUnits() * 2.0f;
+
+			const FSettlementPlacement Parte = MaisPertoDe(NaQueda);
+
+			// PERPENDICULAR ao rio, e não na direção da vila.
+			//
+			// Afastar rumo à vila parecia óbvio e estava errado: essa direção
+			// pode correr AO LONGO da água em vez de para longe dela, e aí a
+			// ponta da trilha fica dentro do rio um pouco mais acima. O teste
+			// pegou, e a geometria certa é sair de lado.
+			//
+			// O lado escolhido é o da vila — das duas margens, a trilha para na
+			// que fica do lado de quem chega.
+			const FVector2D UmPoucoAcima = FreshWater::PointAt(Rio,
+				Rio.FallRadiusUnits + FreshWater::FallHalfLengthUnits());
+			const FVector2D AoLongo = (UmPoucoAcima - NaQueda).GetSafeNormal();
+			const FVector2D DeLado(-AoLongo.Y, AoLongo.X);
+
+			const float ParaQualLado = FVector2D::DotProduct(
+				Parte.CenterUnits - NaQueda, DeLado) >= 0.0f ? 1.0f : -1.0f;
+
+			Ligar(Parte.Kind, Parte.CenterUnits, Parte.Kind,
+				NaQueda + DeLado * (ParaQualLado * Afastar), ETrailDestination::Cachoeira);
+		}
+
+		// OS MONTES. O caminho para na saia, não no cume: o monte é sólido, e
+		// uma trilha mirando o topo entraria na pedra.
+		for (const IslandFeatureLayout::FFeaturePlacement& Peca : IslandFeatureLayout::Plan())
+		{
+			if (Peca.Feature != IslandFeatureLayout::EIslandFeature::WalkableMountain)
+			{
+				continue;
+			}
+
+			const FVector2D NoCume = Peca.CenterUnits();
+			const FSettlementPlacement Parte = MaisPertoDe(NoCume);
+			const FVector2D ParaASaia = (Parte.CenterUnits - NoCume).GetSafeNormal();
+
+			Ligar(Parte.Kind, Parte.CenterUnits, Parte.Kind,
+				NoCume + ParaASaia * (Peca.ClearanceUnits + TrailLayout::HalfWidthUnits()),
+				ETrailDestination::Monte);
 		}
 
 		return Trilhas;

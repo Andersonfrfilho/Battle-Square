@@ -4,6 +4,7 @@
 #include "World/TrailLayout.h"
 #include "World/RegionLayout.h"
 #include "Environment/IslandGeography.h"
+#include "Environment/FreshWater.h"
 
 namespace TracadoDaTrilha
 {
@@ -135,7 +136,7 @@ bool FTrailLayoutAsPontasEncostamNoAssentamentoTest::RunTest(const FString& Para
 		}
 
 		bool bAchouOrigem = false;
-		bool bAchouDestino = false;
+		bool bAchouDestino = Trilha.Destination != ETrailDestination::Assentamento;
 
 		for (const FSettlementPlacement& Assentamento : RegionLayout::Plan())
 		{
@@ -144,7 +145,8 @@ bool FTrailLayoutAsPontasEncostamNoAssentamentoTest::RunTest(const FString& Para
 			{
 				bAchouOrigem = true;
 			}
-			if (Assentamento.Kind == Trilha.To
+			if (Trilha.Destination == ETrailDestination::Assentamento
+				&& Assentamento.Kind == Trilha.To
 				&& Trilha.PointsUnits.Last().Equals(Assentamento.CenterUnits, 1.0f))
 			{
 				bAchouDestino = true;
@@ -153,6 +155,59 @@ bool FTrailLayoutAsPontasEncostamNoAssentamentoTest::RunTest(const FString& Para
 
 		TestTrue(TEXT("a trilha começa no assentamento"), bAchouOrigem);
 		TestTrue(TEXT("e termina no outro"), bAchouDestino);
+	}
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTrailLayoutOsMarcosNaturaisTemCaminhoTest,
+	"BattleSquare.TrailLayout.OsMarcosNaturaisTemCaminho",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FTrailLayoutOsMarcosNaturaisTemCaminhoTest::RunTest(const FString& Parameters)
+{
+	// Uma cachoeira sem caminho é a cachoeira que o relato de jogo disse nunca
+	// ter visto. Ela existia, tinha posição calculada, e ninguém tinha como
+	// saber onde.
+	//
+	// E foram estas trilhas que fizeram a PONTE existir: enquanto todo destino
+	// ficava ENTRE os rios, nenhuma travessia era necessária. Os rios correm do
+	// monte para o mar, e as trilhas entre vilas corriam junto — retas
+	// paralelas não se cruzam.
+	int32 ParaCachoeira = 0;
+	int32 ParaMonte = 0;
+
+	for (const FTrailRoute& Trilha : TrailLayout::Plan())
+	{
+		if (Trilha.Destination == ETrailDestination::Cachoeira) { ++ParaCachoeira; }
+		if (Trilha.Destination == ETrailDestination::Monte) { ++ParaMonte; }
+	}
+
+	TestEqual(TEXT("toda cachoeira tem caminho"),
+		ParaCachoeira, FreshWater::Plan().Num());
+	TestTrue(TEXT("e todo monte também"), ParaMonte > 0);
+
+	// A trilha para na MARGEM. Mirando o ponto exato da queda, o traçado
+	// entraria no rio e pagaria a penalidade da água até o fim.
+	for (const FTrailRoute& Trilha : TrailLayout::Plan())
+	{
+		if (Trilha.Destination != ETrailDestination::Cachoeira)
+		{
+			continue;
+		}
+
+		for (const FreshWater::FRiverCourse& Rio : FreshWater::Plan())
+		{
+			const float Raio = Trilha.PointsUnits.Last().Size();
+			if (Raio < Rio.SourceRadiusUnits || Raio > Rio.MouthRadiusUnits)
+			{
+				continue;
+			}
+
+			TestTrue(TEXT("a trilha para na margem, não dentro da água"),
+				FVector2D::Distance(Trilha.PointsUnits.Last(), FreshWater::PointAt(Rio, Raio))
+					> FreshWater::HalfWidthAt(Rio, Raio));
+		}
 	}
 
 	return true;

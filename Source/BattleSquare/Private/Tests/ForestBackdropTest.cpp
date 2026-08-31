@@ -1228,7 +1228,31 @@ namespace
 			return FVector::ZeroVector;
 		}
 
-		const FVector2D Ponto = FreshWater::PointAt(Cursos[0], Cursos[0].LakeRadiusUnits);
+		// No OMBRO do lago, não no meio dele.
+		//
+		// O teste precisa de um pedaço que contenha as duas larguras — a calha
+		// estreita e a lâmina larga. Centrado no meio do lago isso valia só
+		// enquanto o lago era menor que um pedaço; hoje ele é mais comprido
+		// que um, e o pedaço inteiro cai dentro da água.
+		//
+		// O ombro é achado PROCURANDO, não por um deslocamento escrito à mão:
+		// é o primeiro raio em que a calha passa do dobro da largura do rio.
+		// Assim ele acompanha quando o lago mudar de tamanho de novo.
+		const float DoRio = FreshWater::HalfWidthAt(Cursos[0], Cursos[0].SourceRadiusUnits);
+		const float Passo = (Cursos[0].LakeRadiusUnits - Cursos[0].SourceRadiusUnits) / 200.0f;
+
+		float NoOmbro = Cursos[0].LakeRadiusUnits;
+		for (float Raio = Cursos[0].SourceRadiusUnits; Raio <= Cursos[0].LakeRadiusUnits;
+			Raio += Passo)
+		{
+			if (FreshWater::HalfWidthAt(Cursos[0], Raio) > DoRio * 2.0f)
+			{
+				NoOmbro = Raio;
+				break;
+			}
+		}
+
+		const FVector2D Ponto = FreshWater::PointAt(Cursos[0], NoOmbro);
 		return FVector(Ponto.X, Ponto.Y, 0.0f);
 	}
 
@@ -1370,7 +1394,7 @@ bool FForestRiverWidensIntoALakeTest::RunTest(const FString& Parameters)
 	const float RaioDoLago = Cursos[0].LakeRadiusUnits;
 	TestTrue(TEXT("a calha mais larga é bem mais larga que a mais estreita"),
 		MaiorLargura > MenorLargura * 2.0f);
-	TestTrue(TEXT("e ela está no lago, não num trecho qualquer"),
+	TestTrue(TEXT("e ela está do lado do lago, não num trecho qualquer"),
 		FMath::Abs(RaioDaMaior - RaioDoLago) < FMath::Abs(RaioDaMenor - RaioDoLago));
 
 	DestroyForestTestWorld(World);

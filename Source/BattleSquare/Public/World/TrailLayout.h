@@ -5,11 +5,31 @@
 #include "CoreMinimal.h"
 #include "World/RegionLayout.h"
 
-/** Uma trilha ligando dois assentamentos. */
+/**
+ * Onde uma trilha termina.
+ *
+ * Nem toda trilha vai de vila a vila. Quem anda vai ver a cachoeira e subir o
+ * monte — e uma cachoeira sem caminho é a cachoeira que o relato de jogo disse
+ * nunca ter visto.
+ *
+ * E é isto que faz a PONTE existir: os rios correm do monte para o mar, e
+ * enquanto todo destino ficava ENTRE eles, nenhuma trilha precisava atravessar
+ * um. Um caminho até a queda tem de chegar na margem.
+ */
+enum class ETrailDestination : uint8
+{
+	Assentamento,
+	Cachoeira,
+	Monte
+};
+
+/** Uma trilha ligando dois lugares. */
 struct BATTLESQUARE_API FTrailRoute
 {
 	ESettlementKind From = ESettlementKind::VilaInicial;
 	ESettlementKind To = ESettlementKind::VilaInicial;
+
+	ETrailDestination Destination = ETrailDestination::Assentamento;
 
 	/** O caminho, ponto a ponto. Nunca reto: o terreno é que o entorta. */
 	TArray<FVector2D> PointsUnits;

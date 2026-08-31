@@ -81,6 +81,15 @@ namespace FreshWater
 	/** Todos os rios da ilha, um por montanha. */
 	BATTLESQUARE_API TArray<FRiverCourse> Plan();
 
+	/**
+	 * Quantos rios desce cada monte.
+	 *
+	 * Existe para o teste perguntar em vez de transcrever. Um monte derrama
+	 * para os dois flancos, e um rio por monte deixava a ilha com três fios
+	 * de água que nenhuma trilha jamais cruzava.
+	 */
+	BATTLESQUARE_API int32 RiversPerMountain();
+
 	/** Onde, no plano do mundo, o rio cruza este raio. */
 	BATTLESQUARE_API FVector2D PointAt(const FRiverCourse& Course, float RadiusUnits);
 

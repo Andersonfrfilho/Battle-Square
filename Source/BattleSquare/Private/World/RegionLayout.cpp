@@ -2,6 +2,8 @@
 
 #include "World/RegionLayout.h"
 #include "Environment/IslandGeography.h"
+#include "Environment/FreshWater.h"
+#include "World/VillageLayout.h"
 
 namespace
 {
@@ -32,8 +34,15 @@ namespace
 	 * mora, e o chão em volta da cratera é rocha queimada.
 	 */
 	constexpr float RumoDaAcademia = 55.0f;
-	constexpr float RumoDoMercado = 235.0f;
-	constexpr float RumoDaCidade = 320.0f;
+
+	/**
+	 * A cidade foi para o rumo VAZIO.
+	 *
+	 * Estava a 320°, e com a academia a 55° e o mercado a 235° tudo morava no
+	 * mesmo lado do mapa: metade da ilha não tinha assentamento nenhum. O
+	 * quadrante noroeste ficava só com monte e vulcão.
+	 */
+	constexpr float RumoDaCidade = 150.0f;
 
 	constexpr int32 QuantidadeDePostos = 3;
 	constexpr float PrimeiroRumoDePosto = 15.0f;
@@ -42,6 +51,49 @@ namespace
 	{
 		const float Radianos = FMath::DegreesToRadians(Graus);
 		return FVector2D(FMath::Cos(Radianos), FMath::Sin(Radianos)) * Distancia;
+	}
+
+	/**
+	 * O mercado mora NA MARGEM — na beira do lago de um rio.
+	 *
+	 * Toda vila real nasce na água, e esta região tinha sido assentada de
+	 * costas para a única água doce que ela tem: os rios nascem na saia dos
+	 * montes, e tudo o que se habitava estava mais para dentro.
+	 *
+	 * O mercado é o certo para ir: comércio anda por água, e mercado é porto
+	 * em quase toda cidade que existiu. Ele fica na BEIRA do lago, afastado
+	 * pela largura da água mais a folga da clareira — dentro do lago seria uma
+	 * vila submersa.
+	 *
+	 * Isto o põe MAIS LONGE que a cidade grande, e a troca é deliberada: cedo
+	 * se vende na cidade, que compra por menos; a viagem até o lago é o que
+	 * paga melhor. A economia já dizia isso — a cidade tem tudo pelo pior
+	 * preço — e agora a geografia diz junto.
+	 */
+	FVector2D CentroDoMercado()
+	{
+		const TArray<FreshWater::FRiverCourse> Rios = FreshWater::Plan();
+		if (Rios.Num() == 0)
+		{
+			const float Radianos = FMath::DegreesToRadians(235.0f);
+			return FVector2D(FMath::Cos(Radianos), FMath::Sin(Radianos))
+				* IslandGeography::LandRadiusUnits() * 0.29f;
+		}
+
+		// O rio cujo lago fica mais LONGE dos outros assentamentos seria o
+		// ideal, mas escolher por distância a coisas que ainda não existem
+		// seria conta circular. Escolho pelo índice, que é estável, e o teste
+		// de sobreposição pega se um dia colidir.
+		const FreshWater::FRiverCourse& Escolhido = Rios[Rios.Num() / 2];
+
+		const FVector2D NoLago = FreshWater::PointAt(Escolhido, Escolhido.LakeRadiusUnits);
+		const float Afastar = FreshWater::HalfWidthAt(Escolhido, Escolhido.LakeRadiusUnits)
+			+ VillageLayout::ClearingHalfExtentUnitsFor(ESettlementKind::VilaDoMercado);
+
+		// Para FORA do centro da ilha: a margem de fora é a que dá para o mar,
+		// e é por onde a mercadoria sai.
+		const FVector2D ParaFora = NoLago.GetSafeNormal();
+		return NoLago + ParaFora * Afastar;
 	}
 
 	FSettlementPlacement Assentamento(ESettlementKind Tipo, float Graus)
@@ -61,7 +113,7 @@ float RegionLayout::DistanceFromCenterUnits(ESettlementKind Kind)
 	{
 		case ESettlementKind::VilaInicial:     return 0.0f;
 		case ESettlementKind::VilaDaAcademia:  return Raio * FracaoDasVilas;
-		case ESettlementKind::VilaDoMercado:   return Raio * FracaoDasVilas;
+		case ESettlementKind::VilaDoMercado:   return CentroDoMercado().Size();
 		case ESettlementKind::CidadeGrande:    return Raio * FracaoDaCidade;
 		case ESettlementKind::PostoDeFronteira:
 			return Raio - IslandGeography::BeachWidthUnits() * (1.0f + FracaoDaOrlaDoPosto);
@@ -87,7 +139,12 @@ TArray<FSettlementPlacement> RegionLayout::Plan()
 	// Academia e mercado em rumos OPOSTOS: a quatro minutos de casa, e uma da
 	// outra. Postas lado a lado, a segunda viagem seria a mesma viagem.
 	Pecas.Add(Assentamento(ESettlementKind::VilaDaAcademia, RumoDaAcademia));
-	Pecas.Add(Assentamento(ESettlementKind::VilaDoMercado, RumoDoMercado));
+	{
+		FSettlementPlacement Mercado;
+		Mercado.Kind = ESettlementKind::VilaDoMercado;
+		Mercado.CenterUnits = CentroDoMercado();
+		Pecas.Add(Mercado);
+	}
 
 	Pecas.Add(Assentamento(ESettlementKind::CidadeGrande, RumoDaCidade));
 

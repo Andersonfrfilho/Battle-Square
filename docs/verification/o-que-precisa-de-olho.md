@@ -2,7 +2,9 @@
 
 **Status:** não verificado ainda.
 **Escrito em 30/08/2026**, substituindo os 103 itens de
-`atributos-treino-e-mundo.md`.
+`atributos-treino-e-mundo.md`. **Atualizado em 31/08** com o mapa por
+descoberta e com fantasma, luz e dreno — tudo isso nasceu depois da primeira
+versão, e nada disso foi visto por ninguém.
 
 Aquele roteiro misturava duas coisas: o que uma máquina consegue conferir e o
 que só uma pessoa consegue. A metade automatizável virou teste e sonda, e pedir
@@ -19,6 +21,8 @@ espaço, movimento, e a pergunta que nenhum teste faz — *isso é bom de jogar?
 | ganho de XP, progresso de treino, recusa da terceira especialidade | bateria (464 testes) |
 | a poça não deixa submergir; o gelo derrete; a lama dá em três desfechos | `BattleSim.Terrain.*` |
 | a arena nasce do lugar; a pedra não bloqueia casa inicial | `BattleSquare.Arena.FromWorld.*` |
+| o físico não acerta o fantasma; a luz revela; o dreno cura | `BattleSim.Traits.Incorporeo.*`, `BattleSim.Moves.Drenar.*` |
+| andar revela o entorno; a marca apaga ao repetir | `BattleSquare.World.Discovery.*`, `.Pins.*` |
 | todo pet de água alaga; as doze combinações existem | testes do catálogo |
 | texto do jogador é traduzível; núcleo sem float | sondas |
 
@@ -101,6 +105,28 @@ provocar os casos em vez de esperar o sorteio.
 - [ ] O mapa completo **não gira** ao girar a câmera.
 - [ ] Julgamento: o painel **ajuda**, ou é ruído por cima do jogo?
 
+## 5b. O mapa por descoberta
+
+Nasceu depois deste roteiro, e nada aqui foi visto.
+
+- [ ] Ao começar, o mapa está **escuro** — não mostra o mundo inteiro.
+- [ ] Andar **abre manchas**, e elas são manchas mesmo: não um rastro fino de
+      migalhas atrás dos seus passos.
+- [ ] A fronteira do escuro **corresponde a onde você andou** — sem pedaços
+      pintados adiante nem buracos pretos no que você acabou de atravessar.
+- [ ] Fechar e reabrir o jogo **mantém** o que você descobriu.
+- [ ] Os traços do terreno se distinguem: **mata, clareira, margem, água,
+      serra**. E o adversário laranja **salta** por cima deles.
+- [ ] A **legenda** do mapa completo bate com as cores do mapa, e diz que o
+      escuro é o que você ainda não viu.
+- [ ] `bs.Marcar` põe uma marca onde você está; **marcar de novo ali apaga**.
+- [ ] `bs.Marcar perigo` e `bs.Marcar destino` saem em cores diferentes, e a
+      legenda as explica.
+- [ ] As suas marcas aparecem **mesmo em região escura** — você marcou, você
+      sabe.
+- [ ] Julgamento: descobrir o mapa dá **vontade de explorar**, ou é só uma
+      barra de progresso disfarçada?
+
 ## 6. Os pets e os tipos
 
 - [ ] Dois pets da **mesma escola** e elementos diferentes se distinguem por
@@ -108,9 +134,38 @@ provocar os casos em vez de esperar o sorteio.
       quem não distingue matiz.)*
 - [ ] Um golpe trancado aparece como **`🔒 Nome (exige Atributo N)`**, e clicar
       nele não trava o turno.
-- [ ] Julgamento: **doze combinações** de escola e elemento são demais para ler
-      no meio de um turno?
+- [ ] Julgamento: **quatro escolas e seis elementos** são demais para ler no
+      meio de um turno? *(Eram três e quatro; o espectro acrescentou uma de
+      cada lado.)*
 - [ ] Julgamento: o requisito visível vira **objetivo**, ou vira frustração?
+
+## 6b. Fantasma, luz e dreno
+
+O mais novo de tudo, e o de balanço mais arriscado. Use `bs.ControlOpponent 1`
+para jogar os dois lados em vez de esperar o sorteio cair no caso desejado.
+
+- [ ] O pet de **Fantasma** se distingue dos outros por **cor E inclinação** —
+      e o de **Luz** também, sem se confundir com o de Fogo.
+- [ ] Um golpe **físico** contra o fantasma **erra**, e o feed diz que errou.
+- [ ] Uma **magia** contra o fantasma **acerta**. *(É o que impede o fantasma
+      de ser invencível: todo pet tem Magia.)*
+- [ ] **Atravessar** aparece na barra só para o fantasma; para os outros o
+      botão recusa dizendo o motivo, em vez de não fazer nada.
+- [ ] Atravessando, ele **passa por dentro do tronco** — e o tronco **continua
+      em pé** depois.
+- [ ] **Iluminar** revela o outro, o feed anuncia, e o golpe físico **passa a
+      acertar** naquele slot.
+- [ ] Iluminar também **desfaz camuflagem** de um pet que não é fantasma.
+- [ ] Depois do slot, ele volta a estar escondido. *(A luz é jogada, não estado
+      permanente.)*
+- [ ] Um golpe com **dreno** mostra a linha `drenou N de vida de …`, e a barra
+      de vida de quem bateu **sobe**.
+- [ ] Julgamento: enfrentar um fantasma **sem** pet de luz é interessante, ou é
+      só frustrante? *É a pergunta mais importante desta seção — a imunidade ao
+      físico foi a decisão de maior risco de todo o sistema.*
+- [ ] Julgamento: a luz é **jogável por si**, ou só serve quando o outro lado
+      trouxe fantasma?
+- [ ] Julgamento: drenar dá **peso** ao turno, ou vira o golpe óbvio sempre?
 
 ## 7. Números que são chute meu
 
@@ -122,6 +177,13 @@ Nenhum tem base — foram escolhidos para o sistema existir, e só jogar decide.
 - [ ] **Dois slots** para a poça virar lama, e mais dois para a lama secar.
 - [ ] **25%** de esquiva por reflexo e **±20%** de variação de dano.
 - [ ] **Seis segundos** por ponto de treino.
+- [ ] **200%** da luz contra o fantasma. *(É o número mais alto da tabela — o
+      resto do jogo usa 150.)*
+- [ ] **50%, 45% e 40%** de dreno nos golpes do Véu, do Afogado e da Bruma.
+- [ ] **Um slot** de duração da revelação por Iluminar.
+- [ ] **800 unidades** de região de descoberta, e o **3x3** que uma passada
+      revela.
+- [ ] **24 marcações** de teto no mapa.
 
 ---
 

@@ -77,7 +77,7 @@ float FWorldMapProjection::TerrainTileSideUnits(float LandRadiusUnits)
 	// tamanho da região, e sempre cabe um número inteiro deles dentro dela.
 	// É o que garante que um pedaço pertença a UMA região só — e portanto que
 	// a fronteira do que foi descoberto seja a fronteira que se vê.
-	const float Regiao = FWorldDiscovery::RegionSizeUnits;
+	const float Regiao = FWorldDiscovery::RegionSizeUnits();
 	const int32 QuantosCabem = FMath::Max(1,
 		FMath::CeilToInt(Regiao / FMath::Max(Desejado, 1.0f)));
 

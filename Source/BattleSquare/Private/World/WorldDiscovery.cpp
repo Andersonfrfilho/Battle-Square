@@ -1,6 +1,23 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "World/WorldDiscovery.h"
+#include "Environment/IslandGeography.h"
+
+namespace
+{
+	/**
+	 * Vinte e cinco regiões do centro até a beira.
+	 *
+	 * Escolhido para dar EXATAMENTE as 800 unidades de hoje com o raio de
+	 * 20.000 — a mesma disciplina dos anéis das peças da ilha.
+	 */
+	constexpr float RegioesAteABeira = 25.0f;
+}
+
+float FWorldDiscovery::RegionSizeUnits()
+{
+	return FMath::Max(1.0f, IslandGeography::LandRadiusUnits() / RegioesAteABeira);
+}
 
 int32 FWorldDiscovery::MarkSeenFrom(const FVector2D& WorldXY)
 {

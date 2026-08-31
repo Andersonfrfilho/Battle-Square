@@ -5,6 +5,7 @@
 #include "Environment/WorldBoundaryWater.h"
 #include "Environment/IslandGeography.h"
 #include "Misc/AutomationTest.h"
+#include "Misc/ConfigCacheIni.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMapaComecaEmBrancoTest,
 	"BattleSquare.World.Discovery.MapaComecaEmBranco",
@@ -39,7 +40,7 @@ bool FAndarRevelaOEntornoTest::RunTest(const FString&)
 	// O ENTORNO também. Revelar só a casa sob o pé faria o mapa contar por onde
 	// se pisou, não o que se viu — e ninguém enxerga apenas para baixo. Na tela
 	// a diferença é entre uma mancha e um rastro de migalhas.
-	const float UmaRegiao = FWorldDiscovery::RegionSizeUnits;
+	const float UmaRegiao = FWorldDiscovery::RegionSizeUnits();
 	TestTrue(TEXT("O vizinho ao norte também"),
 		Conhecido.IsDiscovered(FVector2D(UmaRegiao, 0.0f)));
 	TestTrue(TEXT("E o da diagonal"),
@@ -72,7 +73,7 @@ bool FRedescobrirNaoContaDeNovoTest::RunTest(const FString&)
 	TestEqual(TEXT("E a contagem não muda"), Conhecido.DiscoveredCount(), 9);
 
 	// Andar ADIANTE descobre a faixa nova, e só ela.
-	const float UmaRegiao = FWorldDiscovery::RegionSizeUnits;
+	const float UmaRegiao = FWorldDiscovery::RegionSizeUnits();
 	const int32 Avancou = Conhecido.MarkSeenFrom(FVector2D(UmaRegiao, 0.0f));
 	TestEqual(TEXT("Um passo à frente revela só a coluna nova"), Avancou, 3);
 
@@ -91,7 +92,7 @@ bool FDescobertaFuncionaEmCoordenadaNegativaTest::RunTest(const FString&)
 	// tipo de erro de eixo que já custou uma investigação inteira a este
 	// projeto ("Baixo" andava para a direita).
 	FWorldDiscovery Conhecido;
-	const float UmaRegiao = FWorldDiscovery::RegionSizeUnits;
+	const float UmaRegiao = FWorldDiscovery::RegionSizeUnits();
 
 	Conhecido.MarkSeenFrom(FVector2D(-UmaRegiao * 5.0f, -UmaRegiao * 5.0f));
 
@@ -112,7 +113,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMapaEscondeOQueNaoFoiDescobertoTest,
 
 bool FMapaEscondeOQueNaoFoiDescobertoTest::RunTest(const FString&)
 {
-	const float Longe = FWorldDiscovery::RegionSizeUnits * 10.0f;
+	const float Longe = FWorldDiscovery::RegionSizeUnits() * 10.0f;
 
 	FWorldMapSnapshot Retrato;
 	Retrato.Discovery.MarkSeenFrom(FVector2D::ZeroVector);
@@ -255,21 +256,35 @@ bool FPedacoDoMapaCabeNaRegiaoDescobertaTest::RunTest(const FString&)
 	// região, ele cobre mais de uma e revela terreno nunca visto — ou esconde
 	// o já visto. Com a ilha em 6000 dividia POR ACASO; a ilha virou 20000 e
 	// a fronteira passou a mentir nos dois sentidos.
-	const float Regiao = FWorldDiscovery::RegionSizeUnits;
+	// A ilha é trocada NA CONFIGURAÇÃO, e não passada por parâmetro. A região
+	// lê o raio do ini; alimentar o pedaço por argumento e a região pelo ini
+	// mede uma combinação que nunca acontece de verdade — e foi assim que a
+	// primeira versão deste par de testes se enganou.
+	const FString Secao = TEXT("/Script/BattleSquare.BattleSquareGameMode");
+	const FString Chave = TEXT("WorldIslandRadiusUnits");
 
-	for (const float RaioDaIlha : { 1000.0f, 3000.0f, 6000.0f, 12000.0f, 20000.0f, 50000.0f })
+	float RaioOriginal = 20000.0f;
+	GConfig->GetFloat(*Secao, *Chave, RaioOriginal, GGameIni);
+
+	for (const float RaioDaIlha : { 1000.0f, 6000.0f, 20000.0f, 50000.0f, 100000.0f })
 	{
+		GConfig->SetFloat(*Secao, *Chave, RaioDaIlha, GGameIni);
+
+		const float Regiao = FWorldDiscovery::RegionSizeUnits();
 		const float Lado = FWorldMapProjection::TerrainTileSideUnits(RaioDaIlha);
 
-		TestTrue(FString::Printf(
+		TestTrue(*FString::Printf(
 			TEXT("Ilha %.0f: o pedaço nunca passa da região"), RaioDaIlha),
 			Lado <= Regiao + KINDA_SMALL_NUMBER);
 
 		const float Quantos = Regiao / Lado;
-		TestTrue(FString::Printf(
+		TestTrue(*FString::Printf(
 			TEXT("Ilha %.0f: cabe um número inteiro de pedaços na região"), RaioDaIlha),
 			FMath::Abs(Quantos - FMath::RoundToFloat(Quantos)) < KINDA_SMALL_NUMBER);
 	}
+
+	GConfig->SetFloat(*Secao, *Chave, RaioOriginal, GGameIni);
+	const float Regiao = FWorldDiscovery::RegionSizeUnits();
 
 	// E o pedaço não vira poeira: mancha de duas unidades seria custo de
 	// desenho que ninguém vê, que é o motivo de o tamanho seguir a ilha.
@@ -402,6 +417,65 @@ bool FBussolaGiraComOMapaTest::RunTest(const FString&)
 	const FVector2D DirecaoNoMapa = NoMapa.GetSafeNormal();
 	TestTrue(TEXT("A letra N aponta para onde o mapa desenha o norte"),
 		FVector2D::DotProduct(DirecaoDaLetra, DirecaoNoMapa) > 0.95f);
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FARegiaoAcompanhaAIlhaTest,
+	"BattleSquare.World.Discovery.ARegiaoAcompanhaAIlha",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FARegiaoAcompanhaAIlhaTest::RunTest(const FString&)
+{
+	// 800 unidades foi escolhido quando a ilha tinha 200 metros. Numa ilha de
+	// 1 km o mapa desenharia 160 mil pedaços — e a causa é a mesma dos anéis
+	// das peças: número absoluto de quando só existia um tamanho.
+	//
+	// O que precisa ficar constante é a CONTAGEM: é ela que decide se o mapa
+	// desenha ou engasga.
+	const FString Secao = TEXT("/Script/BattleSquare.BattleSquareGameMode");
+	const FString Chave = TEXT("WorldIslandRadiusUnits");
+
+	float RaioDeHoje = 20000.0f;
+	GConfig->GetFloat(*Secao, *Chave, RaioDeHoje, GGameIni);
+
+	// A ilha é trocada NA CONFIGURAÇÃO, e não passada por parâmetro: o
+	// tamanho do pedaço recebe o raio como argumento mas a região o lê do ini,
+	// e alimentar os dois de fontes diferentes mede uma combinação que nunca
+	// acontece de verdade. Foi assim que este teste falhou na primeira versão.
+	auto PedacosComIlhaDe = [&Secao, &Chave](float RaioDaIlha)
+	{
+		GConfig->SetFloat(*Secao, *Chave, RaioDaIlha, GGameIni);
+
+		const float Lado = FWorldMapProjection::TerrainTileSideUnits(RaioDaIlha);
+		const float Travessia =
+			(RaioDaIlha * FWorldMapProjection::TerrainMarginFactor * 2.0f) / Lado;
+		const int32 PorLado = FMath::CeilToInt(Travessia);
+		return PorLado * PorLado;
+	};
+
+	const int32 Agora = PedacosComIlhaDe(RaioDeHoje);
+	const int32 CincoVezes = PedacosComIlhaDe(RaioDeHoje * 5.0f);
+
+	// Volta ao raio de verdade antes de qualquer asserção: teste que deixa
+	// configuração suja contamina todos os que rodarem depois dele.
+	GConfig->SetFloat(*Secao, *Chave, RaioDeHoje, GGameIni);
+
+	TestTrue(*FString::Printf(TEXT("O mapa de hoje cabe no teto (%d)"), Agora),
+		Agora <= 10000);
+	TestTrue(*FString::Printf(
+		TEXT("Ilha cinco vezes maior não estoura o mapa (%d)"), CincoVezes),
+		CincoVezes <= 10000);
+	TestTrue(*FString::Printf(TEXT("A contagem fica igual (%d contra %d)"),
+		Agora, CincoVezes), FMath::Abs(CincoVezes - Agora) <= Agora / 10);
+
+	// E o pedaço continua cabendo na região — a relação que faz a borda da
+	// descoberta ser a borda que se vê.
+	const float Regiao = FWorldDiscovery::RegionSizeUnits();
+	TestTrue(TEXT("A região é fração do raio, não número"),
+		Regiao > 1.0f && Regiao < RaioDeHoje);
+	TestTrue(TEXT("O pedaço cabe na região"),
+		FWorldMapProjection::TerrainTileSideUnits(RaioDeHoje) <= Regiao + KINDA_SMALL_NUMBER);
 
 	return true;
 }

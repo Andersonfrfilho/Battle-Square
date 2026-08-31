@@ -46,14 +46,25 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FRegionResidencyAlignsWithDiscoveryGridTest::RunTest(const FString& Parameters)
 {
+	// O pedaco e a regiao DEIXARAM de ser amarrados, e o teste antigo afirmava
+	// justamente a amarracao. Ela era arrumacao, nao estrutura: nada no codigo
+	// itera regioes dentro de um pedaco.
+	//
+	// Bloco e granularidade de STREAMING — quanto do mundo esta vivo de uma
+	// vez — e isso e decidido por desempenho. Regiao e resolucao de MEMORIA e
+	// de mapa, e essa acompanha o tamanho da ilha. Amarrados, uma ilha de 1 km
+	// daria pedacos de 320 metros, e os nove vivos cobririam quase a ilha
+	// inteira: o streaming deixaria de streamar.
 	const float Lado = RegionResidency::ChunkSideUnits();
 
-	TestEqual(TEXT("o lado do pedaco e' o lado da regiao vezes o multiplicador"),
-		Lado,
-		FWorldDiscovery::RegionSizeUnits * static_cast<float>(RegionResidency::ChunkSideInRegions));
+	TestEqual(TEXT("o pedaco nao muda com o tamanho da ilha"),
+		Lado, RegionResidency::ChunkSideDefaultUnits);
 
-	TestTrue(TEXT("e cabe um numero inteiro de regioes dentro dele"),
-		FMath::IsNearlyZero(FMath::Fmod(Lado, FWorldDiscovery::RegionSizeUnits), 0.01f));
+	// E os nove vivos continuam cobrindo bem menos que a ilha: e essa relacao,
+	// e nao o numero, que faz o streaming valer alguma coisa.
+	const float NoveVivos = Lado * 3.0f;
+	TestTrue(TEXT("os nove pedacos vivos cabem folgados na ilha"),
+		NoveVivos < IslandGeography::LandRadiusUnits() * 2.0f);
 
 	return true;
 }

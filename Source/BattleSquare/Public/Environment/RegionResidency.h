@@ -22,7 +22,7 @@ namespace RegionResidency
 	/**
 	 * O lado do pedaço, contado em REGIÕES de descoberta.
 	 *
-	 * Múltiplo, e não número solto: `FWorldDiscovery::RegionSizeUnits` já
+	 * Múltiplo, e não número solto: `FWorldDiscovery::RegionSizeUnits()` já
 	 * significa "região" para o mapa e para a memória de onde se esteve. Um
 	 * pedaço com lado próprio criaria uma segunda malha desalinhada da
 	 * primeira, e "região" passaria a querer dizer duas coisas.
@@ -33,7 +33,21 @@ namespace RegionResidency
 	 * malhas instanciadas da mata com quatro instâncias em cada — muita
 	 * contabilidade para pouca planta.
 	 */
-	constexpr int32 ChunkSideInRegions = 8;
+	/**
+	 * Lado do pedaço, em unidades. ABSOLUTO.
+	 *
+	 * Era `8 * RegionSizeUnits`, e a amarração quebrou quando a região virou
+	 * fração da ilha: numa ilha de 1 km o pedaço daria 320 metros, e os nove
+	 * vivos cobririam quase a ilha inteira — o streaming deixaria de streamar.
+	 *
+	 * Bloco é granularidade de STREAMING, decidida por desempenho. Região é
+	 * resolução de MEMÓRIA e mapa, decidida pelo tamanho do mundo. Transmite-se
+	 * fino e lembra-se grosso.
+	 *
+	 * 6.400 é o valor que a conta antiga dava com a ilha de hoje — zero
+	 * mudança no mundo atual.
+	 */
+	constexpr float ChunkSideDefaultUnits = 6400.0f;
 
 	/**
 	 * Quantos pedaços de distância continuam montados.

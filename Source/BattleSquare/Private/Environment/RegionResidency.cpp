@@ -14,7 +14,17 @@ namespace ResidenciaDeRegiao
 
 float RegionResidency::ChunkSideUnits()
 {
-	return FWorldDiscovery::RegionSizeUnits * static_cast<float>(ChunkSideInRegions);
+	// ABSOLUTO, e desacoplado da região de propósito.
+	//
+	// Bloco é granularidade de STREAMING: o que ele limita é quanto do mundo
+	// está vivo de uma vez, e isso é decidido por desempenho, não pelo tamanho
+	// da ilha. Região é resolução de MEMÓRIA e de mapa, e essa acompanha a
+	// ilha. Transmite-se fino e lembra-se grosso.
+	//
+	// Eram amarrados — bloco = 8 regiões — e ao tornar a região proporcional o
+	// bloco viraria 320 metros numa ilha de 1 km, com os nove vivos cobrindo
+	// quase a ilha inteira. Aí o streaming deixaria de streamar.
+	return ChunkSideDefaultUnits;
 }
 
 FIntPoint RegionResidency::ChunkAt(const FVector2D& PositionUnits)

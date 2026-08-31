@@ -28,13 +28,20 @@ struct BATTLESQUARE_API FWorldDiscovery
 	GENERATED_BODY()
 
 	/**
-	 * Lado de uma região descoberta, em unidades de mundo.
+	 * Lado de uma região descoberta — uma FRAÇÃO do raio da ilha.
 	 *
 	 * Grande o bastante para o mapa mostrar MANCHAS e não pontilhado. Com
 	 * região do tamanho de um passo, o mapa vira um rastro de migalhas — bonito
 	 * de perto e ilegível de longe, que é justamente quando se olha o mapa.
+	 *
+	 * E é FRAÇÃO, não número: 800 unidades foi escolhido quando a ilha tinha
+	 * 200 metros, e numa ilha de 1 km o mapa desenharia 160 mil pedaços. O
+	 * raio dividido por 25 mantém a contagem constante em 6.400, cresça a ilha
+	 * o quanto crescer — e dá exatamente as 800 de hoje com o raio atual.
+	 *
+	 * Converter absoluto em fração não pode mudar o mundo de ninguém.
 	 */
-	static constexpr float RegionSizeUnits = 800.0f;
+	static float RegionSizeUnits();
 
 	/**
 	 * O que uma passada revela, em REGIÕES de raio.
@@ -64,12 +71,12 @@ struct BATTLESQUARE_API FWorldDiscovery
 
 	static int32 RegionColumnOf(float WorldX)
 	{
-		return FMath::FloorToInt(WorldX / RegionSizeUnits);
+		return FMath::FloorToInt(WorldX / RegionSizeUnits());
 	}
 
 	static int32 RegionRowOf(float WorldY)
 	{
-		return FMath::FloorToInt(WorldY / RegionSizeUnits);
+		return FMath::FloorToInt(WorldY / RegionSizeUnits());
 	}
 
 	/**

@@ -294,6 +294,23 @@ private:
 	 */
 	void MostrarCeuDoMundo();
 
+	/**
+	 * Escreve no painel o evento de terra daqui e desta hora, e levanta o mar
+	 * quando o tsunami sobe.
+	 *
+	 * Quem escreve a linha é quem move a água, de propósito: duas contas do
+	 * mesmo tsunami — uma para o texto, outra para o mar — concordariam até a
+	 * primeira edição, e aí o painel diria TSUNAMI com a água parada (L-032).
+	 */
+	void MostrarEventosDoMundo();
+
+	/** O mar que fecha o mundo, para o tsunami ter o que levantar. */
+	UPROPERTY(Transient)
+	TObjectPtr<class AWorldBoundaryWater> AguaDoMundo;
+
+	/** A altura de repouso do mar, para a onda subir DE algum lugar. */
+	float AguaEmRepousoZ = 0.0f;
+
 	/** A luz do mundo, para o painel saber que horas o sol acha que são. */
 	UPROPERTY(Transient)
 	TObjectPtr<class ABattleSceneLighting> CenaDoMundo;

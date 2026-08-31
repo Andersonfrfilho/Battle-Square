@@ -37,6 +37,7 @@
 #include "Environment/Volcano.h"
 #include "Environment/WalkableMountain.h"
 #include "Environment/WorldBoundaryWater.h"
+#include "Environment/WorldEvents.h"
 #include "World/WorldTrainingField.h"
 #include "Battle/PetView.h"
 #include "Components/CapsuleComponent.h"
@@ -873,6 +874,7 @@ void ABattleSquareGameMode::TickWorldClock()
 
 	MostrarTempoDoMundo();
 	MostrarCeuDoMundo();
+	MostrarEventosDoMundo();
 }
 
 void ABattleSquareGameMode::MostrarTempoDoMundo()
@@ -981,6 +983,63 @@ void ABattleSquareGameMode::MostrarCeuDoMundo()
 	}
 
 	FBattleDebugScreen::Show(Linha, 0.0f, CorDoCeu, /*Key=*/761);
+}
+
+void ABattleSquareGameMode::MostrarEventosDoMundo()
+{
+	const FVector2D Aqui = OndeOJogadorEsta(GetWorld());
+	const float Corridas = CenaDoMundo->GetElapsedHours();
+	const uint32 Semente = static_cast<uint32>(WorldScenerySeed);
+
+	// O mar sobe mesmo que o jogador esteja no miolo da ilha: a onda existe na
+	// costa toda, e amarrá-la a quem está olhando faria o mar descer sozinho
+	// quando alguém andasse para dentro.
+	const float SubiuAOnda = WorldEvents::TsunamiRiseUnits(Semente, Corridas);
+	if (AguaDoMundo)
+	{
+		FVector OndeOMarEsta = AguaDoMundo->GetActorLocation();
+		OndeOMarEsta.Z = AguaEmRepousoZ + SubiuAOnda;
+		AguaDoMundo->SetActorLocation(OndeOMarEsta);
+	}
+
+	const EWorldEvent Evento = WorldEvents::EventAt(Semente, Aqui, Corridas);
+	if (Evento == EWorldEvent::None)
+	{
+		// Linha vazia e não "calmo": o painel tem doze linhas, e uma delas
+		// dizendo "nada" todo o tempo custa o espaço de uma que diz algo.
+		FBattleDebugScreen::Show(TEXT(""), 0.0f, FColor::White, /*Key=*/763);
+		return;
+	}
+
+	// A cor sobe com a severidade, como na linha do tempo: o evento é lido de
+	// relance, e quem está fugindo de um tsunami não vai ler a palavra.
+	FColor CorDoEvento = FColor::Yellow;
+	switch (Evento)
+	{
+	case EWorldEvent::Tsunami:    CorDoEvento = FColor::Magenta; break;
+	case EWorldEvent::Hurricane:  CorDoEvento = FColor::Cyan;    break;
+	case EWorldEvent::Earthquake: CorDoEvento = FColor::Red;     break;
+	default: break;
+	}
+
+	FString Linha = FString::Printf(TEXT("%s %.0f%%"),
+		WorldEvents::EventDebugName(Evento),
+		WorldEvents::EventStrength(Semente, Aqui, Corridas) * 100.0f);
+
+	if (Evento == EWorldEvent::Earthquake)
+	{
+		// A distância ao epicentro explica a força que a linha acabou de dizer;
+		// sem ela, "TERREMOTO 30%" parece um tremor fraco em vez de um forte
+		// sentido de longe.
+		Linha += FString::Printf(TEXT(" | epicentro a %.0fm"),
+			FVector2D::Distance(Aqui, WorldEvents::EarthquakeEpicenterUnits(Semente, Corridas)) * 0.01f);
+	}
+	else if (Evento == EWorldEvent::Tsunami)
+	{
+		Linha += FString::Printf(TEXT(" | o mar subiu %.0fm"), SubiuAOnda * 0.01f);
+	}
+
+	FBattleDebugScreen::Show(Linha, 0.0f, CorDoEvento, /*Key=*/763);
 }
 
 void ABattleSquareGameMode::TickTrainingFields()
@@ -1469,6 +1528,8 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 	{
 		Agua->ShoreRadiusUnits = RaioDaTerra;
 		Agua->BuildBoundary();
+		AguaDoMundo = Agua;
+		AguaEmRepousoZ = static_cast<float>(Agua->GetActorLocation().Z);
 	}
 
 	// A SERRA fecha o horizonte, e nasce do mesmo `Onde` da mata: a arena e o

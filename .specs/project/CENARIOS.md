@@ -27,6 +27,7 @@ olho humano no PIE · ⛔ ainda feio ou ainda inexistente.
 | 7 | 👁 **Pântano** | desenhava **exatamente como a mata**: `PresencaDe` não tinha caso para `Swamp` e caía na tabela da floresta. A geografia sabia que ali era brejo, o clima sabia, o mapa sabia — só a tela não | chão de lama escura, poça verde (água parada não reflete o céu como o mar), tronco caído em dobro e **nenhuma copa alta** |
 | 8 | 👁 **Deserto** | o chão era um ladrilho **plano**. Areia plana com pedra em cima não é deserto, é um pátio bege | **duna**: meia esfera enterrada até o meio, 14 por pedaço, na cor do próprio chão — enterrar a metade é o que faz encontrar o plano numa curva em vez de num degrau |
 | 9 | 👁/⛔ **Geleira** | plano branco com 18% de conífera. Sem escala e sem relevo | ganhou o mesmo relevo do deserto (10 montes, mais altos e mais estreitos: gelo empurrado, não areia soprada). **Falta a aurora**, que o jogador pediu — visível só de noite, só neste setor |
+| 10 | 👁 **Vulcão** | **a linha anterior desta lista estava errada**: a lava e os derrames já existiam e já eram pintados de `LavaGlow`. O defeito real era outro — pintar de laranja **não é acender**. `PaintComponent` põe cor num material que não emite luz, e à noite a cratera ficava tão escura quanto o basalto ao lado | luz de verdade na **boca** da cratera (no centro do ator ela acenderia a rocha por dentro), alcance de 2.2 raios da base, mais coluna de fumaça que **alarga ao subir** — largura constante é um cano, e cano não conta que aquilo se dissipa |
 
 ---
 
@@ -34,7 +35,6 @@ olho humano no PIE · ⛔ ainda feio ou ainda inexistente.
 
 | # | Cenário | O defeito, dito sem panos quentes | O que ele precisa virar |
 |---|---|---|---|
-| 10 | 👁/⛔ **Vulcão** | o cone existe e está de pé, mas não brilha, não fumega e não tem lava visível | brasa que **acende de noite** (o papel `LavaGlow` já existe e nunca foi usado), fumaça no topo, campo de cinza em volta |
 | 11 | ⛔ **Cavernas** | existem e têm labirinto, mas são caixas de pedra: sem estalactite, sem lava, sem água, e sem diferença entre a que se explora e a que só se olha | três sabores — **seca**, **de lava** (perto do vulcão) e **de água** (perto do mar) — com estalactite pendurada e uma boca que diz de longe se dá para entrar |
 | 12 | ⛔ **Praia** | tabela rala de propósito, mas hoje é rala **e sem nada**: areia com pedrinha | faixa molhada mais escura na beira, espuma na linha d'água, e algo em pé — coqueiro ou tronco trazido pelo mar |
 | 13 | ⛔ **Água doce** | não existe. Só há o mar da borda | rio que desce da montanha, lago no miolo, cachoeira onde o rio cruza um degrau — com trilha e gruta acompanhando, como foi pedido |
@@ -51,7 +51,9 @@ olho humano no PIE · ⛔ ainda feio ou ainda inexistente.
 2. ~~**Deserto** (8) e **Geleira** (9)~~ — feito junto, como previsto: uma causa
    só (chão plano), uma cura só (monte enterrado até o meio). A **aurora** da
    geleira ficou de fora, e ela pertence ao céu (14), não ao terreno.
-3. **Vulcão** (10) e **Cavernas** (11) — vizinhos de mapa e de material.
+3. ~~**Vulcão** (10)~~ — feito, e ele corrigiu esta própria lista: o item
+   afirmava que faltava lava, e a lava estava lá desde o começo. Falta ainda
+   **Cavernas** (11), vizinha de mapa e de material.
 4. **Praia** (12) e **Água doce** (13) — as duas bordas d'água.
 5. **Céu** (14) e **Eventos** (15) — nenhum depende de terreno.
 6. **Arena** (16) — depende de tudo acima já parecer diferente entre si; antes

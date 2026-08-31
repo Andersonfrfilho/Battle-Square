@@ -169,3 +169,76 @@ elemento vira o pior de todos por omissão.
 - **A cidade tem nome, ou é "a vila"?** Nome pede localização de texto.
 - **O marco de retorno é imediato ou tem custo?** Viagem rápida de graça pode
   esvaziar a caminhada, que é metade do jogo de mundo aberto.
+
+---
+
+## Qual assentamento é dono de qual lado do laço
+
+**Decidido em 31/08/2026.** A economia já tinha fonte, dreno e troco; faltava
+dizer ONDE cada um mora. Vila sem papel econômico é vila que se visita uma vez.
+
+| lugar | papel na economia | lado do laço |
+|---|---|---|
+| **Vila inicial** | cura DE GRAÇA, para sempre | o **piso** — nem fonte nem dreno |
+| **Vila da academia** | treino pago, barato, de poucos atributos | **dreno** principal |
+| **Vila do mercado** | melhor preço de venda, e o quadro de trabalhos | **fonte** de troco e de trabalho |
+| **Cidade grande** | o ranking da região, e tudo o mais pelo pior preço | **fonte** principal |
+| **Posto de fronteira** | nenhum, de propósito | — |
+
+### A vila inicial é o piso, e isso é papel econômico
+
+Cura de graça não é ausência de economia: é a **garantia de que ficar sem
+dinheiro não trava o jogo**. Toda economia com dreno precisa de um chão, senão
+o jogador quebrado fica preso — e "não tenho dinheiro para curar para poder
+lutar para ganhar dinheiro" é o laço de morte clássico.
+
+Por isso a cura de graça mora em CASA, e é permanente. Ela custa uma caminhada,
+que é o preço certo: pago em tempo, nunca em moeda.
+
+### A cidade tem tudo, e é a mais cara
+
+Esta é a decisão que mantém as vilas vivas depois que a cidade abre.
+
+| serviço | na vila especialista | na cidade grande |
+|---|---|---|
+| academia | preço base | mais caro |
+| venda de pet | preço base | paga menos |
+| cura | de graça (vila inicial) | cobra pouco |
+| ranking | pequeno, e acaba cedo | o grande, e é o que abre a fronteira |
+
+**A cidade não perde nada; ela cobra pela conveniência.** Quem tem pressa
+resolve tudo num lugar só e paga por isso; quem tem tempo viaja e economiza.
+As duas escolhas continuam válidas no fim do jogo, que é o que faz a região
+inteira continuar sendo usada.
+
+O contrário — cidade barata e completa — mataria as três vilas no instante em
+que ela abrisse, e a região viraria um corredor até ela.
+
+### O ranking mora na cidade, e as vilas têm o dele em miniatura
+
+O ranking da cidade é a fonte principal, e é o que abre a fronteira. As arenas
+das vilas pagam pouco e esgotam cedo: são o dinheiro do COMEÇO, quando ainda
+não se alcança a cidade.
+
+Isso preserva a regra que já estava escrita — o ranking não é infinito, e a
+cidade para de pagar no primeiro lugar. Cada arena tem seu teto, e o teto é o
+empurrão para a próxima.
+
+### O posto de fronteira não vende nada
+
+**E a ausência é a decisão.** Posto com cura ou mercado vira destino, e a
+fronteira deixa de ser porta. Já existe teste afirmando que ele não cura, pelo
+mesmo motivo.
+
+### O que isto obriga
+
+- **Preço é RELATIVO**, nunca moeda escrita à mão: cada serviço tem um preço
+  base e cada assentamento um multiplicador. Sem isso, equilibrar a economia
+  vira editar dezenas de números — e este projeto já pagou por número absoluto
+  escolhido quando só existia um lugar.
+- **Nenhum serviço existe em um lugar só**, exceto os de propósito (Escola na
+  vila inicial, ranking grande na cidade). Serviço único é ponto de
+  estrangulamento.
+- **A carteira ainda não existe.** Enquanto ela não existir, isto é tabela de
+  multiplicadores com teste — não preço na tela. Prédio com porta que não abre
+  é promessa quebrada.

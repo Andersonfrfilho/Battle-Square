@@ -24,6 +24,9 @@ olho humano no PIE · ⛔ ainda feio ou ainda inexistente.
 | 4 | ✅ **A costura do chão** | os ladrilhos de 6400 se encostavam com zero sobreposição, e na diagonal sobrava fresta — era ali que o pet **afundava** | 4% de transbordo (256 unidades por lado), com teste que exige o transbordo |
 | 5 | ✅ **Disposição da ilha** | os anéis de relevo foram calculados para uma ilha de 6000 e ficaram; com a ilha em 20000, tudo amontoado num quinto do mapa | anéis a 12000 / 10500 / 15000, validados contra toda folga de peça e todo campo de treino |
 | 6 | ✅ **Mata da casa** | *"a floresta desapareceu"* — o miolo de mata tinha 2600 fixos, e um pedaço de mundo tem 6400: **nem um pedaço inteiro cabia**, então o vizinho de quem nasce já era deserto | 35% do raio da ilha (7000 hoje), com teste que mede o pedaço de nascimento **e os quatro vizinhos de lado** |
+| 7 | 👁 **Pântano** | desenhava **exatamente como a mata**: `PresencaDe` não tinha caso para `Swamp` e caía na tabela da floresta. A geografia sabia que ali era brejo, o clima sabia, o mapa sabia — só a tela não | chão de lama escura, poça verde (água parada não reflete o céu como o mar), tronco caído em dobro e **nenhuma copa alta** |
+| 8 | 👁 **Deserto** | o chão era um ladrilho **plano**. Areia plana com pedra em cima não é deserto, é um pátio bege | **duna**: meia esfera enterrada até o meio, 14 por pedaço, na cor do próprio chão — enterrar a metade é o que faz encontrar o plano numa curva em vez de num degrau |
+| 9 | 👁/⛔ **Geleira** | plano branco com 18% de conífera. Sem escala e sem relevo | ganhou o mesmo relevo do deserto (10 montes, mais altos e mais estreitos: gelo empurrado, não areia soprada). **Falta a aurora**, que o jogador pediu — visível só de noite, só neste setor |
 
 ---
 
@@ -31,9 +34,6 @@ olho humano no PIE · ⛔ ainda feio ou ainda inexistente.
 
 | # | Cenário | O defeito, dito sem panos quentes | O que ele precisa virar |
 |---|---|---|---|
-| 7 | ⛔ **Pântano** | ele **desenha exatamente como a mata**: `PresencaDe` não tem caso para `Swamp`, então cai na tabela da floresta. A geografia sabe que ali é brejo, o clima sabe, o mapa sabe — só a tela não | chão escuro e molhado, poça, tronco caído, junco no lugar do arbusto, e **nenhuma copa alta**: brejo é mata que não drenou, não mata fechada |
-| 8 | ⛔ **Deserto** | o chão é **plano**. Areia plana com pedra em cima não é deserto, é um pátio bege | **duna**: ondulação de baixa frequência no terreno é o que faz o deserto ser deserto. Sem ela, nenhuma quantidade de pedra salva |
-| 9 | ⛔ **Geleira** | plano branco com 18% de conífera. Sem escala e sem relevo | bloco de gelo quebrado, fenda, e a **aurora** que o jogador pediu — visível só de noite, só neste setor |
 | 10 | 👁/⛔ **Vulcão** | o cone existe e está de pé, mas não brilha, não fumega e não tem lava visível | brasa que **acende de noite** (o papel `LavaGlow` já existe e nunca foi usado), fumaça no topo, campo de cinza em volta |
 | 11 | ⛔ **Cavernas** | existem e têm labirinto, mas são caixas de pedra: sem estalactite, sem lava, sem água, e sem diferença entre a que se explora e a que só se olha | três sabores — **seca**, **de lava** (perto do vulcão) e **de água** (perto do mar) — com estalactite pendurada e uma boca que diz de longe se dá para entrar |
 | 12 | ⛔ **Praia** | tabela rala de propósito, mas hoje é rala **e sem nada**: areia com pedrinha | faixa molhada mais escura na beira, espuma na linha d'água, e algo em pé — coqueiro ou tronco trazido pelo mar |
@@ -46,10 +46,11 @@ olho humano no PIE · ⛔ ainda feio ou ainda inexistente.
 
 ## A ordem, e por quê
 
-1. **Pântano** (7) — é o único da lista que está *pronto por dentro e errado por
-   fora*. Custa uma tabela e devolve um bioma inteiro.
-2. **Deserto** (8) e **Geleira** (9) — os dois têm a mesma causa (terreno plano)
-   e a mesma cura (ondulação no chão). Fazer juntos evita resolver duas vezes.
+1. ~~**Pântano** (7)~~ — feito. Era o único *pronto por dentro e errado por
+   fora*: custou uma tabela e devolveu um bioma inteiro.
+2. ~~**Deserto** (8) e **Geleira** (9)~~ — feito junto, como previsto: uma causa
+   só (chão plano), uma cura só (monte enterrado até o meio). A **aurora** da
+   geleira ficou de fora, e ela pertence ao céu (14), não ao terreno.
 3. **Vulcão** (10) e **Cavernas** (11) — vizinhos de mapa e de material.
 4. **Praia** (12) e **Água doce** (13) — as duas bordas d'água.
 5. **Céu** (14) e **Eventos** (15) — nenhum depende de terreno.

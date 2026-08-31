@@ -722,6 +722,30 @@ find "$HOME/Library/Logs/Unreal Engine/BattleSquareEditor" Saved/Logs -newer <ma
 **Previne:** ao acrescentar um campo a um `USaveGame` já existente, procurar **toda** função que monta esse save do zero. E ao juntar dois dados num arquivo, o teste que importa é o que **cruza** os caminhos de escrita — nunca os dois testes separados, que continuam verdes enquanto um apaga o outro.
 
 
+### L-049: constante em unidades absolutas envelhece quando a ESCALA do mundo cresce
+
+**Contexto:** o jogador disse que a floresta "desapareceu". Nada tinha sido apagado — a mata continuava sendo gerada, com a mesma densidade de plantas de sempre.
+
+**O defeito:** `IslandGeography::HomeRadiusUnits()` devolvia **2600 unidades fixas**, um número escolhido quando a ilha tinha 6000 de raio. A ilha passou para 20000 e o número ficou. Como os setores de bioma são fatias de 72° que **se encontram no centro**, tudo que está fora do miolo de mata é outro bioma — e um pedaço de mundo tem 6400 de lado, ou seja, **nem um pedaço inteiro de mata cabia dentro do miolo**. O vizinho imediato de quem nasce era deserto.
+
+**Por que passou:** todo teste do miolo media o miolo contra ele mesmo ("o centro é mata", "a praia fica fora"), e continuou verdinho. O raio nunca foi medido contra **o tamanho do pedaço de mundo**, que é a unidade em que o jogador anda.
+
+**O que fiz:** o raio virou `max(piso, 35% do raio da ilha)`, preso pela praia — ele acompanha a ilha em vez de esperar alguém lembrar. E o teste passou a medir o que se vê: o pedaço em que se nasce **e os quatro vizinhos de lado**, que são o que está carregado no primeiro instante.
+
+**Previne:** raio, distância ou clearance escrito em unidades absolutas se mede contra a constante de ESCALA a que ele pertence (o pedaço de mundo, o raio da ilha), nunca contra um número lembrado. E quando uma constante de escala do mundo mudar, varrer quem mais depende dela — foi a mesma causa dos anéis de relevo amontoados no miolo do mapa.
+
+
+### L-050: EDITOR ABERTO faz a compilação mentir — o manifesto aponta para o .dylib velho
+
+**Contexto:** um teste novo foi escrito, compilou, o build disse `Result: Succeeded`, e a suíte rodou **duas vezes** sem que o teste existisse. A contagem ficou exatamente na mesma de antes, o que parecia "nada mudou" em vez de "nada rodou".
+
+**O mecanismo:** `Binaries/Mac/UnrealEditor.modules` é um JSON que diz **qual .dylib numerado** cada módulo carrega. Com o Editor aberto, ele segura o dylib atual; a UBT então **liga um número mais alto** (`-0016.dylib`) e deixa o manifesto apontando para o antigo (`-0015.dylib`), para não quebrar o Editor em execução. Todo teste roda contra código velho, e nada avisa.
+
+**Como medir:** `cat Binaries/Mac/UnrealEditor.modules` e comparar com o `Link [Apple] libUnrealEditor-…-00NN.dylib` do log de build. Para conferir se um literal está no binário, `strings` **não serve**: `TEXT()` é UTF-16, e `strings` só lê ASCII. Procurar os bytes com `python3` e `.encode('utf-16-le')`.
+
+**Previne:** fechar o Editor antes de compilar (a regra do `CLAUDE.md` já dizia, e é ESTE o preço de ignorá-la). E o gatilho: **nome de teste novo com zero ocorrência no log da suíte é binário velho até prova em contrário** — nunca "o teste não foi registrado".
+
+
 ### DP-mapa-01: quando a ilha crescer demais, o mapa separa por ÁREA
 
 **Decidido em 30/08/2026, não construído.**

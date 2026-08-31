@@ -23,7 +23,29 @@ namespace IslandFeatureLayout
 		 * A 12000 a distância entre peças vizinhas é maior que a maior peça,
 		 * e andar de uma à outra volta a ser viagem.
 		 */
-		constexpr float AnelDaBorda = 12000.0f;
+		/**
+		 * Os anéis são FRAÇÕES do raio da terra, não unidades.
+		 *
+		 * Eram números absolutos — 12.000, 10.500, 15.000 — e ninguém notava
+		 * porque a ilha sempre teve 20.000. Ao crescê-la para 100.000, tudo
+		 * ficaria amontoado nos primeiros 17% do raio, com quase um quilômetro
+		 * de nada em volta. Pareceria defeito de geração, e seria decisão
+		 * antiga tomada quando só existia um tamanho.
+		 *
+		 * As frações abaixo dão EXATAMENTE os números de antes quando o raio é
+		 * 20.000 — zero mudança no mundo de hoje, e escala no de amanhã.
+		 *
+		 * São FUNÇÕES, e não constantes. Um `const float` no escopo do
+		 * namespace é calculado uma vez, no carregamento — e aí o raio
+		 * configurado depois nunca chega nele. Foi exatamente o que aconteceu
+		 * na primeira tentativa, e o teste da escala pegou.
+		 */
+		FORCEINLINE float DoRaio(float Fracao)
+		{
+			return IslandGeography::LandRadiusUnits() * Fracao;
+		}
+
+		FORCEINLINE float AnelDaBorda() { return DoRaio(0.60f); }
 
 		/**
 		 * A caverna grande vem mais para dentro, e encaixada num vão.
@@ -34,7 +56,7 @@ namespace IslandFeatureLayout
 		 * e é por isso que o ângulo dela não é livre: 36° é o meio do vão
 		 * entre os campos de 0° e 72°.
 		 */
-		constexpr float AnelDaCavernaGrande = 10500.0f;
+		FORCEINLINE float AnelDaCavernaGrande() { return DoRaio(0.525f); }
 		constexpr float AnguloDaCavernaGrande = 36.0f;
 
 		/**
@@ -47,7 +69,7 @@ namespace IslandFeatureLayout
 		 * 180° é o meio do setor de vulcão da geografia (144° a 216°), para o
 		 * marco cair no bioma que ele anuncia em vez de perto da divisa.
 		 */
-		constexpr float AnelDoVulcao = 15000.0f;
+		FORCEINLINE float AnelDoVulcao() { return DoRaio(0.75f); }
 		constexpr float AnguloDoVulcao = 180.0f;
 
 		/**
@@ -57,7 +79,7 @@ namespace IslandFeatureLayout
 		 * três podia ser caverna de mar: água salgada a oito mil unidades da
 		 * praia é cenário mentindo sobre onde a pessoa está.
 		 */
-		constexpr float AnelDaCavernaDaAgua = 17000.0f;
+		FORCEINLINE float AnelDaCavernaDaAgua() { return DoRaio(0.85f); }
 
 		/**
 		 * A caverna média é a de lava, e por isso ela vive perto do vulcão.
@@ -69,7 +91,7 @@ namespace IslandFeatureLayout
 		 * 160° e 13000 a põem a cerca de cinco mil do vulcão: dentro do calor,
 		 * e ainda com mais de mil de folga sobre a soma das duas bases.
 		 */
-		constexpr float AnelDaCavernaDeLava = 13000.0f;
+		FORCEINLINE float AnelDaCavernaDeLava() { return DoRaio(0.65f); }
 		constexpr float AnguloDaCavernaDeLava = 160.0f;
 
 		/**
@@ -79,14 +101,14 @@ namespace IslandFeatureLayout
 		 * caverna de lava ficaria longe demais do monte para alguém ligar as
 		 * duas coisas olhando.
 		 */
-		constexpr float AlcanceDoCalor = 6000.0f;
+		FORCEINLINE float AlcanceDoCalor() { return DoRaio(0.30f); }
 
 		FFeaturePlacement Montanha(float AnguloEmGraus)
 		{
 			FFeaturePlacement Peca;
 			Peca.Feature = EIslandFeature::WalkableMountain;
 			Peca.AngleDegrees = AnguloEmGraus;
-			Peca.RadiusUnits = AnelDaBorda;
+			Peca.RadiusUnits = AnelDaBorda();
 			Peca.ClearanceUnits = MountainClearanceUnits();
 			return Peca;
 		}
@@ -166,7 +188,7 @@ namespace IslandFeatureLayout
 				}
 
 				const bool bNoCalor = Vulcao != nullptr
-					&& FVector2D::Distance(Peca.CenterUnits(), Vulcao->CenterUnits()) <= AlcanceDoCalor;
+					&& FVector2D::Distance(Peca.CenterUnits(), Vulcao->CenterUnits()) <= AlcanceDoCalor();
 
 				if (bNoCalor)
 				{
@@ -190,13 +212,13 @@ namespace IslandFeatureLayout
 		// sobe uma montanha vê a boca da seguinte, e é isso que faz o anel ser
 		// um caminho em vez de três lugares soltos.
 		TArray<FFeaturePlacement> Pecas;
-		Pecas.Add(Caverna(AnguloDaCavernaGrande, AnelDaCavernaGrande, ACaveSystem::LargeCaveSide));
+		Pecas.Add(Caverna(AnguloDaCavernaGrande, AnelDaCavernaGrande(), ACaveSystem::LargeCaveSide));
 		Pecas.Add(Montanha(90.0f));
-		Pecas.Add(Caverna(AnguloDaCavernaDeLava, AnelDaCavernaDeLava, ACaveSystem::MediumCaveSide));
+		Pecas.Add(Caverna(AnguloDaCavernaDeLava, AnelDaCavernaDeLava(), ACaveSystem::MediumCaveSide));
 		Pecas.Add(Montanha(210.0f));
-		Pecas.Add(Caverna(270.0f, AnelDaCavernaDaAgua, ACaveSystem::SmallCaveSide));
+		Pecas.Add(Caverna(270.0f, AnelDaCavernaDaAgua(), ACaveSystem::SmallCaveSide));
 		Pecas.Add(Montanha(330.0f));
-		Pecas.Add(Vulcao(AnguloDoVulcao, AnelDoVulcao));
+		Pecas.Add(Vulcao(AnguloDoVulcao, AnelDoVulcao()));
 
 		TemperaAsCavernas(Pecas);
 		return Pecas;

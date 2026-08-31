@@ -25,6 +25,39 @@ namespace
 	/** Quanto do mundo cabe no minimapa. Curto: ele é para o passo seguinte. */
 	constexpr float AlcanceDoMinimapaUnidades = 3500.0f;
 
+	/** A moldura de madeira do minimapa, e o fundo por baixo dele. */
+	const FLinearColor CorDaMoldura(0.24f, 0.16f, 0.10f, 0.92f);
+	const FLinearColor CorDoAroInterno(0.42f, 0.30f, 0.18f, 0.95f);
+	const FLinearColor CorDaBussola(0.96f, 0.92f, 0.80f, 0.95f);
+
+	/**
+	 * O minimapa é TRANSLÚCIDO, e o completo não.
+	 *
+	 * Ele fica por cima do jogo o tempo inteiro: opaco, vira um buraco na tela
+	 * e o canto do mundo deixa de existir. O completo é modal — quem o abriu
+	 * quer olhar para ele, e transparência ali só atrapalharia a leitura.
+	 */
+	constexpr float OpacidadeDoMinimapa = 0.82f;
+
+	/** Uma circunferência, em segmentos. O Slate não desenha círculo. */
+	void DesenharAro(FSlateWindowElementList& Elementos, int32 Camada,
+		const FGeometry& Geometria, const FVector2D& Centro, float Raio,
+		float Espessura, const FLinearColor& Cor)
+	{
+		constexpr int32 Segmentos = 64;
+		TArray<FVector2D> Pontos;
+		Pontos.Reserve(Segmentos + 1);
+		for (int32 Indice = 0; Indice <= Segmentos; ++Indice)
+		{
+			const float Angulo = (2.0f * PI * Indice) / Segmentos;
+			Pontos.Add(Centro + FVector2D(FMath::Cos(Angulo), FMath::Sin(Angulo)) * Raio);
+		}
+
+		FSlateDrawElement::MakeLines(Elementos, Camada,
+			Geometria.ToPaintGeometry(), Pontos, ESlateDrawEffect::None,
+			Cor, /*bAntialias=*/true, Espessura);
+	}
+
 	/** Um quadradinho, porque o Slate desenha caixa e não círculo sem asset. */
 	void DesenharPonto(FSlateWindowElementList& Elementos, int32 Camada,
 		const FGeometry& Geometria, const FVector2D& CentroLocal, float Lado,
@@ -71,17 +104,25 @@ namespace
 		{
 			const FVector2D Tamanho = Geometria.GetLocalSize();
 			const FVector2D Centro = Tamanho * 0.5f;
-			const float RaioEmPixels = FMath::Min(Tamanho.X, Tamanho.Y) * 0.5f;
+
+			// O REDONDO come uma borda: o aro precisa de espaço, e sem esta
+			// folga ele sairia cortado pelo limite do widget.
+			const bool bRedondo = (Modo == FWorldMapProjection::EMode::SeguindoOOlhar);
+			const float FolgaDaMoldura = bRedondo ? 10.0f : 0.0f;
+			const float RaioEmPixels =
+				FMath::Min(Tamanho.X, Tamanho.Y) * 0.5f - FolgaDaMoldura;
+			const float Opacidade = bRedondo ? OpacidadeDoMinimapa : 1.0f;
 
 			// Água primeiro, terra por cima: o mapa é uma ilha, e a ordem
 			// desenha isso sem precisar recortar nada.
 			DesenharPonto(Elementos, Camada, Geometria, Centro,
-				RaioEmPixels * 2.0f, CorDaAgua);
+				RaioEmPixels * 2.0f, CorDaAgua.CopyWithNewOpacity(Opacidade));
 
 			const float RaioDaTerraEmPixels =
 				(GSnapshot.ShoreRadiusUnits / AlcanceUnidades) * RaioEmPixels;
 			DesenharPonto(Elementos, Camada + 1, Geometria, Centro,
-				FMath::Min(RaioDaTerraEmPixels * 2.0f, RaioEmPixels * 2.0f), CorDaTerra);
+				FMath::Min(RaioDaTerraEmPixels * 2.0f, RaioEmPixels * 2.0f),
+				CorDaTerra.CopyWithNewOpacity(Opacidade));
 
 			// O TERRENO, e só onde foi descoberto: é o que separa "onde as
 			// coisas estão" de "como é o lugar". Sem isto o mapa dizia que há
@@ -108,7 +149,10 @@ namespace
 
 				const FVector2D Normalizado = FWorldMapProjection::ToMapSpace(
 					Pedaco.WorldXY, GSnapshot, Modo, AlcanceUnidades);
-				if (Normalizado.Size() > 1.0f)
+				// RECORTE CIRCULAR no minimapa: o pedaço só entra se o CENTRO
+				// dele cabe no disco. Sem isto os quadrados furam o aro e a
+				// moldura passa a emoldurar um quadrado com cantos serrilhados.
+				if (Normalizado.Size() > (bRedondo ? 0.93f : 1.0f))
 				{
 					continue;
 				}
@@ -119,7 +163,8 @@ namespace
 				DesenharPonto(Elementos, Camada + 2, Geometria,
 					Centro + Normalizado * RaioEmPixels,
 					LadoDoPedacoEmPixels * 1.15f,
-					FWorldMapProjection::ColorForTerrain(Pedaco.Kind));
+					FWorldMapProjection::ColorForTerrain(Pedaco.Kind)
+						.CopyWithNewOpacity(Opacidade));
 			}
 
 			// AS MARCAÇÕES, por cima de tudo — inclusive dos marcadores do
@@ -197,7 +242,42 @@ namespace
 			DesenharPonto(Elementos, CamadaAtual + 1, Geometria,
 				Centro + Frente * 11.0f, 5.0f, CorDoJogador);
 
-			return CamadaAtual + 2;
+			if (!bRedondo)
+			{
+				return CamadaAtual + 2;
+			}
+
+			// A MOLDURA, por último e por cima de tudo: ela existe para cobrir
+			// a serrilha dos pedaços que passam do disco, e cobrir depois é a
+			// única ordem que funciona.
+			const int32 CamadaDaMoldura = CamadaAtual + 2;
+			DesenharAro(Elementos, CamadaDaMoldura, Geometria, Centro,
+				RaioEmPixels + 4.0f, 9.0f, CorDaMoldura);
+			DesenharAro(Elementos, CamadaDaMoldura + 1, Geometria, Centro,
+				RaioEmPixels - 1.0f, 2.0f, CorDoAroInterno);
+
+			// A BÚSSOLA gira com o mapa. Um "N" fixo no topo de um mapa que
+			// gira seria a tela mentindo sobre a direção — e é o mesmo erro de
+			// eixo que já custou uma investigação inteira a este projeto.
+			const float NorteEmGraus = FWorldMapProjection::NorthAngleDegrees(GSnapshot, Modo);
+			const FSlateFontInfo Fonte = FCoreStyle::GetDefaultFontStyle("Bold", 11);
+
+			const TCHAR* Letras[] = { TEXT("N"), TEXT("L"), TEXT("S"), TEXT("O") };
+			for (int32 Indice = 0; Indice < 4; ++Indice)
+			{
+				const float Angulo = FMath::DegreesToRadians(NorteEmGraus + Indice * 90.0f);
+				const FVector2D Direcao(FMath::Sin(Angulo), -FMath::Cos(Angulo));
+				const FVector2D Onde = Centro + Direcao * (RaioEmPixels + 4.0f)
+					- FVector2D(4.0f, 7.0f);
+
+				FSlateDrawElement::MakeText(Elementos, CamadaDaMoldura + 2,
+					Geometria.ToPaintGeometry(FVector2f(20.0f, 16.0f),
+						FSlateLayoutTransform(FVector2f(
+							static_cast<float>(Onde.X), static_cast<float>(Onde.Y)))),
+					FString(Letras[Indice]), Fonte, ESlateDrawEffect::None, CorDaBussola);
+			}
+
+			return CamadaDaMoldura + 3;
 		}
 
 	private:
@@ -388,7 +468,11 @@ void FWorldMapScreen::ToggleFullMap()
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth()
 			[
-				SNew(SBox).WidthOverride(520.0f).HeightOverride(520.0f)
+				// MAIOR: com 520 e a ilha em 20.000, cada região de bioma saía
+				// com poucos pixels e as manchas se confundiam. O mapa completo
+				// é modal — quem o abriu quer olhar para ele, e o espaço da
+				// tela está disponível.
+				SNew(SBox).WidthOverride(620.0f).HeightOverride(620.0f)
 				[
 					SNew(SMapaDoMundo)
 					.Modo(FWorldMapProjection::EMode::NorteAcima)

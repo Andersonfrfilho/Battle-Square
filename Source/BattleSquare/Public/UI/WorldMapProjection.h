@@ -245,6 +245,20 @@ public:
 	 */
 	static EWorldMapTerrain TerrainForBiome(EIslandBiome Biome);
 
+	/**
+	 * Onde o NORTE está na tela, em graus horários a partir do topo.
+	 *
+	 * Com `NorteAcima` é sempre zero — é o que o nome promete. Com
+	 * `SeguindoOOlhar` ele GIRA: o mapa põe em cima o que está à frente, então
+	 * o norte sai do topo assim que o jogador vira a cabeça.
+	 *
+	 * Existe porque a bússola precisa disso, e porque desenhar o "N" fixo no
+	 * topo de um mapa que gira seria a tela mentindo sobre a direção — o
+	 * mesmo tipo de erro de eixo que já custou uma investigação inteira aqui
+	 * ("Baixo" andava para a direita).
+	 */
+	static float NorthAngleDegrees(const FWorldMapSnapshot& Snapshot, EMode Mode);
+
 	/** Para onde a seta do jogador aponta na tela, em graus horários. */
 	static float PlayerArrowAngleDegrees(const FWorldMapSnapshot& Snapshot, EMode Mode);
 };

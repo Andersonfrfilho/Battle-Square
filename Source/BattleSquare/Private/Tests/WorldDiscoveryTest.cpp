@@ -346,3 +346,62 @@ bool FQuandoAIlhaCrescerDemaisSepararPorAreasTest::RunTest(const FString&)
 
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBussolaGiraComOMapaTest,
+	"BattleSquare.World.Map.BussolaGiraComOMapa",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FBussolaGiraComOMapaTest::RunTest(const FString&)
+{
+	// Um "N" fixo no topo de um mapa que GIRA é a tela mentindo sobre a
+	// direção. É o mesmo tipo de erro de eixo que já custou uma investigação
+	// inteira aqui, e é caro justamente por parecer certo de relance.
+	FWorldMapSnapshot Retrato;
+
+	// NORTE ACIMA: a promessa está no nome, e ela vale para qualquer olhar.
+	for (const float Yaw : { 0.0f, 90.0f, 180.0f, 270.0f })
+	{
+		Retrato.PlayerYawDegrees = Yaw;
+		TestEqual(TEXT("Com norte acima, o norte fica no topo"),
+			FWorldMapProjection::NorthAngleDegrees(
+				Retrato, FWorldMapProjection::EMode::NorteAcima), 0.0f);
+	}
+
+	// SEGUINDO O OLHAR: olhando para o norte, o norte está em cima; virando
+	// para o leste, o norte vai para a ESQUERDA da tela — porque o mapa girou
+	// no sentido contrário para pôr a frente em cima.
+	Retrato.PlayerYawDegrees = 0.0f;
+	TestEqual(TEXT("Olhando para o norte, o N fica no topo"),
+		FWorldMapProjection::NorthAngleDegrees(
+			Retrato, FWorldMapProjection::EMode::SeguindoOOlhar), 0.0f);
+
+	Retrato.PlayerYawDegrees = 90.0f;
+	TestEqual(TEXT("Virado para o leste, o N vai para a esquerda"),
+		FWorldMapProjection::NorthAngleDegrees(
+			Retrato, FWorldMapProjection::EMode::SeguindoOOlhar), 270.0f);
+
+	Retrato.PlayerYawDegrees = 180.0f;
+	TestEqual(TEXT("De costas para o norte, o N fica embaixo"),
+		FWorldMapProjection::NorthAngleDegrees(
+			Retrato, FWorldMapProjection::EMode::SeguindoOOlhar), 180.0f);
+
+	// E a bússola concorda com o MAPA: o norte que a letra marca é a mesma
+	// direção em que uma coisa ao norte é desenhada. Duas contas separadas
+	// para a mesma direção se desencontram na primeira edição.
+	Retrato.PlayerYawDegrees = 90.0f;
+	Retrato.PlayerXY = FVector2D::ZeroVector;
+	const FVector2D AoNorte(1000.0f, 0.0f);
+	const FVector2D NoMapa = FWorldMapProjection::ToMapSpace(
+		AoNorte, Retrato, FWorldMapProjection::EMode::SeguindoOOlhar, 3000.0f);
+
+	const float LetraEmGraus = FWorldMapProjection::NorthAngleDegrees(
+		Retrato, FWorldMapProjection::EMode::SeguindoOOlhar);
+	const float Radianos = FMath::DegreesToRadians(LetraEmGraus);
+	const FVector2D DirecaoDaLetra(FMath::Sin(Radianos), -FMath::Cos(Radianos));
+
+	const FVector2D DirecaoNoMapa = NoMapa.GetSafeNormal();
+	TestTrue(TEXT("A letra N aponta para onde o mapa desenha o norte"),
+		FVector2D::DotProduct(DirecaoDaLetra, DirecaoNoMapa) > 0.95f);
+
+	return true;
+}

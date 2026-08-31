@@ -84,6 +84,19 @@ float FWorldMapProjection::TerrainTileSideUnits(float LandRadiusUnits)
 	return Regiao / static_cast<float>(QuantosCabem);
 }
 
+float FWorldMapProjection::NorthAngleDegrees(const FWorldMapSnapshot& Snapshot, EMode Mode)
+{
+	if (Mode == EMode::NorteAcima)
+	{
+		return 0.0f;
+	}
+
+	// O mapa gira CONTRA o olhar para pôr a frente em cima; então o norte,
+	// visto de dentro do mapa, gira junto — pelo mesmo ângulo e no mesmo
+	// sentido em que o mundo girou.
+	return FRotator::ClampAxis(-Snapshot.PlayerYawDegrees);
+}
+
 FLinearColor FWorldMapProjection::ColorForTerrain(EWorldMapTerrain Terrain)
 {
 	switch (Terrain)

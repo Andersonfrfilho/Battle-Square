@@ -94,11 +94,73 @@ só os nove à volta do jogador vivem.
 3. Trilhas ligando à floresta.
 4. Bloco vizinho, e assim por diante.
 
+
+## A economia: de onde vem, e para onde vai
+
+Decidido em 31/08/2026. **Fonte e dreno nascem no MESMO laço**, e isso não é
+elegância — é o que impede a moeda de virar número que só sobe. Economia sem
+ralo faz preço nenhum significar coisa alguma.
+
+**vencer na cidade → prêmio e reputação → pagar a academia → mais forte →
+vencer onde é mais difícil**
+
+### Fonte: ser o melhor treinador da cidade
+
+A melhor das fontes possíveis porque **não precisa de conteúdo novo**: vitória,
+XP, atributos e especialidade já existem. Um ranking por cidade é "vença aqui",
+e é o que dá IDENTIDADE a cada cidade — não só prédios diferentes.
+
+E ele resolve sozinho o problema de moer dinheiro. Prêmio por vitória contra
+selvagens que reaparecem é impressora de moeda: dá para lutar sem fim, e aí o
+preço da academia deixa de doer. **O ranking não é infinito** — sobe-se até o
+primeiro lugar, e aquela cidade para de pagar. O jogador é empurrado para a
+próxima, que é para onde queremos que ele vá.
+
+### Dreno: a academia cobra
+
+É o que dá preço ao treino rápido, e é por isso que a academia não compete com
+os campos: **campo é lento, gratuito e universal; academia é rápida, paga e
+restrita** a alguns atributos por cidade.
+
+### Troco: vender o pet capturado
+
+Fica, apertado, e a armadilha é conhecida — se a venda for a renda principal, o
+jogo vira fazenda: captura-se para vender, e o pet deixa de ser companheiro
+para virar mercadoria. Três amarras:
+
+- O preço sai da **raridade**, não da força — vender o forte não compensa.
+- **Preço baixo.** É troco, não salário.
+- Alternativa a considerar: entregar ao abrigo rende **reputação** em vez de
+  moeda. Aí o repetido tem destino sem virar dinheiro.
+
+### Trabalhos, e os PODERES DO PET neles
+
+O trabalho é a fonte mais cara: cada tipo é conteúdo novo, e conteúdo que não é
+batalha é quase outro jogo dentro deste. Começar por UM, ligado ao que existe.
+
+O que o torna valioso aqui é a ideia do usuário: **os poderes do pet ajudam no
+trabalho.** Hoje `voar`, `submergir`, `camuflar`, `atravessar` e `iluminar` só
+servem dentro do combate — são metade da identidade de um pet, usada em um
+terço do jogo.
+
+**A amarra que recomendo, e ela é a diferença entre bom e insuportável: o poder
+FACILITA, nunca HABILITA.** Um trabalho que EXIGE submergir tranca o jogador
+que não tem pet de água, e aí o pet deixa de ser escolha e vira chave de porta
+— o defeito clássico. Com o poder facilitando, quem tem o pet certo faz mais
+rápido ou ganha mais; quem não tem, faz assim mesmo.
+
+**Um buraco que isto expõe:** o elemento TERRA não tem skill nenhuma. Fogo voa,
+água submerge, planta camufla, fantasma atravessa, luz ilumina — e terra ficou
+sem. Num sistema de trabalhos, o pet de terra não contribui com nada, e o
+elemento vira o pior de todos por omissão.
+
 ## Perguntas em aberto
 
 - **O que machuca o treinador?** Sem isso, o Centro de Recuperação cura metade.
-- **De onde vem dinheiro, e no que ele se gasta?** Sem fonte e dreno, não há
-  economia — há números.
+- ~~De onde vem dinheiro?~~ **Decidido:** ranking da cidade é a fonte, academia
+  é o dreno, venda é troco. Ver a seção da economia.
+- **Que skill o elemento TERRA ganha?** Sem uma, o pet de terra não serve a
+  nenhum trabalho.
 - **Comprar pet e capturar pet podem coexistir?** Ver a proposta da troca.
 - **Quais atributos cada cidade ensina?** É o que faz viajar valer.
 

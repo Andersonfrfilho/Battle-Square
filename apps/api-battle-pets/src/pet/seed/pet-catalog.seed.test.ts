@@ -5,6 +5,11 @@ import { describe, expect, test } from 'bun:test';
 import { createPetSchema } from '../pet.validation';
 import { PET_CATALOG_SEED } from './pet-catalog.seed';
 
+/** A escola de 'Natural/Agua' é 'Natural'. */
+function escolaDe(tipo: string): string {
+  return tipo.split('/')[0] ?? tipo;
+}
+
 /** O elemento de 'Natural/Agua' é 'Agua'. */
 function elementoDe(tipo: string): string {
   return tipo.split('/')[1] ?? tipo;
@@ -74,23 +79,43 @@ describe('catálogo inicial de pets', () => {
     }
   });
 
-  test('as doze combinações de escola e elemento existem', () => {
-    // Combinação que falta é um canto do jogo que ninguém pode jogar. Cinco
-    // estavam vazias, e nada acusava: cada pet existente estava correto.
-    const escolas = ['Fisica', 'Natural', 'Psiquica'];
-    const elementos = ['Fogo', 'Agua', 'Planta', 'Terra'];
-    const existentes = new Set(PET_CATALOG_SEED.map((pet) => pet.type));
+  test('todo eixo é jogável, e nenhum aparece uma vez só', () => {
+    // A regra ANTERIOR exigia que as doze combinações existissem. Com quatro
+    // escolas e seis elementos seriam VINTE E QUATRO, e cumpri-la produziria
+    // pets de enchimento — um "Espiritual/Fogo" que existe só para preencher
+    // tabela é pior que a combinação vazia, porque parece conteúdo.
+    //
+    // O que importa de verdade: nenhum eixo fica inalcançável, e nenhum fica
+    // preso a um único pet. Um elemento com um pet só é um elemento que o
+    // jogador experimenta uma vez e nunca mais escolhe.
+    const escolas = ['Fisica', 'Natural', 'Psiquica', 'Espiritual'];
+    const elementos = ['Fogo', 'Agua', 'Planta', 'Terra', 'Fantasma', 'Luz'];
 
-    const faltando: string[] = [];
     for (const escola of escolas) {
-      for (const elemento of elementos) {
-        if (!existentes.has(`${escola}/${elemento}`)) {
-          faltando.push(`${escola}/${elemento}`);
-        }
-      }
+      const quantos = PET_CATALOG_SEED.filter((pet) => escolaDe(pet.type) === escola);
+      // O nome vai na mensagem: sem ele, a falha diz "1 não é >= 2" e não diz
+      // de QUAL escola — e a pessoa vai contar pets à mão para descobrir.
+      expect(`${escola} tem ${quantos.length} pets`).toBe(`${escola} tem ${Math.max(quantos.length, 2)} pets`);
     }
 
-    expect(faltando).toEqual([]);
+    for (const elemento of elementos) {
+      const quantos = PET_CATALOG_SEED.filter((pet) => elementoDe(pet.type) === elemento);
+      expect(`${elemento} tem ${quantos.length} pets`).toBe(`${elemento} tem ${Math.max(quantos.length, 2)} pets`);
+    }
+  });
+
+  test('o fantasma drena, e a luz existe para respondê-lo', () => {
+    // As duas metades da mesma decisão. Um fantasma sem dreno seria um tipo
+    // com imunidades e sem jogada própria; e uma luz que ninguém pode jogar
+    // faria "forte contra fantasma" ser um número numa tabela inalcançável.
+    const fantasmas = PET_CATALOG_SEED.filter((pet) => elementoDe(pet.type) === 'Fantasma');
+    const drenam = fantasmas.filter((pet) =>
+      (pet.moves ?? []).some((move) => (move.drainPercent ?? 0) > 0),
+    );
+    expect(drenam.length).toBeGreaterThan(0);
+
+    const luzes = PET_CATALOG_SEED.filter((pet) => elementoDe(pet.type) === 'Luz');
+    expect(luzes.length).toBeGreaterThan(0);
   });
 
   test('só terra e água enlameiam', () => {

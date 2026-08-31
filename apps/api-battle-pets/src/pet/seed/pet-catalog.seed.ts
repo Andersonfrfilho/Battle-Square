@@ -279,6 +279,96 @@ export const PET_CATALOG_SEED: CreatePetDeclaration[] = [
       { name: 'Monólito', power: 155, terrainEffect: 'none', requiresAttribute: 'personality', requiresValue: 9 },
     ],
   },
+{
+    // O arquétipo: drena, atravessa e some. É o pet que a escola espiritual
+    // e o elemento fantasma existem para produzir.
+    name: 'Véu',
+    type: 'Espiritual/Fantasma',
+    attack: 60,
+    defense: 40,
+    speed: 75,
+    maxHealth: 95,
+    moves: [
+      { name: 'Toque Frio', power: 70, terrainEffect: 'none' },
+      // Fraco no dano e forte na sobrevivência: quem escolhe isto troca o
+      // turno de agora pela vida que sustenta os próximos.
+      { name: 'Sanguessuga', power: 55, terrainEffect: 'none', drainPercent: 50 },
+      { name: 'Lamento', power: 100, terrainEffect: 'none' },
+      { name: 'Assombro', power: 150, terrainEffect: 'none', requiresAttribute: 'personality', requiresValue: 10 },
+    ],
+  },
+  {
+    // A RESPOSTA. Sem um pet de luz jogável, "luz é forte contra fantasma"
+    // seria um número numa tabela que ninguém alcança.
+    name: 'Candeia',
+    type: 'Espiritual/Luz',
+    attack: 55,
+    defense: 60,
+    speed: 60,
+    maxHealth: 125,
+    moves: [
+      { name: 'Clarão', power: 75, terrainEffect: 'none' },
+      { name: 'Fagulha Pura', power: 45, terrainEffect: 'none', effectStat: 'defense', effectPercent: 40 },
+      { name: 'Raio Claro', power: 110, terrainEffect: 'none' },
+      { name: 'Aurora', power: 155, terrainEffect: 'none', requiresAttribute: 'personality', requiresValue: 8 },
+    ],
+  },
+  {
+    name: 'Farol',
+    type: 'Fisica/Luz',
+    attack: 75,
+    defense: 55,
+    speed: 50,
+    maxHealth: 130,
+    moves: [
+      { name: 'Cabeçada Luminosa', power: 85, terrainEffect: 'none' },
+      { name: 'Brasa Branca', power: 60, terrainEffect: 'damage' },
+      { name: 'Golpe Solar', power: 120, terrainEffect: 'none' },
+      { name: 'Meio-dia', power: 160, terrainEffect: 'none', requiresAttribute: 'musculature', requiresValue: 12 },
+    ],
+  },
+  {
+    name: 'Lume',
+    type: 'Psiquica/Luz',
+    attack: 60,
+    defense: 50,
+    speed: 70,
+    maxHealth: 110,
+    moves: [
+      { name: 'Vislumbre', power: 70, terrainEffect: 'none' },
+      { name: 'Foco', power: 35, terrainEffect: 'none', effectStat: 'attack', effectPercent: 40 },
+      { name: 'Ofuscar', power: 40, terrainEffect: 'none', effectStat: 'speed', effectPercent: -40 },
+      { name: 'Revelação', power: 150, terrainEffect: 'none', requiresAttribute: 'personality', requiresValue: 9 },
+    ],
+  },
+  {
+    name: 'Bruma',
+    type: 'Natural/Fantasma',
+    attack: 55,
+    defense: 50,
+    speed: 65,
+    maxHealth: 115,
+    moves: [
+      { name: 'Sopro Gelado', power: 70, terrainEffect: 'none' },
+      { name: 'Névoa Densa', power: 50, terrainEffect: 'ice', terrainDuration: 2 },
+      { name: 'Frio na Espinha', power: 60, terrainEffect: 'none', drainPercent: 40 },
+      { name: 'Vendaval Pálido', power: 145, terrainEffect: 'none', requiresAttribute: 'camouflage', requiresValue: 9 },
+    ],
+  },
+  {
+    name: 'Afogado',
+    type: 'Espiritual/Agua',
+    attack: 65,
+    defense: 45,
+    speed: 55,
+    maxHealth: 120,
+    moves: [
+      { name: 'Puxão', power: 80, terrainEffect: 'none' },
+      { name: 'Ressurgência', power: 60, terrainEffect: 'water' },
+      { name: 'Sede Antiga', power: 55, terrainEffect: 'none', drainPercent: 45 },
+      { name: 'Maré Negra', power: 150, terrainEffect: 'none', requiresAttribute: 'underground', requiresValue: 10 },
+    ],
+  },
 ];
 
 export type SeedResult = {

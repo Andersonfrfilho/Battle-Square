@@ -6,6 +6,7 @@
 #include "Environment/IslandFeatureLayout.h"
 #include "Environment/WorldWeather.h"
 #include "Environment/WorldBoundaryWater.h"
+#include "Environment/RegionResidency.h"
 #include "Misc/AutomationTest.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -397,6 +398,59 @@ bool FIslandGeographySwampSaturatesBeforeTheForestTest::RunTest(const FString& P
 	TestTrue(TEXT("brejo limpo é mais úmido que mata limpa"),
 		WorldWeather::HumidityPercent(EScenaryClimate::Humid, EWeather::Clear)
 		> WorldWeather::HumidityPercent(EScenaryClimate::Temperate, EWeather::Clear));
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FIslandGeographyHomeForestFitsWholeChunksTest,
+	"BattleSquare.Environment.IslandGeography.AMataDaCasaCabePedacosInteiros",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FIslandGeographyHomeForestFitsWholeChunksTest::RunTest(const FString& Parameters)
+{
+	// O jogador disse que a mata "desapareceu", e a causa era esta: os setores
+	// de bioma são fatias que se encontram no CENTRO, então logo depois do
+	// miolo eles chegam todos de uma vez. Com o miolo menor que um pedaço de
+	// mundo, o vizinho imediato de quem nasce já era outro bioma.
+	//
+	// O que se mede aqui é o que o jogador vê: o pedaço em que ele nasce e os
+	// quatro vizinhos de lado — tudo o que está carregado ao redor dele no
+	// primeiro instante. Com o raio antigo o vizinho a OESTE era deserto.
+	const float Pedaco = RegionResidency::ChunkSideUnits();
+	TestTrue(TEXT("a mata da casa cobre ao menos um pedaço de mundo inteiro"),
+		IslandGeography::HomeRadiusUnits() >= Pedaco);
+
+	const FIntPoint Vizinhos[] = {
+		FIntPoint(0, 0), FIntPoint(-1, 0), FIntPoint(1, 0),
+		FIntPoint(0, -1), FIntPoint(0, 1),
+	};
+	for (const FIntPoint& Pedacinho : Vizinhos)
+	{
+		TestEqual(TEXT("o pedaço vizinho de quem nasce é mata"),
+			static_cast<int32>(IslandGeography::BiomeAt(
+				RegionResidency::ChunkCenterUnits(Pedacinho))),
+			static_cast<int32>(EIslandBiome::Forest));
+	}
+
+	// E ela continua sendo MATA: andar em qualquer direção dentro do miolo não
+	// pode trocar de bioma, senão o teto acima não significa nada.
+	const float Passo = IslandGeography::HomeRadiusUnits() * 0.9f;
+	const FVector2D Rumos[] = {
+		FVector2D(Passo, 0.0f), FVector2D(-Passo, 0.0f),
+		FVector2D(0.0f, Passo), FVector2D(0.0f, -Passo),
+	};
+	for (const FVector2D& Rumo : Rumos)
+	{
+		TestEqual(TEXT("dentro do miolo ainda é mata"),
+			static_cast<int32>(IslandGeography::BiomeAt(Rumo)),
+			static_cast<int32>(EIslandBiome::Forest));
+	}
+
+	// E o miolo não come a ilha: a praia continua existindo do lado de fora.
+	TestTrue(TEXT("sobra ilha depois do miolo"),
+		IslandGeography::HomeRadiusUnits()
+		< IslandGeography::LandRadiusUnits() - IslandGeography::BeachWidthUnits());
 
 	return true;
 }

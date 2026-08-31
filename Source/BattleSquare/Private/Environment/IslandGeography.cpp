@@ -31,13 +31,28 @@ namespace GeografiaDaIlha
 	constexpr float FracaoDoPantano = 0.10f;
 
 	/**
-	 * O miolo de mata, em unidades.
+	 * O PISO do miolo de mata, em unidades.
 	 *
-	 * É FIXO, e não fração: ele existe para caber os campos de treino, que têm
-	 * tamanho próprio e não crescem com a ilha. Quem garante que cabe é
+	 * Fixo porque ele existe para caber os campos de treino, que têm tamanho
+	 * próprio e não crescem com a ilha. Quem garante que cabe é
 	 * `IslandGeographyTest`, não este comentário.
 	 */
-	constexpr float RaioDaCasa = 2600.0f;
+	constexpr float RaioMinimoDaCasa = 2600.0f;
+
+	/**
+	 * E a fração, que é quem manda quando a ilha é grande.
+	 *
+	 * Só o número fixo é o que fez a mata "desaparecer": os setores de bioma
+	 * são fatias que se encontram no CENTRO, então fora do miolo eles chegam
+	 * todos juntos. Com 2600 numa ilha de 20000, o jogador dava sessenta
+	 * metros e já estava em rocha vulcânica — e o pedaço de mundo tem 6400 de
+	 * lado, ou seja, nem UM pedaço inteiro de mata cabia no miolo.
+	 *
+	 * Trinta e cinco por cento dá 7000 na ilha de hoje: um punhado de pedaços
+	 * de mata em toda direção antes da primeira divisa. A mata é a casa, e
+	 * casa se atravessa andando, não em três passos.
+	 */
+	constexpr float FracaoDaCasa = 0.35f;
 
 	constexpr float GrausDaVolta = 360.0f;
 
@@ -87,8 +102,9 @@ namespace IslandGeography
 	{
 		// Numa ilha pequena demais para ter miolo E borda, a casa cede: ela
 		// nunca pode empurrar a praia para dentro do próprio centro.
-		return FMath::Min(GeografiaDaIlha::RaioDaCasa,
-			LandRadiusUnits() - BeachWidthUnits());
+		const float Pedido = FMath::Max(GeografiaDaIlha::RaioMinimoDaCasa,
+			LandRadiusUnits() * GeografiaDaIlha::FracaoDaCasa);
+		return FMath::Min(Pedido, LandRadiusUnits() - BeachWidthUnits());
 	}
 
 	int32 SectorAt(const FVector2D& PositionUnits)

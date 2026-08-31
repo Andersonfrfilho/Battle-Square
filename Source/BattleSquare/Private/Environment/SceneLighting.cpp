@@ -2,6 +2,7 @@
 
 #include "Environment/SceneLighting.h"
 
+#include "Environment/WorldNightSky.h"
 #include "Environment/WorldTimeOfDay.h"
 
 #include "Components/DirectionalLightComponent.h"
@@ -13,6 +14,8 @@
 #include "Engine/DirectionalLight.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "Debug/BattleDebugScreen.h"
+#include "HAL/IConsoleManager.h"
 
 namespace LuzDaCena
 {
@@ -58,6 +61,16 @@ namespace LuzDaCena
 	 * projetar sombra, que é justamente como a noite se parece.
 	 */
 	constexpr float IntensidadeDoLuar = 0.35f;
+
+	/**
+	 * Quanto do luar sobra na noite de lua nova.
+	 *
+	 * A lua manda no resto: cheia no alto acende o piso inteiro, lua nova
+	 * deixa so isto. Zerar seria devolver a noite cega que o piso existe para
+	 * evitar; nao mexer no piso seria ter fase da lua no codigo e nenhuma na
+	 * tela.
+	 */
+	constexpr float PisoDaNoiteSemLua = 0.55f;
 }
 
 ABattleSceneLighting::ABattleSceneLighting()
@@ -145,8 +158,21 @@ void ABattleSceneLighting::ApplyHour(float Hour)
 
 	if (SkyLight)
 	{
-		// O céu escurece junto com o sol, mas nunca abaixo do luar.
-		SkyLight->SetIntensity(FMath::Max(IntensidadeDoCeu * BrilhoAgora(), IntensidadeDoLuar));
+		const float Fase = WorldNightSky::MoonPhaseFraction(ElapsedHours);
+		const float BrilhoDaLua = WorldNightSky::MoonBrightness(CurrentHour, Fase);
+
+		// O céu escurece junto com o sol, mas nunca abaixo do luar — e o luar
+		// é da LUA: noite de cheia no alto é visivelmente mais clara que noite
+		// de lua nova.
+		const float Luar = IntensidadeDoLuar
+			* (PisoDaNoiteSemLua + (1.0f - PisoDaNoiteSemLua) * BrilhoDaLua);
+		SkyLight->SetIntensity(FMath::Max(IntensidadeDoCeu * BrilhoAgora(), Luar));
+
+		// A cor da lua só tinge quando o céu está escuro, e pela MESMA rampa
+		// que acende as estrelas. Tingir de dia pintaria o meio-dia de rosa.
+		const FLinearColor CorDaLua = WorldNightSky::MoonColor(CurrentHour, ElapsedHours);
+		SkyLight->SetLightColor(FMath::Lerp(
+			FLinearColor::White, CorDaLua, WorldNightSky::SkyDarkness(CurrentHour)));
 	}
 }
 
@@ -155,7 +181,13 @@ float ABattleSceneLighting::BrilhoAgora() const
 	// A hora manda, a nuvem desconta. Dia encoberto é mais escuro que dia
 	// limpo e mais claro que noite limpa — e é assim que a chuva aparece na
 	// tela sem uma única partícula.
-	return WorldTimeOfDay::SunBrightness(CurrentHour) * WorldWeather::SunDimming(CurrentWeather);
+	//
+	// A lua desconta junto, quando passa na frente: o eclipse solar escurece o
+	// meio-dia por AQUI, e não por um modo separado que só ele acende.
+	const float SolTapado = 1.0f - WorldNightSky::SolarEclipseCoverage(CurrentHour, ElapsedHours);
+	return WorldTimeOfDay::SunBrightness(CurrentHour)
+		* WorldWeather::SunDimming(CurrentWeather)
+		* SolTapado;
 }
 
 void ABattleSceneLighting::SetWeather(EWeather Weather)
@@ -180,6 +212,12 @@ void ABattleSceneLighting::StartDayCycle(float StartHour)
 void ABattleSceneLighting::SetSecondsPerDay(float Seconds)
 {
 	SecondsPerDay = FMath::Max(Seconds, 1.0f);
+}
+
+void ABattleSceneLighting::SetElapsedHours(float Hours)
+{
+	ElapsedHours = FMath::Max(Hours, 0.0f);
+	ApplyHour(ElapsedHours);
 }
 
 bool ABattleSceneLighting::WorldAlreadyHasSun(const UWorld* World)
@@ -256,3 +294,38 @@ int32 ABattleSceneLighting::DimLightingAuthoredInMap(UWorld* World)
 
 	return Caladas;
 }
+
+// Ferramenta de desenvolvimento, e só — fora do Shipping por compilação. Um
+// jogo publicado onde qualquer um digita a data do eclipse não tem eclipse
+// nenhum: tem um botão de eclipse.
+#if !UE_BUILD_SHIPPING
+namespace
+{
+	FAutoConsoleCommandWithWorldAndArgs GSkyDayCommand(
+		TEXT("bs.SkyDay"),
+		TEXT("Salta o céu para este dia, com casa decimal: bs.SkyDay 8.15 cai dentro do eclipse lunar."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(
+			[](const TArray<FString>& Args, UWorld* World)
+			{
+				if (!World || Args.Num() == 0)
+				{
+					return;
+				}
+
+				const float Dia = FCString::Atof(*Args[0]);
+				const float Horas = Dia * WorldTimeOfDay::HoursPerDay;
+
+				int32 Quantos = 0;
+				for (TActorIterator<ABattleSceneLighting> It(World); It; ++It)
+				{
+					It->SetElapsedHours(Horas);
+					++Quantos;
+				}
+
+				FBattleDebugScreen::Show(
+					FString::Printf(TEXT("céu saltou para o dia %.2f (%d sol%s)"),
+						Dia, Quantos, Quantos == 1 ? TEXT("") : TEXT("es")),
+					8.0f, FColor::Orange, /*Key=*/762);
+			}));
+}
+#endif // !UE_BUILD_SHIPPING

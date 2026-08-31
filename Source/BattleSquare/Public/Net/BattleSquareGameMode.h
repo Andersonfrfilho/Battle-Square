@@ -285,6 +285,15 @@ private:
 	/** Sorteia o tempo desta hora, entrega ao sol e escreve no painel. */
 	void MostrarTempoDoMundo();
 
+	/**
+	 * Escreve no painel o que há no céu: fase da lua, eclipse e cometa.
+	 *
+	 * Linha separada da do tempo porque as duas mudam em ritmos diferentes: o
+	 * céu leva dias para virar, e juntar tudo numa linha faria a fase da lua
+	 * piscar junto com a chuva.
+	 */
+	void MostrarCeuDoMundo();
+
 	/** A luz do mundo, para o painel saber que horas o sol acha que são. */
 	UPROPERTY(Transient)
 	TObjectPtr<class ABattleSceneLighting> CenaDoMundo;

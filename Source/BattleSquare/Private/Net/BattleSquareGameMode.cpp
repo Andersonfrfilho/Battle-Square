@@ -21,6 +21,7 @@
 #include "World/WorldExplorerCharacter.h"
 #include "Environment/CaveSystem.h"
 #include "Environment/ForestBackdrop.h"
+#include "Environment/FreshWater.h"
 #include "Environment/IslandFeatureLayout.h"
 #include "Environment/IslandGeography.h"
 #include "Environment/MountainRange.h"
@@ -28,6 +29,7 @@
 #include "Environment/ScenaryClimate.h"
 #include "Environment/SceneLighting.h"
 #include "Environment/WorldTimeOfDay.h"
+#include "Environment/WorldNightSky.h"
 #include "Environment/WorldWeather.h"
 #include "World/WorldStatusReadout.h"
 #include "UI/WorldLoadingScreen.h"
@@ -870,6 +872,7 @@ void ABattleSquareGameMode::TickWorldClock()
 		0.0f, CorDaFase, /*Key=*/750);
 
 	MostrarTempoDoMundo();
+	MostrarCeuDoMundo();
 }
 
 void ABattleSquareGameMode::MostrarTempoDoMundo()
@@ -926,6 +929,58 @@ void ABattleSquareGameMode::MostrarTempoDoMundo()
 			Umidade,
 			*Marca),
 		0.0f, CorDoTempo, /*Key=*/751);
+}
+
+void ABattleSquareGameMode::MostrarCeuDoMundo()
+{
+	const float Hora = CenaDoMundo->GetHour();
+	const float Corridas = CenaDoMundo->GetElapsedHours();
+
+	const float Fase = WorldNightSky::MoonPhaseFraction(Corridas);
+	const ESkyEclipse Eclipse = WorldNightSky::EclipseAt(Hora, Corridas);
+
+	// A cor grita o que é raro: eclipse lunar em vermelho porque a lua FICA
+	// vermelha, solar em laranja porque é o sol que apaga. Céu comum fica
+	// discreto — linha que chama atenção todo dia não chama atenção nenhuma.
+	FColor CorDoCeu = FColor(150, 150, 170);
+	FString Linha;
+
+	if (Eclipse == ESkyEclipse::None)
+	{
+		Linha = FString::Printf(TEXT("céu: lua %s (%.0f%% acesa)"),
+			WorldNightSky::PhaseDebugName(WorldNightSky::PhaseOf(Fase)),
+			WorldNightSky::MoonLitFraction(Fase) * 100.0f);
+	}
+	else
+	{
+		CorDoCeu = Eclipse == ESkyEclipse::Lunar ? FColor::Red : FColor::Orange;
+		Linha = FString::Printf(TEXT("céu: %s — %.0f%% de profundidade"),
+			WorldNightSky::EclipseDebugName(Eclipse),
+			WorldNightSky::EclipseDepth(Hora, Corridas) * 100.0f);
+	}
+
+	// Estrela e cometa entram na MESMA linha porque são a mesma pergunta: o
+	// que se vê olhando para cima agora.
+	const float Estrelas = WorldNightSky::StarBrightness(Hora, CenaDoMundo->GetWeather());
+	if (Estrelas > 0.05f)
+	{
+		Linha += FString::Printf(TEXT(" | estrelas %.0f%%"), Estrelas * 100.0f);
+	}
+
+	if (WorldNightSky::CometVisible(static_cast<uint32>(WorldScenerySeed), Corridas))
+	{
+		Linha += FString::Printf(TEXT(" | COMETA a %.0f° de altura"),
+			WorldNightSky::CometElevationDegrees(static_cast<uint32>(WorldScenerySeed), Corridas));
+	}
+
+	const float Aurora = WorldNightSky::AuroraStrength(ClimaOndeOJogadorEsta(GetWorld()), Hora);
+	if (Aurora > 0.05f)
+	{
+		CorDoCeu = FColor::Green;
+		Linha += TEXT(" | AURORA BOREAL");
+	}
+
+	FBattleDebugScreen::Show(Linha, 0.0f, CorDoCeu, /*Key=*/761);
 }
 
 void ABattleSquareGameMode::TickTrainingFields()
@@ -1448,7 +1503,15 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 	int32 VulcoesPlantados = 0;
 	int32 DerramesDoVulcao = 0;
 
-	for (const IslandFeatureLayout::FFeaturePlacement& Peca : IslandFeatureLayout::Plan())
+	// As grutas das cachoeiras entram na MESMA lista, porque são cavernas: quem
+	// planta não precisa saber que a posição de uma veio do rio e a da outra do
+	// anel. Um segundo laço só para elas duplicaria o despacho e a contagem.
+	TArray<IslandFeatureLayout::FFeaturePlacement> PecasDaIlha = IslandFeatureLayout::Plan();
+	const TArray<IslandFeatureLayout::FFeaturePlacement> Grutas = FreshWater::PlanGrottoes();
+	const int32 GrutasDeCachoeira = Grutas.Num();
+	PecasDaIlha.Append(Grutas);
+
+	for (const IslandFeatureLayout::FFeaturePlacement& Peca : PecasDaIlha)
 	{
 		const FVector2D Deslocamento = Peca.CenterUnits();
 		const FVector OndeNaIlha(Origem.X + Deslocamento.X, Origem.Y + Deslocamento.Y, AlturaDoChao);
@@ -1522,9 +1585,10 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 
 	FBattleDebugScreen::Show(
 		FString::Printf(
-			TEXT("cavernas: %d (maior %dx%d) — %d de lava, %d de água, %d de boca fechada"),
+			TEXT("cavernas: %d (maior %dx%d) — %d de lava, %d de água (%d em cachoeira), ")
+			TEXT("%d de boca fechada"),
 			CavernasPlantadas, MaiorCavernaPlantada, MaiorCavernaPlantada,
-			CavernasDeLava, CavernasDeAgua, CavernasFechadas),
+			CavernasDeLava, CavernasDeAgua, GrutasDeCachoeira, CavernasFechadas),
 		0.0f, FColor::Orange, /*Key=*/727);
 
 	FBattleDebugScreen::Show(

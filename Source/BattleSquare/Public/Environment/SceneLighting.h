@@ -88,6 +88,16 @@ public:
 	/** Quantos segundos de relógio de parede um dia inteiro leva. */
 	void SetSecondsPerDay(float Seconds);
 
+	/**
+	 * Salta o relógio do mundo para este ponto — porta de DESENVOLVIMENTO.
+	 *
+	 * O céu leva dias para virar: o primeiro eclipse cai no dia 4, que são
+	 * uma hora e meia de jogo. Esperar sentado para ver se o eclipse acontece
+	 * é medir a paciência, não a regra — o mesmo motivo de
+	 * `bs.ControlOpponent` existir.
+	 */
+	void SetElapsedHours(float Hours);
+
 	UDirectionalLightComponent* GetSunLight() const { return SunLight; }
 	USkyLightComponent* GetSkyLight() const { return SkyLight; }
 	USkyAtmosphereComponent* GetSkyAtmosphere() const { return SkyAtmosphere; }

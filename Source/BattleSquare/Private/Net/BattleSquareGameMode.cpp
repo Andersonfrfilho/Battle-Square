@@ -24,6 +24,7 @@
 #include "Environment/IslandFeatureLayout.h"
 #include "Environment/IslandGeography.h"
 #include "Environment/MountainRange.h"
+#include "Environment/RegionResidency.h"
 #include "Environment/ScenaryClimate.h"
 #include "Environment/SceneLighting.h"
 #include "Environment/WorldTimeOfDay.h"
@@ -393,6 +394,13 @@ FString ABattleSquareGameMode::SetUpWorldEncounterFlow()
 		BuildWorldTerrainTiles();
 		World->GetTimerManager().SetTimer(DiscoveryTimer, this,
 			&ABattleSquareGameMode::RefreshWorldDiscovery,
+			WorldStatusRefreshSeconds, /*bLoop=*/true);
+
+		// A RESIDÊNCIA no mesmo passo: um pedaço tem 6400 unidades, oito
+		// vezes a região da descoberta, então quem não atravessa uma região
+		// em meio segundo muito menos atravessa um pedaço.
+		World->GetTimerManager().SetTimer(ResidencyTimer, this,
+			&ABattleSquareGameMode::RefreshRegionResidency,
 			WorldStatusRefreshSeconds, /*bLoop=*/true);
 	}
 	return FString();
@@ -1046,54 +1054,22 @@ bool ABattleSquareGameMode::LearnSpecialtyOfCurrentField()
 
 void ABattleSquareGameMode::BuildWorldTerrainTiles()
 {
-	UWorld* World = GetWorld();
-	if (!World)
-	{
-		return;
-	}
-
+	// A GEOGRAFIA responde, não o que está plantado.
+	//
+	// Antes o mapa deduzia mata CONTANDO troncos no mundo. Com a ilha montada
+	// por pedaços residentes, só os nove à volta do jogador existem — o mapa
+	// esvaziaria e repovoaria atrás de quem anda, e diria que o deserto do
+	// outro lado da ilha é clareira porque ninguém está lá.
+	//
+	// `IslandGeography` sabe o que cada ponto é sem que nada esteja montado, e
+	// é a mesma fonte que decide o bioma de cada pedaço plantado. Uma verdade
+	// só (L-032): o mapa não pode discordar do chão.
 	WorldTerrainTiles.Reset();
 
-	const float Lado = FWorldDiscovery::RegionSizeUnits;
 	const float RaioDaTerra = IslandGeography::LandRadiusUnits();
+	const float Lado = FWorldMapProjection::TerrainTileSideUnits(RaioDaTerra);
+	const int32 Alcance = FWorldMapProjection::TerrainTilesAcross / 2;
 
-	// Onde há MATA: a densidade de troncos e pedras por região. Uma instância
-	// solta não é mata — é uma árvore no meio da clareira, e pintar a região
-	// inteira de verde por causa dela faria o mapa prometer um obstáculo que
-	// não existe.
-	TMap<int64, int32> SolidosPorRegiao;
-	for (TActorIterator<AForestBackdrop> It(World); It; ++It)
-	{
-		const AForestBackdrop* Mata = *It;
-		const TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>>& Grupos =
-			Mata->GetSpeciesClusters();
-
-		for (int32 Grupo = 0; Grupo < Grupos.Num(); ++Grupo)
-		{
-			const UHierarchicalInstancedStaticMeshComponent* Agrupamento = Grupos[Grupo];
-			if (!Agrupamento || !Mata->IsSolidSpecies(Grupo))
-			{
-				continue;
-			}
-
-			for (int32 Instancia = 0; Instancia < Agrupamento->GetInstanceCount(); ++Instancia)
-			{
-				FTransform Onde;
-				if (!Agrupamento->GetInstanceTransform(Instancia, Onde, /*bWorldSpace=*/true))
-				{
-					continue;
-				}
-
-				const FVector Posicao = Onde.GetLocation();
-				const int64 Chave = FWorldDiscovery::RegionKey(
-					FWorldDiscovery::RegionColumnOf(Posicao.X),
-					FWorldDiscovery::RegionRowOf(Posicao.Y));
-				SolidosPorRegiao.FindOrAdd(Chave) += 1;
-			}
-		}
-	}
-
-	const int32 Alcance = FMath::CeilToInt(RaioDaTerra * 1.6f / Lado);
 	for (int32 Coluna = -Alcance; Coluna <= Alcance; ++Coluna)
 	{
 		for (int32 Linha = -Alcance; Linha <= Alcance; ++Linha)
@@ -1101,29 +1077,13 @@ void ABattleSquareGameMode::BuildWorldTerrainTiles()
 			FWorldMapTerrainTile Pedaco;
 			Pedaco.WorldXY = FVector2D((Coluna + 0.5f) * Lado, (Linha + 0.5f) * Lado);
 
-			const float Distancia = Pedaco.WorldXY.Size();
-			const int32 Solidos = SolidosPorRegiao.FindRef(
-				FWorldDiscovery::RegionKey(Coluna, Linha));
-
-			// A ORDEM é a regra: a água vence a mata, e a serra vence tudo.
-			// Um pedaço é uma coisa só, e sem ordem declarada quem vence é a
-			// ordem em que os `if` foram escritos — que ninguém revisa.
-			if (Distancia > RaioDaTerra + Lado)
-			{
-				Pedaco.Kind = EWorldMapTerrain::Agua;
-			}
-			else if (Distancia > RaioDaTerra)
-			{
-				Pedaco.Kind = EWorldMapTerrain::Margem;
-			}
-			else if (Solidos >= 3)
-			{
-				Pedaco.Kind = EWorldMapTerrain::Mata;
-			}
-			else
-			{
-				Pedaco.Kind = EWorldMapTerrain::Clareira;
-			}
+			// A ORDEM é a regra: a água vence o bioma. Um pedaço é uma coisa
+			// só, e sem ordem declarada quem vence é a ordem em que os `if`
+			// foram escritos — que ninguém revisa.
+			Pedaco.Kind = IslandGeography::IsOnLand(Pedaco.WorldXY)
+				? FWorldMapProjection::TerrainForBiome(
+					IslandGeography::BiomeAt(Pedaco.WorldXY))
+				: EWorldMapTerrain::Agua;
 
 			WorldTerrainTiles.Add(Pedaco);
 		}
@@ -1335,23 +1295,19 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 	const FVector Onde(Origem.X, Origem.Y,
 		AlturaDoChao - AForestBackdrop::GroundTopLocalZ() - FolgaDoChaoUnidades);
 
-	AForestBackdrop* Mata = World->SpawnActor<AForestBackdrop>(
-		AForestBackdrop::StaticClass(), Onde, FRotator::ZeroRotator, Parametros);
-	if (!Mata)
-	{
-		return;
-	}
-
+	// A mata deixa de ser UMA e passa a ser os pedaços à volta de quem anda.
+	//
+	// Um disco só cobrindo os 20000 de raio teria vinte vezes a área de hoje
+	// viva ao mesmo tempo, e o pedido foi explícito: "não podemos deixar ficar
+	// devagar, devemos recarregar por mapa". Nove pedaços de 6400 acompanham
+	// o jogador; o resto da ilha não existe enquanto ninguém está lá.
+	//
 	// Sem vazio reservado para câmera: no mundo aberto a câmera segue o
 	// jogador, então não existe uma direção fixa a proteger — e reservar uma
 	// abriria um buraco sem explicação no meio da floresta.
-	// O chão do MUNDO é a ilha, não o diorama da arena: o padrão de trinta
-	// casas serve para enquadrar um tabuleiro, e crescer a ilha passa por
-	// IslandGeography e por mais nenhum lugar.
 	const float RaioDaTerra = IslandGeography::LandRadiusUnits();
-	Mata->GroundRadiusInCells = RaioDaTerra / WorldSceneryCellSizeUnits;
-	Mata->BuildForest(WorldSceneryCellSizeUnits,
-		static_cast<uint32>(WorldScenerySeed), FVector2D::ZeroVector);
+	WorldGroundZ = Onde.Z;
+	RefreshRegionResidency();
 
 	// A ÁGUA fecha o mundo. Vem junto da mata porque as duas dependem do mesmo
 	// chão: a margem tem de coincidir com a borda da terra, e calcular a
@@ -1435,9 +1391,96 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 		0.0f, FColor::Orange, /*Key=*/727);
 
 	FBattleDebugScreen::Show(
-		FString::Printf(TEXT("mundo: sol e mata plantados (chão em Z=%.0f%s)"),
-			AlturaDoChao, bAchouChao ? TEXT("") : TEXT(", NÃO encontrado por traço")),
+		FString::Printf(TEXT("mundo: sol e %d pedaços plantados (chão em Z=%.0f%s)"),
+			ResidentChunks.Num(), AlturaDoChao,
+			bAchouChao ? TEXT("") : TEXT(", NÃO encontrado por traço")),
 		0.0f, FColor::Green, /*Key=*/721);
+}
+
+void ABattleSquareGameMode::BuildResidentChunk(const FIntPoint& Pedaco)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	const FVector2D Centro = RegionResidency::ChunkCenterUnits(Pedaco);
+
+	FActorSpawnParameters Parametros;
+	Parametros.ObjectFlags |= RF_Transient;
+
+	AForestBackdrop* Mata = World->SpawnActor<AForestBackdrop>(
+		AForestBackdrop::StaticClass(),
+		FVector(Centro.X, Centro.Y, WorldGroundZ), FRotator::ZeroRotator, Parametros);
+	if (!Mata)
+	{
+		return;
+	}
+
+	// O bioma sai do CENTRO do pedaço, uma vez. Perguntar por planta faria a
+	// fronteira do deserto serpentear entre as árvores, e o chão — que é uma
+	// peça só — continuaria tendo de escolher um dos dois de qualquer jeito.
+	Mata->BuildRegion(WorldSceneryCellSizeUnits,
+		RegionResidency::ChunkSeed(static_cast<uint32>(WorldScenerySeed), Pedaco),
+		IslandGeography::BiomeAt(Centro),
+		RegionResidency::ChunkSideUnits());
+
+	ResidentChunks.Add(Pedaco, Mata);
+}
+
+void ABattleSquareGameMode::RefreshRegionResidency()
+{
+	UWorld* World = GetWorld();
+	const APawn* Jogador = AcharPawnDoJogador(World);
+	if (!World || !Jogador)
+	{
+		return;
+	}
+
+	// Entrada morta sai ANTES do plano. O ator é transitório e a viagem para a
+	// arena leva o nível junto: sem esta limpeza, a residência acharia montado
+	// um pedaço que já não existe e o jogador voltaria da batalha pisando no
+	// vazio.
+	for (auto It = ResidentChunks.CreateIterator(); It; ++It)
+	{
+		if (!It.Value().IsValid())
+		{
+			It.RemoveCurrent();
+		}
+	}
+
+	TSet<FIntPoint> Vivos;
+	ResidentChunks.GetKeys(Vivos);
+
+	const RegionResidency::FResidencyChange Mudanca =
+		RegionResidency::PlanChange(Vivos, FVector2D(Jogador->GetActorLocation()));
+	if (Mudanca.ToBuild.IsEmpty() && Mudanca.ToDrop.IsEmpty())
+	{
+		return;
+	}
+
+	// DERRUBA primeiro: montar antes deixaria o pico de memória com os nove
+	// antigos e os novos ao mesmo tempo, que é justamente o pico que a
+	// residência existe para não ter.
+	for (const FIntPoint& Pedaco : Mudanca.ToDrop)
+	{
+		TWeakObjectPtr<AForestBackdrop> Mata;
+		if (ResidentChunks.RemoveAndCopyValue(Pedaco, Mata) && Mata.IsValid())
+		{
+			Mata->Destroy();
+		}
+	}
+
+	for (const FIntPoint& Pedaco : Mudanca.ToBuild)
+	{
+		BuildResidentChunk(Pedaco);
+	}
+
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("mapa: %d pedaços vivos (+%d, -%d)"),
+			ResidentChunks.Num(), Mudanca.ToBuild.Num(), Mudanca.ToDrop.Num()),
+		0.0f, FColor(150, 220, 150), /*Key=*/744);
 }
 
 void ABattleSquareGameMode::SpawnRoamingEncounters()

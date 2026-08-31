@@ -22,6 +22,7 @@ class ABattleSquarePlayerController;
 // Toda decisão de "pode ou não pode" já mora no registro; este ator só
 // reage aos delegates dele e monta o que o Combate Online já construiu
 // (ABattleArena, UBattleTurnCoordinator, UBattleNetCommitComponent).
+class AForestBackdrop;
 class UWorldEncounterFlow;
 class UBattleActionSelectorWidget;
 class ABattleArena;
@@ -138,6 +139,46 @@ public:
 	void FreezePlayerWhileWorldIsNotReady(bool bFreeze);
 
 	void SpawnWorldScenery();
+
+	/**
+	 * Monta o que está perto e derruba o que ficou para trás.
+	 *
+	 * A ilha cresceu de 6000 para 20000 de raio — vinte vezes a área. Plantar
+	 * tudo de uma vez é exatamente o que o usuário pediu para não acontecer:
+	 * "não podemos deixar ficar devagar, devemos recarregar por mapa".
+	 *
+	 * Roda no MESMO temporizador lento da descoberta. Um pedaço tem 6400
+	 * unidades e ninguém o atravessa em meio segundo; chamar isto a cada
+	 * quadro seria refazer sessenta vezes por segundo uma conta cuja resposta
+	 * só muda quando se cruza uma fronteira.
+	 *
+	 * O que decide é `RegionResidency`, que é planejador puro e já tem teste.
+	 * Aqui só se cumpre a ordem: nascer ator, chamar `BuildRegion`, destruir.
+	 */
+	void RefreshRegionResidency();
+
+	/** Faz nascer o ator de um pedaço, já plantado com o bioma do lugar. */
+	void BuildResidentChunk(const FIntPoint& Chunk);
+
+	/**
+	 * Os pedaços vivos, pelo endereço deles.
+	 *
+	 * Fraco de propósito: o ator é `RF_Transient` e a viagem para a arena
+	 * leva o nível junto. Ponteiro forte manteria vivo o que o mundo já
+	 * desmontou, e a residência passaria a achar montado o que não existe.
+	 */
+	TMap<FIntPoint, TWeakObjectPtr<AForestBackdrop>> ResidentChunks;
+
+	/**
+	 * A altura do chão do mundo, achada por traço uma vez na montagem.
+	 *
+	 * Guardada porque cada pedaço novo nasce nela, e refazer o traço a cada
+	 * um deles perguntaria ao chão que o pedaço anterior acabou de criar —
+	 * empilhando terra sobre terra a cada passo do jogador.
+	 */
+	float WorldGroundZ = 0.0f;
+
+	FTimerHandle ResidencyTimer;
 
 	/**
 	 * Registra onde o jogador está, e grava se algo novo apareceu.

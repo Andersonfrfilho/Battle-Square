@@ -35,6 +35,29 @@ namespace
 
 	constexpr float CasaDeTeste = 150.0f;
 	const FVector2D CameraDeTeste(-880.0f, 0.0f);
+
+	/** Lado do ladrilho nos testes de pedaço — o mesmo que a residência usa. */
+	constexpr float LadoDoPedacoDeTeste = 6400.0f;
+
+	/**
+	 * Quantas instâncias existem nas espécies cujo nome contém `Trecho`.
+	 *
+	 * Pelo NOME e não pelo índice: a tabela de espécies é reordenável, e um
+	 * teste amarrado à posição dela passaria a medir outra planta em silêncio
+	 * na primeira reordenação.
+	 */
+	int32 ContaEspeciesDoPedaco(const AForestBackdrop* Mata, const TCHAR* Trecho)
+	{
+		int32 Total = 0;
+		for (const TObjectPtr<UHierarchicalInstancedStaticMeshComponent>& Grupo : Mata->GetSpeciesClusters())
+		{
+			if (Grupo && Grupo->GetName().Contains(Trecho))
+			{
+				Total += Grupo->GetInstanceCount();
+			}
+		}
+		return Total;
+	}
 }
 
 /**
@@ -442,5 +465,253 @@ bool FForestGroundIsWalkableTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("E bloqueia o pawn, em vez de só responder a consulta"),
 		Chao->GetCollisionResponseToChannel(ECC_Pawn) == ECR_Block);
 
+	return true;
+}
+
+
+/**
+ * O ladrilho é QUADRADO, e a planta cai dentro dele.
+ *
+ * Pedaço que ladrilha o mundo encosta nos vizinhos pelos quatro lados. Uma
+ * planta fora do quadrado nasce no ladrilho do lado — e, na costura, duas
+ * árvores no mesmo lugar.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FForestRegionPlantsInsideItsSquareTest,
+	"BattleSquare.Environment.ForestBackdrop.RegionPlantsInsideItsSquare",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FForestRegionPlantsInsideItsSquareTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateForestTestWorld();
+	AForestBackdrop* Mata = World->SpawnActor<AForestBackdrop>();
+	if (!TestNotNull(TEXT("AForestBackdrop spawna sem crash"), Mata))
+	{
+		DestroyForestTestWorld(World);
+		return false;
+	}
+
+	Mata->BuildRegion(CasaDeTeste, 7u, EIslandBiome::Forest, LadoDoPedacoDeTeste);
+
+	const float Meio = LadoDoPedacoDeTeste * 0.5f;
+	int32 ForaDoQuadrado = 0;
+	for (const FVector& Onde : Mata->GetPlantedLocations())
+	{
+		if (FMath::Abs(Onde.X) > Meio || FMath::Abs(Onde.Y) > Meio)
+		{
+			++ForaDoQuadrado;
+		}
+	}
+
+	// Uma asserção para o conjunto, e não uma por planta: cento e tantos
+	// acertos silenciosos afogariam a única que falhasse.
+	TestEqual(TEXT("Nenhuma planta nasce fora do ladrilho"), ForaDoQuadrado, 0);
+	TestTrue(TEXT("E o ladrilho de mata não sai vazio"), Mata->GetPlantedCount() > 0);
+
+	const UStaticMeshComponent* Chao = Mata->GetGroundMesh();
+	TestTrue(TEXT("O chão do pedaço é o cubo, não o cilindro"),
+		Chao->GetStaticMesh() && Chao->GetStaticMesh()->GetName().Contains(TEXT("Cube")));
+	TestEqual(TEXT("E ele mede o lado pedido em X"),
+		static_cast<float>(Chao->GetRelativeScale3D().X) * 100.0f, LadoDoPedacoDeTeste);
+	TestEqual(TEXT("E o mesmo em Y — quadrado, não retângulo"),
+		static_cast<float>(Chao->GetRelativeScale3D().Y),
+		static_cast<float>(Chao->GetRelativeScale3D().X));
+
+	DestroyForestTestWorld(World);
+	return true;
+}
+
+/**
+ * Deserto não tem capim, e geleira não tem flor.
+ *
+ * A tabela de espécies é UMA; o bioma a filtra. Se o filtro não morder, o
+ * deserto sai igual à mata com outra cor de chão — que é exatamente o que se
+ * queria evitar ao dividir a ilha em setores.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FForestRegionFiltersSpeciesByBiomeTest,
+	"BattleSquare.Environment.ForestBackdrop.RegionFiltersSpeciesByBiome",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FForestRegionFiltersSpeciesByBiomeTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateForestTestWorld();
+	AForestBackdrop* Mata = World->SpawnActor<AForestBackdrop>();
+	if (!TestNotNull(TEXT("AForestBackdrop spawna sem crash"), Mata))
+	{
+		DestroyForestTestWorld(World);
+		return false;
+	}
+
+	Mata->BuildRegion(CasaDeTeste, 11u, EIslandBiome::Desert, LadoDoPedacoDeTeste);
+	TestEqual(TEXT("O deserto não tem capim"),
+		ContaEspeciesDoPedaco(Mata, TEXT("grass")), 0);
+	TestEqual(TEXT("Nem flor"),
+		ContaEspeciesDoPedaco(Mata, TEXT("flower")), 0);
+	TestEqual(TEXT("Nem árvore"),
+		ContaEspeciesDoPedaco(Mata, TEXT("tree")), 0);
+	TestTrue(TEXT("Mas tem pedra — é o que sobra onde não há mata"),
+		ContaEspeciesDoPedaco(Mata, TEXT("rock")) > 0);
+
+	// O MESMO ator, outro bioma: é assim que a residência reaproveita o
+	// ladrilho ao trocar de setor. O pinheiro que sobrasse ficaria de pé no
+	// meio da duna.
+	Mata->BuildRegion(CasaDeTeste, 11u, EIslandBiome::Forest, LadoDoPedacoDeTeste);
+	TestTrue(TEXT("Remontado como mata, o capim volta"),
+		ContaEspeciesDoPedaco(Mata, TEXT("grass")) > 0);
+
+	Mata->BuildRegion(CasaDeTeste, 11u, EIslandBiome::Volcano, LadoDoPedacoDeTeste);
+	TestEqual(TEXT("E remontado como vulcão, ele some de novo"),
+		ContaEspeciesDoPedaco(Mata, TEXT("grass")), 0);
+
+	DestroyForestTestWorld(World);
+	return true;
+}
+
+/**
+ * Cada bioma pinta o SEU chão, e nenhum deles repete o do vizinho.
+ *
+ * Chão de bioma novo sem `case` na paleta sai verde de mata — o modo de
+ * falhar que este projeto já pagou três vezes, e que nenhum teste de lógica
+ * pega.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FForestRegionGivesEachBiomeItsGroundTest,
+	"BattleSquare.Environment.ForestBackdrop.RegionGivesEachBiomeItsGround",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FForestRegionGivesEachBiomeItsGroundTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateForestTestWorld();
+	AForestBackdrop* Mata = World->SpawnActor<AForestBackdrop>();
+	if (!TestNotNull(TEXT("AForestBackdrop spawna sem crash"), Mata))
+	{
+		DestroyForestTestWorld(World);
+		return false;
+	}
+
+	const EIslandBiome Biomas[] = {
+		EIslandBiome::Desert, EIslandBiome::Glacier,
+		EIslandBiome::Volcano, EIslandBiome::Beach };
+
+	TSet<EScenaryRole> Vistos;
+	for (const EIslandBiome Bioma : Biomas)
+	{
+		Mata->BuildRegion(CasaDeTeste, 3u, Bioma, LadoDoPedacoDeTeste);
+		const EScenaryRole Papel = Mata->GetRegionGroundRole();
+
+		TestTrue(TEXT("Bioma fora da mata tem papel de chão próprio"),
+			Papel != EScenaryRole::Count);
+		TestFalse(TEXT("E nenhum bioma repete o chão de outro"), Vistos.Contains(Papel));
+		Vistos.Add(Papel);
+	}
+
+	// A mata é a ausência de bioma: ela usa a cor de chão de sempre, a mesma
+	// que a arena empresta quando a batalha nasce ali.
+	Mata->BuildRegion(CasaDeTeste, 3u, EIslandBiome::Forest, LadoDoPedacoDeTeste);
+	TestEqual(TEXT("A mata continua com a cor de chão de sempre"),
+		static_cast<int32>(Mata->GetRegionGroundRole()),
+		static_cast<int32>(EScenaryRole::Count));
+
+	DestroyForestTestWorld(World);
+	return true;
+}
+
+/**
+ * O adensamento acompanha a ÁREA, não o número de ladrilhos.
+ *
+ * Sem isto, um pedaço grande sai pelado e um pequeno sai entupido — e nada no
+ * mundo explica a diferença, porque a diferença é do código.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FForestRegionKeepsDensityAcrossSizesTest,
+	"BattleSquare.Environment.ForestBackdrop.RegionKeepsDensityAcrossSizes",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FForestRegionKeepsDensityAcrossSizesTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateForestTestWorld();
+	AForestBackdrop* Mata = World->SpawnActor<AForestBackdrop>();
+	if (!TestNotNull(TEXT("AForestBackdrop spawna sem crash"), Mata))
+	{
+		DestroyForestTestWorld(World);
+		return false;
+	}
+
+	Mata->BuildRegion(CasaDeTeste, 5u, EIslandBiome::Forest, LadoDoPedacoDeTeste);
+	const int32 Pequeno = Mata->GetPlantedCount();
+
+	Mata->BuildRegion(CasaDeTeste, 5u, EIslandBiome::Forest, LadoDoPedacoDeTeste * 2.0f);
+	const int32 Grande = Mata->GetPlantedCount();
+
+	TestTrue(TEXT("O ladrilho pequeno tem planta"), Pequeno > 0);
+
+	// Dobrar o lado quadruplica a área. O arredondamento por espécie afasta a
+	// conta do quatro exato, então a cobrança é de FAIXA — apertada o bastante
+	// para reprovar contagem fixa (1x) e crescimento linear (2x).
+	TestTrue(TEXT("Dobrar o lado quadruplica o povoamento, e não o dobra"),
+		Grande >= Pequeno * 7 / 2 && Grande <= Pequeno * 9 / 2);
+
+	DestroyForestTestWorld(World);
+	return true;
+}
+
+/**
+ * A mesma semente dá o mesmo pedaço.
+ *
+ * O jogador que sai de um ladrilho e volta a ele precisa reencontrar as
+ * mesmas árvores. Sem isto, andar em círculo replanta a floresta.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FForestRegionRepeatsForTheSameSeedTest,
+	"BattleSquare.Environment.ForestBackdrop.RegionRepeatsForTheSameSeed",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FForestRegionRepeatsForTheSameSeedTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateForestTestWorld();
+	AForestBackdrop* Mata = World->SpawnActor<AForestBackdrop>();
+	if (!TestNotNull(TEXT("AForestBackdrop spawna sem crash"), Mata))
+	{
+		DestroyForestTestWorld(World);
+		return false;
+	}
+
+	Mata->BuildRegion(CasaDeTeste, 21u, EIslandBiome::Beach, LadoDoPedacoDeTeste);
+	const TArray<FVector> Primeira = Mata->GetPlantedLocations();
+	if (!TestTrue(TEXT("A praia não sai vazia"), Primeira.Num() > 0))
+	{
+		DestroyForestTestWorld(World);
+		return false;
+	}
+
+	Mata->BuildRegion(CasaDeTeste, 21u, EIslandBiome::Beach, LadoDoPedacoDeTeste);
+	const TArray<FVector> Segunda = Mata->GetPlantedLocations();
+
+	if (!TestEqual(TEXT("Duas montagens plantam a mesma quantidade"),
+		Segunda.Num(), Primeira.Num()))
+	{
+		DestroyForestTestWorld(World);
+		return false;
+	}
+
+	int32 Diferentes = 0;
+	for (int32 Indice = 0; Indice < Primeira.Num(); ++Indice)
+	{
+		if (!Primeira[Indice].Equals(Segunda[Indice], 0.01))
+		{
+			++Diferentes;
+		}
+	}
+	TestEqual(TEXT("E cada planta cai no mesmo lugar"), Diferentes, 0);
+
+	// Outra semente é outro lugar — sem isto, "determinístico" poderia ser só
+	// uma tabela fixa disfarçada.
+	Mata->BuildRegion(CasaDeTeste, 22u, EIslandBiome::Beach, LadoDoPedacoDeTeste);
+	const TArray<FVector> Outra = Mata->GetPlantedLocations();
+	TestTrue(TEXT("Semente diferente move as plantas"),
+		Outra.Num() != Primeira.Num() || !Outra[0].Equals(Primeira[0], 0.01));
+
+	DestroyForestTestWorld(World);
 	return true;
 }

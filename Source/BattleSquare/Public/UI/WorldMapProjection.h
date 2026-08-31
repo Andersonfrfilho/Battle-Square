@@ -25,10 +25,25 @@ enum class EWorldMapTerrain : uint8
 	Margem,
 	Agua,
 	/** Serra: o que fecha o horizonte e não se atravessa. */
-	Relevo
+	Relevo,
+	/** Areia seca do deserto. Atravessa-se, mas não há o que colher. */
+	Areia,
+	/** Gelo do glaciar. É onde a aurora aparece. */
+	Gelo,
+	/** Rocha escura do vulcão. */
+	Lava,
+
+	/**
+	 * Quantos terrenos existem. NÃO é terreno.
+	 *
+	 * A legenda e o teste dela varrem daqui, em vez de repetir a lista à mão.
+	 * Repetida, um terreno novo entrava no mapa e ficava de fora da legenda —
+	 * mancha na tela que nada explica, e nada quebrando para avisar.
+	 */
+	Count
 };
 
-/** Um pedaço do mundo, do tamanho de uma região de descoberta. */
+/** Um pedaço do mundo, do tamanho que `TerrainTileSideUnits` disser. */
 struct BATTLESQUARE_API FWorldMapTerrainTile
 {
 	FVector2D WorldXY = FVector2D::ZeroVector;
@@ -161,10 +176,46 @@ public:
 	 * que o mapa usa. Três cópias produziriam uma legenda que descreve um mapa
 	 * que não existe — pior que legenda nenhuma.
 	 */
+	/**
+	 * Quanto do mundo o mapa mostra além da beira da terra.
+	 *
+	 * Sessenta por cento a mais, para o mar aparecer à volta da ilha: mapa
+	 * cortado exatamente na areia não mostra que ali ACABA — mostra só que a
+	 * folha acabou.
+	 */
+	static constexpr float TerrainMarginFactor = 1.6f;
+
+	/** Quantos pedaços de terreno o mapa desenha de ponta a ponta. */
+	static constexpr int32 TerrainTilesAcross = 48;
+
+	/**
+	 * O lado de um pedaço de terreno, para a ilha que existe.
+	 *
+	 * Acompanha a ilha em vez de ser fixo: com a ilha em 20000 de raio, um
+	 * pedaço fixo de 800 daria seis mil manchas de menos de um pixel — custo
+	 * de desenho que ninguém vê, e o pedido foi explícito que nada pode ficar
+	 * devagar. Quarenta e oito de ponta a ponta é mancha visível e conta
+	 * constante, cresça a ilha o quanto crescer.
+	 */
+	static float TerrainTileSideUnits(float LandRadiusUnits);
+
 	static FLinearColor ColorForTerrain(EWorldMapTerrain Terrain);
 
 	/** O nome que o jogador lê na legenda. */
 	static FText LabelForTerrain(EWorldMapTerrain Terrain);
+
+	/**
+	 * O terreno que o mapa desenha para cada bioma da ilha.
+	 *
+	 * O mapa deduzia mata CONTANDO troncos plantados. Com a ilha montada por
+	 * pedaços residentes, só os nove à volta do jogador existem — e o mapa
+	 * passaria a esvaziar e repovoar atrás de quem anda, dizendo que o
+	 * deserto do outro lado da ilha é clareira porque ninguém está lá.
+	 *
+	 * A geografia sabe o que cada ponto é sem que nada esteja montado. É ela
+	 * quem responde, e esta função é a única tradução de bioma para terreno.
+	 */
+	static EWorldMapTerrain TerrainForBiome(EIslandBiome Biome);
 
 	/** Para onde a seta do jogador aponta na tela, em graus horários. */
 	static float PlayerArrowAngleDegrees(const FWorldMapSnapshot& Snapshot, EMode Mode);

@@ -20,6 +20,15 @@ namespace MataDoCenario
 	/** Primitiva do disco de chão — conteúdo da engine, não vendorizado. */
 	const TCHAR* CilindroDaEngine = TEXT("/Engine/BasicShapes/Cylinder.Cylinder");
 
+	/**
+	 * Primitiva do LADRILHO de chão.
+	 *
+	 * Quadrado porque ele encosta nos vizinhos pelos quatro lados. Disco
+	 * ladrilhado deixa buraco em cada canto, e o jogador que anda em diagonal
+	 * cai justamente por lá.
+	 */
+	const TCHAR* CuboDaEngine = TEXT("/Engine/BasicShapes/Cube.Cube");
+
 	/** Lado da primitiva da engine, em unidades de mundo. */
 	constexpr float CilindroDaEngineUnidades = 100.0f;
 
@@ -149,6 +158,103 @@ namespace MataDoCenario
 		const int32 PorTentativa = static_cast<int32>(ESorteio::PorPlanta);
 		return (Planta * TentativasPorPlanta + Tentativa) * PorTentativa + static_cast<int32>(Qual);
 	}
+
+	/**
+	 * O que um bioma deixa nascer, em porcentagem do que a mata tem.
+	 *
+	 * A tabela de espécies continua sendo UMA. O bioma a FILTRA — nunca a
+	 * duplica: cinco tabelas paralelas concordariam entre si até a primeira
+	 * edição, que é como L-032 e L-033 nasceram.
+	 *
+	 * `PapelDaPedra` existe porque pedra é o que sobra em quase todo bioma, e
+	 * pedra da cor do chão é pedra invisível. No deserto ela é a pedra seca;
+	 * na geleira e no vulcão ela é o cinza da serra, que se lê tanto contra o
+	 * gelo branco quanto contra o basalto preto.
+	 */
+	struct FPresencaDoBioma
+	{
+		EScenaryRole PapelDoChao;
+		EScenaryRole PapelDaPedra;
+		int32 PercentualRasteiro;
+		int32 PercentualDeEnfeite;
+		int32 PercentualDeArbusto;
+		int32 PercentualDeTronco;
+		int32 PercentualDePedra;
+		int32 PercentualDeArvore;
+	};
+
+	FPresencaDoBioma PresencaDe(EIslandBiome Bioma)
+	{
+		switch (Bioma)
+		{
+		case EIslandBiome::Desert:
+			// Nem capim nem flor: a duna é pedra e areia, e um único tufo
+			// verde no meio dela desfaz o deserto inteiro.
+			return { EScenaryRole::DesertSand, EScenaryRole::DesertRock, 0, 0, 6, 25, 70, 0 };
+
+		case EIslandBiome::Glacier:
+			// A conífera resiste ao frio, e é ela que dá altura à geleira —
+			// sem nada em pé, o gelo vira um plano branco sem escala.
+			return { EScenaryRole::GlacierIce, EScenaryRole::MountainRock, 0, 0, 0, 10, 55, 18 };
+
+		case EIslandBiome::Volcano:
+			// Pedra sobre pedra. O tronco morto que sobra é o que diz que
+			// aqui já houve mata.
+			return { EScenaryRole::VolcanicRock, EScenaryRole::MountainRock, 0, 0, 0, 15, 85, 0 };
+
+		case EIslandBiome::Beach:
+			// Rala de propósito: a praia é a faixa por onde se ANDA até o
+			// mar, e enchê-la de arbusto fecharia justamente a passagem.
+			return { EScenaryRole::BeachSand, EScenaryRole::Rock, 12, 0, 8, 20, 35, 0 };
+
+		case EIslandBiome::Forest:
+			break;
+		}
+
+		// A mata é a tabela inteira, sem filtro — e o `Count` no chão diz
+		// "use a cor de chão de sempre", que é a mesma da arena.
+		return { EScenaryRole::Count, EScenaryRole::Rock, 100, 100, 100, 100, 100, 100 };
+	}
+
+	/**
+	 * Como uma planta POUSA: giro, tamanho e inclinação, do mesmo sorteio.
+	 *
+	 * Uma função só porque a mata da arena e o ladrilho do mundo plantam a
+	 * mesma espécie — e duas cópias deste jitter divergiriam na primeira
+	 * edição, deixando o mesmo pinheiro com outro porte de um lado do mapa
+	 * para o outro.
+	 */
+	FTransform PousoDaPlanta(
+		uint32 SementeDaEspecie, int32 Planta, int32 Tentativa,
+		const FVector2D& Posicao, float EscalaBase)
+	{
+		const float Giro = BattleSpread::Fraction(
+			SementeDaEspecie, FluxoDaPlanta(Planta, Tentativa, ESorteio::Giro)) * 360.0f;
+		const float Tamanho = EscalaBase * BattleSpread::Between(0.78f, 1.28f,
+			BattleSpread::Fraction(SementeDaEspecie, FluxoDaPlanta(Planta, Tentativa, ESorteio::Tamanho)));
+		const float Inclinacao = BattleSpread::Between(-4.0f, 4.0f,
+			BattleSpread::Fraction(SementeDaEspecie, FluxoDaPlanta(Planta, Tentativa, ESorteio::Inclinacao)));
+
+		return FTransform(
+			FRotator(Inclinacao, Giro, 0.0f),
+			FVector(Posicao.X, Posicao.Y, EspessuraDoChao * 0.5f),
+			FVector(Tamanho));
+	}
+
+	int32 PercentualDoPapel(const FPresencaDoBioma& Presenca, EScenaryRole Papel)
+	{
+		switch (Papel)
+		{
+		case EScenaryRole::GroundCover: return Presenca.PercentualRasteiro;
+		case EScenaryRole::Accent:      return Presenca.PercentualDeEnfeite;
+		case EScenaryRole::Undergrowth: return Presenca.PercentualDeArbusto;
+		case EScenaryRole::DeadWood:    return Presenca.PercentualDeTronco;
+		case EScenaryRole::Rock:        return Presenca.PercentualDePedra;
+		case EScenaryRole::ForestTree:  return Presenca.PercentualDeArvore;
+		case EScenaryRole::CanopyTree:  return Presenca.PercentualDeArvore;
+		default:                        return 0;
+		}
+	}
 }
 
 AForestBackdrop::AForestBackdrop()
@@ -180,6 +286,15 @@ AForestBackdrop::AForestBackdrop()
 	if (CilindroDoChao.Succeeded())
 	{
 		GroundMesh->SetStaticMesh(CilindroDoChao.Object);
+	}
+
+	// O quadrado fica GUARDADO, não montado: quem é ladrilho troca a forma na
+	// hora de montar. `ConstructorHelpers` só funciona aqui, então as duas
+	// primitivas precisam ser achadas agora, mesmo que uma delas nunca sirva.
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CuboDoChao(CuboDaEngine);
+	if (CuboDoChao.Succeeded())
+	{
+		SquareGroundAsset = CuboDoChao.Object;
 	}
 
 	SpeciesClusters.Reset();
@@ -316,20 +431,117 @@ void AForestBackdrop::BuildForest(float CellSize, uint32 Seed, const FVector2D& 
 					continue;
 				}
 
-				const float Giro = BattleSpread::Fraction(
-					SementeDaEspecie, FluxoDaPlanta(Planta, Tentativa, ESorteio::Giro)) * 360.0f;
-				const float Tamanho = EscalaBase * BattleSpread::Between(0.78f, 1.28f,
-					BattleSpread::Fraction(SementeDaEspecie, FluxoDaPlanta(Planta, Tentativa, ESorteio::Tamanho)));
-				const float Inclinacao = BattleSpread::Between(-4.0f, 4.0f,
-					BattleSpread::Fraction(SementeDaEspecie, FluxoDaPlanta(Planta, Tentativa, ESorteio::Inclinacao)));
-
-				const FTransform Onde(
-					FRotator(Inclinacao, Giro, 0.0f),
-					FVector(Posicao.X, Posicao.Y, EspessuraDoChao * 0.5f),
-					FVector(Tamanho));
-				Grupo->AddInstance(Onde);
+				Grupo->AddInstance(PousoDaPlanta(SementeDaEspecie, Planta, Tentativa, Posicao, EscalaBase));
 				break;
 			}
+		}
+	}
+}
+
+void AForestBackdrop::BuildRegion(float CellSize, uint32 Seed, EIslandBiome Biome, float SideUnits)
+{
+	using namespace MataDoCenario;
+
+	if (CellSize <= 0.0f || SideUnits <= 0.0f)
+	{
+		return;
+	}
+
+	const FPresencaDoBioma Presenca = PresencaDe(Biome);
+	RegionGroundRole = Presenca.PapelDoChao;
+
+	if (SquareGroundAsset)
+	{
+		GroundMesh->SetStaticMesh(SquareGroundAsset);
+	}
+
+	GroundMesh->SetRelativeScale3D(FVector(
+		SideUnits / CilindroDaEngineUnidades,
+		SideUnits / CilindroDaEngineUnidades,
+		ProfundidadeDoChao / CilindroDaEngineUnidades));
+
+	// O mesmo abaixamento do disco: o TOPO fica onde `GroundTopLocalZ()` diz,
+	// e quem encosta coisa no chão não precisa saber de que forma ele é.
+	GroundMesh->SetRelativeLocation(FVector(0.0f, 0.0f,
+		EspessuraDoChao * 0.5f - ProfundidadeDoChao * 0.5f));
+
+	ApplyGroundMaterial();
+
+	// A vida dos obstáculos é POSICIONAL: a chave aponta para um agrupamento e
+	// uma instância, não para uma árvore. Herdar o mapa do pedaço anterior
+	// faria uma árvore nascer meio quebrada por causa de outra, longe dali,
+	// que alguém derrubou antes.
+	ObstacleHealthByHandle.Reset();
+
+	// A densidade acompanha a ÁREA. As quantidades da tabela foram escolhidas
+	// para o disco da mata; repetir a contagem num ladrilho de outro tamanho
+	// deixaria um pedaço entupido e o vizinho pelado, sem que nada no mundo
+	// explicasse a diferença.
+	const float RaioDaTabela = GroundRadiusInCells * CellSize;
+	const float AreaDaTabela = PI * RaioDaTabela * RaioDaTabela;
+	const float FatorDeArea = (AreaDaTabela > KINDA_SMALL_NUMBER)
+		? (SideUnits * SideUnits) / AreaDaTabela
+		: 1.0f;
+
+	const float Meio = SideUnits * 0.5f;
+
+	for (int32 Indice = 0; Indice < TotalDeEspecies && Indice < SpeciesClusters.Num(); ++Indice)
+	{
+		const FEspecie& Especie = Especies[Indice];
+		UHierarchicalInstancedStaticMeshComponent* Grupo = SpeciesClusters[Indice];
+
+		// Limpar ANTES de decidir se a espécie entra: o mesmo ator é
+		// reaproveitado ao mudar de bioma, e o pinheiro que sobrasse da mata
+		// ficaria de pé no meio da duna.
+		Grupo->ClearInstances();
+
+		UStaticMesh* Malha = Grupo->GetStaticMesh();
+		if (!Malha)
+		{
+			continue;
+		}
+
+		const int32 Percentual = PercentualDoPapel(Presenca, Especie.Papel);
+		if (Percentual <= 0)
+		{
+			continue;
+		}
+
+		const int32 Quantidade = FMath::RoundToInt(
+			static_cast<float>(Especie.Quantidade) * (static_cast<float>(Percentual) / 100.0f) * FatorDeArea);
+		if (Quantidade <= 0)
+		{
+			continue;
+		}
+
+		const float AlturaDaMalha = Malha->GetBoundingBox().GetSize().Z;
+		if (AlturaDaMalha <= KINDA_SMALL_NUMBER)
+		{
+			continue;
+		}
+		const float EscalaBase = (Especie.AlturaEmCasas * CellSize) / AlturaDaMalha;
+
+		// Pedra da COR DO BIOMA. Pedra da cor do chão é pedra invisível — e
+		// pedra é justamente o que sobra onde não há mata.
+		const EScenaryRole PapelPintado = (Especie.Papel == EScenaryRole::Rock)
+			? Presenca.PapelDaPedra
+			: Especie.Papel;
+		ScenaryPalette::PaintComponent(Grupo, PapelPintado);
+
+		const uint32 SementeDaEspecie = BattleSpread::Scatter(Seed ^ BattleSpread::SeedFromText(Especie.Nome));
+
+		for (int32 Planta = 0; Planta < Quantidade; ++Planta)
+		{
+			// Uniforme no QUADRADO, e sem tentativa nenhuma: aqui não há
+			// tabuleiro nem lente a evitar, e a raiz que espalha o disco
+			// deixaria o ladrilho vazio nas quinas.
+			const FVector2D Posicao(
+				BattleSpread::Between(-Meio, Meio, BattleSpread::Fraction(
+					SementeDaEspecie, FluxoDaPlanta(Planta, 0, ESorteio::Angulo))),
+				BattleSpread::Between(-Meio, Meio, BattleSpread::Fraction(
+					SementeDaEspecie, FluxoDaPlanta(Planta, 0, ESorteio::Raio))));
+
+			Grupo->AddInstance(PousoDaPlanta(SementeDaEspecie, Planta, 0, Posicao, EscalaBase));
 		}
 	}
 }
@@ -408,7 +620,12 @@ void AForestBackdrop::ApplyGroundMaterial()
 	{
 		if (UMaterialInstanceDynamic* Tinta = GroundMesh->CreateDynamicMaterialInstance(0, Base))
 		{
-			Tinta->SetVectorParameterValue(TEXT("Color"), ScenaryPalette::GroundColor());
+			// Pedaço do mundo tem a cor do SEU bioma; a mata da arena tem a
+			// cor de chão de sempre. `Count` é a ausência de bioma, não um.
+			const FLinearColor Cor = (RegionGroundRole == EScenaryRole::Count)
+				? ScenaryPalette::GroundColor()
+				: ScenaryPalette::ColorFor(RegionGroundRole, NAME_None);
+			Tinta->SetVectorParameterValue(TEXT("Color"), Cor);
 		}
 	}
 }

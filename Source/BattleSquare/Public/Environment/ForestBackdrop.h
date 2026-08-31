@@ -3,11 +3,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Environment/IslandGeography.h"
 #include "Environment/ScenaryPalette.h"
 #include "GameFramework/Actor.h"
 #include "ForestBackdrop.generated.h"
 
 class UHierarchicalInstancedStaticMeshComponent;
+class UStaticMesh;
 class UStaticMeshComponent;
 class UMaterialInterface;
 
@@ -53,6 +55,26 @@ public:
 	 */
 	void BuildForest(float CellSize, uint32 Seed, const FVector2D& CameraGroundOffset);
 
+	/**
+	 * Monta um PEDAÇO do mundo: quadrado, sem tabuleiro e sem câmera a evitar.
+	 *
+	 * É outra entrada, e não mais parâmetros em `BuildForest`, porque a forma
+	 * é outra. A mata da arena é um DISCO com duas folgas no meio — o
+	 * tabuleiro e a lente. O pedaço do mundo é ladrilho: ele encosta nos
+	 * vizinhos pelos quatro lados, e disco ladrilhado deixa buraco em todo
+	 * canto. Um jogador andando em diagonal cairia exatamente ali.
+	 *
+	 * O BIOMA decide três coisas: a cor do chão, quais espécies aparecem, e
+	 * em que proporção. Deserto não tem capim; geleira não tem flor; vulcão é
+	 * pedra sobre pedra. A tabela de espécies continua sendo UMA — o bioma a
+	 * filtra, não a duplica.
+	 *
+	 * A densidade acompanha a ÁREA: o mesmo adensamento por unidade quadrada
+	 * que a mata da arena tem, para um pedaço não parecer mais cheio que o
+	 * outro só por ser maior.
+	 */
+	void BuildRegion(float CellSize, uint32 Seed, EIslandBiome Biome, float SideUnits);
+
 	/** Espécies da mata, para o teste que exige asset atribuído em todas. */
 	const TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>>& GetSpeciesClusters() const { return SpeciesClusters; }
 
@@ -91,6 +113,15 @@ public:
 
 	/** O disco de chão que cobre o xadrez do template. */
 	UStaticMeshComponent* GetGroundMesh() const { return GroundMesh; }
+
+	/**
+	 * O papel de paleta do chão deste pedaço; `Count` quando não é pedaço.
+	 *
+	 * Existe para o teste poder cobrar que cada bioma pinta o SEU chão. A cor
+	 * final mora numa instância dinâmica de material, que é o lugar mais caro
+	 * de se ler e o mais fácil de se ler errado.
+	 */
+	EScenaryRole GetRegionGroundRole() const { return RegionGroundRole; }
 
 	/**
 	 * Altura LOCAL do topo do chão, em unidades.
@@ -153,6 +184,26 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UStaticMeshComponent> GroundMesh;
+
+	/**
+	 * A malha QUADRADA do chão, para quem é ladrilho.
+	 *
+	 * Carregada no construtor junto com o cilindro, porque
+	 * `ConstructorHelpers` só existe lá: escolher a forma na hora de montar
+	 * exige as duas já na mão.
+	 */
+	UPROPERTY()
+	TObjectPtr<UStaticMesh> SquareGroundAsset;
+
+	/**
+	 * O papel de paleta do chão deste pedaço; `Count` quer dizer "não sou
+	 * pedaço".
+	 *
+	 * `Count` não é papel nenhum, e é justamente por isso que serve de
+	 * ausência aqui: qualquer outro valor seria um bioma legítimo escolhido
+	 * por engano.
+	 */
+	EScenaryRole RegionGroundRole = EScenaryRole::Count;
 
 	/** Chão emprestado pelo mundo; vazio faz valer a paleta do cenário. */
 	UPROPERTY()

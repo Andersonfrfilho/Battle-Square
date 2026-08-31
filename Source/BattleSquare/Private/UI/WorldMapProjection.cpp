@@ -67,6 +67,12 @@ bool FWorldMapProjection::IsMarkerVisible(const FWorldMapMarkerInfo& Marker,
 	return Snapshot.Discovery.IsDiscovered(Marker.WorldXY);
 }
 
+float FWorldMapProjection::TerrainTileSideUnits(float LandRadiusUnits)
+{
+	const float Alcance = FMath::Max(LandRadiusUnits, 1.0f) * TerrainMarginFactor;
+	return (Alcance * 2.0f) / static_cast<float>(TerrainTilesAcross);
+}
+
 FLinearColor FWorldMapProjection::ColorForTerrain(EWorldMapTerrain Terrain)
 {
 	switch (Terrain)
@@ -80,6 +86,10 @@ FLinearColor FWorldMapProjection::ColorForTerrain(EWorldMapTerrain Terrain)
 		case EWorldMapTerrain::Margem:   return FLinearColor(0.46f, 0.42f, 0.30f);
 		case EWorldMapTerrain::Agua:     return FLinearColor(0.16f, 0.26f, 0.40f);
 		case EWorldMapTerrain::Relevo:   return FLinearColor(0.34f, 0.32f, 0.34f);
+		case EWorldMapTerrain::Areia:    return FLinearColor(0.52f, 0.45f, 0.28f);
+		case EWorldMapTerrain::Gelo:     return FLinearColor(0.40f, 0.46f, 0.52f);
+		case EWorldMapTerrain::Lava:     return FLinearColor(0.30f, 0.12f, 0.10f);
+		case EWorldMapTerrain::Count:    break;
 	}
 
 	return FLinearColor(0.30f, 0.30f, 0.30f);
@@ -94,9 +104,30 @@ FText FWorldMapProjection::LabelForTerrain(EWorldMapTerrain Terrain)
 		case EWorldMapTerrain::Margem:   return LOCTEXT("MapaMargem", "margem");
 		case EWorldMapTerrain::Agua:     return LOCTEXT("MapaAgua", "água");
 		case EWorldMapTerrain::Relevo:   return LOCTEXT("MapaRelevo", "serra");
+		case EWorldMapTerrain::Areia:    return LOCTEXT("MapaAreia", "deserto");
+		case EWorldMapTerrain::Gelo:     return LOCTEXT("MapaGelo", "glaciar");
+		case EWorldMapTerrain::Lava:     return LOCTEXT("MapaLava", "vulcão");
+		case EWorldMapTerrain::Count:    break;
 	}
 
 	return LOCTEXT("MapaDesconhecido", "desconhecido");
+}
+
+EWorldMapTerrain FWorldMapProjection::TerrainForBiome(EIslandBiome Biome)
+{
+	switch (Biome)
+	{
+		// A praia vira MARGEM, e não um terreno novo: margem já quer dizer "a
+		// terra molhada onde ela encontra o mar", que é a praia inteira. Dois
+		// nomes para a mesma faixa seriam duas cores para o mesmo lugar.
+		case EIslandBiome::Beach:   return EWorldMapTerrain::Margem;
+		case EIslandBiome::Desert:  return EWorldMapTerrain::Areia;
+		case EIslandBiome::Glacier: return EWorldMapTerrain::Gelo;
+		case EIslandBiome::Volcano: return EWorldMapTerrain::Lava;
+		case EIslandBiome::Forest:  break;
+	}
+
+	return EWorldMapTerrain::Mata;
 }
 
 #undef LOCTEXT_NAMESPACE

@@ -91,8 +91,12 @@ namespace
 			// Por cima dos dois círculos e por baixo dos marcadores: o terreno
 			// é fundo, e um adversário coberto por uma mancha de mata seria o
 			// mapa escondendo a informação urgente atrás da ambiental.
+			// O lado sai da MESMA conta que montou os pedaços. Repeti-lo aqui
+			// como 800 fixo deixaria a mancha do tamanho errado assim que a
+			// ilha mudasse de raio, e nada quebraria para avisar.
 			const float LadoDoPedacoEmPixels =
-				(FWorldDiscovery::RegionSizeUnits / AlcanceUnidades) * RaioEmPixels;
+				(FWorldMapProjection::TerrainTileSideUnits(GSnapshot.ShoreRadiusUnits)
+					/ AlcanceUnidades) * RaioEmPixels;
 
 			for (const FWorldMapTerrainTile& Pedaco : GSnapshot.Terrain)
 			{
@@ -195,13 +199,12 @@ namespace
 	{
 		TSharedRef<SVerticalBox> Caixa = SNew(SVerticalBox);
 
-		const EWorldMapTerrain Terrenos[] = {
-			EWorldMapTerrain::Clareira, EWorldMapTerrain::Mata,
-			EWorldMapTerrain::Margem, EWorldMapTerrain::Agua,
-			EWorldMapTerrain::Relevo };
-
-		for (const EWorldMapTerrain Terreno : Terrenos)
+		// Varre o ENUM, não uma lista copiada: terreno novo entra na legenda
+		// sozinho. Com a lista à mão, o deserto teria aparecido no mapa e
+		// ficado de fora daqui — e nada quebraria para avisar.
+		for (int32 Qual = 0; Qual < static_cast<int32>(EWorldMapTerrain::Count); ++Qual)
 		{
+			const EWorldMapTerrain Terreno = static_cast<EWorldMapTerrain>(Qual);
 			Caixa->AddSlot().AutoHeight().Padding(0.0f, 2.0f)
 			[
 				SNew(SHorizontalBox)

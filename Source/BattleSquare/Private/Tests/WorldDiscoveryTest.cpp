@@ -153,32 +153,31 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FLegendaDescreveOMapaQueExisteTest,
 
 bool FLegendaDescreveOMapaQueExisteTest::RunTest(const FString&)
 {
-	const EWorldMapTerrain Todos[] = {
-		EWorldMapTerrain::Clareira, EWorldMapTerrain::Mata,
-		EWorldMapTerrain::Margem, EWorldMapTerrain::Agua,
-		EWorldMapTerrain::Relevo };
+	const int32 QuantosTerrenos = static_cast<int32>(EWorldMapTerrain::Count);
 
 	// Todo terreno tem NOME. Um sem rótulo apareceria no mapa como mancha que
 	// a legenda não explica — e a legenda existe justamente para isso.
 	TSet<FString> Nomes;
-	for (const EWorldMapTerrain Terreno : Todos)
+	for (int32 Qual = 0; Qual < QuantosTerrenos; ++Qual)
 	{
+		const EWorldMapTerrain Terreno = static_cast<EWorldMapTerrain>(Qual);
 		const FString Nome = FWorldMapProjection::LabelForTerrain(Terreno).ToString();
 		TestFalse(TEXT("Nenhum terreno fica sem nome"), Nome.IsEmpty());
 		TestFalse(TEXT("E nenhum cai no rótulo de desconhecido"),
 			Nome.Equals(TEXT("desconhecido")));
 		Nomes.Add(Nome);
 	}
-	TestEqual(TEXT("Nomes não se repetem"), Nomes.Num(), static_cast<int32>(UE_ARRAY_COUNT(Todos)));
+	TestEqual(TEXT("Nomes não se repetem"), Nomes.Num(), QuantosTerrenos);
 
 	// E toda COR é distinta. Dois terrenos da mesma cor são um terreno só na
 	// tela, e a legenda passaria a listar uma diferença que ninguém vê.
 	TSet<FString> Cores;
-	for (const EWorldMapTerrain Terreno : Todos)
+	for (int32 Qual = 0; Qual < QuantosTerrenos; ++Qual)
 	{
-		Cores.Add(FWorldMapProjection::ColorForTerrain(Terreno).ToString());
+		Cores.Add(FWorldMapProjection::ColorForTerrain(
+			static_cast<EWorldMapTerrain>(Qual)).ToString());
 	}
-	TestEqual(TEXT("Cores não se repetem"), Cores.Num(), static_cast<int32>(UE_ARRAY_COUNT(Todos)));
+	TestEqual(TEXT("Cores não se repetem"), Cores.Num(), QuantosTerrenos);
 
 	return true;
 }
@@ -195,17 +194,47 @@ bool FTerrenoEFundoNaoInformacaoTest::RunTest(const FString&)
 	const FLinearColor Adversario(0.90f, 0.45f, 0.20f);
 	const float ForcaDoAdversario = Adversario.R + Adversario.G + Adversario.B;
 
-	const EWorldMapTerrain Todos[] = {
-		EWorldMapTerrain::Clareira, EWorldMapTerrain::Mata,
-		EWorldMapTerrain::Margem, EWorldMapTerrain::Agua,
-		EWorldMapTerrain::Relevo };
-
-	for (const EWorldMapTerrain Terreno : Todos)
+	for (int32 Qual = 0; Qual < static_cast<int32>(EWorldMapTerrain::Count); ++Qual)
 	{
-		const FLinearColor Cor = FWorldMapProjection::ColorForTerrain(Terreno);
+		const FLinearColor Cor = FWorldMapProjection::ColorForTerrain(
+			static_cast<EWorldMapTerrain>(Qual));
 		TestTrue(TEXT("Todo terreno é mais surdo que o marcador de adversário"),
 			(Cor.R + Cor.G + Cor.B) < ForcaDoAdversario);
 	}
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMapaDistingueOsBiomasTest,
+	"BattleSquare.World.Map.MapaDistingueOsBiomas",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FMapaDistingueOsBiomasTest::RunTest(const FString&)
+{
+	// Deserto, glaciar e vulcão precisam ser MANCHAS DIFERENTES no mapa. Se
+	// os três caíssem em "clareira", o mapa continuaria dizendo que a ilha
+	// inteira é a mesma coisa — e foi para desfazer isso que ela ganhou
+	// setores de bioma.
+	const EIslandBiome Biomas[] = {
+		EIslandBiome::Forest, EIslandBiome::Desert,
+		EIslandBiome::Glacier, EIslandBiome::Volcano };
+
+	TSet<int32> Terrenos;
+	for (const EIslandBiome Bioma : Biomas)
+	{
+		const EWorldMapTerrain Terreno = FWorldMapProjection::TerrainForBiome(Bioma);
+		TestNotEqual(TEXT("Nenhum bioma vira o sentinela de contagem"),
+			static_cast<int32>(Terreno), static_cast<int32>(EWorldMapTerrain::Count));
+		Terrenos.Add(static_cast<int32>(Terreno));
+	}
+	TestEqual(TEXT("Cada bioma é uma mancha própria no mapa"),
+		Terrenos.Num(), static_cast<int32>(UE_ARRAY_COUNT(Biomas)));
+
+	// A praia é MARGEM: o mapa já tinha esse nome para a terra molhada, e um
+	// segundo nome para a mesma faixa seria duas cores para o mesmo lugar.
+	TestEqual(TEXT("A praia é a margem que o mapa já conhecia"),
+		static_cast<int32>(FWorldMapProjection::TerrainForBiome(EIslandBiome::Beach)),
+		static_cast<int32>(EWorldMapTerrain::Margem));
 
 	return true;
 }

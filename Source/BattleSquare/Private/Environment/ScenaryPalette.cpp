@@ -137,6 +137,16 @@ namespace PaletaDoCenario
 	const FLinearColor PretoDoBasalto(0.176f, 0.145f, 0.141f);
 
 	/**
+	 * A lava: laranja quente, quase branco no verde.
+	 *
+	 * O material da engine não emite luz — a cor é tudo o que há. Por isso ela
+	 * é empurrada ao alto da escala de brilho em vez de ao vermelho profundo
+	 * que a lava tem de perto: contra o basalto em 0,16, o vermelho escuro
+	 * simplesmente não apareceria, e uma lava que não aparece não é lava.
+	 */
+	const FLinearColor LaranjaDaLava(0.973f, 0.478f, 0.106f);
+
+	/**
 	 * A areia da praia: FRIA e um degrau mais escura que a duna do deserto.
 	 *
 	 * É areia MOLHADA — o mar acabou de lavá-la, e areia molhada é mais
@@ -258,6 +268,9 @@ FLinearColor ScenaryPalette::ColorFor(EScenaryRole Role, FName MaterialSlot)
 
 	case EScenaryRole::VolcanicRock:
 		return PretoDoBasalto;
+
+	case EScenaryRole::LavaGlow:
+		return LaranjaDaLava;
 
 	case EScenaryRole::BeachSand:
 		return PalidoDaPraia;

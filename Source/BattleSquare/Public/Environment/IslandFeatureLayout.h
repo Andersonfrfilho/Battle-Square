@@ -31,6 +31,12 @@ namespace IslandFeatureLayout
 	{
 		WalkableMountain,
 		Cave,
+
+		/**
+		 * O vulcão. Entra no fim porque a ordem daqui vira o `if` de quem
+		 * planta, e valor novo no meio remendaria despacho já escrito.
+		 */
+		Volcano,
 	};
 
 	/** Uma peça plantada: o que é, onde fica e quanto espaço ocupa. */
@@ -67,6 +73,7 @@ namespace IslandFeatureLayout
 
 	BATTLESQUARE_API float MountainClearanceUnits();
 	BATTLESQUARE_API float CaveClearanceUnits(int32 Side);
+	BATTLESQUARE_API float VolcanoClearanceUnits();
 
 	/** As peças da ilha, na ordem em que são plantadas. */
 	BATTLESQUARE_API TArray<FFeaturePlacement> Plan();

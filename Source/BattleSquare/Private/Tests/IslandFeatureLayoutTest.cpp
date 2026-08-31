@@ -3,6 +3,7 @@
 #include "Environment/IslandFeatureLayout.h"
 
 #include "Environment/CaveSystem.h"
+#include "Environment/IslandGeography.h"
 #include "Misc/AutomationTest.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -24,9 +25,18 @@ namespace
 
 	FString NomeDaPecaDaIlha(const IslandFeatureLayout::FFeaturePlacement& Peca)
 	{
-		return Peca.Feature == IslandFeatureLayout::EIslandFeature::Cave
-			? FString::Printf(TEXT("caverna %dx%d a %.0f graus"), Peca.CaveSide, Peca.CaveSide, Peca.AngleDegrees)
-			: FString::Printf(TEXT("montanha a %.0f graus"), Peca.AngleDegrees);
+		switch (Peca.Feature)
+		{
+		case IslandFeatureLayout::EIslandFeature::Cave:
+			return FString::Printf(TEXT("caverna %dx%d a %.0f graus"),
+				Peca.CaveSide, Peca.CaveSide, Peca.AngleDegrees);
+		case IslandFeatureLayout::EIslandFeature::Volcano:
+			return FString::Printf(TEXT("vulcao a %.0f graus"), Peca.AngleDegrees);
+		case IslandFeatureLayout::EIslandFeature::WalkableMountain:
+			break;
+		}
+
+		return FString::Printf(TEXT("montanha a %.0f graus"), Peca.AngleDegrees);
 	}
 }
 
@@ -178,6 +188,37 @@ bool FIslandFeatureLayoutIsStableTest::RunTest(const FString& Parameters)
 			Segunda[Indice].AngleDegrees, Primeira[Indice].AngleDegrees);
 		TestEqual(*FString::Printf(TEXT("peça %d no mesmo raio"), Indice),
 			Segunda[Indice].RadiusUnits, Primeira[Indice].RadiusUnits);
+	}
+
+	return true;
+}
+
+/**
+ * O vulcão precisa cair no setor de vulcão.
+ *
+ * Um marco que anuncia um bioma e planta no bioma vizinho é pior que marco
+ * nenhum: ele ensina o mapa errado. E o ângulo dele não é conferível a olho —
+ * a divisa entre setores mora na geografia, não neste arquivo.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FIslandFeatureLayoutPutsTheVolcanoInItsSectorTest,
+	"BattleSquare.IslandFeatureLayout.PutsTheVolcanoInItsSector",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FIslandFeatureLayoutPutsTheVolcanoInItsSectorTest::RunTest(const FString& Parameters)
+{
+	TestTrue(TEXT("a ilha tem vulcao"),
+		ContarPecasDaIlha(IslandFeatureLayout::EIslandFeature::Volcano) > 0);
+
+	for (const IslandFeatureLayout::FFeaturePlacement& Peca : IslandFeatureLayout::Plan())
+	{
+		if (Peca.Feature != IslandFeatureLayout::EIslandFeature::Volcano)
+		{
+			continue;
+		}
+
+		TestEqual(*FString::Printf(TEXT("%s cai no bioma de vulcao"), *NomeDaPecaDaIlha(Peca)),
+			static_cast<int32>(IslandGeography::BiomeAt(Peca.CenterUnits())),
+			static_cast<int32>(EIslandBiome::Volcano));
 	}
 
 	return true;

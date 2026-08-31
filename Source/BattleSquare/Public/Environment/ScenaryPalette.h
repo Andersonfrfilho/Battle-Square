@@ -96,6 +96,17 @@ enum class EScenaryRole : uint8
 	/** Rocha do vulcão: basalto, o mais escuro que existe fora da caverna. */
 	VolcanicRock,
 
+	/**
+	 * A lava: o único papel da paleta que EMITE em vez de refletir.
+	 *
+	 * Ela não é "vermelho de vulcão": é o laranja mais claro e mais saturado
+	 * que existe aqui, e é assim de propósito. O basalto ao redor está em 0,16
+	 * de luminância; sem esta distância de brilho a cratera vira uma mancha
+	 * escura dentro de outra mancha escura, e o vulcão perde justamente o que
+	 * o faz ser um vulcão e não um morro preto.
+	 */
+	LavaGlow,
+
 	/** A areia MOLHADA da praia: fria, e mais escura que a duna do deserto. */
 	BeachSand,
 

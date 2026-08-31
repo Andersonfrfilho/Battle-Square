@@ -3,6 +3,7 @@
 #include "Environment/IslandFeatureLayout.h"
 
 #include "Environment/CaveSystem.h"
+#include "Environment/Volcano.h"
 #include "Environment/WalkableMountain.h"
 
 namespace IslandFeatureLayout
@@ -31,6 +32,20 @@ namespace IslandFeatureLayout
 		constexpr float AnelDaCavernaGrande = 3900.0f;
 		constexpr float AnguloDaCavernaGrande = 36.0f;
 
+		/**
+		 * O vulcão mora sozinho, muito mais para fora que o resto.
+		 *
+		 * Não é gosto: com 26 metros de raio ele precisaria de 41 metros de
+		 * separação de uma montanha, e no anel da borda os 30° que sobram entre
+		 * as peças dão 22. Ou ele sai do anel, ou o anel inteiro se redesenha —
+		 * e redesenhar o anel é mexer em seis peças que já estão certas.
+		 *
+		 * 180° é o meio do setor de vulcão da geografia (144° a 216°), para o
+		 * marco cair no bioma que ele anuncia em vez de perto da divisa.
+		 */
+		constexpr float AnelDoVulcao = 9000.0f;
+		constexpr float AnguloDoVulcao = 180.0f;
+
 		FFeaturePlacement Montanha(float AnguloEmGraus)
 		{
 			FFeaturePlacement Peca;
@@ -38,6 +53,16 @@ namespace IslandFeatureLayout
 			Peca.AngleDegrees = AnguloEmGraus;
 			Peca.RadiusUnits = AnelDaBorda;
 			Peca.ClearanceUnits = MountainClearanceUnits();
+			return Peca;
+		}
+
+		FFeaturePlacement Vulcao(float AnguloEmGraus, float RaioDoAnel)
+		{
+			FFeaturePlacement Peca;
+			Peca.Feature = EIslandFeature::Volcano;
+			Peca.AngleDegrees = AnguloEmGraus;
+			Peca.RadiusUnits = RaioDoAnel;
+			Peca.ClearanceUnits = VolcanoClearanceUnits();
 			return Peca;
 		}
 
@@ -64,6 +89,11 @@ namespace IslandFeatureLayout
 		return AWalkableMountain::DefaultBaseRadiusUnits;
 	}
 
+	float VolcanoClearanceUnits()
+	{
+		return AVolcano::DefaultBaseRadiusUnits;
+	}
+
 	float CaveClearanceUnits(int32 Side)
 	{
 		// Meia-diagonal, e não meio-lado: o quadrado da caverna não aponta para
@@ -83,6 +113,7 @@ namespace IslandFeatureLayout
 		Pecas.Add(Montanha(210.0f));
 		Pecas.Add(Caverna(270.0f, AnelDaBorda, ACaveSystem::SmallCaveSide));
 		Pecas.Add(Montanha(330.0f));
+		Pecas.Add(Vulcao(AnguloDoVulcao, AnelDoVulcao));
 		return Pecas;
 	}
 

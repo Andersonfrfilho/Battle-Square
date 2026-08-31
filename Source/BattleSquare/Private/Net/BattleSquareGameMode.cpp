@@ -32,6 +32,7 @@
 #include "World/WorldStatusReadout.h"
 #include "UI/WorldLoadingScreen.h"
 #include "UI/WorldMapScreen.h"
+#include "Environment/Volcano.h"
 #include "Environment/WalkableMountain.h"
 #include "Environment/WorldBoundaryWater.h"
 #include "World/WorldTrainingField.h"
@@ -1441,6 +1442,8 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 	int32 CavernasPlantadas = 0;
 	int32 MaiorCavernaPlantada = 0;
 	int32 PatamaresDaTrilhaMaisLonga = 0;
+	int32 VulcoesPlantados = 0;
+	int32 DerramesDoVulcao = 0;
 
 	for (const IslandFeatureLayout::FFeaturePlacement& Peca : IslandFeatureLayout::Plan())
 	{
@@ -1452,7 +1455,13 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 		const uint32 SementeDaPeca = static_cast<uint32>(WorldScenerySeed)
 			+ static_cast<uint32>(FMath::RoundToInt(Peca.AngleDegrees));
 
-		if (Peca.Feature == IslandFeatureLayout::EIslandFeature::WalkableMountain)
+		// `switch` sem `default`, e é de propósito: quando a montanha era o
+		// caso especial e TODO o resto caía na caverna, o vulcão nasceu como
+		// caverna sem ninguém escrever nada errado. Aqui, tipo novo sem caso
+		// não compila — o compilador cobra o despacho no lugar do jogo.
+		switch (Peca.Feature)
+		{
+		case IslandFeatureLayout::EIslandFeature::WalkableMountain:
 		{
 			AWalkableMountain* Montanha = World->SpawnActor<AWalkableMountain>(
 				AWalkableMountain::StaticClass(), OndeNaIlha, FRotator::ZeroRotator, Parametros);
@@ -1463,16 +1472,34 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 				PatamaresDaTrilhaMaisLonga = FMath::Max(
 					PatamaresDaTrilhaMaisLonga, Montanha->GetTrailSteps().Num());
 			}
-			continue;
+			break;
 		}
 
-		ACaveSystem* Caverna = World->SpawnActor<ACaveSystem>(
-			ACaveSystem::StaticClass(), OndeNaIlha, FRotator::ZeroRotator, Parametros);
-		if (Caverna)
+		case IslandFeatureLayout::EIslandFeature::Cave:
 		{
-			Caverna->BuildCave(Peca.CaveSide, Peca.CaveSide, SementeDaPeca);
-			++CavernasPlantadas;
-			MaiorCavernaPlantada = FMath::Max(MaiorCavernaPlantada, Peca.CaveSide);
+			ACaveSystem* Caverna = World->SpawnActor<ACaveSystem>(
+				ACaveSystem::StaticClass(), OndeNaIlha, FRotator::ZeroRotator, Parametros);
+			if (Caverna)
+			{
+				Caverna->BuildCave(Peca.CaveSide, Peca.CaveSide, SementeDaPeca);
+				++CavernasPlantadas;
+				MaiorCavernaPlantada = FMath::Max(MaiorCavernaPlantada, Peca.CaveSide);
+			}
+			break;
+		}
+
+		case IslandFeatureLayout::EIslandFeature::Volcano:
+		{
+			AVolcano* Vulcao = World->SpawnActor<AVolcano>(
+				AVolcano::StaticClass(), OndeNaIlha, FRotator::ZeroRotator, Parametros);
+			if (Vulcao)
+			{
+				Vulcao->BuildVolcano(SementeDaPeca);
+				++VulcoesPlantados;
+				DerramesDoVulcao = FMath::Max(DerramesDoVulcao, Vulcao->GetFlowSteps().Num());
+			}
+			break;
+		}
 		}
 	}
 
@@ -1485,6 +1512,11 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 		FString::Printf(TEXT("cavernas: %d com labirinto (a maior é %dx%d)"),
 			CavernasPlantadas, MaiorCavernaPlantada, MaiorCavernaPlantada),
 		0.0f, FColor::Orange, /*Key=*/727);
+
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("vulcões: %d com cratera de lava (%d pedaços de derrame)"),
+			VulcoesPlantados, DerramesDoVulcao),
+		0.0f, FColor::Red, /*Key=*/728);
 
 	FBattleDebugScreen::Show(
 		FString::Printf(TEXT("mundo: sol e %d pedaços plantados (chão em Z=%.0f%s)"),

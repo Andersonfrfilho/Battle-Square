@@ -73,6 +73,72 @@ Três perguntas seguem abertas, e as três podem afastar jogador se erradas:
   alguém não voltar.
 - **Cuidar é ativo ou passivo?** Se exige visita diária, o jogo vira tarefa.
 
+
+## Coletar, e onde é permitido
+
+**Decidido em 31/08/2026.** Coleta-se **pedra, madeira e barro**.
+
+E o barro sai da LAMA, que já existe no jogo com regra própria — a margem
+molhada em clima úmido. Não é coincidência bonita: é o terreno que já estava
+lá encontrando uma segunda função.
+
+### A resposta à tragédia dos comuns não é o guarda — é ter ONDE colher
+
+A mata selvagem é de todos, cresce devagar e é o que fica pelado se cada
+jogador tirar o que quer. Mas proibir sem oferecer alternativa é só atrito: o
+jogador precisa de madeira, e a única fonte é o que ele não pode cortar.
+
+Por isso existem **plantações, bosques e pomares**:
+
+| lugar | o que é | ritmo |
+|---|---|---|
+| **Mata selvagem** | de todos, e é o cenário | rebrota lenta; cortar ali é regulado |
+| **Bosque** | árvore plantada para corte | rebrota rápida, corte livre |
+| **Pomar** | fruto, não madeira | colhe e volta a dar |
+| **Plantação** | o que se semeia e se colhe | ciclo curto |
+
+**A regra que ordena tudo:** o corte livre existe onde alguém plantou; o corte
+regulado existe onde ninguém plantou. Assim a floresta continua floresta, e
+quem precisa de madeira sabe para onde ir.
+
+### O guarda florestal
+
+É o par do policial. O policial responde por crime contra JOGADOR — o roubo de
+pet. **O guarda responde por crime contra o MUNDO**: cortar demais, e cortar
+onde não se corta.
+
+E os dois juntos resolvem o problema em duas escalas: **a rebrota impede o
+mundo de ficar pelado com o tempo; o guarda impede que ele fique pelado
+agora.** Um é físico, o outro é social.
+
+**A amarra que impede o guarda de estragar o jogo:** ele reage a VOLUME e a
+LUGAR, nunca a um corte. Se derrubar uma árvore traz um guarda, coletar deixa
+de ser atividade e vira esconde-esconde — e o jogador simplesmente para de
+coletar.
+
+## Comerciantes de recurso, e o risco de imprimir dinheiro
+
+Vender pedra e madeira é uma segunda FONTE de dinheiro, e ela tem um problema
+que o ranking não tem: **o ranking se esgota; a mata não.** Quem coleta pode
+vender para sempre, e aí o preço da academia deixa de doer — que é justamente o
+que a economia foi desenhada para evitar.
+
+**A saída é a demanda ser finita, não a oferta.** O comerciante compra até um
+limite por período; passado ele, o preço cai a quase nada. Isso não impede
+ninguém de coletar — impede o mesmo jogador de transformar a tarde inteira em
+dinheiro.
+
+## Perguntas em aberto (coleta)
+
+- **Quem é dono da plantação?** Da vila, de um comerciante, ou do jogador que a
+  plantou? A terceira é a mais interessante e a mais cara: exige que o mundo
+  guarde o que cada jogador plantou.
+- **A ferramenta importa?** Machado melhor corta mais rápido é conteúdo barato e
+  vira corrida de equipamento.
+- **Coletar precisa do pet?** Se `escavar` tira pedra e `atravessar` alcança o
+  que está fechado, os poderes ganham uso fora da batalha — e é a mesma amarra
+  dos trabalhos: o poder FACILITA, nunca HABILITA.
+
 ## O que isso muda no que já existe
 
 - A vila tem CLAREIRA reservada, e ela não deve ser desmatável: uma praça que

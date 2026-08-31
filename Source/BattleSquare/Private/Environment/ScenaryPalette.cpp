@@ -146,6 +146,9 @@ namespace PaletaDoCenario
 	 */
 	const FLinearColor LaranjaDaLava(0.973f, 0.478f, 0.106f);
 
+	/** A fumaça: cinza puxando para o quente, porque nasce do fogo. */
+	const FLinearColor CinzaDaFumaca(0.545f, 0.522f, 0.510f);
+
 	/**
 	 * A areia da praia: FRIA e um degrau mais escura que a duna do deserto.
 	 *
@@ -293,6 +296,9 @@ FLinearColor ScenaryPalette::ColorFor(EScenaryRole Role, FName MaterialSlot)
 
 	case EScenaryRole::SwampWater:
 		return VerdeDaPoca;
+
+	case EScenaryRole::AshPlume:
+		return CinzaDaFumaca;
 
 	case EScenaryRole::Count:
 		break;

@@ -131,6 +131,15 @@ enum class EScenaryRole : uint8
 	SwampWater,
 
 	/**
+	 * A fumaça do vulcão.
+	 *
+	 * Cinza claro, e mais claro que o basalto de propósito: fumaça da cor da
+	 * pedra some contra o cone, e uma coluna que só se vê contra o céu deixa
+	 * de contar o que devia — que aquele monte ali é o vulcão.
+	 */
+	AshPlume,
+
+	/**
 	 * Quantos papéis existem. Não é papel nenhum.
 	 *
 	 * Existe para o teste poder percorrer a lista inteira e cobrar `case` de

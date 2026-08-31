@@ -3,6 +3,7 @@
 #include "Environment/Volcano.h"
 
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/Engine.h"
 #include "Engine/StaticMesh.h"
@@ -307,6 +308,79 @@ bool FVolcanoPoursSeededFlowsTest::RunTest(const FString& Parameters)
 				Derrames[Indice].GetLocation().Z < Derrames[Indice - 1].GetLocation().Z);
 		}
 	}
+
+	DestroyVolcanoTestWorld(World);
+	return true;
+}
+
+/**
+ * Pintar de laranja não é acender.
+ *
+ * `PaintComponent` põe uma cor num material que não emite luz: à noite a
+ * cratera fica tão escura quanto o basalto ao lado, e o vulcão vira mais uma
+ * silhueta preta no horizonte. Quem conta que há lava lá dentro, de longe e no
+ * escuro, é uma luz de verdade — e de dia, quem conta é a fumaça.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FVolcanoGlowsAndSmokesTest,
+	"BattleSquare.Volcano.AcendeEFumega",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FVolcanoGlowsAndSmokesTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateVolcanoTestWorld();
+	AVolcano* Vulcao = World->SpawnActor<AVolcano>();
+	Vulcao->BuildVolcano(SementeDaCratera);
+
+	UPointLightComponent* Brasa = Vulcao->GetCraterGlow();
+	UHierarchicalInstancedStaticMeshComponent* Fumaca = Vulcao->GetPlume();
+
+	TestNotNull(TEXT("a cratera tem luz"), Brasa);
+	TestNotNull(TEXT("a fumaça tem malha atribuída"), Fumaca->GetStaticMesh().Get());
+
+	if (!Brasa || !Fumaca)
+	{
+		DestroyVolcanoTestWorld(World);
+		return false;
+	}
+
+	// A luz precisa sair da cratera. Alcance menor que a base ilumina só a
+	// própria lava, que já era laranja — o mesmo nada de antes.
+	TestTrue(TEXT("a luz alcança para além da base do cone"),
+		Brasa->AttenuationRadius > Vulcao->GetBaseRadiusUnits());
+	TestTrue(TEXT("a luz acende"), Brasa->Intensity > 0.0f);
+	TestEqual(TEXT("a luz mora na boca da cratera"),
+		static_cast<float>(Brasa->GetRelativeLocation().Z),
+		Vulcao->GetLavaSurfaceUnits());
+
+	TestTrue(TEXT("sai fumaça"), Fumaca->GetInstanceCount() > 0);
+
+	float MaisAlto = 0.0f;
+	float MaisLargo = 0.0f;
+	float MaisBaixo = TNumericLimits<float>::Max();
+	for (int32 Bafo = 0; Bafo < Fumaca->GetInstanceCount(); ++Bafo)
+	{
+		FTransform Onde;
+		Fumaca->GetInstanceTransform(Bafo, Onde);
+		const float Z = static_cast<float>(Onde.GetLocation().Z);
+		MaisAlto = FMath::Max(MaisAlto, Z);
+		MaisBaixo = FMath::Min(MaisBaixo, Z);
+		MaisLargo = FMath::Max(MaisLargo, MedidaDaInstancia(Fumaca, Onde, 0));
+	}
+
+	TestTrue(TEXT("a fumaça começa acima do cume, não dentro da pedra"),
+		MaisBaixo > Vulcao->GetHeightUnits());
+	TestTrue(TEXT("a coluna sobe bem acima do cume"),
+		MaisAlto > Vulcao->GetHeightUnits() + Vulcao->GetBaseRadiusUnits());
+	TestTrue(TEXT("a coluna tem largura"), MaisLargo > 0.0f);
+	TestTrue(TEXT("a fumaça está pintada"), EstaPintadoDeCenario(Fumaca));
+
+	// Mesma semente, mesma coluna: o cenário não pode mudar de forma entre
+	// duas visitas ao mesmo lugar.
+	const int32 Antes = Fumaca->GetInstanceCount();
+	Vulcao->BuildVolcano(SementeDaCratera);
+	TestEqual(TEXT("a mesma semente reconstrói a mesma coluna"),
+		Fumaca->GetInstanceCount(), Antes);
 
 	DestroyVolcanoTestWorld(World);
 	return true;

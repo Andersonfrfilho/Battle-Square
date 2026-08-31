@@ -10,6 +10,7 @@
 class UHierarchicalInstancedStaticMeshComponent;
 class USceneComponent;
 class UStaticMeshComponent;
+class UPointLightComponent;
 
 /**
  * O vulcão do setor de vulcão: o marco mais alto da ilha.
@@ -59,6 +60,20 @@ public:
 	/** O raio da encosta naquela altura. Nunca chega a zero. */
 	float RadiusAtHeight(float ZUnits) const;
 
+	/**
+	 * A luz da cratera: o que faz o vulcão ACENDER em vez de só ser laranja.
+	 *
+	 * Pintar a lava de laranja não é brilhar. À noite o material pintado fica
+	 * tão escuro quanto o basalto ao lado, e o vulcão vira uma silhueta de
+	 * pedra — que é exatamente o que ele já era. Quem acende o entorno é uma
+	 * luz de verdade, e é ela que conta que há lava lá dentro para quem está
+	 * longe.
+	 */
+	UPointLightComponent* GetCraterGlow() const;
+
+	/** A coluna de fumaça, para o vulcão ser achado de longe também de dia. */
+	UHierarchicalInstancedStaticMeshComponent* GetPlume() const;
+
 	int32 GetSliceCount() const { return SliceCount; }
 
 	/** Cada bloco do anel da cratera, para conferir o poço sem abrir o jogo. */
@@ -93,6 +108,9 @@ private:
 	/** Derrama a lava pela encosta abaixo. */
 	void PourFlows(uint32 Seed);
 
+	/** Levanta a coluna de fumaça acima do cume. */
+	void RaisePlume(uint32 Seed);
+
 	UPROPERTY()
 	TObjectPtr<USceneComponent> VolcanoRoot;
 
@@ -107,6 +125,19 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UStaticMeshComponent> Lava;
+
+	UPROPERTY()
+	TObjectPtr<UPointLightComponent> CraterGlow;
+
+	/**
+	 * A pluma: esferas subindo do cume, cada uma maior e mais alta.
+	 *
+	 * Sem sombra e sem colisão — fumaça que projeta sombra dura no chão é uma
+	 * bola de pedra flutuando, e foi assim que a "montanha pontuda" começou:
+	 * primitiva usada como se fosse a coisa, sem pensar em como ela lê.
+	 */
+	UPROPERTY()
+	TObjectPtr<UHierarchicalInstancedStaticMeshComponent> Plume;
 
 	TArray<FTransform> RimBlocks;
 	TArray<FTransform> FlowSteps;
@@ -171,4 +202,25 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Vulcao")
 	float FlowThicknessUnits = 40.0f;
+
+	/** Quantas bolas de fumaça sobem da cratera. */
+	UPROPERTY(EditAnywhere, Category = "Vulcao")
+	int32 PlumePuffCount = 14;
+
+	/** Quanto a coluna sobe acima do cume. */
+	UPROPERTY(EditAnywhere, Category = "Vulcao")
+	float PlumeHeightUnits = 2800.0f;
+
+	/**
+	 * O alcance da luz da cratera, em múltiplos do raio da base.
+	 *
+	 * Menor que 1 e a luz morre dentro da própria cratera, iluminando só a
+	 * lava que já era laranja — que é o mesmo nada de antes.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Vulcao")
+	float GlowReachInBaseRadii = 2.2f;
+
+	/** A intensidade da brasa. */
+	UPROPERTY(EditAnywhere, Category = "Vulcao")
+	float GlowIntensity = 90000.0f;
 };

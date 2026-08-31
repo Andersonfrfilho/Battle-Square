@@ -4,6 +4,7 @@
 
 #include "Battle/DeterministicSpread.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Environment/ScenaryPalette.h"
@@ -32,6 +33,24 @@ namespace VulcaoDaIlha
 
 	/** O quanto a boca de um derrame se afasta do seu ângulo de partida. */
 	constexpr float AberturaEntreDerrames = 16.0f;
+
+	/** A esfera da engine: a fumaça é curva, e cubo de fumaça é caixa voando. */
+	const TCHAR* MalhaDoBafo = TEXT("/Engine/BasicShapes/Sphere.Sphere");
+
+	/** O lado da esfera da engine, em unidades, com escala 1. */
+	constexpr float LadoDaEsfera = 100.0f;
+
+	/** A largura da primeira baforada, em fração do raio da cratera. */
+	constexpr float LarguraDoPrimeiroBafo = 0.55f;
+
+	/** Quanto a última baforada é mais larga que a primeira. */
+	constexpr float AlargamentoDaColuna = 3.4f;
+
+	/** O quanto o vento entorta a coluna, em fração do raio da cratera. */
+	constexpr float DerivaDaColuna = 1.6f;
+
+	/** O primeiro fluxo de sorteio da fumaça, longe do dos derrames. */
+	constexpr int32 PrimeiroFluxoDoBafo = 40000;
 }
 
 AVolcano::AVolcano()
@@ -60,6 +79,23 @@ AVolcano::AVolcano()
 		TEXT("VolcanoFlows"));
 	Flows->SetupAttachment(VolcanoRoot);
 
+	Plume = CreateDefaultSubobject<UHierarchicalInstancedStaticMeshComponent>(
+		TEXT("VolcanoPlume"));
+	Plume->SetupAttachment(VolcanoRoot);
+
+	ConstructorHelpers::FObjectFinder<UStaticMesh> Esfera(VulcaoDaIlha::MalhaDoBafo);
+	if (Esfera.Succeeded())
+	{
+		Plume->SetStaticMesh(Esfera.Object);
+	}
+
+	// A brasa da cratera. Sem ela o vulcão é uma silhueta preta a noite
+	// inteira: pintar de laranja escolhe uma cor, e cor nao ilumina nada.
+	CraterGlow = CreateDefaultSubobject<UPointLightComponent>(TEXT("VolcanoGlow"));
+	CraterGlow->SetupAttachment(VolcanoRoot);
+	CraterGlow->SetLightColor(FLinearColor(1.0f, 0.42f, 0.12f));
+	CraterGlow->SetCastShadows(false);
+
 	if (Cilindro.Succeeded())
 	{
 		Slopes->SetStaticMesh(Cilindro.Object);
@@ -82,6 +118,10 @@ AVolcano::AVolcano()
 	// jogador para fora da encosta sem explicar por quê.
 	Lava->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Flows->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	Plume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Plume->SetCastShadow(false);
+	Plume->SetCanEverAffectNavigation(false);
 
 	Slopes->SetCanEverAffectNavigation(false);
 	Rim->SetCanEverAffectNavigation(false);
@@ -117,14 +157,25 @@ void AVolcano::BuildVolcano(uint32 Seed)
 	RimBlocks.Reset();
 	FlowSteps.Reset();
 
+	Plume->ClearInstances();
+
 	RaiseSlopes();
 	CloseRim();
 	PourFlows(Seed);
+	RaisePlume(Seed);
+
+	// A luz mora na boca da cratera, nao no centro do ator: no centro ela
+	// acende a rocha por dentro e o cume continua escuro.
+	CraterGlow->SetRelativeLocation(FVector(0.0, 0.0, GetLavaSurfaceUnits()));
+	CraterGlow->SetAttenuationRadius(
+		BaseRadiusUnits * FMath::Max(1.0f, GlowReachInBaseRadii));
+	CraterGlow->SetIntensity(GlowIntensity);
 
 	ScenaryPalette::PaintComponent(Slopes, EScenaryRole::VolcanicRock);
 	ScenaryPalette::PaintComponent(Rim, EScenaryRole::VolcanicRock);
 	ScenaryPalette::PaintComponent(Lava, EScenaryRole::LavaGlow);
 	ScenaryPalette::PaintComponent(Flows, EScenaryRole::LavaGlow);
+	ScenaryPalette::PaintComponent(Plume, EScenaryRole::AshPlume);
 }
 
 void AVolcano::RaiseSlopes()
@@ -297,4 +348,46 @@ void AVolcano::PourFlows(uint32 Seed)
 			FlowSteps.Add(Pedaco);
 		}
 	}
+}
+
+void AVolcano::RaisePlume(uint32 Seed)
+{
+	if (!Plume->GetStaticMesh() || PlumePuffCount <= 0 || PlumeHeightUnits <= 0.0f)
+	{
+		return;
+	}
+
+	const float Cume = GetHeightUnits();
+	const float RaioDaCratera = GetCraterRadiusUnits();
+	const float Degrau = PlumeHeightUnits / static_cast<float>(PlumePuffCount);
+
+	for (int32 Bafo = 0; Bafo < PlumePuffCount; ++Bafo)
+	{
+		// Quanto mais alto, mais larga: fumaça que sobe com a mesma espessura
+		// é um cano, e cano não conta que aquilo está se dissipando.
+		const float Subida = static_cast<float>(Bafo) / static_cast<float>(PlumePuffCount);
+		const float Largura = RaioDaCratera * VulcaoDaIlha::LarguraDoPrimeiroBafo
+			* FMath::Lerp(1.0f, VulcaoDaIlha::AlargamentoDaColuna, Subida);
+
+		const int32 Fluxo = VulcaoDaIlha::PrimeiroFluxoDoBafo + Bafo * 2;
+		const float Deriva = RaioDaCratera * VulcaoDaIlha::DerivaDaColuna * Subida;
+
+		FTransform Bola;
+		Bola.SetLocation(FVector(
+			BattleSpread::Between(-Deriva, Deriva, BattleSpread::Fraction(Seed, Fluxo)),
+			BattleSpread::Between(-Deriva, Deriva, BattleSpread::Fraction(Seed, Fluxo + 1)),
+			Cume + Degrau * (static_cast<float>(Bafo) + 0.5f)));
+		Bola.SetScale3D(FVector(Largura * 2.0f / VulcaoDaIlha::LadoDaEsfera));
+		Plume->AddInstance(Bola);
+	}
+}
+
+UPointLightComponent* AVolcano::GetCraterGlow() const
+{
+	return CraterGlow;
+}
+
+UHierarchicalInstancedStaticMeshComponent* AVolcano::GetPlume() const
+{
+	return Plume;
 }

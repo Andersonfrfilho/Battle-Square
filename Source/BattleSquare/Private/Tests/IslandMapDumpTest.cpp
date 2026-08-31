@@ -7,6 +7,7 @@
 #include "Environment/IslandFeatureLayout.h"
 #include "World/RegionLayout.h"
 #include "World/VillageLayout.h"
+#include "Environment/FreshWater.h"
 
 /**
  * Despeja o traçado da ilha em `Saved/IslandMap.json`.
@@ -89,9 +90,40 @@ bool FIslandMapDumpTest::RunTest(const FString& Parameters)
 	}
 	Json += TEXT("  ],\n");
 
+	// Os RIOS, com o lago e a cachoeira de cada um. Eles já existiam no
+	// mundo e nunca apareceram em mapa nenhum — foi por isso que o relato de
+	// jogo disse "a cachoeira nunca foi vista".
+	Json += TEXT("  \"rios\": [\n");
+	const TArray<FreshWater::FRiverCourse> Rios = FreshWater::Plan();
+	for (int32 Indice = 0; Indice < Rios.Num(); ++Indice)
+	{
+		Json += TEXT("    {\"curso\":[");
+		const int32 Passos = 40;
+		for (int32 Passo = 0; Passo <= Passos; ++Passo)
+		{
+			const float Raio = FMath::Lerp(Rios[Indice].SourceRadiusUnits,
+				Rios[Indice].MouthRadiusUnits, static_cast<float>(Passo) / Passos);
+			const FVector2D Onde = FreshWater::PointAt(Rios[Indice], Raio);
+			Json += FString::Printf(TEXT("%s[%.0f,%.0f,%.0f]"),
+				Passo == 0 ? TEXT("") : TEXT(","), Onde.X, Onde.Y,
+				FreshWater::HalfWidthAt(Rios[Indice], Raio));
+		}
+
+		const FVector2D NoLago = FreshWater::PointAt(Rios[Indice], Rios[Indice].LakeRadiusUnits);
+		const FVector2D NaQueda = FreshWater::PointAt(Rios[Indice], Rios[Indice].FallRadiusUnits);
+		Json += FString::Printf(
+			TEXT("],\"lagoX\":%.0f,\"lagoY\":%.0f,\"quedaX\":%.0f,\"quedaY\":%.0f}%s\n"),
+			NoLago.X, NoLago.Y, NaQueda.X, NaQueda.Y,
+			Indice + 1 < Rios.Num() ? TEXT(",") : TEXT(""));
+	}
+	Json += TEXT("  ],\n");
+
+	// Os campos de treino, no anel que o GameMode usa.
+	Json += FString::Printf(TEXT("  \"anelDeTreino\": %.1f,\n"), 1800.0f);
+
 	// A malha de alturas: é ela que permite ver o relevo no desenho, e é a
 	// única prova de que `GroundHeightAt` produz morro em vez de prato.
-	const int32 Lado = 96;
+	const int32 Lado = 180;
 	const float Raio = IslandGeography::LandRadiusUnits();
 	Json += FString::Printf(TEXT("  \"malhaLado\": %d,\n"), Lado);
 	Json += TEXT("  \"alturas\": [");

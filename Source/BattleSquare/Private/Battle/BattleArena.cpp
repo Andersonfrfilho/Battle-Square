@@ -1593,6 +1593,19 @@ void ABattleArena::RegisterOwnPetInCollection()
 	}
 }
 
+FString ABattleArena::ResolveCollectionSlotForSide(uint8 Side) const
+{
+	if (Side < 2 && !PetCollectionSlotForSide[Side].IsEmpty())
+	{
+		return PetCollectionSlotForSide[Side];
+	}
+
+	// Ninguém configurou os lados: vale o nome único, e só para o lado LOCAL.
+	// É o caminho de Standalone e do Editor, e mantê-lo é o que faz esta
+	// correção não mudar o jogo de hoje.
+	return (Side == LocalPlayerSide) ? PetCollectionSlotName : FString();
+}
+
 void ABattleArena::CheckForCapture(const TArray<FBattleEvent>& Trace)
 {
 	for (const FBattleEvent& Event : Trace)
@@ -1602,16 +1615,27 @@ void ABattleArena::CheckForCapture(const TArray<FBattleEvent>& Trace)
 			continue;
 		}
 
-		// Só vitória do jogador LOCAL captura — derrota, empate (Value ==
-		// 0xFF) e vitória do outro lado nunca capturam (COLECAO-04).
-		if (Event.Value != static_cast<int32>(LocalPlayerSide))
+		// Empate (Value == 0xFF) não captura ninguém.
+		if (Event.Value != 0 && Event.Value != 1)
 		{
 			return;
 		}
 
+		// QUEM VENCEU captura, e a coleção é a DELE — não a de quem está
+		// olhando a tela. Era `LocalPlayerSide` nos dois papéis, e por isso a
+		// captura de um jogador remoto caía no save do servidor (B-005).
+		const uint8 WinningSide = static_cast<uint8>(Event.Value);
+		const FString Colecao = ResolveCollectionSlotForSide(WinningSide);
+		if (Colecao.IsEmpty())
+		{
+			// Lado sem dono — o selvagem, a IA. Não captura, que é o
+			// comportamento de sempre para o lado da máquina.
+			return;
+		}
+
 		// T5 🧠: o pet capturado é o do lado OPOSTO ao vencedor — nunca o
-		// próprio pet do jogador.
-		const uint8 OpponentSide = (LocalPlayerSide == 0) ? 1 : 0;
+		// próprio pet de quem venceu.
+		const uint8 OpponentSide = (WinningSide == 0) ? 1 : 0;
 		const FPetState* OpponentPet = CurrentState.Pets.FindByPredicate(
 			[OpponentSide](const FPetState& Pet) { return Pet.Side == OpponentSide; });
 		if (!OpponentPet)
@@ -1629,7 +1653,7 @@ void ABattleArena::CheckForCapture(const TArray<FBattleEvent>& Trace)
 		Instance.CatalogId = Presentation->CatalogId;
 		Instance.Name = Presentation->Name;
 		Instance.Type = Presentation->Type;
-		FPetCollectionService::CaptureIfNew(PetCollectionSlotName, Instance);
+		FPetCollectionService::CaptureIfNew(Colecao, Instance);
 		return;
 	}
 }
@@ -1752,78 +1776,122 @@ void ABattleArena::GrantExperienceIfOwned(const TArray<FBattleEvent>& Trace)
 			continue;
 		}
 
-		int32 ExperienceAmount = BattlePetProgressionConstants::ExperienceForLoss;
-		if (Event.Value == static_cast<int32>(LocalPlayerSide))
-		{
-			ExperienceAmount = BattlePetProgressionConstants::ExperienceForWin;
-		}
-		else if (Event.Value == 0xFF)
-		{
-			ExperienceAmount = BattlePetProgressionConstants::ExperienceForDraw;
-		}
-
-		// XP vai para o pet do JOGADOR LOCAL — nunca o oponente, mesmo
-		// que ele também esteja na coleção (edge case: os dois lados são
-		// pets que o jogador possui, via Standalone contra a própria IA).
-		// Cada desistência abaixo DIZ o motivo na tela.
+		// CADA LADO COM DONO progride — B-005. Antes só o lado local recebia,
+		// e a gravação ia para o save do PROCESSO: num servidor com dois
+		// jogadores remotos, um deles nunca ganhava nada e o outro escrevia na
+		// coleção do servidor.
 		//
-		// Elas eram silenciosas, e o usuário terminou uma batalha sem receber
-		// XP nenhuma sem ter como saber por quê. Recusa sem motivo visível é
-		// indistinguível de defeito — e neste caso a recusa até era correta.
-		const FPetState* OwnPet = CurrentState.Pets.FindByPredicate(
-			[this](const FPetState& Pet) { return Pet.Side == LocalPlayerSide; });
-		if (!OwnPet)
+		// "De quem é a tela" e "de quem é a coleção" eram a mesma variável, e
+		// não são a mesma coisa.
+		for (uint8 Lado = 0; Lado < 2; ++Lado)
+		{
+			GrantExperienceToSide(Lado, Event);
+		}
+		return;
+	}
+}
+
+void ABattleArena::GrantExperienceToSide(uint8 Side, const FBattleEvent& EndEvent)
+{
+	const FString Colecao = ResolveCollectionSlotForSide(Side);
+	if (Colecao.IsEmpty())
+	{
+		// Lado sem dono — o selvagem, a IA. Nunca teve coleção para receber.
+		return;
+	}
+
+	// As mensagens são para QUEM ESTÁ OLHANDO. O jogador remoto progride do
+	// mesmo jeito, e contar na tela desta arena o que aconteceu com ele seria
+	// narrar a batalha de outra pessoa.
+	const bool bNaTela = (Side == LocalPlayerSide);
+
+	int32 ExperienceAmount = BattlePetProgressionConstants::ExperienceForLoss;
+	if (EndEvent.Value == static_cast<int32>(Side))
+	{
+		ExperienceAmount = BattlePetProgressionConstants::ExperienceForWin;
+	}
+	else if (EndEvent.Value == 0xFF)
+	{
+		ExperienceAmount = BattlePetProgressionConstants::ExperienceForDraw;
+	}
+
+	// Cada desistência abaixo DIZ o motivo na tela. Elas eram silenciosas, e o
+	// usuário terminou uma batalha sem XP sem ter como saber por quê. Recusa
+	// sem motivo visível é indistinguível de defeito — e neste caso a recusa
+	// até era correta.
+	const FPetState* OwnPet = CurrentState.Pets.FindByPredicate(
+		[Side](const FPetState& Pet) { return Pet.Side == Side; });
+	if (!OwnPet)
+	{
+		if (bNaTela)
 		{
 			FBattleDebugScreen::Show(TEXT("sem XP: nenhum pet do seu lado no estado final"),
 				0.0f, FColor::Orange, /*Key=*/951);
-			return;
 		}
+		return;
+	}
 
-		const FPetPresentationInfo* Presentation = PresentationsByPetId.Find(OwnPet->PetId);
-		if (!Presentation || Presentation->CatalogId.IsEmpty())
+	const FPetPresentationInfo* Presentation = PresentationsByPetId.Find(OwnPet->PetId);
+	if (!Presentation || Presentation->CatalogId.IsEmpty())
+	{
+		if (bNaTela)
 		{
 			FBattleDebugScreen::Show(TEXT("sem XP: seu pet não tem id de catálogo"),
 				0.0f, FColor::Orange, /*Key=*/951);
-			return;
 		}
-
-		TArray<FOwnedPetInstance> Collection = FPetCollectionService::LoadCollection(PetCollectionSlotName);
-		FOwnedPetInstance* OwnedInstance = Collection.FindByPredicate(
-			[Presentation](const FOwnedPetInstance& Instance) { return Instance.CatalogId == Presentation->CatalogId; });
-		if (!OwnedInstance)
-		{
-			// Recusa CORRETA: XP para um pet que não está na coleção seria XP
-			// fantasma, gravada em nada. O que faltava era dizer isso.
-			FBattleDebugScreen::Show(
-				FString::Printf(TEXT("sem XP: '%s' ainda não está na sua coleção"), *Presentation->Name),
-				0.0f, FColor::Orange, /*Key=*/951);
-			return;
-		}
-
-		FPetProgressionService::GrantExperience(*OwnedInstance, ExperienceAmount);
-
-		// Atributo grava JUNTO da XP, na mesma coleção e no mesmo save. Duas
-		// escritas separadas abririam a janela em que uma acontece e a outra
-		// não, e o pet terminaria a batalha com nível novo e músculo velho.
-		const FOwnedPetInstance AntesDosGanhos = *OwnedInstance;
-		FPetAttributeProgression::Apply(*OwnedInstance, AccumulatedAttributeGains);
-
-		FPetCollectionService::SaveCollection(PetCollectionSlotName, Collection);
-
-		ShowAttributeGains(*Presentation, AntesDosGanhos, *OwnedInstance);
-		AnnounceMovesUnlockedBy(*Presentation, AntesDosGanhos, *OwnedInstance);
-
-		FBattleDebugScreen::Show(
-			FString::Printf(TEXT("+%d de experiência para %s (total %d)"),
-				ExperienceAmount, *Presentation->Name, OwnedInstance->Experience),
-			0.0f, FColor::Green, /*Key=*/951);
-
-		FBattleNarrationFeed::Push(
-			FText::FromString(FString::Printf(TEXT("%s ganhou %d de experiência."),
-				*Presentation->Name, ExperienceAmount)),
-			FColor::Green);
 		return;
 	}
+
+	TArray<FOwnedPetInstance> Collection = FPetCollectionService::LoadCollection(Colecao);
+	FOwnedPetInstance* OwnedInstance = Collection.FindByPredicate(
+		[Presentation](const FOwnedPetInstance& Instance)
+		{ return Instance.CatalogId == Presentation->CatalogId; });
+	if (!OwnedInstance)
+	{
+		// Recusa CORRETA: XP para um pet que não está na coleção seria XP
+		// fantasma, gravada em nada. O que faltava era dizer isso.
+		if (bNaTela)
+		{
+			FBattleDebugScreen::Show(
+				FString::Printf(TEXT("sem XP: '%s' ainda não está na sua coleção"),
+					*Presentation->Name),
+				0.0f, FColor::Orange, /*Key=*/951);
+		}
+		return;
+	}
+
+	FPetProgressionService::GrantExperience(*OwnedInstance, ExperienceAmount);
+
+	// Atributo grava JUNTO da XP, na mesma coleção e no mesmo save. Duas
+	// escritas separadas abririam a janela em que uma acontece e a outra não,
+	// e o pet terminaria a batalha com nível novo e músculo velho.
+	const FOwnedPetInstance AntesDosGanhos = *OwnedInstance;
+	if (bNaTela)
+	{
+		// Os ganhos de atributo são medidos a partir do pet LOCAL: a
+		// acumulação acompanha o que esta arena narrou.
+		FPetAttributeProgression::Apply(*OwnedInstance, AccumulatedAttributeGains);
+	}
+
+	FPetCollectionService::SaveCollection(Colecao, Collection);
+
+	if (!bNaTela)
+	{
+		return;
+	}
+
+	ShowAttributeGains(*Presentation, AntesDosGanhos, *OwnedInstance);
+	AnnounceMovesUnlockedBy(*Presentation, AntesDosGanhos, *OwnedInstance);
+
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("+%d de experiência para %s (total %d)"),
+			ExperienceAmount, *Presentation->Name, OwnedInstance->Experience),
+		0.0f, FColor::Green, /*Key=*/951);
+
+	FBattleNarrationFeed::Push(
+		FText::FromString(FString::Printf(TEXT("%s ganhou %d de experiência."),
+			*Presentation->Name, ExperienceAmount)),
+		FColor::Green);
 }
 
 void ABattleArena::HandlePlayerCommitted()

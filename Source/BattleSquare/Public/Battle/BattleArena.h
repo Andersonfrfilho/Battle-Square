@@ -342,6 +342,35 @@ public:
 	FString PetCollectionSlotName = TEXT("PetCollection");
 
 	/**
+	 * A coleção de CADA LADO — B-005.
+	 *
+	 * "De quem é a tela" e "de quem é a coleção" eram a mesma coisa, e não
+	 * são. `LocalPlayerSide` diz para quem esta arena está desenhando; a
+	 * coleção pertence a um JOGADOR, e num servidor com dois jogadores remotos
+	 * a arena roda no processo de nenhum dos dois.
+	 *
+	 * Com um nome só, captura e experiência caíam no save do SERVIDOR — e
+	 * ninguém percebia, porque em Standalone o servidor é o jogador.
+	 *
+	 * VAZIO significa "este lado não tem dono": o selvagem, o oponente de IA.
+	 * Lado sem dono não captura e não ganha experiência, que é exatamente o
+	 * comportamento de hoje para o lado da máquina.
+	 */
+	FString PetCollectionSlotForSide[2];
+
+	/**
+	 * A coleção daquele lado, ou vazio quando ele não tem dono.
+	 *
+	 * Cai no `PetCollectionSlotName` para o lado local quando ninguém
+	 * configurou os lados — é o que mantém Standalone e o Editor funcionando
+	 * exatamente como antes desta correção.
+	 */
+	FString ResolveCollectionSlotForSide(uint8 Side) const;
+
+	/** A progressão de UM lado, na coleção dele. */
+	void GrantExperienceToSide(uint8 Side, const FBattleEvent& EndEvent);
+
+	/**
 	 * Skills por tipo de pet. Vazio = arquivo padrão em Config/.
 	 *
 	 * Ausente ou malformado degrada para "todo pet tem só os seis universais"

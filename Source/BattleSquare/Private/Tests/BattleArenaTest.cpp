@@ -570,3 +570,116 @@ bool FPetViewGlidesInsteadOfTeleportingTest::RunTest(const FString& Parameters)
 	World->DestroyWorld(false);
 	return true;
 }
+
+// B-005: "de quem é a tela" e "de quem é a coleção" eram a MESMA variável.
+//
+// Num servidor com dois jogadores remotos, a arena roda no processo de
+// nenhum dos dois: só o lado marcado como local capturava, e a escrita caía
+// no save do SERVIDOR. Ninguém percebia, porque em Standalone o servidor é
+// o jogador — e é assim que uma limitação vive dois marcos sem incomodar.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FBattleArenaCadaLadoTemSuaColecaoTest,
+	"BattleSquare.BattleArena.CadaLadoTemSuaColecao",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FBattleArenaCadaLadoTemSuaColecaoTest::RunTest(const FString& Parameters)
+{
+	const FString SlotDoLadoZero = TEXT("PetCollectionTestSlot_B005_LadoZero");
+	const FString SlotDoLadoUm = TEXT("PetCollectionTestSlot_B005_LadoUm");
+	for (const FString& Slot : { SlotDoLadoZero, SlotDoLadoUm })
+	{
+		if (UGameplayStatics::DoesSaveGameExist(Slot, 0))
+		{
+			UGameplayStatics::DeleteGameInSlot(Slot, 0);
+		}
+	}
+
+	UWorld* World = CreateHeadlessTestWorld();
+	if (!TestNotNull(TEXT("Mundo de teste criado"), World)) { return false; }
+
+	ABattleArena* Arena = World->SpawnActor<ABattleArena>();
+	if (!TestNotNull(TEXT("ABattleArena spawna sem crash"), Arena))
+	{
+		DestroyHeadlessTestWorld(World);
+		return false;
+	}
+
+	// Dois donos DIFERENTES, e a tela é do lado zero.
+	Arena->PetCollectionSlotForSide[0] = SlotDoLadoZero;
+	Arena->PetCollectionSlotForSide[1] = SlotDoLadoUm;
+
+	FBattleState InitialState;
+	FPetState PetDoZero;
+	PetDoZero.PetId = 1; PetDoZero.Side = 0; PetDoZero.Column = 1; PetDoZero.Row = 1;
+	PetDoZero.Health = 1; PetDoZero.MaxHealth = 1; PetDoZero.Attack = 1; PetDoZero.Defense = 1;
+
+	// O lado UM vence: é ele o jogador remoto que antes nunca recebia nada.
+	FPetState PetDoUm;
+	PetDoUm.PetId = 2; PetDoUm.Side = 1; PetDoUm.Column = 2; PetDoUm.Row = 1;
+	PetDoUm.Health = 80; PetDoUm.MaxHealth = 80; PetDoUm.Attack = 60; PetDoUm.Defense = 1000;
+
+	InitialState.Pets.Add(PetDoZero);
+	InitialState.Pets.Add(PetDoUm);
+
+	TArray<FPetPresentationInfo> Presentations;
+	FPetPresentationInfo ApresentacaoDoZero;
+	ApresentacaoDoZero.PetId = 1;
+	ApresentacaoDoZero.CatalogId = TEXT("catalog-do-lado-zero");
+	ApresentacaoDoZero.Name = TEXT("PetDoZero");
+	ApresentacaoDoZero.Type = TEXT("Normal");
+	FPetPresentationInfo ApresentacaoDoUm;
+	ApresentacaoDoUm.PetId = 2;
+	ApresentacaoDoUm.CatalogId = TEXT("catalog-do-lado-um");
+	ApresentacaoDoUm.Name = TEXT("PetDoUm");
+	ApresentacaoDoUm.Type = TEXT("Fogo");
+	Presentations.Add(ApresentacaoDoZero);
+	Presentations.Add(ApresentacaoDoUm);
+
+	TestTrue(TEXT("Montagem aceita"), Arena->BeginBattle(InitialState, Presentations));
+
+	UBattleTurnCoordinator* Coordinator = NewObject<UBattleTurnCoordinator>();
+	Coordinator->BeginTurn(InitialState, 0.0);
+	Arena->ConfigureNetworkedOpponent(Coordinator);
+
+	// O lado zero espera; o lado um ataca com magia, que ignora esquiva.
+	Arena->PlayerActionQueue->BeginSelectingType(EActionType::Aguardar);
+	Arena->PlayerActionQueue->BeginSelectingType(EActionType::Aguardar);
+	Arena->PlayerActionQueue->BeginSelectingType(EActionType::Aguardar);
+	Arena->PlayerActionQueue->Commit();
+
+	FTurnCommit CommitDoUm;
+	CommitDoUm.Actions[0] = { EActionType::Magia, EBattleDirection::Esquerda };
+	CommitDoUm.Actions[1] = { EActionType::Aguardar, EBattleDirection::Nenhuma };
+	CommitDoUm.Actions[2] = { EActionType::Aguardar, EBattleDirection::Nenhuma };
+	Coordinator->SubmitCommit(/*Side=*/1, CommitDoUm);
+
+	TestTrue(TEXT("Batalha terminou"), Arena->GetCurrentState().bBattleEnded);
+	TestEqual(TEXT("O lado UM venceu"), Arena->GetCurrentState().WinningSide,
+		static_cast<uint8>(1));
+
+	// A CAPTURA é de quem venceu, na coleção DELE — mesmo não sendo o lado da
+	// tela. Antes, vitória do lado um não capturava nada.
+	const TArray<FOwnedPetInstance> ColecaoDoUm =
+		FPetCollectionService::LoadCollection(SlotDoLadoUm);
+	TestTrue(TEXT("Quem venceu capturou o pet do outro"),
+		ColecaoDoUm.ContainsByPredicate([](const FOwnedPetInstance& Instancia)
+		{ return Instancia.CatalogId == TEXT("catalog-do-lado-zero"); }));
+
+	// E a coleção de quem PERDEU não recebeu o próprio pet de volta como
+	// troféu: cada save é de um dono, e misturá-los era o defeito.
+	const TArray<FOwnedPetInstance> ColecaoDoZero =
+		FPetCollectionService::LoadCollection(SlotDoLadoZero);
+	TestFalse(TEXT("Quem perdeu não capturou ninguém"),
+		ColecaoDoZero.ContainsByPredicate([](const FOwnedPetInstance& Instancia)
+		{ return Instancia.CatalogId == TEXT("catalog-do-lado-um"); }));
+
+	for (const FString& Slot : { SlotDoLadoZero, SlotDoLadoUm })
+	{
+		if (UGameplayStatics::DoesSaveGameExist(Slot, 0))
+		{
+			UGameplayStatics::DeleteGameInSlot(Slot, 0);
+		}
+	}
+	DestroyHeadlessTestWorld(World);
+	return true;
+}

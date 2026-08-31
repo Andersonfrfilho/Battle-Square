@@ -631,6 +631,66 @@ bool FForestRegionGivesEachBiomeItsGroundTest::RunTest(const FString& Parameters
  * toda lógica estava certa — só o desenho é que não era o do lugar.
  */
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FForestReliefShapesTheFlatBiomesTest,
+	"BattleSquare.Environment.ForestBackdrop.ODesertoEAGeleiraTemRelevo",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FForestReliefShapesTheFlatBiomesTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateForestTestWorld();
+	AForestBackdrop* Mata = World->SpawnActor<AForestBackdrop>();
+	if (!TestNotNull(TEXT("AForestBackdrop spawna sem crash"), Mata))
+	{
+		DestroyForestTestWorld(World);
+		return false;
+	}
+
+	UHierarchicalInstancedStaticMeshComponent* Montes = Mata->GetReliefMounds();
+	if (!TestNotNull(TEXT("o pedaço tem agrupamento de relevo"), Montes))
+	{
+		DestroyForestTestWorld(World);
+		return false;
+	}
+
+	// Componente criado não é componente visível: sem malha, o monte passa em
+	// toda contagem e não existe na tela. É o defeito que já apareceu três
+	// vezes neste projeto, e aqui ele custaria o bioma inteiro.
+	TestNotNull(TEXT("e o agrupamento de relevo tem malha atribuída"),
+		Montes->GetStaticMesh().Get());
+
+	// O defeito que o jogador viu: "areia plana com pedra em cima não é
+	// deserto". Quem não tem relevo nenhum é um plano de uma cor só.
+	Mata->BuildRegion(CasaDeTeste, 5u, EIslandBiome::Desert, LadoDoPedacoDeTeste);
+	const int32 DunasDoDeserto = Montes->GetInstanceCount();
+	TestTrue(TEXT("o deserto tem duna"), DunasDoDeserto > 0);
+
+	Mata->BuildRegion(CasaDeTeste, 5u, EIslandBiome::Glacier, LadoDoPedacoDeTeste);
+	TestTrue(TEXT("a geleira tem gelo quebrado"), Montes->GetInstanceCount() > 0);
+
+	// A mata já tem copa para dar escala; monte ali seria bola no meio da
+	// clareira. E este é o caminho que o ator percorre de verdade — ele vira
+	// pedaço e volta a ser mata sem nunca ser destruído.
+	Mata->BuildForest(CasaDeTeste, 5u, CameraDeTeste);
+	TestEqual(TEXT("a mata não ganha monte nenhum"), Montes->GetInstanceCount(), 0);
+
+	// O monte sobe do chão pela METADE: centro no topo do piso, para a duna
+	// encontrar o plano numa curva em vez de num degrau.
+	Mata->BuildRegion(CasaDeTeste, 5u, EIslandBiome::Desert, LadoDoPedacoDeTeste);
+	TestEqual(TEXT("e a mesma semente devolve o mesmo deserto"),
+		Montes->GetInstanceCount(), DunasDoDeserto);
+
+	FTransform Primeira;
+	Montes->GetInstanceTransform(0, Primeira);
+	TestEqual(TEXT("o centro do monte fica no topo do chão"),
+		static_cast<float>(Primeira.GetLocation().Z), AForestBackdrop::GroundTopLocalZ());
+	TestTrue(TEXT("e ele tem altura de verdade"),
+		Primeira.GetScale3D().Z > KINDA_SMALL_NUMBER);
+
+	DestroyForestTestWorld(World);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FForestSwampIsNotJustDarkForestTest,
 	"BattleSquare.Environment.ForestBackdrop.OBrejoNaoEAMataComOutraCor",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)

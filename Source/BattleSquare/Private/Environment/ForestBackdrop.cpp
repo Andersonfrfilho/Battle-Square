@@ -29,6 +29,26 @@ namespace MataDoCenario
 	 */
 	const TCHAR* CuboDaEngine = TEXT("/Engine/BasicShapes/Cube.Cube");
 
+	/**
+	 * Primitiva do MONTE de relevo.
+	 *
+	 * Esfera, e não cone: duna é curva. O cone foi o que deu ao jogador as
+	 * "montanhas pontudas extremamente esquisitas", e repeti-lo no chão
+	 * espalharia o mesmo defeito por bioma inteiro.
+	 */
+	const TCHAR* EsferaDaEngine = TEXT("/Engine/BasicShapes/Sphere.Sphere");
+
+	/**
+	 * Onde começam os fluxos de sorteio dos montes.
+	 *
+	 * Longe dos das plantas de propósito: dois sorteios no mesmo índice saem
+	 * IGUAIS, e a duna nasceria debaixo do mesmo arbusto em todo pedaço.
+	 */
+	constexpr int32 PrimeiroFluxoDoMonte = 900000;
+
+	/** Grandezas sorteadas por monte: dois eixos, um tamanho, um giro. */
+	constexpr int32 SorteiosPorMonte = 4;
+
 	/** Lado da primitiva da engine, em unidades de mundo. */
 	constexpr float CilindroDaEngineUnidades = 100.0f;
 
@@ -190,6 +210,18 @@ namespace MataDoCenario
 		int32 PercentualDeTronco;
 		int32 PercentualDePedra;
 		int32 PercentualDeArvore;
+
+		/**
+		 * Quantos montes de relevo o pedaço ganha, e de que tamanho.
+		 *
+		 * Zero é a resposta certa para a mata e para a praia: mata tem copa
+		 * para dar escala, e praia é a faixa plana por onde se anda até o mar.
+		 * Quem precisa de relevo é o bioma que, sem ele, vira um plano de uma
+		 * cor só.
+		 */
+		int32 MontesPorPedaco;
+		float LarguraDoMonteEmCasas;
+		float AlturaDoMonteEmCasas;
 	};
 
 	FPresencaDoBioma PresencaDe(EIslandBiome Bioma)
@@ -199,22 +231,26 @@ namespace MataDoCenario
 		case EIslandBiome::Desert:
 			// Nem capim nem flor: a duna é pedra e areia, e um único tufo
 			// verde no meio dela desfaz o deserto inteiro.
-			return { EScenaryRole::DesertSand, EScenaryRole::DesertRock, 0, 0, 6, 25, 70, 0 };
+			return { EScenaryRole::DesertSand, EScenaryRole::DesertRock, 0, 0, 6, 25, 70, 0,
+				/*Montes=*/14, /*Largura=*/26.0f, /*Altura=*/3.0f };
 
 		case EIslandBiome::Glacier:
 			// A conífera resiste ao frio, e é ela que dá altura à geleira —
 			// sem nada em pé, o gelo vira um plano branco sem escala.
-			return { EScenaryRole::GlacierIce, EScenaryRole::MountainRock, 0, 0, 0, 10, 55, 18 };
+			return { EScenaryRole::GlacierIce, EScenaryRole::MountainRock, 0, 0, 0, 10, 55, 18,
+				/*Montes=*/10, /*Largura=*/15.0f, /*Altura=*/3.6f };
 
 		case EIslandBiome::Volcano:
 			// Pedra sobre pedra. O tronco morto que sobra é o que diz que
 			// aqui já houve mata.
-			return { EScenaryRole::VolcanicRock, EScenaryRole::MountainRock, 0, 0, 0, 15, 85, 0 };
+			return { EScenaryRole::VolcanicRock, EScenaryRole::MountainRock, 0, 0, 0, 15, 85, 0,
+				/*Montes=*/8, /*Largura=*/12.0f, /*Altura=*/2.4f };
 
 		case EIslandBiome::Beach:
 			// Rala de propósito: a praia é a faixa por onde se ANDA até o
 			// mar, e enchê-la de arbusto fecharia justamente a passagem.
-			return { EScenaryRole::BeachSand, EScenaryRole::Rock, 12, 0, 8, 20, 35, 0 };
+			return { EScenaryRole::BeachSand, EScenaryRole::Rock, 12, 0, 8, 20, 35, 0,
+				/*Montes=*/0, /*Largura=*/0.0f, /*Altura=*/0.0f };
 
 		case EIslandBiome::Swamp:
 			// O brejo é a mata que NÃO drenou, e a diferença entre os dois é
@@ -227,7 +263,8 @@ namespace MataDoCenario
 			// justamente o defeito: a geografia sabia que ali era brejo, o
 			// clima sabia, o mapa sabia, e só a tela não.
 			return { EScenaryRole::SwampMud, EScenaryRole::SwampWater,
-				90, 60, 70, 100, 18, 25 };
+				90, 60, 70, 100, 18, 25,
+				/*Montes=*/0, /*Largura=*/0.0f, /*Altura=*/0.0f };
 
 		case EIslandBiome::Forest:
 			break;
@@ -235,7 +272,8 @@ namespace MataDoCenario
 
 		// A mata é a tabela inteira, sem filtro — e o `Count` no chão diz
 		// "use a cor de chão de sempre", que é a mesma da arena.
-		return { EScenaryRole::Count, EScenaryRole::Rock, 100, 100, 100, 100, 100, 100 };
+		return { EScenaryRole::Count, EScenaryRole::Rock, 100, 100, 100, 100, 100, 100,
+			/*Montes=*/0, /*Largura=*/0.0f, /*Altura=*/0.0f };
 	}
 
 	/**
@@ -275,6 +313,54 @@ namespace MataDoCenario
 		case EScenaryRole::ForestTree:  return Presenca.PercentualDeArvore;
 		case EScenaryRole::CanopyTree:  return Presenca.PercentualDeArvore;
 		default:                        return 0;
+		}
+	}
+
+	/**
+	 * Dá FORMA ao chão do pedaço: meias esferas meio enterradas.
+	 *
+	 * O centro fica no topo do chão, então metade da esfera aparece e metade
+	 * some — é isso que faz a duna encontrar o plano numa curva em vez de num
+	 * degrau. Uma esfera pousada EM CIMA do chão seria uma bola no deserto.
+	 */
+	void PlantarMontes(UHierarchicalInstancedStaticMeshComponent* Montes,
+		const FPresencaDoBioma& Presenca, float CasaEmUnidades, uint32 Semente, float LadoDoPedaco)
+	{
+		if (!Montes)
+		{
+			return;
+		}
+
+		Montes->ClearInstances();
+		if (!Montes->GetStaticMesh() || Presenca.MontesPorPedaco <= 0)
+		{
+			return;
+		}
+
+		const float Meio = LadoDoPedaco * 0.5f;
+		const float Largura = Presenca.LarguraDoMonteEmCasas * CasaEmUnidades;
+		const float Altura = Presenca.AlturaDoMonteEmCasas * CasaEmUnidades;
+		const float TopoDoChao = AForestBackdrop::GroundTopLocalZ();
+
+		for (int32 Monte = 0; Monte < Presenca.MontesPorPedaco; ++Monte)
+		{
+			const int32 Fluxo = PrimeiroFluxoDoMonte + Monte * SorteiosPorMonte;
+			const float X = BattleSpread::Between(-Meio, Meio, BattleSpread::Fraction(Semente, Fluxo));
+			const float Y = BattleSpread::Between(-Meio, Meio, BattleSpread::Fraction(Semente, Fluxo + 1));
+			const float Porte = BattleSpread::Between(0.6f, 1.4f, BattleSpread::Fraction(Semente, Fluxo + 2));
+			const float Giro = BattleSpread::Between(0.0f, 360.0f, BattleSpread::Fraction(Semente, Fluxo + 3));
+
+			// Giro em torno de DOIS eixos: a esfera girada só no eixo vertical
+			// continua igual a si mesma, e catorze dunas idênticas leem como
+			// repetição de asset, não como areia.
+			FTransform Pouso;
+			Pouso.SetLocation(FVector(X, Y, TopoDoChao));
+			Pouso.SetRotation(FQuat(FRotator(Giro * 0.05f, Giro, 0.0f)));
+			Pouso.SetScale3D(FVector(
+				Largura * Porte * 2.0f / CilindroDaEngineUnidades,
+				Largura * Porte * 2.0f / CilindroDaEngineUnidades,
+				Altura * Porte * 2.0f / CilindroDaEngineUnidades));
+			Montes->AddInstance(Pouso);
 		}
 	}
 }
@@ -317,6 +403,23 @@ AForestBackdrop::AForestBackdrop()
 	if (CuboDoChao.Succeeded())
 	{
 		SquareGroundAsset = CuboDoChao.Object;
+	}
+
+	ReliefMounds = CreateDefaultSubobject<UHierarchicalInstancedStaticMeshComponent>(
+		TEXT("ReliefMounds"));
+	ReliefMounds->SetupAttachment(ForestRoot);
+	// Sem colisão: o monte DESENHA o chão, não o fecha. O piso que segura o
+	// jogador continua sendo um só — o ladrilho — e ter dois pisos com alturas
+	// diferentes é como se ganha um jogador preso dentro de uma duna.
+	ReliefMounds->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	ReliefMounds->SetCastShadow(true);
+
+	// A malha vai AQUI. Componente criado sem asset passa em todo teste de
+	// lógica e não existe na tela — três vezes neste projeto.
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> EsferaDoMonte(EsferaDaEngine);
+	if (EsferaDoMonte.Succeeded())
+	{
+		ReliefMounds->SetStaticMesh(EsferaDoMonte.Object);
 	}
 
 	SpeciesClusters.Reset();
@@ -388,6 +491,14 @@ void AForestBackdrop::BuildForest(float CellSize, uint32 Seed, const FVector2D& 
 	// superfície não precisa saber que ela engrossou.
 	GroundMesh->SetRelativeLocation(FVector(0.0f, 0.0f,
 		EspessuraDoChao * 0.5f - ProfundidadeDoChao * 0.5f));
+
+	// A mata não tem duna. Limpar é obrigatório e não é zelo: o mesmo ator
+	// vira pedaço e volta a ser mata, e o monte que sobrasse ficaria de pé no
+	// meio da clareira sem nada no mundo explicando de onde veio.
+	if (ReliefMounds)
+	{
+		ReliefMounds->ClearInstances();
+	}
 
 	ApplyGroundMaterial();
 
@@ -489,6 +600,14 @@ void AForestBackdrop::BuildRegion(float CellSize, uint32 Seed, EIslandBiome Biom
 		EspessuraDoChao * 0.5f - ProfundidadeDoChao * 0.5f));
 
 	ApplyGroundMaterial();
+
+	// O relevo é do CHÃO, e por isso ganha a cor do chão. Monte de outra cor
+	// não seria duna: seria pedra grande, que este bioma já tem de sobra.
+	PlantarMontes(ReliefMounds, Presenca, CellSize, Seed, SideUnits);
+	if (Presenca.PapelDoChao != EScenaryRole::Count)
+	{
+		ScenaryPalette::PaintComponent(ReliefMounds, Presenca.PapelDoChao);
+	}
 
 	// A vida dos obstáculos é POSICIONAL: a chave aponta para um agrupamento e
 	// uma instância, não para uma árvore. Herdar o mapa do pedaço anterior
@@ -607,6 +726,11 @@ TArray<FVector> AForestBackdrop::GetPlantedLocations() const
 float AForestBackdrop::RegionGroundSideUnits(float SideUnits)
 {
 	return SideUnits * MataDoCenario::TransbordoDoChao;
+}
+
+UHierarchicalInstancedStaticMeshComponent* AForestBackdrop::GetReliefMounds() const
+{
+	return ReliefMounds;
 }
 
 float AForestBackdrop::GroundTopLocalZ()

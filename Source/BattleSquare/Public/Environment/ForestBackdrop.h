@@ -115,6 +115,16 @@ public:
 	UStaticMeshComponent* GetGroundMesh() const { return GroundMesh; }
 
 	/**
+	 * Os montes de RELEVO deste pedaço: duna no deserto, gelo quebrado na
+	 * geleira.
+	 *
+	 * Existe para o teste poder perguntar "o chão deste bioma tem forma?".
+	 * Chão plano com pedra em cima passa em todo teste de densidade e continua
+	 * sendo um pátio bege — foi exatamente o que o jogador viu.
+	 */
+	UHierarchicalInstancedStaticMeshComponent* GetReliefMounds() const;
+
+	/**
 	 * O papel de paleta do chão deste pedaço; `Count` quando não é pedaço.
 	 *
 	 * Existe para o teste poder cobrar que cada bioma pinta o SEU chão. A cor
@@ -197,6 +207,20 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UStaticMeshComponent> GroundMesh;
+
+	/**
+	 * Os montes que dão FORMA ao chão do pedaço.
+	 *
+	 * Esferas meio enterradas, e esferas de propósito: o jogador pediu curva,
+	 * e cone é o oposto disso — foi o cone que produziu as "montanhas pontudas
+	 * extremamente esquisitas". Meia esfera acima do chão é a única curva que
+	 * uma primitiva da engine entrega sem malha autorada.
+	 *
+	 * Sem colisão: duna que barra o passo vira cerca, e o deserto deixa de ser
+	 * atravessável justamente por aquilo que deveria só desenhá-lo.
+	 */
+	UPROPERTY()
+	TObjectPtr<UHierarchicalInstancedStaticMeshComponent> ReliefMounds;
 
 	/**
 	 * A malha QUADRADA do chão, para quem é ladrilho.

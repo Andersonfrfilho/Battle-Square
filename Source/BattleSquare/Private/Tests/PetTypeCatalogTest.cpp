@@ -179,7 +179,7 @@ bool FShippedTypeCatalogLoadsTest::RunTest(const FString& Parameters)
 	}
 
 	const TCHAR* ElementosEsperados[] = { TEXT("Fogo"), TEXT("Agua"), TEXT("Planta"),
-		TEXT("Terra"), TEXT("Fantasma"), TEXT("Luz") };
+		TEXT("Terra"), TEXT("Fantasma"), TEXT("Luz"), TEXT("Ar") };
 	for (const TCHAR* Nome : ElementosEsperados)
 	{
 		TestTrue(*FString::Printf(TEXT("O elemento %s está no catálogo"), Nome),
@@ -247,9 +247,15 @@ bool FSkillsComeFromTheOneTypeCatalogTest::RunTest(const FString& Parameters)
 
 	const FPetSkillCatalog Skills = FPetSkillCatalog::FromTypeCatalog(Tipos);
 
-	// As três skills do núcleo chegam pelos elementos que as declaram.
-	TestTrue(TEXT("Fogo voa"),
+	// VOAR MIGROU do fogo para o AR, e a razão é simples: fogo voando sempre
+	// foi convenção de dragão, não característica de fogo. O ar é o dono
+	// natural, e o fogo ganhou `incendiar` — porque nenhum elemento fica sem.
+	TestTrue(TEXT("Ar voa"),
+		Skills.GetSkillsForType(TEXT("Natural/Ar")).Contains(EActionType::Voar));
+	TestFalse(TEXT("E o fogo não voa mais"),
 		Skills.GetSkillsForType(TEXT("Natural/Fogo")).Contains(EActionType::Voar));
+	TestTrue(TEXT("O fogo incendeia"),
+		Skills.GetSkillsForType(TEXT("Natural/Fogo")).Contains(EActionType::Incendiar));
 	TestTrue(TEXT("Água submerge"),
 		Skills.GetSkillsForType(TEXT("Natural/Agua")).Contains(EActionType::Submergir));
 	TestTrue(TEXT("Planta camufla"),

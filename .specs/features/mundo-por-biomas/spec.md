@@ -268,6 +268,7 @@ casa é elemento que não tem onde ser comum — e três dos seis estavam assim.
 | **Floresta e Ruínas** | Planta | **Fantasma** | mata, rios, cachoeiras, pântano |
 | **Pântano e Mangue** | **Água** | Planta | água doce, brejo, praia, grutas |
 | **Geleira** | **Luz** | Água | neve, aurora, montanha |
+| **Planalto e Penhascos** | **Ar** | Luz | montanha caminhável, serra |
 | **Vulcão e Cavernas** | Fogo | **Terra** | vulcão, cavernas, labirinto, lava |
 
 Três escolhas têm razão além da estética:
@@ -281,6 +282,27 @@ luz no céu. Nenhum outro candidato reusa tanto trabalho pronto.
 
 **A Terra fica no vulcão**, pela rocha e pelas cavernas — que já existem no
 código como feições, sem serem bioma de ninguém.
+
+### O AR entrou, e `voar` mudou de dono
+
+Acrescentado em 31/08. Fogo voando sempre foi convenção de dragão, não
+característica de fogo — o dono natural de `voar` é o ar.
+
+E o fogo não ficou sem: ganhou **`incendiar`**, que queima a casa à frente. Ela
+faz PAR com `escavar`: a terra CONSTRÓI uma barreira, o fogo cria um PERIGO. Os
+dois mudam a casa da frente e nenhum causa dano direto — são negação de espaço,
+e é isso que os separa de atacar.
+
+A regra que forçou isso é de ontem: **nenhum elemento fica sem skill.** Ela
+existia porque a Terra era o buraco; agora ela impediu que o Fogo virasse um.
+
+O ar também é dono de **secar**, junto com o fogo: vento seca tanto quanto
+calor, e a resposta ao campo alagado passa a ter dois donos.
+
+**Escola não precisa de casa.** Psíquica, Física, Natural e Espiritual são COMO
+a criatura luta, não do que ela é feita — e por isso atravessam as ilhas. Um
+psíquico de água mora no pântano porque é de água. Não existe ilha dos
+psíquicos, e "Mágico" é um nome antigo que hoje é `Psiquica/Fogo`.
 
 ### O que se perde
 

@@ -19,7 +19,9 @@ const attributeSchema = z
 export const petMoveSchema = z.object({
   name: z.string().min(1, 'Nome do golpe é obrigatório').max(60),
   power: z.number().int().min(1, 'Poder do golpe precisa ser ao menos 1').max(500),
-  terrainEffect: z.enum(['none', 'water', 'damage', 'shallow_water', 'ice', 'mud']).default('none'),
+  terrainEffect: z
+    .enum(['none', 'water', 'damage', 'shallow_water', 'ice', 'mud', 'dry'])
+    .default('none'),
   /**
    * Atributo exigido para usar o golpe, e o mínimo dele.
    *

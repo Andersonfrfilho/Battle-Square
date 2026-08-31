@@ -105,6 +105,16 @@
    "attacker": "Fantasma",
    "defender": "Luz",
    "percent": 50
+  },
+  {
+   "attacker": "Ar",
+   "defender": "Terra",
+   "percent": 150
+  },
+  {
+   "attacker": "Terra",
+   "defender": "Ar",
+   "percent": 50
   }
  ]
 }

@@ -99,6 +99,53 @@ namespace
 			OutTrace.Add(Ergueu);
 			return;
 		}
+		else if (Action.Type == EActionType::Incendiar)
+		{
+			// QUEIMA a casa à frente. Par de escavar: a terra constrói, o fogo
+			// cria perigo. Os dois mudam a casa da frente e nenhum causa dano
+			// direto — são negação de espaço, e é isso que os separa de atacar.
+			int8 DeltaColuna = 0;
+			int8 DeltaLinha = 0;
+			GetDirectionDelta(Action.Direction, DeltaColuna, DeltaLinha);
+
+			const int32 Coluna = static_cast<int32>(Pet->Column) + DeltaColuna;
+			const int32 Linha = static_cast<int32>(Pet->Row) + DeltaLinha;
+			const int32 Casa = State.IsInside(Coluna, Linha)
+				? State.CellIndex(Coluna, Linha) : INDEX_NONE;
+
+			// Casa BLOQUEADA não pega fogo: quem explica aquela casa é a pedra
+			// que está nela, e brasa sobre pedra seria a tela dizendo duas
+			// coisas ao mesmo tempo.
+			const bool bPodeQueimar = Casa != INDEX_NONE
+				&& State.CellLayout[Casa] != static_cast<uint8>(ECellProperty::Blocked);
+
+			if (!bPodeQueimar)
+			{
+				FBattleEvent Falhou;
+				Falhou.Type = EBattleEventType::PosturaFalhou;
+				Falhou.SlotIndex = SlotIndex;
+				Falhou.Phase = 2;
+				Falhou.ActorId = Pet->PetId;
+				Falhou.TargetId = BattleEventNoActor;
+				Falhou.Detail = static_cast<uint8>(Action.Type);
+				OutTrace.Add(Falhou);
+				return;
+			}
+
+			State.SetTemporaryTerrain(Coluna, Linha,
+				static_cast<uint8>(ECellProperty::Damage), /*Slots=*/0);
+
+			FBattleEvent Queimou;
+			Queimou.Type = EBattleEventType::TerrenoMudou;
+			Queimou.SlotIndex = SlotIndex;
+			Queimou.Phase = 2;
+			Queimou.ActorId = Pet->PetId;
+			Queimou.TargetId = BattleEventNoActor;
+			Queimou.ToCell = PackCell(static_cast<uint8>(Coluna), static_cast<uint8>(Linha));
+			Queimou.Value = static_cast<int32>(ECellProperty::Damage);
+			OutTrace.Add(Queimou);
+			return;
+		}
 		else if (Action.Type == EActionType::Iluminar)
 		{
 			// ILUMINAR não é postura de quem a usa: ela marca o OUTRO. Por

@@ -369,6 +369,39 @@ export const PET_CATALOG_SEED: CreatePetDeclaration[] = [
       { name: 'Maré Negra', power: 150, terrainEffect: 'none', requiresAttribute: 'underground', requiresValue: 10 },
     ],
   },
+{
+    // O elemento AR entrou em 31/08 e levou `voar` do fogo junto. Dois pets,
+    // porque a regra do catálogo é que nenhum elemento fique preso a um só —
+    // elemento com um pet é elemento que se experimenta uma vez.
+    name: 'Rajada',
+    type: 'Natural/Ar',
+    attack: 60,
+    defense: 40,
+    speed: 85,
+    maxHealth: 100,
+    moves: [
+      { name: 'Lufada', power: 75, terrainEffect: 'none' },
+      // O vento SECA: é a resposta do ar ao campo alagado, do mesmo jeito que
+      // o fogo responde. Fraco de propósito — o que ele entrega é o tabuleiro.
+      { name: 'Vento Seco', power: 50, terrainEffect: 'dry' },
+      { name: 'Corte de Ar', power: 115, terrainEffect: 'none' },
+      { name: 'Ciclone', power: 150, terrainEffect: 'none', requiresAttribute: 'flight', requiresValue: 12 },
+    ],
+  },
+  {
+    name: 'Cirro',
+    type: 'Psiquica/Ar',
+    attack: 55,
+    defense: 45,
+    speed: 90,
+    maxHealth: 95,
+    moves: [
+      { name: 'Sopro', power: 70, terrainEffect: 'none' },
+      { name: 'Vertigem', power: 40, terrainEffect: 'none', effectStat: 'speed', effectPercent: -45 },
+      { name: 'Pressão Baixa', power: 45, terrainEffect: 'none', effectStat: 'defense', effectPercent: -40 },
+      { name: 'Olho da Tempestade', power: 155, terrainEffect: 'none', requiresAttribute: 'flight', requiresValue: 10 },
+    ],
+  },
 ];
 
 export type SeedResult = {

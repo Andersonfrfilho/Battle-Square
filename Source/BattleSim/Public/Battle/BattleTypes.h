@@ -57,7 +57,22 @@ enum class EActionType : uint8
 	 * Ao FIM do enum, pelo mesmo motivo dos anteriores: os valores viajam no
 	 * commit de todo turno e no hash do traço.
 	 */
-	Escavar
+	Escavar,
+
+	/**
+	 * INCENDIAR: o fogo queima a casa à frente.
+	 *
+	 * Faz PAR com escavar, e o par é o ponto: a terra CONSTRÓI uma barreira, o
+	 * fogo cria um PERIGO. Os dois mudam a casa à frente e nenhum causa dano
+	 * direto — são negação de espaço, e é isso que os separa de atacar.
+	 *
+	 * Nasceu porque `voar` migrou para o Ar, e o fogo ficaria sem skill —
+	 * contra a regra de que nenhum elemento fica sem. Fogo voando sempre foi
+	 * convenção de dragão; queimar o chão é o que fogo faz.
+	 *
+	 * Ao FIM do enum, pelo mesmo motivo dos anteriores.
+	 */
+	Incendiar
 };
 
 // As 8 direções da grade. Defender e Aguardar ignoram a direção.

@@ -89,7 +89,7 @@ describe('catálogo inicial de pets', () => {
     // preso a um único pet. Um elemento com um pet só é um elemento que o
     // jogador experimenta uma vez e nunca mais escolhe.
     const escolas = ['Fisica', 'Natural', 'Psiquica', 'Espiritual'];
-    const elementos = ['Fogo', 'Agua', 'Planta', 'Terra', 'Fantasma', 'Luz'];
+    const elementos = ['Fogo', 'Agua', 'Planta', 'Terra', 'Fantasma', 'Luz', 'Ar'];
 
     for (const escola of escolas) {
       const quantos = PET_CATALOG_SEED.filter((pet) => escolaDe(pet.type) === escola);

@@ -5,6 +5,7 @@
 #include "Environment/ForestBackdrop.h"
 #include "Environment/MountainRange.h"
 #include "Environment/ScenaryClimate.h"
+#include "Environment/IslandGeography.h"
 #include "Environment/SceneLighting.h"
 #include "Environment/WorldTimeOfDay.h"
 #include "Environment/ScenaryPalette.h"
@@ -442,7 +443,7 @@ void ABattleArena::SpawnForestBackdrop()
 
 	const FVector CameraLocal = ArenaCamera ? ArenaCamera->GetRelativeLocation() : FVector::ZeroVector;
 	ForestBackdrop->BuildForest(CellSize, static_cast<uint32>(ForestSeed),
-		FVector2D(CameraLocal.X, CameraLocal.Y));
+		FVector2D(CameraLocal.X, CameraLocal.Y), ResolveEncounterBiome());
 
 	// Painel de desenvolvimento, não texto de jogador: FString aqui é a
 	// mesma escolha das outras linhas de diagnóstico, e some no Shipping.
@@ -486,7 +487,7 @@ void ABattleArena::SpawnMountainRange()
 		return;
 	}
 
-	const EScenaryClimate Clima = ScenaryClimate::ConfiguredClimate();
+	const EScenaryClimate Clima = ResolveScenaryClimate();
 	MountainRange->BuildRange(Clima, static_cast<uint32>(ForestSeed));
 
 	// Painel de desenvolvimento, não texto de jogador: some no Shipping.
@@ -867,6 +868,43 @@ float ABattleArena::GetObstacleTopHeightAt(uint8 Column, uint8 Row) const
 	return Obstaculo->GetRelativeLocation().Z + static_cast<float>(CaixaOrientada.Max.Z);
 }
 
+EIslandBiome ABattleArena::ResolveEncounterBiome() const
+{
+	// Sem lugar de encontro, o bioma da mata continua sendo o que a tabela
+	// inteira sempre foi: floresta. Não é chute — é o que a arena já plantava
+	// antes de alguém saber de onde a luta vinha.
+	return EncounterBiome.IsSet() ? EncounterBiome.GetValue() : EIslandBiome::Forest;
+}
+
+EScenaryClimate ABattleArena::ResolveScenaryClimate() const
+{
+	// O chão do encontro manda; o `.ini` responde só quando ninguém situou a
+	// arena. Ele existe para alcançar deserto e clima bom sem recompilar, e
+	// continua valendo para a batalha direta e para os testes.
+	return EncounterBiome.IsSet()
+		? IslandGeography::ClimateOf(EncounterBiome.GetValue())
+		: ScenaryClimate::ConfiguredClimate();
+}
+
+void ABattleArena::RebuildScenaryForBiome()
+{
+	// As duas construções limpam antes de plantar, então refazer não duplica
+	// nada. Refazer JÁ, e não só na próxima arena: a luta que está começando
+	// é a que precisa parecer o lugar de onde veio.
+	if (ForestBackdrop)
+	{
+		const FVector CameraLocal = ArenaCamera ? ArenaCamera->GetRelativeLocation() : FVector::ZeroVector;
+		ForestBackdrop->BuildForest(CellSize, static_cast<uint32>(ForestSeed),
+			FVector2D(CameraLocal.X, CameraLocal.Y), ResolveEncounterBiome());
+		ApplyAdoptedGroundMaterial();
+	}
+
+	if (MountainRange)
+	{
+		MountainRange->BuildRange(ResolveScenaryClimate(), static_cast<uint32>(ForestSeed));
+	}
+}
+
 bool ABattleArena::AdoptAmbienceFromWorldLocation(const FVector& WorldLocation)
 {
 	UWorld* World = GetWorld();
@@ -874,6 +912,18 @@ bool ABattleArena::AdoptAmbienceFromWorldLocation(const FVector& WorldLocation)
 	{
 		return false;
 	}
+
+	// ANTES da sondagem, de propósito: as duas recusas abaixo dizem "não há
+	// chão a herdar", e não "não sei onde a luta foi". Lutar na geleira sobre
+	// um vão sem colisão ainda é lutar na geleira.
+	EncounterBiome = IslandGeography::BiomeAt(FVector2D(WorldLocation));
+	RebuildScenaryForBiome();
+
+	// Painel de desenvolvimento, não texto de jogador: some no Shipping.
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("cenario da luta: bioma %s"),
+			IslandGeography::BiomeDebugName(EncounterBiome.GetValue())),
+		0.0f, FColor::Green, /*Key=*/22);
 
 	const FVector Alto = WorldLocation + FVector(0.0f, 0.0f, ArenaGeometria::AlturaDaSondaDeChao);
 	const FVector Baixo = WorldLocation - FVector(0.0f, 0.0f, ArenaGeometria::AlcanceDaSondaDeChao);

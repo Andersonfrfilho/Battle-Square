@@ -52,8 +52,17 @@ public:
 	 * `CameraGroundOffset` é onde a câmera pousa no chão, em espaço local:
 	 * o vazio em volta dela é o que impede uma árvore de nascer colada na
 	 * lente e tapar a batalha inteira.
+	 *
+	 * O BIOMA é o do chão onde a luta começou, e filtra as espécies pela
+	 * MESMA tabela que filtra o pedaço do mundo (`PresencaDe`). Sem ele,
+	 * lutar na geleira dava mata de floresta — a geografia sabia onde o
+	 * encontro foi, e só o cenário da briga não.
+	 *
+	 * O padrão é `Forest` porque é o que a tabela inteira, sem filtro nenhum,
+	 * já era: arena que ninguém situou continua sendo a mata de sempre.
 	 */
-	void BuildForest(float CellSize, uint32 Seed, const FVector2D& CameraGroundOffset);
+	void BuildForest(float CellSize, uint32 Seed, const FVector2D& CameraGroundOffset,
+		EIslandBiome Biome = EIslandBiome::Forest);
 
 	/**
 	 * Monta um PEDAÇO do mundo: quadrado, sem tabuleiro e sem câmera a evitar.

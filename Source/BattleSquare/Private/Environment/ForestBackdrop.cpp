@@ -841,7 +841,8 @@ AForestBackdrop::AForestBackdrop()
 	}
 }
 
-void AForestBackdrop::BuildForest(float CellSize, uint32 Seed, const FVector2D& CameraGroundOffset)
+void AForestBackdrop::BuildForest(float CellSize, uint32 Seed, const FVector2D& CameraGroundOffset,
+	EIslandBiome Biome)
 {
 	using namespace MataDoCenario;
 
@@ -849,6 +850,16 @@ void AForestBackdrop::BuildForest(float CellSize, uint32 Seed, const FVector2D& 
 	{
 		return;
 	}
+
+	// A MESMA tabela que filtra o pedaço do mundo. Uma segunda, escrita para
+	// a arena, concordaria com esta até a primeira edição — e o sintoma seria
+	// uma geleira com capim numa tela e sem capim na outra (L-032/L-033).
+	const FPresencaDoBioma Presenca = PresencaDe(Biome);
+
+	// O chão do disco pela cor do bioma, pelo caminho que `ApplyGroundMaterial`
+	// já tinha: `Count` continua querendo dizer "a cor de chão de sempre", e é
+	// o que a mata devolve. Material emprestado do mundo ainda vence os dois.
+	RegionGroundRole = Presenca.PapelDoChao;
 
 	const float RaioDoChao = GroundRadiusInCells * CellSize;
 	GroundMesh->SetRelativeScale3D(FVector(
@@ -888,10 +899,28 @@ void AForestBackdrop::BuildForest(float CellSize, uint32 Seed, const FVector2D& 
 		const FEspecie& Especie = Especies[Indice];
 		UHierarchicalInstancedStaticMeshComponent* Grupo = SpeciesClusters[Indice];
 
+		// Limpar ANTES de decidir se a espécie entra: a mesma arena pode
+		// vestir outro bioma na batalha seguinte, e o pinheiro que sobrasse
+		// da mata ficaria de pé no meio da duna.
 		Grupo->ClearInstances();
 
 		UStaticMesh* Malha = Grupo->GetStaticMesh();
 		if (!Malha)
+		{
+			continue;
+		}
+
+		const int32 Percentual = PercentualDoPapel(Presenca, Especie.Papel);
+		if (Percentual <= 0)
+		{
+			continue;
+		}
+
+		// Sem fator de área, ao contrário do pedaço do mundo: as quantidades
+		// da tabela foram escolhidas para ESTE disco, e é ele que está aqui.
+		const int32 Quantidade = FMath::RoundToInt(
+			static_cast<float>(Especie.Quantidade) * (static_cast<float>(Percentual) / 100.0f));
+		if (Quantidade <= 0)
 		{
 			continue;
 		}
@@ -911,11 +940,17 @@ void AForestBackdrop::BuildForest(float CellSize, uint32 Seed, const FVector2D& 
 		// problema em vez de resolvê-lo. Aqui capim, arbusto, árvore, dossel
 		// e pedra recebem degraus de BRILHO distintos, que é o que se lê de
 		// longe.
-		ScenaryPalette::PaintComponent(Grupo, Especie.Papel);
+		//
+		// A pedra sai da cor do BIOMA, e não da sua: pedra da cor do chão é
+		// pedra invisível, e pedra é justamente o que sobra onde não há mata.
+		const EScenaryRole PapelPintado = (Especie.Papel == EScenaryRole::Rock)
+			? Presenca.PapelDaPedra
+			: Especie.Papel;
+		ScenaryPalette::PaintComponent(Grupo, PapelPintado);
 
 		const uint32 SementeDaEspecie = BattleSpread::Scatter(Seed ^ BattleSpread::SeedFromText(Especie.Nome));
 
-		for (int32 Planta = 0; Planta < Especie.Quantidade; ++Planta)
+		for (int32 Planta = 0; Planta < Quantidade; ++Planta)
 		{
 			for (int32 Tentativa = 0; Tentativa < TentativasPorPlanta; ++Tentativa)
 			{

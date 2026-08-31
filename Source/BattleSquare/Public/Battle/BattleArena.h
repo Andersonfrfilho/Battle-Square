@@ -21,6 +21,8 @@ class AForestBackdrop;
 class AMountainRange;
 class ABattleSceneLighting;
 class APetOwnerView;
+enum class EIslandBiome : uint8;
+enum class EScenaryClimate : uint8;
 
 // T9 (tasks.md, PRES-06/07/08): scaffold da cena de combate — câmera fixa
 // enquadrando a grade 3x3, spawn de APetView a partir do estado inicial.
@@ -194,11 +196,38 @@ public:
 	 *
 	 * Devolve false quando não há chão sondável ou ele não tem material —
 	 * e aí a paleta autorada continua valendo. Degrada, não quebra.
+	 *
+	 * O BIOMA do lugar é aprendido aqui também, e não numa segunda chamada:
+	 * quem leva o jogador para a luta chama isto UMA vez, e capacidade que
+	 * depende de o chamador lembrar de um segundo passo é capacidade que
+	 * algum dia não acontece. Ele é aprendido ANTES da sondagem, para o
+	 * cenário da geleira valer mesmo quando não há chão nenhum a herdar.
 	 */
 	bool AdoptAmbienceFromWorldLocation(const FVector& WorldLocation);
 
 	/** Material herdado do mundo, ou nulo quando o chão da mata vale por si. */
 	UMaterialInterface* GetAdoptedFloorMaterial() const { return AdoptedFloorMaterial; }
+
+	/**
+	 * O bioma de onde a luta começou, ou vazio quando ninguém situou a arena.
+	 *
+	 * Vazio não é "floresta": é a ausência da pergunta, e é ela que decide se
+	 * o clima da serra sai do chão do encontro ou do `.ini`. Guardar
+	 * `Forest` no lugar do vazio apagaria essa diferença.
+	 */
+	const TOptional<EIslandBiome>& GetEncounterBiome() const { return EncounterBiome; }
+
+	/**
+	 * O clima que veste a serra: o do chão onde a luta começou, e o do `.ini`
+	 * só quando a luta não veio de lugar nenhum.
+	 *
+	 * É UMA função porque a pergunta é uma. Dois lugares decidindo isto
+	 * deixariam a serra nevada ao lado de uma mata de deserto (L-032).
+	 */
+	EScenaryClimate ResolveScenaryClimate() const;
+
+	/** O bioma que veste a mata: o do encontro, ou floresta quando não houve. */
+	EIslandBiome ResolveEncounterBiome() const;
 
 	/**
 	 * A mata que veste o entorno, ou nulo antes de BeginPlay.
@@ -379,6 +408,18 @@ protected:
 	 * o mundo empresta, portanto, veste o chão da mata.
 	 */
 	void ApplyAdoptedGroundMaterial();
+
+	/**
+	 * Refaz mata e serra com o bioma já sabido.
+	 *
+	 * Existe porque a arena nasce e roda `BeginPlay` ANTES de alguém contar de
+	 * onde a luta veio — o mesmo atraso que o chão emprestado já tinha. Como
+	 * as duas construções limpam antes de plantar, refazer é idempotente.
+	 */
+	void RebuildScenaryForBiome();
+
+	/** De onde a luta veio, quando alguém contou. Ver GetEncounterBiome. */
+	TOptional<EIslandBiome> EncounterBiome;
 
 	/** Chão emprestado pelo mundo (AdoptAmbienceFromWorldLocation). */
 	UPROPERTY()

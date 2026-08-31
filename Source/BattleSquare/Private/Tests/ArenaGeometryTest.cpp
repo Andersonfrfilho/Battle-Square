@@ -3,6 +3,9 @@
 #include "Battle/BattleArena.h"
 #include "Battle/BattleTypes.h"
 #include "Environment/ForestBackdrop.h"
+#include "Environment/IslandGeography.h"
+#include "Environment/ScenaryClimate.h"
+#include "Environment/ScenaryPalette.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Misc/AutomationTest.h"
@@ -44,6 +47,9 @@ namespace ArenaCena
 		Malha->SetCollisionResponseToAllChannels(ECR_Block);
 		Chao->SetRootComponent(Malha);
 		Malha->RegisterComponent();
+		// DEPOIS de registrar: componente que ainda não é raiz tem transformada
+		// própria, e a laje nascia na origem por mais longe que se pedisse.
+		Malha->SetWorldLocation(Onde);
 		return Chao;
 	}
 }
@@ -670,5 +676,162 @@ bool FFunduraSeVeNaGeometriaTest::RunTest(const FString&)
 		ABattleArena::GetCellSurfaceHeight(static_cast<uint8>(ECellProperty::ShallowWater))
 			< ABattleArena::GetCellSurfaceHeight(static_cast<uint8>(ECellProperty::Water)));
 
+	return true;
+}
+
+namespace ArenaBiomaDaLuta
+{
+	/**
+	 * Um ponto no setor de geleira, longe do miolo de mata e da faixa de praia.
+	 *
+	 * Escrito em ângulo e raio, e não em X e Y à mão: o que importa é CAIR no
+	 * setor: um par de coordenadas mágicas silenciaria o teste no dia em que
+	 * os setores mudassem de largura, em vez de reprovar.
+	 */
+	FVector2D PontoNaGeleira()
+	{
+		const float Angulo = FMath::DegreesToRadians(252.0f);
+		const float Raio = 12000.0f;
+		return FVector2D(Raio * FMath::Cos(Angulo), Raio * FMath::Sin(Angulo));
+	}
+}
+
+// A luta se passa no lugar onde ela começou.
+//
+// A arena lia o clima do `.ini`, um só para o mapa inteiro: lutar na geleira
+// dava mata de floresta e serra com a neve do arquivo. A geografia SABIA onde
+// o encontro foi — só o cenário da briga não sabia.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FArenaWearsEncounterBiomeTest,
+	"BattleSquare.Battle.Arena.WearsEncounterBiome",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FArenaWearsEncounterBiomeTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = ArenaCena::CriarMundoDaGeometria();
+
+	const FVector2D NaGeleira = ArenaBiomaDaLuta::PontoNaGeleira();
+	if (!TestEqual(TEXT("O ponto escolhido é geleira mesmo"),
+		static_cast<int32>(IslandGeography::BiomeAt(NaGeleira)),
+		static_cast<int32>(EIslandBiome::Glacier)))
+	{
+		ArenaCena::DestruirMundoDaGeometria(World);
+		return false;
+	}
+
+	UMaterialInterface* MaterialDoLugar = LoadObject<UMaterialInterface>(
+		nullptr, TEXT("/Engine/EngineMaterials/WorldGridMaterial.WorldGridMaterial"));
+	const FVector Chao(NaGeleira.X, NaGeleira.Y, 0.0f);
+	ArenaCena::CriarChao(World, Chao, MaterialDoLugar);
+
+	ABattleArena* Arena = World->SpawnActor<ABattleArena>(ABattleArena::StaticClass(),
+		FVector(NaGeleira.X, NaGeleira.Y, 100000.0f), FRotator::ZeroRotator);
+
+	// A arena nasce e monta o cenário ANTES de alguém contar de onde a luta
+	// veio — é essa ordem que obriga a mata a ser refeita, e é ela que o
+	// teste precisa reproduzir.
+	Arena->DispatchBeginPlay();
+
+	TestTrue(TEXT("Adotou o ambiente do lugar do encontro"),
+		Arena->AdoptAmbienceFromWorldLocation(Chao));
+
+	if (!TestTrue(TEXT("E aprendeu de onde a luta veio"),
+		Arena->GetEncounterBiome().IsSet()))
+	{
+		ArenaCena::DestruirMundoDaGeometria(World);
+		return false;
+	}
+	TestEqual(TEXT("O bioma da luta é o do chão do encontro"),
+		static_cast<int32>(Arena->GetEncounterBiome().GetValue()),
+		static_cast<int32>(EIslandBiome::Glacier));
+
+	// O chão da mata pela MESMA tabela que veste o pedaço do mundo. Uma
+	// segunda, escrita para a arena, concordaria com esta até a primeira
+	// edição — e o sintoma seria geleira com capim numa tela e sem na outra.
+	if (TestNotNull(TEXT("A mata da arena existe"), Arena->GetForestBackdrop()))
+	{
+		TestEqual(TEXT("E veste o chão do bioma da luta"),
+			static_cast<int32>(Arena->GetForestBackdrop()->GetRegionGroundRole()),
+			static_cast<int32>(EScenaryRole::GlacierIce));
+	}
+
+	// A serra do fundo pelo mesmo lugar: gelo no horizonte é o que faz a
+	// geleira ter tamanho. Com o `.ini` mandando, ela saía temperada.
+	TestEqual(TEXT("A serra sai no clima do lugar, não no do arquivo"),
+		static_cast<int32>(Arena->ResolveScenaryClimate()),
+		static_cast<int32>(EScenaryClimate::Cold));
+
+	ArenaCena::DestruirMundoDaGeometria(World);
+	return true;
+}
+
+// Onde a luta foi é uma pergunta, e o chão herdado é outra.
+//
+// Vão sem colisão sobre a geleira ainda é geleira. Aprender o bioma DEPOIS da
+// sondagem faria a batalha sobre um buraco voltar a ser floresta — e as duas
+// recusas de herança continuam recusando, porque elas falam do material.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FArenaLearnsBiomeWithoutGroundTest,
+	"BattleSquare.Battle.Arena.LearnsBiomeWithoutGround",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FArenaLearnsBiomeWithoutGroundTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = ArenaCena::CriarMundoDaGeometria();
+	ABattleArena* Arena = World->SpawnActor<ABattleArena>();
+
+	const FVector2D NaGeleira = ArenaBiomaDaLuta::PontoNaGeleira();
+	TestFalse(TEXT("Sem chão embaixo, não há material a herdar"),
+		Arena->AdoptAmbienceFromWorldLocation(
+			FVector(NaGeleira.X, NaGeleira.Y, 500000.0f)));
+	TestNull(TEXT("E nada foi emprestado"), Arena->GetAdoptedFloorMaterial());
+
+	if (TestTrue(TEXT("Mas o lugar da luta foi aprendido"),
+		Arena->GetEncounterBiome().IsSet()))
+	{
+		TestEqual(TEXT("E é a geleira"),
+			static_cast<int32>(Arena->GetEncounterBiome().GetValue()),
+			static_cast<int32>(EIslandBiome::Glacier));
+	}
+	TestEqual(TEXT("A serra acompanha o lugar mesmo sem chão herdado"),
+		static_cast<int32>(Arena->ResolveScenaryClimate()),
+		static_cast<int32>(EScenaryClimate::Cold));
+
+	ArenaCena::DestruirMundoDaGeometria(World);
+	return true;
+}
+
+// Arena que ninguém situou continua sendo a mata de sempre.
+//
+// A tela de batalha avulsa e os testes não nascem de encontro nenhum. O `.ini`
+// existe para alcançar deserto e clima bom sem recompilar, e ele continua
+// sendo a resposta — o encontro só passa na frente quando existe.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FArenaWithoutEncounterKeepsConfiguredClimateTest,
+	"BattleSquare.Battle.Arena.WithoutEncounterKeepsConfiguredClimate",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FArenaWithoutEncounterKeepsConfiguredClimateTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = ArenaCena::CriarMundoDaGeometria();
+	ABattleArena* Arena = World->SpawnActor<ABattleArena>();
+	Arena->DispatchBeginPlay();
+
+	TestFalse(TEXT("Ninguém contou de onde a luta veio"),
+		Arena->GetEncounterBiome().IsSet());
+	TestEqual(TEXT("Então a serra sai no clima do arquivo"),
+		static_cast<int32>(Arena->ResolveScenaryClimate()),
+		static_cast<int32>(ScenaryClimate::ConfiguredClimate()));
+
+	// `Count` quer dizer "a cor de chão de sempre", que é a da mata. Guardar
+	// `Forest` no lugar do vazio apagaria a diferença entre não saber e saber.
+	if (TestNotNull(TEXT("A mata da arena existe"), Arena->GetForestBackdrop()))
+	{
+		TestEqual(TEXT("E o chão é o da mata, sem papel de bioma"),
+			static_cast<int32>(Arena->GetForestBackdrop()->GetRegionGroundRole()),
+			static_cast<int32>(EScenaryRole::Count));
+	}
+
+	ArenaCena::DestruirMundoDaGeometria(World);
 	return true;
 }

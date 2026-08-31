@@ -68,6 +68,56 @@ E a maioria já existe — falta o rosto:
 Dar rosto a um controlador é o que o torna legível: o jogador não lê um gráfico
 de estoque de madeira, mas entende que a Mãe Natureza está brava.
 
+
+## O laço: ela amortece, nós equilibramos
+
+**Decidido em 31/08/2026.** A Mãe Natureza não substitui o desenho — ela compra
+tempo e **produz a evidência** de onde o desenho está errado.
+
+> jogadores jogam → ela absorve o tranco e mantém o mundo jogável → cada
+> intervenção dela vira REGISTRO → lemos o registro e ajustamos os números-base
+
+**Ela é o amortecedor. O registro é o instrumento. Nós somos o equilíbrio.**
+
+É por isso que "ela DELATA quando age" deixa de ser um cuidado e vira a peça
+central: sem o registro, equilibrar depois dos jogadores é adivinhar depois dos
+jogadores.
+
+### Ajuste a TORNEIRA, nunca o balde
+
+Mudar o quanto o mundo dá de agora em diante é ajuste. Mexer no que o jogador
+já ganhou é confisco — e é sentido exatamente como o castigo que decidimos
+evitar.
+
+| torneira (pode mexer) | balde (não se toca) |
+|---|---|
+| prazo de rebrota | a coleção dele |
+| demanda do comerciante | os atributos que ele treinou |
+| preço da academia | as especialidades escolhidas |
+| prêmio do ranking | o que ele já coletou |
+
+Um jogador que investiu numa estratégia e a viu ser cortada sente punição, não
+balanço — mesmo quando o corte é justo.
+
+### O laço precisa ser CURTO
+
+Se o reequilíbrio vem em três meses, os primeiros jogadores viveram três meses
+num mundo torto. E são justamente eles que decidem se o jogo tem futuro.
+
+Disso decorre uma exigência técnica: **todo número de balanço vive em
+CONFIGURAÇÃO, não em código.** Mudar rebrota, demanda ou preço tem de ser editar
+um arquivo — não recompilar e publicar.
+
+### E é assim que os números-chute são resolvidos
+
+O roteiro de verificação lista os números que são palpite meu: a proporção dos
+três desfechos da lama, os prazos de congelamento, a esquiva por reflexo, os
+segundos por ponto de treino, o 200% da luz. **Nenhum tem base** — existem para
+o sistema rodar.
+
+Equilibrar depois dos jogadores não é plano B para eles. **É o único jeito de
+acertá-los.**
+
 ## Perguntas em aberto
 
 - **Dá para agradar um deus?** Oferenda e santuário dão agência ao jogador sobre

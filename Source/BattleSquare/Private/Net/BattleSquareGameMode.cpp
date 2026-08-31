@@ -19,6 +19,7 @@
 #include "Meta/PetAttributeProgression.h"
 #include "World/WorldEncounterFlow.h"
 #include "World/WorldExplorerCharacter.h"
+#include "Environment/AuroraCurtain.h"
 #include "Environment/CaveSystem.h"
 #include "Environment/ForestBackdrop.h"
 #include "Environment/FreshWater.h"
@@ -982,6 +983,19 @@ void ABattleSquareGameMode::MostrarCeuDoMundo()
 		Linha += TEXT(" | AURORA BOREAL");
 	}
 
+	// A CORTINA obedece ao clima da GELEIRA, e a linha acima ao clima de quem
+	// anda: são duas perguntas diferentes — "está acima de mim?" e "está acima
+	// da geleira?" — e as duas passam pela mesma `AuroraStrength`, que continua
+	// sendo a única a decidir quando há aurora (L-032).
+	//
+	// Sem isto a cortina só acenderia para quem já estivesse no gelo, e o
+	// jogador nunca veria de longe o que o faria ir até lá.
+	if (AuroraDoCeu)
+	{
+		AuroraDoCeu->SetStrength(WorldNightSky::AuroraStrength(
+			IslandGeography::ClimateOf(EIslandBiome::Glacier), Hora));
+	}
+
 	FBattleDebugScreen::Show(Linha, 0.0f, CorDoCeu, /*Key=*/761);
 }
 
@@ -1656,6 +1670,22 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 		FString::Printf(TEXT("vulcões: %d com cratera de lava (%d pedaços de derrame)"),
 			VulcoesPlantados, DerramesDoVulcao),
 		0.0f, FColor::Red, /*Key=*/728);
+
+	// A AURORA fica sobre a geleira, e não sobre quem anda. Amarrá-la ao
+	// jogador daria uma cortina que nunca se alcança nem se deixa para trás —
+	// e aurora que acompanha o passo é lanterna, não céu.
+	//
+	// Nasce apagada e é o relógio que a acende, em `MostrarCeuDoMundo`.
+	const FVector2D CentroDaAurora = AAuroraCurtain::SkyCenterUnits();
+	AAuroraCurtain* Aurora = World->SpawnActor<AAuroraCurtain>(
+		AAuroraCurtain::StaticClass(),
+		FVector(Origem.X + CentroDaAurora.X, Origem.Y + CentroDaAurora.Y, AlturaDoChao),
+		FRotator::ZeroRotator, Parametros);
+	if (Aurora)
+	{
+		Aurora->BuildCurtain(static_cast<uint32>(WorldScenerySeed));
+		AuroraDoCeu = Aurora;
+	}
 
 	FBattleDebugScreen::Show(
 		FString::Printf(TEXT("mundo: sol e %d pedaços plantados (chão em Z=%.0f%s)"),

@@ -181,6 +181,28 @@ enum class EScenaryRole : uint8
 	FreshWater,
 
 	/**
+	 * A cortina BAIXA da aurora — o verde que quase todo mundo já viu em foto.
+	 *
+	 * Emissivo é o que ela deveria ser, e não é: a paleta pinta cor, não brilho
+	 * (`PaintComponent` monta um `BasicShapeMaterial`, que não tem canal de
+	 * emissão). Então o verde entra aqui CLARO ao ponto de se sustentar contra
+	 * o céu de noite, e quem constrói a cortina escurece o mesmo verde conforme
+	 * a aurora enfraquece — nunca troca a matiz. Duas matizes para a mesma
+	 * aurora seriam duas auroras no dia em que alguém editasse uma.
+	 */
+	AuroraVeil,
+
+	/**
+	 * O ALTO da mesma cortina, arroxeado.
+	 *
+	 * A aurora real muda de cor com a altura porque muda o gás que acende; aqui
+	 * ela muda de cor para a cortina ter TOPO. Um retângulo de verde chapado
+	 * não tem direção nenhuma, e é justamente a direção que diz que aquilo
+	 * pende do céu em vez de ser um muro plantado no gelo.
+	 */
+	AuroraCrown,
+
+	/**
 	 * Quantos papéis existem. Não é papel nenhum.
 	 *
 	 * Existe para o teste poder percorrer a lista inteira e cobrar `case` de
@@ -243,4 +265,19 @@ namespace ScenaryPalette
 	 * na tela — o padrão que já custou três defeitos neste projeto.
 	 */
 	BATTLESQUARE_API int32 PaintComponent(UPrimitiveComponent* Component, EScenaryRole Role);
+
+	/**
+	 * A mesma pintura, com um FATOR de brilho de 0 a 1.
+	 *
+	 * Existe para a aurora, que acende e apaga com a noite: a matiz continua
+	 * saindo daqui e só a QUANTIDADE dela vem de fora. Quem precisa modular
+	 * escolheria um verde próprio, e aí seriam duas auroras de cores diferentes
+	 * no dia em que alguém editasse a da paleta (L-032).
+	 *
+	 * Reaproveita a tinta que o componente já tem quando ela existe. Criar uma
+	 * instância dinâmica nova a cada quadro trocaria o material sessenta vezes
+	 * por segundo para pintar quase sempre a mesma cor.
+	 */
+	BATTLESQUARE_API int32 TintComponent(
+		UPrimitiveComponent* Component, EScenaryRole Role, float Brightness);
 }

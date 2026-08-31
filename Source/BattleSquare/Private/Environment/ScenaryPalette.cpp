@@ -185,6 +185,16 @@ namespace PaletaDoCenario
 	const FLinearColor TurquesaDoRio(0.235f, 0.514f, 0.545f);
 
 	/**
+	 * O verde da aurora, e o roxo do alto dela.
+	 *
+	 * Os dois são os valores mais SATURADOS da paleta inteira, de propósito: sem
+	 * canal de emissão, o único jeito de a cortina se sustentar contra o céu de
+	 * noite é a cor pura. Qualquer cinza misturado aqui a apaga.
+	 */
+	const FLinearColor VerdeDaAurora(0.302f, 0.945f, 0.545f);
+	const FLinearColor RoxoDaAurora(0.545f, 0.361f, 0.882f);
+
+	/**
 	 * A lama do brejo: escura, parda e quase sem saturação.
 	 *
 	 * Fica em 0,10 de luminância contra os 0,22 do chão de mata. É uma
@@ -337,6 +347,12 @@ FLinearColor ScenaryPalette::ColorFor(EScenaryRole Role, FName MaterialSlot)
 	case EScenaryRole::FreshWater:
 		return TurquesaDoRio;
 
+	case EScenaryRole::AuroraVeil:
+		return VerdeDaAurora;
+
+	case EScenaryRole::AuroraCrown:
+		return RoxoDaAurora;
+
 	case EScenaryRole::Count:
 		break;
 	}
@@ -352,22 +368,34 @@ UMaterialInterface* ScenaryPalette::ColorableBaseMaterial()
 
 int32 ScenaryPalette::PaintComponent(UPrimitiveComponent* Component, EScenaryRole Role)
 {
+	return TintComponent(Component, Role, 1.0f);
+}
+
+int32 ScenaryPalette::TintComponent(
+	UPrimitiveComponent* Component, EScenaryRole Role, float Brightness)
+{
 	if (!Component) { return 0; }
 
 	UMaterialInterface* Base = ColorableBaseMaterial();
 	if (!Base) { return 0; }
 
 	const TArray<FName> Slots = Component->GetMaterialSlotNames();
+	const float Brilho = FMath::Max(0.0f, Brightness);
 	int32 Pintados = 0;
 
 	for (int32 Indice = 0; Indice < Slots.Num(); ++Indice)
 	{
 		UMaterialInstanceDynamic* Tinta =
-			Component->CreateDynamicMaterialInstance(Indice, Base);
+			Cast<UMaterialInstanceDynamic>(Component->GetMaterial(Indice));
+		if (!Tinta)
+		{
+			Tinta = Component->CreateDynamicMaterialInstance(Indice, Base);
+		}
+
 		if (!Tinta) { continue; }
 
 		Tinta->SetVectorParameterValue(
-			PaletaDoCenario::ParametroDeCor, ColorFor(Role, Slots[Indice]));
+			PaletaDoCenario::ParametroDeCor, ColorFor(Role, Slots[Indice]) * Brilho);
 		++Pintados;
 	}
 

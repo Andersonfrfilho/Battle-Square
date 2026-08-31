@@ -315,6 +315,16 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<class ABattleSceneLighting> CenaDoMundo;
 
+	/**
+	 * A aurora sobre a geleira, para o relógio ter o que acender.
+	 *
+	 * Guardada porque ela responde ao HORÁRIO: quem a plantasse e a esquecesse
+	 * teria uma cortina de brilho fixo, e aurora que não apaga de dia é mancha
+	 * verde no céu ao meio-dia.
+	 */
+	UPROPERTY(Transient)
+	TObjectPtr<class AAuroraCurtain> AuroraDoCeu;
+
 	FTimerHandle TrainingTimer;
 	float TrainingCarrySeconds = 0.0f;
 	FTrainerProfile CachedTrainer;

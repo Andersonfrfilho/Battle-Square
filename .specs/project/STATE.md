@@ -746,6 +746,38 @@ find "$HOME/Library/Logs/Unreal Engine/BattleSquareEditor" Saved/Logs -newer <ma
 **Previne:** fechar o Editor antes de compilar (a regra do `CLAUDE.md` já dizia, e é ESTE o preço de ignorá-la). E o gatilho: **nome de teste novo com zero ocorrência no log da suíte é binário velho até prova em contrário** — nunca "o teste não foi registrado".
 
 
+### L-051: a armadilha do unity build também pega CONSTANTE, e também fora de teste
+
+**Contexto:** um arquivo de teste novo (`AuroraCurtainTest.cpp`) entrou, o build
+adaptativo mudou o agrupamento do unity, e a compilação quebrou em
+`WorldBoundaryWater.cpp:73` — arquivo que ninguém tinha tocado:
+
+```
+error: declaration shadows a variable in namespace '(anonymous)' [-Werror,-Wshadow]
+   73 | const int32 Lados = FMath::Max(8, ShoreSegments);
+note: previous declaration is here
+   20 | constexpr FLado Lados[4] = {      // CaveLabyrinth.cpp
+```
+
+**O mecanismo é o de L-042, com duas extensões.** A primeira: não era função,
+era **constante** em namespace anônimo. A segunda: os dois arquivos são de
+**produção**, não de teste — e `Tools/audit_test_helper_names.sh` só varre
+`Private/Tests/`. A colisão ficou latente até o dia em que um arquivo novo mudou
+o agrupamento, exatamente como em L-042.
+
+**Por que não virou sonda nova:** aqui o compilador JÁ é a sonda. `-Wshadow` com
+`-Werror` reprovou em voz alta, e o modo de falhar silencioso — dois homônimos
+virando sobrecarga e a chamada ligando na errada — é de função, que a sonda
+existente cobre. O que a sonda não pode devolver é o aviso ANTES do
+reagrupamento; e para isso o preço de um varredor difuso sobre todo local de
+todo arquivo é maior que o de ler o erro do clang.
+
+**Previne:** nome em namespace anônimo, de arquivo de produção ou de teste, é
+nome de MÓDULO INTEIRO — `LadosDoLabirinto`, não `Lados`. E build que quebra em
+arquivo intocado depois de um arquivo novo entrar é reagrupamento do unity até
+prova em contrário, nunca regressão do arquivo acusado.
+
+
 ### DP-mapa-01: quando a ilha crescer demais, o mapa separa por ÁREA
 
 **Decidido em 30/08/2026, não construído.**

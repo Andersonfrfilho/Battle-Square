@@ -17,7 +17,7 @@ namespace
 	};
 
 	/** Os quatro lados, e o par que precisa cair JUNTO para a passagem existir. */
-	constexpr FLado Lados[4] = {
+	constexpr FLado LadosDoLabirinto[4] = {
 		{  0,  1, WallNorth, WallSouth },
 		{  1,  0, WallEast,  WallWest  },
 		{  0, -1, WallSouth, WallNorth },
@@ -28,7 +28,7 @@ namespace
 	int32 SaidasDe(const FCaveGrid& Planta, int32 Coluna, int32 Linha)
 	{
 		int32 Abertas = 0;
-		for (const FLado& Lado : Lados)
+		for (const FLado& Lado : LadosDoLabirinto)
 		{
 			if (!Planta.HasWall(Coluna, Linha, Lado.Parede))
 			{
@@ -60,7 +60,7 @@ namespace
 			const int32 C = Casa % Planta.Columns;
 			const int32 L = Casa / Planta.Columns;
 
-			for (const FLado& Lado : Lados)
+			for (const FLado& Lado : LadosDoLabirinto)
 			{
 				if (Planta.HasWall(C, L, Lado.Parede))
 				{
@@ -125,8 +125,8 @@ CaveLabyrinth::FCaveGrid CaveLabyrinth::Carve(int32 Columns, int32 Rows, uint32 
 
 		for (int32 Qual = 0; Qual < 4; ++Qual)
 		{
-			const int32 ProximaColuna = Coluna + Lados[Qual].PassoColuna;
-			const int32 ProximaLinha = Linha + Lados[Qual].PassoLinha;
+			const int32 ProximaColuna = Coluna + LadosDoLabirinto[Qual].PassoColuna;
+			const int32 ProximaLinha = Linha + LadosDoLabirinto[Qual].PassoLinha;
 			if (!Planta.Contains(ProximaColuna, ProximaLinha))
 			{
 				continue;
@@ -146,7 +146,7 @@ CaveLabyrinth::FCaveGrid CaveLabyrinth::Carve(int32 Columns, int32 Rows, uint32 
 		}
 
 		const int32 Escolhido = CandidatoLado[BattleSpread::Below(Seed, Decisao++, Quantos)];
-		const FLado& Lado = Lados[Escolhido];
+		const FLado& Lado = LadosDoLabirinto[Escolhido];
 		const int32 ProximaColuna = Coluna + Lado.PassoColuna;
 		const int32 ProximaLinha = Linha + Lado.PassoLinha;
 		const int32 Vizinho = Planta.Index(ProximaColuna, ProximaLinha);

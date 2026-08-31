@@ -26,7 +26,7 @@ olho humano no PIE · ⛔ ainda feio ou ainda inexistente.
 | 6 | ✅ **Mata da casa** | *"a floresta desapareceu"* — o miolo de mata tinha 2600 fixos, e um pedaço de mundo tem 6400: **nem um pedaço inteiro cabia**, então o vizinho de quem nasce já era deserto | 35% do raio da ilha (7000 hoje), com teste que mede o pedaço de nascimento **e os quatro vizinhos de lado** |
 | 7 | 👁 **Pântano** | desenhava **exatamente como a mata**: `PresencaDe` não tinha caso para `Swamp` e caía na tabela da floresta. A geografia sabia que ali era brejo, o clima sabia, o mapa sabia — só a tela não | chão de lama escura, poça verde (água parada não reflete o céu como o mar), tronco caído em dobro e **nenhuma copa alta** |
 | 8 | 👁 **Deserto** | o chão era um ladrilho **plano**. Areia plana com pedra em cima não é deserto, é um pátio bege | **duna**: meia esfera enterrada até o meio, 14 por pedaço, na cor do próprio chão — enterrar a metade é o que faz encontrar o plano numa curva em vez de num degrau |
-| 9 | 👁/⛔ **Geleira** | plano branco com 18% de conífera. Sem escala e sem relevo | ganhou o mesmo relevo do deserto (10 montes, mais altos e mais estreitos: gelo empurrado, não areia soprada). **Falta a aurora**, que o jogador pediu — visível só de noite, só neste setor |
+| 9 | ✅ **Geleira** | plano branco com 18% de conífera. Sem escala e sem relevo | relevo do deserto com outra mão (10 montes, mais altos e mais estreitos: gelo empurrado, não areia soprada) **e a aurora**: `AAuroraCurtain`, três fitas em arco que serpenteiam, verde embaixo e violeta no topo, a 9000 de altura, com luz de verdade na base. Ela mora SOBRE A GELEIRA — amarrada a quem anda seria lanterna, não céu — e o relógio a acende pela MESMA `WorldNightSky::AuroraStrength` que escreve a linha do painel |
 | 10 | 👁 **Vulcão** | **a linha anterior desta lista estava errada**: a lava e os derrames já existiam e já eram pintados de `LavaGlow`. O defeito real era outro — pintar de laranja **não é acender**. `PaintComponent` põe cor num material que não emite luz, e à noite a cratera ficava tão escura quanto o basalto ao lado | luz de verdade na **boca** da cratera (no centro do ator ela acenderia a rocha por dentro), alcance de 2.2 raios da base, mais coluna de fumaça que **alarga ao subir** — largura constante é um cano, e cano não conta que aquilo se dissipa |
 
 ---
@@ -50,7 +50,16 @@ olho humano no PIE · ⛔ ainda feio ou ainda inexistente.
    fora*: custou uma tabela e devolveu um bioma inteiro.
 2. ~~**Deserto** (8) e **Geleira** (9)~~ — feito junto, como previsto: uma causa
    só (chão plano), uma cura só (monte enterrado até o meio). A **aurora** da
-   geleira ficou de fora, e ela pertence ao céu (14), não ao terreno.
+   geleira veio depois, junto com o céu (14), porque é lá que ela mora — e o
+   atraso valeu: a regra de QUANDO há aurora já estava escrita e testada em
+   `WorldNightSky::AuroraStrength`, então a cortina não precisou decidir nada.
+   Ela cobrou duas lições. A primeira: pintar dentro do CONSTRUTOR cria a
+   instância dinâmica de material no arquétipo da CLASSE, e a cor vaza para toda
+   aurora que nascer depois — o vulcão já pintava na montagem, e não no
+   construtor, sem que ninguém tivesse escrito por quê. A segunda: a linha do
+   painel pergunta "está acima de MIM?" e a cortina pergunta "está acima da
+   GELEIRA?" — duas perguntas diferentes que precisam passar pela mesma função,
+   senão o texto diz aurora e o céu fica preto (L-032).
 3. ~~**Vulcão** (10)~~ — feito, e ele corrigiu esta própria lista: o item
    afirmava que faltava lava, e a lava estava lá desde o começo.
 4. ~~**Cavernas** (11)~~ — feito na sequência, como previsto: vizinha do vulcão

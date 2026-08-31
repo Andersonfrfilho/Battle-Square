@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Battle/BattleArena.h"
+#include "IslandBiomeTestHelper.h"
 #include "Battle/BattleTypes.h"
 #include "Environment/ForestBackdrop.h"
 #include "Environment/IslandGeography.h"
@@ -716,6 +717,11 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FArenaWearsEncounterBiomeTest::RunTest(const FString& Parameters)
 {
+	// UMA ILHA, UM BIOMA: "o ponto na geleira" deixou de ser uma direção e
+	// passou a ser uma ILHA de geleira. O teste continua querendo geleira —
+	// ele só pede de outro jeito.
+	const IlhaDeTeste::FBiomaTemporario IlhaDeGeleira(TEXT("Glacier"));
+
 	UWorld* World = ArenaCena::CriarMundoDaGeometria();
 
 	const FVector2D NaGeleira = ArenaBiomaDaLuta::PontoNaGeleira();
@@ -785,6 +791,11 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FArenaLearnsBiomeWithoutGroundTest::RunTest(const FString& Parameters)
 {
+	// UMA ILHA, UM BIOMA: "o ponto na geleira" deixou de ser uma direção e
+	// passou a ser uma ILHA de geleira. O teste continua querendo geleira —
+	// ele só pede de outro jeito.
+	const IlhaDeTeste::FBiomaTemporario IlhaDeGeleira(TEXT("Glacier"));
+
 	UWorld* World = ArenaCena::CriarMundoDaGeometria();
 	ABattleArena* Arena = World->SpawnActor<ABattleArena>();
 

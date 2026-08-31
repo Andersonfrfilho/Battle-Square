@@ -69,8 +69,10 @@ namespace IslandFeatureLayout
 		 * 180° é o meio do setor de vulcão da geografia (144° a 216°), para o
 		 * marco cair no bioma que ele anuncia em vez de perto da divisa.
 		 */
-		FORCEINLINE float AnelDoVulcao() { return DoRaio(0.75f); }
-		constexpr float AnguloDoVulcao = 180.0f;
+		// A geografia é a dona: ela precisa do mesmo ponto para saber que o
+		// chão ali é queimado.
+		FORCEINLINE float AnelDoVulcao() { return IslandGeography::VolcanoRingUnits(); }
+		FORCEINLINE float AnguloDoVulcao() { return IslandGeography::VolcanoAngleDegrees(); }
 
 		/**
 		 * A caverna pequena mora na orla, e é por isso que ela tem água.
@@ -101,7 +103,7 @@ namespace IslandFeatureLayout
 		 * caverna de lava ficaria longe demais do monte para alguém ligar as
 		 * duas coisas olhando.
 		 */
-		FORCEINLINE float AlcanceDoCalor() { return DoRaio(0.30f); }
+		FORCEINLINE float AlcanceDoCalor() { return IslandGeography::VolcanoHeatRadiusUnits(); }
 
 		FFeaturePlacement Montanha(float AnguloEmGraus)
 		{
@@ -218,7 +220,7 @@ namespace IslandFeatureLayout
 		Pecas.Add(Montanha(210.0f));
 		Pecas.Add(Caverna(270.0f, AnelDaCavernaDaAgua(), ACaveSystem::SmallCaveSide));
 		Pecas.Add(Montanha(330.0f));
-		Pecas.Add(Vulcao(AnguloDoVulcao, AnelDoVulcao()));
+		Pecas.Add(Vulcao(AnguloDoVulcao(), AnelDoVulcao()));
 
 		TemperaAsCavernas(Pecas);
 		return Pecas;

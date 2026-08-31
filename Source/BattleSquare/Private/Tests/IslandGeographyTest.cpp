@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Environment/IslandGeography.h"
+#include "IslandBiomeTestHelper.h"
 
 #include "Battle/BattleTypes.h"
 #include "Environment/IslandFeatureLayout.h"
@@ -147,11 +148,29 @@ bool FIslandGeographyEveryBiomeExistsTest::RunTest(const FString& Parameters)
 	Encontrados.Add(IslandGeography::BiomeAt(
 		PontoDaIlha(0.0f, IslandGeography::LandRadiusUnits() - TolerenciaDaIlha)));
 
-	TestTrue(TEXT("A mata existe"), Encontrados.Contains(EIslandBiome::Forest));
-	TestTrue(TEXT("O deserto existe"), Encontrados.Contains(EIslandBiome::Desert));
-	TestTrue(TEXT("O vulcão existe"), Encontrados.Contains(EIslandBiome::Volcano));
-	TestTrue(TEXT("A geleira existe"), Encontrados.Contains(EIslandBiome::Glacier));
-	TestTrue(TEXT("A praia existe"), Encontrados.Contains(EIslandBiome::Beach));
+	// UMA ILHA, UM BIOMA. A varredura de uma ilha só encontra o bioma DELA
+	// mais a praia — e é isso que a ilha promete agora.
+	//
+	// O teste antigo cobrava os cinco biomas numa varredura só, porque a ilha
+	// era fatiada em setores de pizza e cada bioma ficava com 0,39 km². A
+	// intenção dele continua valendo e ficou mais forte: bioma que existe no
+	// enum e não existe em ilha nenhuma é bioma que ninguém encontra. O que
+	// mudou é ONDE se procura.
+	TestTrue(TEXT("A ilha tem o bioma dela"),
+		Encontrados.Contains(IslandGeography::IslandBiome()));
+	TestTrue(TEXT("E a praia, que é a borda de qualquer ilha"),
+		Encontrados.Contains(EIslandBiome::Beach));
+
+	// TODO bioma do enum precisa ser configurável como ilha — senão ele
+	// continua sendo um valor que nenhum jogador alcança, que era o defeito
+	// que este teste existia para pegar.
+	for (const TCHAR* Nome : { TEXT("Forest"), TEXT("Desert"), TEXT("Glacier"),
+		TEXT("Volcano"), TEXT("Swamp") })
+	{
+		const IlhaDeTeste::FBiomaTemporario Ilha(Nome);
+		TestTrue(*FString::Printf(TEXT("A ilha de %s existe e se alcança"), Nome),
+			IslandGeography::BiomeAt(FVector2D::ZeroVector) == IslandGeography::IslandBiome());
+	}
 
 	return true;
 }
@@ -290,8 +309,16 @@ bool FIslandGeographySectorClimateIgnoresDistanceTest::RunTest(const FString& Pa
 	TestTrue(TEXT("longe da ilha o clima por posição realmente difere do clima do setor"),
 		bAchouSetorQueMuda);
 
-	// E o horizonte inteiro não pode ser um clima só: é isso que dá gelo a uns
-	// picos e deixa outros pelados.
+	// O HORIZONTE É DE UM CLIMA SÓ, e isso é PERDA assumida.
+	//
+	// Antes ele variava por rumo, e era o que dava gelo a uns picos e deixava
+	// outros pelados na mesma serra. Com uma ilha por bioma, a serra de uma
+	// ilha de mata é toda temperada — o que é coerente, e é menos bonito.
+	//
+	// A variedade não sumiu do jogo: ela mudou de escala. Era entre rumos da
+	// mesma ilha; passou a ser entre ILHAS. E o teste agora cobra isso, que é
+	// o que sobrou de verdadeiro na intenção original — serra não pode ser
+	// igual em todo lugar.
 	TSet<int32> ClimasDoHorizonte;
 	for (int32 Grau = 0; Grau < 360; Grau += 5)
 	{
@@ -299,10 +326,19 @@ bool FIslandGeographySectorClimateIgnoresDistanceTest::RunTest(const FString& Pa
 			PontoDaIlha(static_cast<float>(Grau), RaioDoHorizonte))));
 	}
 
-	TestTrue(TEXT("o horizonte tem frio em algum rumo"),
-		ClimasDoHorizonte.Contains(static_cast<int32>(EScenaryClimate::Cold)));
-	TestTrue(TEXT("o horizonte tem deserto em algum rumo"),
-		ClimasDoHorizonte.Contains(static_cast<int32>(EScenaryClimate::Desert)));
+	TestEqual(TEXT("numa ilha, o horizonte inteiro é do clima dela"),
+		ClimasDoHorizonte.Num(), 1);
+
+	TSet<int32> ClimasDasIlhas;
+	for (const TCHAR* Nome : { TEXT("Forest"), TEXT("Glacier"), TEXT("Volcano") })
+	{
+		const IlhaDeTeste::FBiomaTemporario Ilha(Nome);
+		ClimasDasIlhas.Add(static_cast<int32>(
+			IslandGeography::SectorClimateAt(PontoDaIlha(0.0f, RaioDoHorizonte))));
+	}
+
+	TestTrue(TEXT("mas ilhas diferentes têm horizontes diferentes"),
+		ClimasDasIlhas.Num() > 1);
 
 	return true;
 }
@@ -330,35 +366,29 @@ bool FIslandGeographySwampIsTheWetRimOfTheForestTest::RunTest(const FString& Par
 	TestTrue(TEXT("o pântano começa depois da casa"),
 		BordaDaTerra - IslandGeography::SwampWidthUnits() > IslandGeography::HomeRadiusUnits());
 
-	int32 SetoresComBrejo = 0;
-	int32 SetoresSecos = 0;
-	for (int32 Setor = 0; Setor < IslandGeography::SectorCount; ++Setor)
+	// A comparação deixou de ser entre SETORES e passou a ser entre ILHAS: o
+	// pântano é a orla úmida de uma ilha de MATA, e numa ilha seca a mesma
+	// faixa continua sendo o que a ilha é.
+	//
+	// A intenção do teste não mudou — deserto encostando no mar dá areia, não
+	// brejo, e sem essa regra a ilha inteira ganharia uma cinta de lodo. O que
+	// mudou é que "seco" virou uma ilha, e não um rumo.
 	{
-		const float Graus =
-			(static_cast<float>(Setor) + 0.5f) * 360.0f / IslandGeography::SectorCount;
-		const EIslandBiome NoBrejo = IslandGeography::BiomeAt(PontoDaIlha(Graus, DentroDoPantano));
-		const EIslandBiome Atras = IslandGeography::BiomeAt(PontoDaIlha(Graus, AntesDoPantano));
-
-		if (IslandGeography::BiomeOfSector(Setor) == EIslandBiome::Forest)
-		{
-			++SetoresComBrejo;
-			TestEqual(TEXT("na mata, a orla é pântano"),
-				static_cast<int32>(NoBrejo), static_cast<int32>(EIslandBiome::Swamp));
-			TestEqual(TEXT("e logo atrás dela ainda é mata"),
-				static_cast<int32>(Atras), static_cast<int32>(EIslandBiome::Forest));
-		}
-		else
-		{
-			// Deserto encostando no mar dá areia, não brejo. Se o pântano
-			// ignorasse o setor, a ilha inteira ganharia uma cinta de lodo.
-			++SetoresSecos;
-			TestNotEqual(TEXT("setor seco não cria brejo na orla"),
-				static_cast<int32>(NoBrejo), static_cast<int32>(EIslandBiome::Swamp));
-		}
+		const IlhaDeTeste::FBiomaTemporario IlhaDeMata(TEXT("Forest"));
+		TestEqual(TEXT("na mata, a orla é pântano"),
+			static_cast<int32>(IslandGeography::BiomeAt(PontoDaIlha(0.0f, DentroDoPantano))),
+			static_cast<int32>(EIslandBiome::Swamp));
+		TestEqual(TEXT("e logo atrás dela ainda é mata"),
+			static_cast<int32>(IslandGeography::BiomeAt(PontoDaIlha(0.0f, AntesDoPantano))),
+			static_cast<int32>(EIslandBiome::Forest));
 	}
 
-	TestTrue(TEXT("há setor de mata para molhar"), SetoresComBrejo > 0);
-	TestTrue(TEXT("e setor seco para comparar"), SetoresSecos > 0);
+	{
+		const IlhaDeTeste::FBiomaTemporario IlhaSeca(TEXT("Desert"));
+		TestNotEqual(TEXT("ilha seca não cria brejo na orla"),
+			static_cast<int32>(IslandGeography::BiomeAt(PontoDaIlha(0.0f, DentroDoPantano))),
+			static_cast<int32>(EIslandBiome::Swamp));
+	}
 
 	// Entre o brejo e o mar continua havendo areia: sem isso o pântano teria
 	// comido a praia em vez de ficar atrás dela.

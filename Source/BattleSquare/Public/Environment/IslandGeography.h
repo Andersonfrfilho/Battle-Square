@@ -70,6 +70,32 @@ namespace IslandGeography
 	BATTLESQUARE_API float BeachWidthUnits();
 
 	/**
+	 * Onde o vulcão mora, e até onde o calor dele queima o chão.
+	 *
+	 * O vulcão é MARCO, não bioma: uma ilha de mata pode ter um, do mesmo jeito
+	 * que o Havaí é floresta com vulcão dentro. O que ele faz é local — o anel
+	 * de rocha escura em volta da cratera, que existe qualquer que seja a ilha.
+	 *
+	 * Mora aqui, e não no layout das peças, porque QUEM DESENHA e QUEM PERGUNTA
+	 * o bioma precisam do mesmo ponto. Duas cópias concordariam até a primeira
+	 * edição (L-032), e a divergência apareceria como um vulcão em pé sobre
+	 * grama.
+	 */
+	BATTLESQUARE_API float VolcanoAngleDegrees();
+	BATTLESQUARE_API float VolcanoRingUnits();
+	BATTLESQUARE_API FVector2D VolcanoCenterUnits();
+	BATTLESQUARE_API float VolcanoHeatRadiusUnits();
+
+	/**
+	 * O anel de rocha queimada em volta da cratera.
+	 *
+	 * Bem menor que o alcance do calor: aquele mede até onde o vulcão TEMPERA
+	 * uma caverna, e usá-lo como chão punha o deserto de lava por cima da
+	 * praia — o que o teste da borda pegou na hora.
+	 */
+	BATTLESQUARE_API float VolcanoScorchedRadiusUnits();
+
+	/**
 	 * Largura da faixa de pântano, medida para dentro a partir da praia.
 	 *
 	 * Fração do raio pelo mesmo motivo da praia: um número fixo que hoje é um
@@ -99,6 +125,16 @@ namespace IslandGeography
 	BATTLESQUARE_API int32 SectorAt(const FVector2D& PositionUnits);
 
 	/** O bioma daquele setor, sem olhar a distância do centro. */
+	/**
+	 * O bioma DESTA ilha. Uma ilha, um bioma.
+	 *
+	 * Configurável por `WorldIslandBiome` no ini; a mata é o padrão. Cada
+	 * instância do servidor é uma ilha, e a ilha inteira é do mesmo bioma —
+	 * é o que dá 6 km² a cada um, em vez dos 0,39 km² que a fatia de pizza
+	 * deixava.
+	 */
+	BATTLESQUARE_API EIslandBiome IslandBiome();
+
 	BATTLESQUARE_API EIslandBiome BiomeOfSector(int32 Sector);
 
 	/**

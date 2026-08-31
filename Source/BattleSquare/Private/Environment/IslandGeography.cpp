@@ -117,28 +117,84 @@ namespace IslandGeography
 		return FMath::Clamp(FMath::FloorToInt(Voltado / GrausPorSetor), 0, SectorCount - 1);
 	}
 
+	EIslandBiome IslandBiome()
+	{
+		// UMA ILHA, UM BIOMA.
+		//
+		// A ilha era fatiada em seis setores de pizza, e cada bioma ficava com
+		// 0,39 km² — um deserto desse tamanho não é deserto, é caixa de areia.
+		// Com uma ilha por bioma, cada um passa a ter a ilha inteira: 6 km².
+		//
+		// E é o que faz o resto do desenho fechar. A fronteira exige o ranking,
+		// o que faz sentido ENTRE ilhas e seria travar a caminhada para o norte
+		// dentro de uma. As espécies são próprias da região, o que só significa
+		// alguma coisa se a região for um lugar inteiro.
+		FString Escrito;
+		if (GConfig && GConfig->GetString(GeografiaDaIlha::SecaoDoMundo,
+			TEXT("WorldIslandBiome"), Escrito, GGameIni))
+		{
+			const FName Nome(*Escrito);
+			if (Nome == TEXT("Desert"))  { return EIslandBiome::Desert; }
+			if (Nome == TEXT("Glacier")) { return EIslandBiome::Glacier; }
+			if (Nome == TEXT("Volcano")) { return EIslandBiome::Volcano; }
+			if (Nome == TEXT("Swamp"))   { return EIslandBiome::Swamp; }
+		}
+
+		// A mata é o padrão, e é a ilha que existe hoje.
+		return EIslandBiome::Forest;
+	}
+
 	EIslandBiome BiomeOfSector(int32 Sector)
 	{
-		const int32 Seguro = FMath::Clamp(Sector, 0, SectorCount - 1);
-		return GeografiaDaIlha::BiomaDoSetor[Seguro];
+		// O setor deixou de decidir bioma: a ilha inteira é um só. A função
+		// continua existindo porque o MAPA e o clima ainda perguntam por
+		// posição, e mudar todas as chamadas de uma vez seria trocar duas
+		// coisas no mesmo passo.
+		(void)Sector;
+		return IslandBiome();
 	}
+
+	float VolcanoAngleDegrees() { return 180.0f; }
+
+	float VolcanoRingUnits() { return LandRadiusUnits() * 0.75f; }
+
+	FVector2D VolcanoCenterUnits()
+	{
+		const float Radianos = FMath::DegreesToRadians(VolcanoAngleDegrees());
+		return FVector2D(FMath::Cos(Radianos), FMath::Sin(Radianos)) * VolcanoRingUnits();
+	}
+
+	float VolcanoHeatRadiusUnits() { return LandRadiusUnits() * 0.30f; }
+
+	float VolcanoScorchedRadiusUnits() { return LandRadiusUnits() * 0.10f; }
 
 	EIslandBiome BiomeAt(const FVector2D& PositionUnits)
 	{
 		const float Distancia = PositionUnits.Size();
 
+
 		// A ordem é a regra. Trocá-la põe deserto encostado no mar e glaciar
 		// em cima dos campos de treino.
+		// O MIOLO é o bioma da ilha, e não mata fixa. Numa ilha de geleira, a
+		// casa do jogador é geleira — ele nasce no lugar onde vive.
 		if (Distancia <= HomeRadiusUnits())
 		{
-			return EIslandBiome::Forest;
+			return IslandBiome();
 		}
 		if (Distancia >= LandRadiusUnits() - BeachWidthUnits())
 		{
 			return EIslandBiome::Beach;
 		}
 
-		const EIslandBiome DoSetor = BiomeOfSector(SectorAt(PositionUnits));
+		// O chão em volta da cratera é queimado em qualquer ilha: o vulcão é
+		// marco, não bioma. Vem DEPOIS da praia — a areia da borda é o que a
+		// pessoa vê primeiro, e lava chegando no mar é outra coisa.
+		if (FVector2D::Distance(PositionUnits, VolcanoCenterUnits()) <= VolcanoScorchedRadiusUnits())
+		{
+			return EIslandBiome::Volcano;
+		}
+
+		const EIslandBiome DoSetor = IslandBiome();
 
 		// Brejo é mata que não drena. Onde o setor já é seco, a mesma faixa
 		// baixa continua sendo o que o setor diz: encostar o deserto no mar

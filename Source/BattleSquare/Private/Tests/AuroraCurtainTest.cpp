@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Environment/AuroraCurtain.h"
+#include "IslandBiomeTestHelper.h"
 
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
@@ -239,6 +240,11 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAuroraCurtainSitsOverTheGlacierTest::RunTest(const FString& Parameters)
 {
+	// UMA ILHA, UM BIOMA: "o ponto na geleira" deixou de ser uma direção e
+	// passou a ser uma ILHA de geleira. O teste continua querendo geleira —
+	// ele só pede de outro jeito.
+	const IlhaDeTeste::FBiomaTemporario IlhaDeGeleira(TEXT("Glacier"));
+
 	const FVector2D Centro = AAuroraCurtain::SkyCenterUnits();
 
 	TestTrue(TEXT("o centro da aurora está em terra"), IslandGeography::IsOnLand(Centro));

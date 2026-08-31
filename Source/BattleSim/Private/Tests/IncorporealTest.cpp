@@ -223,3 +223,123 @@ bool FTracoEDoBichoNaoDoTurnoTest::RunTest(const FString&)
 
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FOFisicoNaoAlcancaOIncorporeoTest,
+	"BattleSim.Traits.Incorporeo.OFisicoNaoAlcancaOIncorporeo",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FOFisicoNaoAlcancaOIncorporeoTest::RunTest(const FString&)
+{
+	// O punho atravessa: não há o que acertar. E o pet fica ao lado, para o
+	// alcance do golpe não ser a razão do erro.
+	FBattleState Estado = IncorporeoTeste::CampoCom(
+		static_cast<uint8>(ECellProperty::None), /*bFantasma=*/false);
+	Estado.Pets[0].Column = 0; Estado.Pets[0].Row = 1; Estado.Pets[0].Attack = 40;
+	Estado.Pets[1].Column = 1; Estado.Pets[1].Row = 1; Estado.Pets[1].Defense = 10;
+	Estado.Pets[1].Traits |= static_cast<uint8>(EPetTrait::Incorporeo);
+
+	FBattleAction Soco;
+	Soco.Type = EActionType::Atacar;
+	Soco.Direction = EBattleDirection::Direita;
+
+	FBattleAction Nada;
+	TArray<FBattleEvent> Traco;
+	BattlePhases::ApplyCombat(Estado, Soco, Nada, 0, Traco);
+
+	TestEqual(TEXT("O golpe físico erra o fantasma"), Estado.Pets[1].PendingDamage, 0);
+	TestEqual(TEXT("E o feed conta que errou"),
+		IncorporeoTeste::Conta(Traco, EBattleEventType::AtaqueErrou), 1);
+
+	// A MAGIA alcança — e é o que impede o fantasma de ser invencível, porque
+	// `Magia` é ação universal: todo pet do jogo consegue usá-la.
+	FBattleAction Magia;
+	Magia.Type = EActionType::Magia;
+	Magia.Direction = EBattleDirection::Direita;
+
+	TArray<FBattleEvent> ComMagia;
+	BattlePhases::ApplyCombat(Estado, Magia, Nada, 1, ComMagia);
+	TestTrue(TEXT("A magia acerta"), Estado.Pets[1].PendingDamage > 0);
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FALuzDesfazOEsconderijoTest,
+	"BattleSim.Traits.Incorporeo.ALuzDesfazOEsconderijo",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FALuzDesfazOEsconderijoTest::RunTest(const FString&)
+{
+	FBattleState Estado = IncorporeoTeste::CampoCom(
+		static_cast<uint8>(ECellProperty::None), /*bFantasma=*/false);
+	Estado.Pets[0].Column = 0; Estado.Pets[0].Row = 1; Estado.Pets[0].Attack = 40;
+	Estado.Pets[1].Column = 1; Estado.Pets[1].Row = 1; Estado.Pets[1].Defense = 10;
+	Estado.Pets[1].Traits |= static_cast<uint8>(EPetTrait::Incorporeo);
+
+	FBattleAction Iluminar;
+	Iluminar.Type = EActionType::Iluminar;
+	FBattleAction Nada;
+
+	TArray<FBattleEvent> Traco;
+	BattlePhases::ApplyPostures(Estado, Iluminar, Nada, 0, Traco);
+
+	// A bandeira vai para o ALVO, não para quem iluminou: quem deixa de estar
+	// escondido é ele, e é isso que faz a luz de um pet servir ao golpe que
+	// vem depois.
+	TestTrue(TEXT("O fantasma ficou revelado"),
+		(Estado.Pets[1].PostureFlags
+			& static_cast<uint16>(EBattlePostureFlags::Revealed)) != 0);
+	TestEqual(TEXT("E foi narrado"),
+		IncorporeoTeste::Conta(Traco, EBattleEventType::Revelado), 1);
+
+	FBattleAction Soco;
+	Soco.Type = EActionType::Atacar;
+	Soco.Direction = EBattleDirection::Direita;
+
+	TArray<FBattleEvent> Depois;
+	BattlePhases::ApplyCombat(Estado, Soco, Nada, 0, Depois);
+	TestTrue(TEXT("Revelado, o físico ACERTA o fantasma"),
+		Estado.Pets[1].PendingDamage > 0);
+
+	// E dura um SLOT só: a luz é jogada, não estado permanente. Se ficasse, o
+	// fantasma perderia o que ele é depois de um único erro.
+	TArray<FBattleEvent> Fim;
+	BattlePhases::ApplyResolution(Estado, 0, Fim);
+	TestEqual(TEXT("A revelação some no fim do slot"),
+		Estado.Pets[1].PostureFlags & static_cast<uint16>(EBattlePostureFlags::Revealed),
+		static_cast<uint16>(0));
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FALuzTambemDesfazACamuflagemTest,
+	"BattleSim.Traits.Incorporeo.ALuzTambemDesfazACamuflagem",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FALuzTambemDesfazACamuflagemTest::RunTest(const FString&)
+{
+	// A luz não é só anti-fantasma: ela desfaz QUALQUER esconderijo. Fosse só
+	// contra o incorpóreo, o elemento Luz seria inútil em toda partida onde o
+	// outro lado não trouxesse fantasma — e ninguém o escolheria.
+	FBattleState Estado = IncorporeoTeste::CampoCom(
+		static_cast<uint8>(ECellProperty::None), /*bFantasma=*/false);
+	Estado.Pets[0].Column = 0; Estado.Pets[0].Row = 1; Estado.Pets[0].Attack = 40;
+	Estado.Pets[1].Column = 1; Estado.Pets[1].Row = 1; Estado.Pets[1].Defense = 10;
+	Estado.Pets[1].PostureFlags |= static_cast<uint16>(EBattlePostureFlags::Camouflaged);
+
+	FBattleAction Soco;
+	Soco.Type = EActionType::Atacar;
+	Soco.Direction = EBattleDirection::Direita;
+	FBattleAction Nada;
+
+	TArray<FBattleEvent> SemLuz;
+	BattlePhases::ApplyCombat(Estado, Soco, Nada, 0, SemLuz);
+	TestEqual(TEXT("Camuflado, não é alcançado"), Estado.Pets[1].PendingDamage, 0);
+
+	Estado.Pets[1].PostureFlags |= static_cast<uint16>(EBattlePostureFlags::Revealed);
+	TArray<FBattleEvent> ComLuz;
+	BattlePhases::ApplyCombat(Estado, Soco, Nada, 1, ComLuz);
+	TestTrue(TEXT("Iluminado, o camuflado é alcançado"),
+		Estado.Pets[1].PendingDamage > 0);
+
+	return true;
+}

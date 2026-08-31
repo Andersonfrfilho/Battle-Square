@@ -91,7 +91,14 @@ enum class EBattleEventType : uint8
 	// ONDE — "na lama" e "no gelo" pedem palavras diferentes.
 	//
 	// No FIM do enum, pelo mesmo motivo dos anteriores.
-	AtravessouDevagar
+	AtravessouDevagar,
+
+	// A luz desfez o esconderijo do outro. Evento próprio porque é o único
+	// caso em que a ação de um pet muda o ESTADO do outro sem dano — e sem
+	// linha no feed, quem foi revelado apanharia sem entender por quê.
+	//
+	// No FIM do enum, pelo mesmo motivo dos anteriores.
+	Revelado
 };
 
 // Sentinela para TargetId/ActorId quando não há alvo aplicável

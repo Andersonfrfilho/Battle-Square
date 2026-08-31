@@ -44,6 +44,28 @@ namespace
 		{
 			AssumedFlag = static_cast<uint16>(EBattlePostureFlags::Underground);
 		}
+		else if (Action.Type == EActionType::Iluminar)
+		{
+			// ILUMINAR não é postura de quem a usa: ela marca o OUTRO. Por
+			// isso não passa pelo caminho comum abaixo, que veste a bandeira
+			// em quem agiu — iluminar a si mesmo não revelaria ninguém.
+			FPetState* Alvo = State.FindAlivePetOnSide(Side == 0 ? 1 : 0);
+			if (!Alvo)
+			{
+				return;
+			}
+
+			Alvo->PostureFlags |= static_cast<uint16>(EBattlePostureFlags::Revealed);
+
+			FBattleEvent Luz;
+			Luz.Type = EBattleEventType::Revelado;
+			Luz.SlotIndex = SlotIndex;
+			Luz.Phase = 2;
+			Luz.ActorId = Pet->PetId;
+			Luz.TargetId = Alvo->PetId;
+			OutTrace.Add(Luz);
+			return;
+		}
 		else if (Action.Type == EActionType::Atravessar)
 		{
 			// ATRAVESSAR é do INCORPÓREO, e a recusa é dado como todas as

@@ -58,6 +58,16 @@ enum class EBattlePostureFlags : uint16
 	 * descuido, e a alternativa era espremer duas ideias no mesmo bit.
 	 */
 	Phasing     = 1 << 8,
+
+	/**
+	 * REVELADO pela luz, neste slot.
+	 *
+	 * Vive no ALVO, e não em quem iluminou: é o alvo que deixa de estar
+	 * escondido, e quem ataca depois se beneficia disso — inclusive um
+	 * terceiro. Guardar no iluminador faria a luz de um pet não servir para
+	 * o aliado que bate em seguida.
+	 */
+	Revealed    = 1 << 9,
 };
 ENUM_CLASS_FLAGS(EBattlePostureFlags)
 
@@ -272,6 +282,20 @@ struct FPetState
 	 */
 	UPROPERTY()
 	uint8 Traits = 0;
+
+	/**
+	 * Este pet está com aquela postura?
+	 *
+	 * Mora AQUI, e não numa cópia dentro de cada fase, porque a conversão é o
+	 * risco: uma cópia escrita com `static_cast<uint8>` truncava os bits acima
+	 * do sétimo, e `Phasing` (bit 8) e `Revealed` (bit 9) davam falso SEMPRE —
+	 * calados, sem erro de compilação, com o jogo rodando e a regra não
+	 * existindo. Foi assim que a luz deixou de revelar no dia em que nasceu.
+	 */
+	bool HasPosture(EBattlePostureFlags Flag) const
+	{
+		return (PostureFlags & static_cast<uint16>(Flag)) != 0;
+	}
 
 	bool HasTrait(EPetTrait Trait) const
 	{

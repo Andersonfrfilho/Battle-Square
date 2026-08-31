@@ -167,6 +167,12 @@ FText FBattleNarration::Describe(const FBattleEvent& Event, const FString& Actor
 			"{Actor} atolou na {Terreno} — atravessou, mas devagar"), ArgsChao);
 	}
 
+	case EBattleEventType::Revelado:
+		// Diz o que MUDOU, não o que brilhou: "iluminou" sozinho seria efeito
+		// visual, e o jogador precisa entender que o golpe passou a acertar.
+		return FText::Format(LOCTEXT("Revelado",
+			"{Actor} iluminou {Target} — agora ele pode ser atingido"), Args);
+
 	case EBattleEventType::EsquivouPorReflexo:
 		return FText::Format(LOCTEXT("EsquivouPorReflexo", "{Actor} desviou por reflexo"), Args);
 

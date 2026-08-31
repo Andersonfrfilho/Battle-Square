@@ -18,9 +18,11 @@ namespace
 	constexpr int32 AttackDamageMultiplierPercent = 100;
 	constexpr int32 MagicDamageMultiplierPercent = 150;
 
+	// Encaminha para FPetState::HasPosture — uma definição só. A versão que
+	// vivia aqui convertia para uint8 e apagava todo flag acima do sétimo.
 	bool HasPosture(const FPetState& Pet, EBattlePostureFlags Flag)
 	{
-		return (Pet.PostureFlags & static_cast<uint8>(Flag)) != 0;
+		return Pet.HasPosture(Flag);
 	}
 
 
@@ -351,11 +353,30 @@ namespace
 		FPetState* TargetPtr = &Target;
 		FPetState* AttackerPtr = &Attacker;
 
+		// A LUZ desfaz o esconderijo. Enquanto revelado, o alvo é alcançável
+		// como qualquer outro — e é isto que dá contra-jogo ao fantasma em vez
+		// de deixá-lo intocável para quem não trouxe magia.
+		const bool bRevelado = HasPosture(*TargetPtr, EBattlePostureFlags::Revealed);
+
 		// DP-ia-04. Camuflado e submerso não são ALCANÇÁVEIS — nem por magia.
 		// É isso que os separa de Esquivar, que barra só o físico: se
 		// barrassem o mesmo, seriam três nomes para a mesma ação.
-		if (HasPosture(*TargetPtr, EBattlePostureFlags::Camouflaged)
-			|| HasPosture(*TargetPtr, EBattlePostureFlags::Underground))
+		if (!bRevelado
+			&& (HasPosture(*TargetPtr, EBattlePostureFlags::Camouflaged)
+				|| HasPosture(*TargetPtr, EBattlePostureFlags::Underground)))
+		{
+			EmitMiss(OutTrace, SlotIndex, *AttackerPtr);
+			return;
+		}
+
+		// O GOLPE FÍSICO NÃO ALCANÇA O INCORPÓREO. É o que ele É: o punho
+		// atravessa, e não há o que acertar.
+		//
+		// Isso NÃO o torna invencível, e o motivo é estrutural: `Magia` é ação
+		// UNIVERSAL (DP-skill-03), então todo pet do jogo consegue alcançá-lo.
+		// O que ele compra é obrigar o outro a lutar pela metade do repertório
+		// — e quem trouxe luz desfaz até isso.
+		if (!bIsMagic && !bRevelado && TargetPtr->HasTrait(EPetTrait::Incorporeo))
 		{
 			EmitMiss(OutTrace, SlotIndex, *AttackerPtr);
 			return;

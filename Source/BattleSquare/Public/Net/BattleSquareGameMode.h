@@ -12,6 +12,7 @@
 #include "Net/BattleRoomRegistry.h"
 #include "Net/BattleTurnCoordinator.h"
 #include "Battle/BattleArena.h"
+#include "Environment/WorldTimeOfDay.h"
 #include "Data/BattleDataTranslator.h"
 #include "Meta/PetCollectionSaveGame.h"
 #include "BattleSquareGameMode.generated.h"
@@ -359,6 +360,21 @@ public:
 	void MaintainEncounterPopulation();
 
 	void SpawnOneEncounter(const FVector& Centro, FRandomStream& Sorteio, int32 SementeDoPasseio);
+
+public:
+	/**
+	 * A fase do dia que vale AGORA para quem sorteia encontros.
+	 *
+	 * Uma função, e não um campo: guardar a fase obrigaria a atualizá-la, e o
+	 * dia que ela ficasse velha o painel diria noite enquanto o mundo sorteia
+	 * bicho de meio-dia (L-032). A hora vem do sol, que é quem a conta.
+	 *
+	 * Sem cena de mundo, a hora é `WorldStartHour`: o mundo ainda não começou
+	 * a andar, e a hora em que ele abre é a única que existe.
+	 */
+	EDayPhase CurrentEncounterPhase() const;
+
+private:
 
 	FTimerHandle EncounterPopulationTimer;
 	int32 EncounterRefillCounter = 0;

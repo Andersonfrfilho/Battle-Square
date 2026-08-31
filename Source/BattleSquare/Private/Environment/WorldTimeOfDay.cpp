@@ -2,6 +2,8 @@
 
 #include "Environment/WorldTimeOfDay.h"
 
+#include "Battle/DeterministicSpread.h"
+
 namespace
 {
 	/**
@@ -16,6 +18,21 @@ namespace
 
 	/** Acima disto o sol já não pinta nada de laranja. */
 	constexpr float SolAltoGraus = 25.0f;
+
+	/**
+	 * Como as espécies se repartem entre as três horas, em porcentagem.
+	 *
+	 * Metade diurna de propósito: o jogo abre às sete da manhã, e um mundo em
+	 * que dois de cada três bichos só saem à noite pareceria vazio no primeiro
+	 * minuto de quem instalou. O outro metade dividido em dois dá à noite e ao
+	 * entardecer moradores próprios — que é o que faz esperar anoitecer valer
+	 * a pena.
+	 *
+	 * Somam 100 com os noturnos, que ficam com o resto: escrever os três
+	 * deixaria a soma poder não fechar.
+	 */
+	constexpr int32 RelogioPercentualDeDiurnos = 50;
+	constexpr int32 RelogioPercentualDeCrepusculares = 25;
 
 	/** O que o luar deixa. Não é zero: noite cega não deixa ninguém andar. */
 	constexpr float BrilhoDaNoite = 0.02f;
@@ -193,6 +210,58 @@ namespace WorldTimeOfDay
 		// está jogando: um erro de digitação na ficha some com o bicho da
 		// manhã, não do jogo inteiro.
 		return EPetActivity::Diurnal;
+	}
+
+	EPetActivity ActivityForSpecies(const FString& CatalogId)
+	{
+		if (CatalogId.IsEmpty())
+		{
+			return EPetActivity::Diurnal;
+		}
+
+		const uint32 Semente = BattleSpread::SeedFromText(CatalogId + TEXT("|atividade"));
+		const int32 Sorteado = BattleSpread::Below(Semente, /*Indice=*/0, 100);
+
+		if (Sorteado < RelogioPercentualDeDiurnos)
+		{
+			return EPetActivity::Diurnal;
+		}
+		if (Sorteado < RelogioPercentualDeDiurnos + RelogioPercentualDeCrepusculares)
+		{
+			return EPetActivity::Crepuscular;
+		}
+		return EPetActivity::Nocturnal;
+	}
+
+	int32 PickSpeciesForPhase(
+		const TArray<FString>& CatalogIds, EDayPhase Phase, FRandomStream& Stream)
+	{
+		if (CatalogIds.IsEmpty())
+		{
+			return INDEX_NONE;
+		}
+
+		int32 Total = 0;
+		for (const FString& Id : CatalogIds)
+		{
+			Total += EncounterWeightPercent(ActivityForSpecies(Id), Phase);
+		}
+
+		// Roleta: cada espécie ocupa uma fatia do tamanho do peso dela. Sortear
+		// a espécie e depois aceitar ou recusar pelo peso daria o mesmo
+		// resultado só depois de um número indeterminado de tentativas — e a
+		// reposição de população não tem quantas tentativas quiser.
+		int32 Restante = Stream.RandRange(0, Total - 1);
+		for (int32 Indice = 0; Indice < CatalogIds.Num(); ++Indice)
+		{
+			Restante -= EncounterWeightPercent(ActivityForSpecies(CatalogIds[Indice]), Phase);
+			if (Restante < 0)
+			{
+				return Indice;
+			}
+		}
+
+		return CatalogIds.Num() - 1;
 	}
 
 	const TCHAR* PhaseDebugName(EDayPhase Phase)

@@ -1780,6 +1780,46 @@ void ABattleSquareGameMode::RefreshRegionResidency()
 		0.0f, FColor(150, 220, 150), /*Key=*/744);
 }
 
+namespace
+{
+	/**
+	 * Quantos encontros vivos de cada hora, para o painel.
+	 *
+	 * Existe porque "seis encontros povoaram o mundo" não diz se o peso da
+	 * hora funcionou. Contar na tela é o que transforma "confie no sorteio" em
+	 * "às três da manhã são cinco noturnos e um diurno" — e é isso que se lê
+	 * numa rodada, sem instrumentar nada.
+	 */
+	FString DescreverAtividadesDosEncontros(UWorld* Mundo)
+	{
+		int32 Diurnos = 0;
+		int32 Tardios = 0;
+		int32 Noturnos = 0;
+
+		for (TActorIterator<AWorldEncounterActor> It(Mundo); It; ++It)
+		{
+			switch (WorldTimeOfDay::ActivityForSpecies(It->CatalogId.ToString()))
+			{
+			case EPetActivity::Diurnal:     ++Diurnos; break;
+			case EPetActivity::Crepuscular: ++Tardios; break;
+			case EPetActivity::Nocturnal:   ++Noturnos; break;
+			}
+		}
+
+		return FString::Printf(TEXT("%d diurnos, %d tardios, %d noturnos"),
+			Diurnos, Tardios, Noturnos);
+	}
+}
+
+EDayPhase ABattleSquareGameMode::CurrentEncounterPhase() const
+{
+	const float Hora = (CenaDoMundo && CenaDoMundo->IsDayCycleRunning())
+		? CenaDoMundo->GetHour()
+		: WorldStartHour;
+
+	return WorldTimeOfDay::PhaseAtHour(Hora);
+}
+
 void ABattleSquareGameMode::SpawnRoamingEncounters()
 {
 	UWorld* World = GetWorld();
@@ -1809,8 +1849,19 @@ void ABattleSquareGameMode::SpawnRoamingEncounters()
 		SpawnOneEncounter(Centro, Sorteio, WorldEncounterSeed + Indice * 7919);
 	}
 
+	// Com uma espécie só configurada, a contagem sai igual a toda hora — e sem
+	// dizer isso na tela, o painel parece um peso quebrado em vez de um
+	// catálogo curto. Aviso, não conserto: quem configura é o `.ini`.
+	const FString Ressalva = (WorldEncounterCatalogIds.Num() > 1)
+		? FString()
+		: TEXT(" [catalogo de 1 especie: a hora ainda nao muda quem aparece]");
+
 	FBattleDebugScreen::Show(
-		FString::Printf(TEXT("%d encontros povoaram o mundo, e eles ANDAM"), WorldEncounterCount),
+		FString::Printf(TEXT("%d encontros povoaram o mundo (%s) — %s%s"),
+			WorldEncounterCount,
+			WorldTimeOfDay::PhaseDebugName(CurrentEncounterPhase()),
+			*DescreverAtividadesDosEncontros(World),
+			*Ressalva),
 		0.0f, FColor::Green, /*Key=*/720);
 
 	// A reposição confere de tempos em tempos, e não a cada quadro: a
@@ -1848,7 +1899,17 @@ void ABattleSquareGameMode::SpawnOneEncounter(const FVector& Centro, FRandomStre
 		return;
 	}
 
-	const int32 CatalogoIndice = Sorteio.RandRange(0, WorldEncounterCatalogIds.Num() - 1);
+	// Pesado pela hora, e não sorteio igual: a espécie noturna aparece de noite
+	// e mal aparece ao meio-dia. Sem isto o ciclo do dia era só a luz mudando
+	// de cor, e não havia motivo nenhum para esperar anoitecer.
+	const int32 CatalogoIndice = WorldTimeOfDay::PickSpeciesForPhase(
+		WorldEncounterCatalogIds, CurrentEncounterPhase(), Sorteio);
+	if (CatalogoIndice == INDEX_NONE)
+	{
+		Encontro->Destroy();
+		return;
+	}
+
 	Encontro->CatalogId = FName(*WorldEncounterCatalogIds[CatalogoIndice]);
 
 	UEncounterRoamingComponent* Passeio = NewObject<UEncounterRoamingComponent>(Encontro);
@@ -1907,8 +1968,12 @@ void ABattleSquareGameMode::MaintainEncounterPopulation()
 		SpawnOneEncounter(Centro, Sorteio, WorldEncounterSeed + EncounterRefillCounter * 7919);
 	}
 
+	// A hora da reposição também: quem volta da batalha de noite precisa ver
+	// que os substitutos são noturnos, e não os mesmos bichos de manhã.
 	FBattleDebugScreen::Show(
-		FString::Printf(TEXT("%d encontro(s) reposto(s) — o mundo não acaba"), Faltam),
+		FString::Printf(TEXT("%d reposto(s) (%s) — %s"), Faltam,
+			WorldTimeOfDay::PhaseDebugName(CurrentEncounterPhase()),
+			*DescreverAtividadesDosEncontros(World)),
 		8.0f, FColor::Green, /*Key=*/721);
 }
 

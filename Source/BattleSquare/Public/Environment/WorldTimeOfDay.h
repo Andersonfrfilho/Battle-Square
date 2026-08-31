@@ -161,6 +161,40 @@ namespace WorldTimeOfDay
 	/** A atividade pelo nome escrito — `Diurnal`, `Crepuscular`, `Nocturnal`. */
 	BATTLESQUARE_API EPetActivity ActivityFromName(FName Name);
 
+	/**
+	 * A hora de uma ESPÉCIE, tirada do id de catálogo dela.
+	 *
+	 * Derivada, e não escrita numa segunda tabela do `.ini`: o id já é o que
+	 * decide o corpo do bicho (`FPetMorphology::FromSeed`), e a espécie que
+	 * tem um corpo estável precisa ter uma hora estável pelo mesmo motivo —
+	 * o bicho que era noturno ontem e diurno hoje não é uma espécie, é um
+	 * sorteio. Tabela paralela concordaria com o espelho de pets até a
+	 * primeira edição (L-032).
+	 *
+	 * O fluxo é semeado por `id + "|atividade"`, e não pelo id cru, para não
+	 * andar de mãos dadas com uma proporção do corpo: independentes de
+	 * propósito, senão todo bicho noturno sairia com o mesmo focinho.
+	 *
+	 * Id vazio é diurno, como em `ActivityFromName(NAME_None)`: pet sem id
+	 * ainda é um pet, e o mundo do meio-dia é onde ele aparece.
+	 */
+	BATTLESQUARE_API EPetActivity ActivityForSpecies(const FString& CatalogId);
+
+	/**
+	 * Qual espécie do catálogo aparece AGORA — sorteio pesado pela fase.
+	 *
+	 * Mora aqui, junto da tabela de pesos, porque a pergunta é uma só: quem
+	 * anda por aí nesta hora. Espalhar o sorteio pelo `GameMode` deixaria a
+	 * regra sem teste, e ela é justamente a que dá consequência ao ciclo do
+	 * dia — sem ela, anoitecer é só a luz mudando de cor.
+	 *
+	 * Devolve `INDEX_NONE` só para catálogo vazio. Peso total zero não
+	 * acontece: nenhum peso da tabela é zero, e é essa invariante que
+	 * garante que sempre há alguém para encontrar.
+	 */
+	BATTLESQUARE_API int32 PickSpeciesForPhase(
+		const TArray<FString>& CatalogIds, EDayPhase Phase, FRandomStream& Stream);
+
 	/** O nome da fase, para o painel. Desenvolvimento, não texto de jogador. */
 	BATTLESQUARE_API const TCHAR* PhaseDebugName(EDayPhase Phase);
 }

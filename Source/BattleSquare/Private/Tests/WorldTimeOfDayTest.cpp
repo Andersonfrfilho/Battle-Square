@@ -2,6 +2,7 @@
 
 #include "Environment/WorldTimeOfDay.h"
 
+#include "Math/RandomStream.h"
 #include "Misc/AutomationTest.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -16,6 +17,42 @@ namespace
 	const EPetActivity AtividadesDoRelogio[] = {
 		EPetActivity::Diurnal, EPetActivity::Crepuscular, EPetActivity::Nocturnal
 	};
+
+	/**
+	 * Um catalogo de ids inventados, do tamanho pedido.
+	 *
+	 * Ids de mentira servem porque a regra le o id como texto e nada mais: ela
+	 * nao consulta o espelho de pets. Usar os uuids de verdade amarraria o
+	 * teste ao conteudo do `.ini`, que muda por motivo alheio a esta regra.
+	 */
+	TArray<FString> CatalogoInventadoDoRelogio(int32 Quantos)
+	{
+		TArray<FString> Ids;
+		Ids.Reserve(Quantos);
+		for (int32 Indice = 0; Indice < Quantos; ++Indice)
+		{
+			Ids.Add(FString::Printf(TEXT("especie-%d"), Indice));
+		}
+		return Ids;
+	}
+
+	/** Quantas escolhas cairam em espécie de cada atividade. */
+	int32 ContarEscolhasDoRelogio(
+		const TArray<FString>& Ids, EDayPhase Fase, EPetActivity Procurada, int32 Rodadas)
+	{
+		FRandomStream Fluxo(20260831);
+		int32 Achadas = 0;
+		for (int32 Rodada = 0; Rodada < Rodadas; ++Rodada)
+		{
+			const int32 Escolhido = WorldTimeOfDay::PickSpeciesForPhase(Ids, Fase, Fluxo);
+			if (Ids.IsValidIndex(Escolhido)
+				&& WorldTimeOfDay::ActivityForSpecies(Ids[Escolhido]) == Procurada)
+			{
+				++Achadas;
+			}
+		}
+		return Achadas;
+	}
 
 	/** A fase em que cada atividade deveria mandar. */
 	EDayPhase FasePreferidaDoRelogio(EPetActivity Atividade)
@@ -274,6 +311,107 @@ bool FWorldTimeOfDayActivityNameFallsBackToDiurnal::RunTest(const FString& Param
 			TEXT("toda fase tem nome para o painel"),
 			FCString::Strlen(WorldTimeOfDay::PhaseDebugName(Fase)) > 0);
 	}
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FWorldTimeOfDaySpeciesKeepsItsHour,
+	"BattleSquare.Environment.WorldTimeOfDay.EspecieTemHoraEstavel",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FWorldTimeOfDaySpeciesKeepsItsHour::RunTest(const FString& Parameters)
+{
+	// O bicho que era noturno ontem e diurno hoje nao e uma especie, e um
+	// sorteio: a hora sai do id, que e o mesmo em toda maquina e toda sessao.
+	const FString Id = TEXT("61ab4f04-8b16-4fb1-8588-e572a2aac188");
+	TestEqual(
+		TEXT("o mesmo id da a mesma hora"),
+		WorldTimeOfDay::ActivityForSpecies(Id),
+		WorldTimeOfDay::ActivityForSpecies(Id));
+
+	// Pet sem id ainda e um pet, e o mundo do meio-dia e onde ele aparece.
+	TestEqual(
+		TEXT("id vazio e diurno"),
+		WorldTimeOfDay::ActivityForSpecies(FString()),
+		EPetActivity::Diurnal);
+
+	// Se todas as especies cairem na mesma hora, o ciclo do dia nao muda quem
+	// se encontra — e a regra existe justamente para mudar.
+	int32 Diurnas = 0;
+	int32 Tardias = 0;
+	int32 Noturnas = 0;
+	for (const FString& Inventado : CatalogoInventadoDoRelogio(200))
+	{
+		switch (WorldTimeOfDay::ActivityForSpecies(Inventado))
+		{
+		case EPetActivity::Diurnal:     ++Diurnas; break;
+		case EPetActivity::Crepuscular: ++Tardias; break;
+		case EPetActivity::Nocturnal:   ++Noturnas; break;
+		}
+	}
+
+	TestTrue(TEXT("ha especies diurnas"), Diurnas > 0);
+	TestTrue(TEXT("ha especies tardias"), Tardias > 0);
+	TestTrue(TEXT("ha especies noturnas"), Noturnas > 0);
+
+	// A metade diurna e de proposito: o jogo abre as sete da manha.
+	TestTrue(TEXT("as diurnas sao a maioria"), Diurnas > Tardias && Diurnas > Noturnas);
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FWorldTimeOfDayDrawFollowsTheHour,
+	"BattleSquare.Environment.WorldTimeOfDay.SorteioSegueAHora",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FWorldTimeOfDayDrawFollowsTheHour::RunTest(const FString& Parameters)
+{
+	const TArray<FString> Ids = CatalogoInventadoDoRelogio(60);
+	constexpr int32 Rodadas = 3000;
+
+	const int32 NoturnasDeNoite =
+		ContarEscolhasDoRelogio(Ids, EDayPhase::Night, EPetActivity::Nocturnal, Rodadas);
+	const int32 NoturnasDeDia =
+		ContarEscolhasDoRelogio(Ids, EDayPhase::Day, EPetActivity::Nocturnal, Rodadas);
+
+	// O que da consequencia ao anoitecer: sem isto, a noite era so a luz
+	// mudando de cor, com os mesmos bichos do meio-dia andando por ali.
+	TestTrue(
+		TEXT("a especie noturna aparece muito mais de noite"),
+		NoturnasDeNoite > NoturnasDeDia * 3);
+
+	const int32 DiurnasDeDia =
+		ContarEscolhasDoRelogio(Ids, EDayPhase::Day, EPetActivity::Diurnal, Rodadas);
+	const int32 DiurnasDeNoite =
+		ContarEscolhasDoRelogio(Ids, EDayPhase::Night, EPetActivity::Diurnal, Rodadas);
+	TestTrue(TEXT("a diurna aparece mais de dia"), DiurnasDeDia > DiurnasDeNoite);
+
+	const int32 TardiasAoAmanhecer =
+		ContarEscolhasDoRelogio(Ids, EDayPhase::Dawn, EPetActivity::Crepuscular, Rodadas);
+	const int32 TardiasDeDia =
+		ContarEscolhasDoRelogio(Ids, EDayPhase::Day, EPetActivity::Crepuscular, Rodadas);
+	TestTrue(TEXT("a tardia aparece mais ao amanhecer"), TardiasAoAmanhecer > TardiasDeDia);
+
+	// Nenhum peso da tabela e zero, entao nenhuma hora fica sem quem encontrar.
+	for (const EDayPhase Fase : FasesDoDiaDoRelogio)
+	{
+		for (const EPetActivity Atividade : AtividadesDoRelogio)
+		{
+			TestTrue(
+				TEXT("toda atividade ainda pode aparecer em toda fase"),
+				ContarEscolhasDoRelogio(Ids, Fase, Atividade, Rodadas) > 0);
+		}
+	}
+
+	// Catalogo vazio nao tem quem sortear, e dizer isso e melhor que devolver
+	// um indice que o chamador usaria para ler fora do vetor.
+	FRandomStream Fluxo(1);
+	TestEqual(
+		TEXT("catalogo vazio nao escolhe ninguem"),
+		WorldTimeOfDay::PickSpeciesForPhase(TArray<FString>(), EDayPhase::Day, Fluxo),
+		INDEX_NONE);
 
 	return true;
 }

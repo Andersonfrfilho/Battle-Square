@@ -148,6 +148,24 @@ enum class EScenaryRole : uint8
 	CaveWater,
 
 	/**
+	 * A faixa de areia que a onda acabou de lavar.
+	 *
+	 * Escura, e escura por MOLHADA — é a única coisa numa praia que diz de que
+	 * lado fica o mar. Sem ela, a areia vai até a borda do pedaço com a mesma
+	 * cor e o jogador descobre onde a água começa caindo dentro dela.
+	 */
+	WetSand,
+
+	/**
+	 * A espuma na linha d'água.
+	 *
+	 * Quase branca, e a coisa mais clara da paleta inteira: espuma cinzenta é
+	 * pedra achatada. Ela mora do lado de FORA da areia molhada, porque é ali
+	 * que a onda quebra.
+	 */
+	SeaFoam,
+
+	/**
 	 * Quantos papéis existem. Não é papel nenhum.
 	 *
 	 * Existe para o teste poder percorrer a lista inteira e cobrar `case` de

@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Environment/ForestBackdrop.h"
+#include "Environment/IslandGeography.h"
 #include "Environment/RegionResidency.h"
 #include "Battle/BattleArena.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
@@ -864,5 +865,270 @@ bool FForestRegionGroundOverlapsItsNeighbourTest::RunTest(const FString& Paramet
 	TestTrue(TEXT("Pedaço maior transborda proporcionalmente mais"),
 		LadoGrande - 4.0f * LadoDoPedaco > Invasao);
 
+	return true;
+}
+
+namespace
+{
+	/**
+	 * Um pedaço apoiado na LINHA D'ÁGUA, que é onde a orla existe.
+	 *
+	 * Nome próprio (L-042): dois auxiliares homônimos em arquivos diferentes
+	 * viram sobrecarga no unity build, e a que ganha é a que o compilador viu
+	 * primeiro.
+	 */
+	FVector CentroDoPedacoDaOrlaDeTeste()
+	{
+		// Um pouco para dentro da costa: assim tanto a faixa molhada (que fica
+		// por dentro) quanto a espuma (que fica por fora) caem no ladrilho.
+		return FVector(IslandGeography::LandRadiusUnits() - 200.0f, 0.0f, 0.0f);
+	}
+
+	/** A que distância do CENTRO DA ILHA está esta instância. */
+	float RaioDaInstanciaDaOrla(const AForestBackdrop* Mata,
+		const UHierarchicalInstancedStaticMeshComponent* Grupo, int32 Instancia)
+	{
+		FTransform Onde;
+		Grupo->GetInstanceTransform(Instancia, Onde);
+		const FVector Mundo = Mata->GetActorLocation() + Onde.GetLocation();
+		return FVector2D(Mundo.X, Mundo.Y).Size();
+	}
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FForestShoreWetsOnlyTheWaterlineTest,
+	"BattleSquare.Environment.ForestBackdrop.ShoreWetsOnlyTheWaterline",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FForestShoreWetsOnlyTheWaterlineTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateForestTestWorld();
+	if (!World)
+	{
+		return false;
+	}
+
+	// A praia da borda: aqui a costa passa por dentro do ladrilho.
+	AForestBackdrop* NaBorda = World->SpawnActor<AForestBackdrop>(
+		AForestBackdrop::StaticClass(), FTransform(CentroDoPedacoDaOrlaDeTeste()));
+	// E uma praia no MIOLO da ilha, que não existe no mundo mas existe como
+	// chamada: é o caso que distingue "o bioma é praia" de "o mar está aqui".
+	AForestBackdrop* NoMiolo = World->SpawnActor<AForestBackdrop>();
+	if (!NaBorda || !NoMiolo)
+	{
+		DestroyForestTestWorld(World);
+		return false;
+	}
+
+	NaBorda->BuildRegion(CasaDeTeste, 4242u, EIslandBiome::Beach, LadoDoPedacoDeTeste);
+	NoMiolo->BuildRegion(CasaDeTeste, 4242u, EIslandBiome::Beach, LadoDoPedacoDeTeste);
+
+	const UHierarchicalInstancedStaticMeshComponent* Molhada = NaBorda->GetShoreWetSand();
+	if (!TestNotNull(TEXT("a areia molhada existe como componente"), Molhada))
+	{
+		DestroyForestTestWorld(World);
+		return false;
+	}
+
+	TestTrue(TEXT("o pedaço da costa ganha areia molhada"),
+		Molhada->GetInstanceCount() > 0);
+	TestEqual(TEXT("o pedaço do miolo não ganha nenhuma"),
+		NoMiolo->GetShoreWetSand()->GetInstanceCount(), 0);
+
+	// E ela é MOLHADA: a faixa fica por DENTRO da linha d'água, nunca no mar.
+	const float RaioDaCosta = IslandGeography::LandRadiusUnits();
+	for (int32 Instancia = 0; Instancia < Molhada->GetInstanceCount(); ++Instancia)
+	{
+		if (!TestTrue(TEXT("nenhuma laje de areia cai fora da costa"),
+			RaioDaInstanciaDaOrla(NaBorda, Molhada, Instancia) <= RaioDaCosta + 1.0f))
+		{
+			break;
+		}
+	}
+
+	// Trocar o bioma APAGA a orla: o mesmo ator é reciclado entre pedaços.
+	NaBorda->BuildRegion(CasaDeTeste, 4242u, EIslandBiome::Glacier, LadoDoPedacoDeTeste);
+	TestEqual(TEXT("virar geleira não deixa areia molhada para trás"),
+		NaBorda->GetShoreWetSand()->GetInstanceCount(), 0);
+
+	DestroyForestTestWorld(World);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FForestShorePutsFoamOutsideTheSandTest,
+	"BattleSquare.Environment.ForestBackdrop.ShorePutsFoamOutsideTheSand",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FForestShorePutsFoamOutsideTheSandTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateForestTestWorld();
+	if (!World)
+	{
+		return false;
+	}
+
+	AForestBackdrop* Mata = World->SpawnActor<AForestBackdrop>(
+		AForestBackdrop::StaticClass(), FTransform(CentroDoPedacoDaOrlaDeTeste()));
+	if (!Mata)
+	{
+		DestroyForestTestWorld(World);
+		return false;
+	}
+
+	Mata->BuildRegion(CasaDeTeste, 77u, EIslandBiome::Beach, LadoDoPedacoDeTeste);
+
+	const UHierarchicalInstancedStaticMeshComponent* Molhada = Mata->GetShoreWetSand();
+	const UHierarchicalInstancedStaticMeshComponent* Espuma = Mata->GetShoreFoam();
+	if (!TestNotNull(TEXT("a espuma existe como componente"), Espuma))
+	{
+		DestroyForestTestWorld(World);
+		return false;
+	}
+
+	if (!TestTrue(TEXT("há espuma e há areia molhada para comparar"),
+		Espuma->GetInstanceCount() > 0 && Molhada->GetInstanceCount() > 0))
+	{
+		DestroyForestTestWorld(World);
+		return false;
+	}
+
+	float AreiaMaisDistante = 0.0f;
+	for (int32 Instancia = 0; Instancia < Molhada->GetInstanceCount(); ++Instancia)
+	{
+		AreiaMaisDistante = FMath::Max(AreiaMaisDistante,
+			RaioDaInstanciaDaOrla(Mata, Molhada, Instancia));
+	}
+
+	float EspumaMaisPerto = TNumericLimits<float>::Max();
+	for (int32 Instancia = 0; Instancia < Espuma->GetInstanceCount(); ++Instancia)
+	{
+		EspumaMaisPerto = FMath::Min(EspumaMaisPerto,
+			RaioDaInstanciaDaOrla(Mata, Espuma, Instancia));
+	}
+
+	// A onda quebra DEPOIS da areia. Espuma por dentro seria espuma em terra
+	// seca, e as duas na mesma faixa piscariam uma contra a outra.
+	TestTrue(TEXT("a espuma toda fica além da areia molhada"),
+		EspumaMaisPerto >= AreiaMaisDistante);
+
+	DestroyForestTestWorld(World);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FForestShoreStandsTreesOnTheSandTest,
+	"BattleSquare.Environment.ForestBackdrop.ShoreStandsTreesOnTheSand",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FForestShoreStandsTreesOnTheSandTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateForestTestWorld();
+	if (!World)
+	{
+		return false;
+	}
+
+	AForestBackdrop* Mata = World->SpawnActor<AForestBackdrop>(
+		AForestBackdrop::StaticClass(), FTransform(CentroDoPedacoDaOrlaDeTeste()));
+	if (!Mata)
+	{
+		DestroyForestTestWorld(World);
+		return false;
+	}
+
+	Mata->BuildRegion(CasaDeTeste, 909u, EIslandBiome::Beach, LadoDoPedacoDeTeste);
+
+	const UHierarchicalInstancedStaticMeshComponent* Beira = Mata->GetShoreTrees();
+	if (!TestNotNull(TEXT("as árvores de beira existem como componente"), Beira))
+	{
+		DestroyForestTestWorld(World);
+		return false;
+	}
+
+	// Praia sem nada em pé é uma rampa bege: não há o que dê escala nem o que
+	// faça sombra, e o jogador chega na água sem ter visto que chegava.
+	if (!TestTrue(TEXT("a praia tem algo em pé"), Beira->GetInstanceCount() > 0))
+	{
+		DestroyForestTestWorld(World);
+		return false;
+	}
+
+	// E elas ficam na areia SECA, atrás da onda.
+	const float RaioDaCosta = IslandGeography::LandRadiusUnits();
+	const float RaioDaAreia = RaioDaCosta - IslandGeography::BeachWidthUnits();
+	bool bAlgumaTombada = false;
+	for (int32 Instancia = 0; Instancia < Beira->GetInstanceCount(); ++Instancia)
+	{
+		const float Raio = RaioDaInstanciaDaOrla(Mata, Beira, Instancia);
+		if (!TestTrue(TEXT("nenhuma árvore nasce dentro do mar nem longe da praia"),
+			Raio < RaioDaCosta && Raio > RaioDaAreia))
+		{
+			break;
+		}
+
+		FTransform Onde;
+		Beira->GetInstanceTransform(Instancia, Onde);
+		// Árvore de praia cresce torta: o vento vem sempre do mesmo lado.
+		bAlgumaTombada = bAlgumaTombada
+			|| FMath::Abs(static_cast<float>(Onde.Rotator().Pitch)) > 1.0f;
+	}
+
+	TestTrue(TEXT("elas se inclinam, não sobem em prumo"), bAlgumaTombada);
+
+	Mata->BuildRegion(CasaDeTeste, 909u, EIslandBiome::Desert, LadoDoPedacoDeTeste);
+	TestEqual(TEXT("o deserto do mesmo lugar não herda as árvores de beira"),
+		Mata->GetShoreTrees()->GetInstanceCount(), 0);
+
+	DestroyForestTestWorld(World);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FForestShoreRepeatsForTheSamePlaceTest,
+	"BattleSquare.Environment.ForestBackdrop.ShoreRepeatsForTheSamePlace",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FForestShoreRepeatsForTheSamePlaceTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateForestTestWorld();
+	if (!World)
+	{
+		return false;
+	}
+
+	AForestBackdrop* Mata = World->SpawnActor<AForestBackdrop>(
+		AForestBackdrop::StaticClass(), FTransform(CentroDoPedacoDaOrlaDeTeste()));
+	if (!Mata)
+	{
+		DestroyForestTestWorld(World);
+		return false;
+	}
+
+	// Duas montagens do MESMO pedaço, como acontece a cada ida e volta do
+	// jogador: a praia precisa ser a mesma praia, e não outra igualmente
+	// bonita.
+	Mata->BuildRegion(CasaDeTeste, 31337u, EIslandBiome::Beach, LadoDoPedacoDeTeste);
+	const int32 LajesDaPrimeira = Mata->GetShoreWetSand()->GetInstanceCount();
+	const int32 ArvoresDaPrimeira = Mata->GetShoreTrees()->GetInstanceCount();
+
+	FTransform PrimeiraArvore;
+	if (ArvoresDaPrimeira > 0)
+	{
+		Mata->GetShoreTrees()->GetInstanceTransform(0, PrimeiraArvore);
+	}
+
+	Mata->BuildRegion(CasaDeTeste, 31337u, EIslandBiome::Beach, LadoDoPedacoDeTeste);
+
+	TestEqual(TEXT("a mesma quantidade de areia molhada"),
+		Mata->GetShoreWetSand()->GetInstanceCount(), LajesDaPrimeira);
+	TestEqual(TEXT("a mesma quantidade de árvore de beira"),
+		Mata->GetShoreTrees()->GetInstanceCount(), ArvoresDaPrimeira);
+
+	if (ArvoresDaPrimeira > 0)
+	{
+		FTransform SegundaArvore;
+		Mata->GetShoreTrees()->GetInstanceTransform(0, SegundaArvore);
+		TestTrue(TEXT("e a primeira árvore está onde estava"),
+			SegundaArvore.GetLocation().Equals(PrimeiraArvore.GetLocation(), 0.01));
+	}
+
+	DestroyForestTestWorld(World);
 	return true;
 }

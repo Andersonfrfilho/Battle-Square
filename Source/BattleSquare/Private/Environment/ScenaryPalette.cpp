@@ -153,14 +153,26 @@ namespace PaletaDoCenario
 	const FLinearColor AzulDaPocaEscura(0.043f, 0.153f, 0.196f);
 
 	/**
-	 * A areia da praia: FRIA e um degrau mais escura que a duna do deserto.
+	 * A areia SECA da praia: fria e um degrau mais escura que a duna do
+	 * deserto.
 	 *
-	 * É areia MOLHADA — o mar acabou de lavá-la, e areia molhada é mais
-	 * escura que areia seca. A diferença não é enfeite: é ela que separa a
-	 * beira do deserto quando os dois se encostam, que acontece em toda volta
-	 * da ilha.
+	 * A diferença não é enfeite: é ela que separa a beira do deserto quando os
+	 * dois se encostam, que acontece em toda volta da ilha.
 	 */
 	const FLinearColor PalidoDaPraia(0.694f, 0.655f, 0.549f);
+
+	/**
+	 * A areia MOLHADA, na beira: a mesma areia com um terço da claridade.
+	 *
+	 * Um terço, e não um retoque: a faixa tem menos de meio pedaço de largura
+	 * e é vista de longe, de cima e de lado. Diferença sutil a essa distância
+	 * é diferença que não existe — e a faixa serve justamente para se ver de
+	 * longe onde a água começa.
+	 */
+	const FLinearColor ParadoDaAreiaMolhada(0.427f, 0.412f, 0.361f);
+
+	/** A espuma: o branco mais alto da paleta, com um sopro de azul do mar. */
+	const FLinearColor BrancoDaEspuma(0.925f, 0.949f, 0.949f);
 
 	/**
 	 * A lama do brejo: escura, parda e quase sem saturação.
@@ -305,6 +317,12 @@ FLinearColor ScenaryPalette::ColorFor(EScenaryRole Role, FName MaterialSlot)
 
 	case EScenaryRole::CaveWater:
 		return AzulDaPocaEscura;
+
+	case EScenaryRole::WetSand:
+		return ParadoDaAreiaMolhada;
+
+	case EScenaryRole::SeaFoam:
+		return BrancoDaEspuma;
 
 	case EScenaryRole::Count:
 		break;

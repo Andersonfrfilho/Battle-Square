@@ -7,6 +7,7 @@
 #include "World/WorldObstacleBreaking.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "Environment/IslandGeography.h"
 #include "Environment/ScenaryPalette.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
@@ -48,6 +49,33 @@ namespace MataDoCenario
 
 	/** Grandezas sorteadas por monte: dois eixos, um tamanho, um giro. */
 	constexpr int32 SorteiosPorMonte = 4;
+
+	/** Onde começam os fluxos de sorteio das árvores de beira. */
+	constexpr int32 PrimeiroFluxoDaBeira = 1900000;
+
+	/** Grandezas sorteadas por árvore de beira: recuo, porte e tombo. */
+	constexpr int32 SorteiosPorArvoreDeBeira = 3;
+
+	/** Comprimento de cada laje da orla, medido AO LONGO do arco. */
+	constexpr float ComprimentoDaLajeDaOrla = 300.0f;
+
+	/** Largura RADIAL da faixa molhada — o que a onda alcança. */
+	constexpr float LarguraDaFaixaMolhada = 420.0f;
+
+	/** Largura RADIAL da espuma. Estreita: espuma larga vira nevoeiro no chão. */
+	constexpr float LarguraDaEspuma = 90.0f;
+
+	/** Espessura das lajes da orla: meia laje enterrada, meia à vista. */
+	constexpr float EspessuraDaLajeDaOrla = 8.0f;
+
+	/** Uma árvore de beira a cada tantos passos do arco. */
+	constexpr int32 PassosPorArvoreDeBeira = 9;
+
+	/** Quanto a árvore de beira pode recuar (ou avançar) sobre a areia. */
+	constexpr float RecuoDaArvoreDeBeira = 260.0f;
+
+	/** Altura desejada da árvore de beira, em unidades de mundo. */
+	constexpr float AlturaDaArvoreDeBeira = 640.0f;
 
 	/** Lado da primitiva da engine, em unidades de mundo. */
 	constexpr float CilindroDaEngineUnidades = 100.0f;
@@ -363,6 +391,129 @@ namespace MataDoCenario
 			Montes->AddInstance(Pouso);
 		}
 	}
+
+	/**
+	 * Onde, em espaço local do pedaço, cai um ponto do arco da costa — e se
+	 * ele cai DENTRO deste pedaço.
+	 *
+	 * O ladrilho tem 6400 de lado e a praia tem 1600 de largura: nenhum pedaço
+	 * de praia é só praia. Recortar pelo quadrado é o que impede a faixa de
+	 * atravessar mata adentro num pedaço e de sumir no mar noutro.
+	 */
+	bool PontoDoArcoNoPedaco(const FVector2D& CentroDoPedaco, float Meio,
+		float Raio, const FVector2D& Direcao, FVector2D& OutLocal)
+	{
+		OutLocal = Direcao * Raio - CentroDoPedaco;
+		return FMath::Abs(OutLocal.X) <= Meio && FMath::Abs(OutLocal.Y) <= Meio;
+	}
+
+	/** Deita uma laje da orla, virada de frente para o mar. */
+	void DeitarLajeDaOrla(UHierarchicalInstancedStaticMeshComponent* Laje,
+		const FVector2D& Local, float Graus, float LarguraRadial, float AlturaLocal)
+	{
+		FTransform Pouso;
+		Pouso.SetLocation(FVector(Local.X, Local.Y, AlturaLocal));
+		Pouso.SetRotation(FQuat(FRotator(0.0f, Graus, 0.0f)));
+		// X é RADIAL depois do giro, Y é o arco. Trocar os dois deixaria a
+		// faixa com 300 de largura e 420 de comprimento: uma fileira de
+		// tijolos soltos em vez de uma beira contínua.
+		Pouso.SetScale3D(FVector(
+			LarguraRadial / CilindroDaEngineUnidades,
+			ComprimentoDaLajeDaOrla / CilindroDaEngineUnidades,
+			EspessuraDaLajeDaOrla / CilindroDaEngineUnidades));
+		Laje->AddInstance(Pouso);
+	}
+
+	/**
+	 * Monta a ORLA deste pedaço: areia molhada, espuma e árvores de beira.
+	 *
+	 * Percorre o arco da ilha inteira e guarda só o que cai dentro do
+	 * ladrilho. Varrer 20 mil unidades de raio para aproveitar um punhado de
+	 * lajes parece desperdício, e é — quatrocentos cossenos por pedaço de
+	 * praia. Em troca, não existe caso de borda: nenhum pedaço precisa saber
+	 * em que quadrante está, nem por onde a costa entra e sai dele, e a laje
+	 * do vizinho encosta na desta por construção.
+	 */
+	void PlantarOrla(UHierarchicalInstancedStaticMeshComponent* Molhada,
+		UHierarchicalInstancedStaticMeshComponent* Espuma,
+		UHierarchicalInstancedStaticMeshComponent* Beira,
+		const FVector2D& CentroDoPedaco, float LadoDoPedaco, uint32 Semente)
+	{
+		const float RaioDaCosta = IslandGeography::LandRadiusUnits();
+		if (RaioDaCosta <= KINDA_SMALL_NUMBER || LadoDoPedaco <= KINDA_SMALL_NUMBER)
+		{
+			return;
+		}
+
+		const float Meio = LadoDoPedaco * 0.5f;
+		const float TopoDoChao = AForestBackdrop::GroundTopLocalZ();
+
+		const float RaioDaFaixa = RaioDaCosta - LarguraDaFaixaMolhada * 0.5f;
+		// A espuma fica do lado de FORA da areia: é ali que a onda quebra, e
+		// espuma por dentro da faixa molhada seria espuma em terra seca.
+		const float RaioDaEspuma = RaioDaCosta + LarguraDaEspuma * 0.5f;
+		const float RaioDaBeira = RaioDaCosta - IslandGeography::BeachWidthUnits() * 0.55f;
+
+		const float PassoEmRadianos = ComprimentoDaLajeDaOrla / RaioDaCosta;
+		const int32 Passos = FMath::CeilToInt(2.0f * PI / PassoEmRadianos);
+
+		UStaticMesh* MalhaDaBeira = Beira->GetStaticMesh();
+		const float AlturaDaMalhaDaBeira = MalhaDaBeira
+			? MalhaDaBeira->GetBoundingBox().GetSize().Z
+			: 0.0f;
+		const float EscalaDaBeira = (AlturaDaMalhaDaBeira > KINDA_SMALL_NUMBER)
+			? AlturaDaArvoreDeBeira / AlturaDaMalhaDaBeira
+			: 0.0f;
+
+		for (int32 Passo = 0; Passo < Passos; ++Passo)
+		{
+			const float Angulo = static_cast<float>(Passo) * PassoEmRadianos;
+			const FVector2D Direcao(FMath::Cos(Angulo), FMath::Sin(Angulo));
+			const float Graus = FMath::RadiansToDegrees(Angulo);
+
+			FVector2D Local;
+			if (PontoDoArcoNoPedaco(CentroDoPedaco, Meio, RaioDaFaixa, Direcao, Local))
+			{
+				DeitarLajeDaOrla(Molhada, Local, Graus, LarguraDaFaixaMolhada, TopoDoChao);
+			}
+			if (PontoDoArcoNoPedaco(CentroDoPedaco, Meio, RaioDaEspuma, Direcao, Local))
+			{
+				// Um dedo acima da areia: espuma no MESMO plano da faixa
+				// pisca contra ela, e o cintilar lê como defeito de vídeo.
+				DeitarLajeDaOrla(Espuma, Local, Graus, LarguraDaEspuma,
+					TopoDoChao + EspessuraDaLajeDaOrla);
+			}
+
+			if (Passo % PassosPorArvoreDeBeira != 0 || EscalaDaBeira <= 0.0f)
+			{
+				continue;
+			}
+
+			const int32 Fluxo = PrimeiroFluxoDaBeira + Passo * SorteiosPorArvoreDeBeira;
+			const float Recuo = BattleSpread::Between(-RecuoDaArvoreDeBeira, RecuoDaArvoreDeBeira,
+				BattleSpread::Fraction(Semente, Fluxo));
+			const float Porte = BattleSpread::Between(0.78f, 1.24f,
+				BattleSpread::Fraction(Semente, Fluxo + 1));
+			const float Tombo = BattleSpread::Between(7.0f, 18.0f,
+				BattleSpread::Fraction(Semente, Fluxo + 2));
+
+			FVector2D LocalDaBeira;
+			if (!PontoDoArcoNoPedaco(CentroDoPedaco, Meio, RaioDaBeira + Recuo, Direcao, LocalDaBeira))
+			{
+				continue;
+			}
+
+			// Tombo NEGATIVO no arfar: com o giro apontando o X para o mar, é
+			// o sinal negativo que joga o topo do tronco para fora. Positivo
+			// deitaria a árvore para dentro da mata, contra o vento que a
+			// entortou.
+			FTransform Pouso;
+			Pouso.SetLocation(FVector(LocalDaBeira.X, LocalDaBeira.Y, TopoDoChao));
+			Pouso.SetRotation(FQuat(FRotator(-Tombo, Graus, 0.0f)));
+			Pouso.SetScale3D(FVector(EscalaDaBeira * Porte));
+			Beira->AddInstance(Pouso);
+		}
+	}
 }
 
 AForestBackdrop::AForestBackdrop()
@@ -420,6 +571,46 @@ AForestBackdrop::AForestBackdrop()
 	if (EsferaDoMonte.Succeeded())
 	{
 		ReliefMounds->SetStaticMesh(EsferaDoMonte.Object);
+	}
+
+	// As três peças da ORLA. Elas ficam vazias em todo bioma que não é praia,
+	// e é `PlantarOrla` quem decide — o construtor só garante que existe malha
+	// para o dia em que houver instância.
+	ShoreWetSand = CreateDefaultSubobject<UHierarchicalInstancedStaticMeshComponent>(
+		TEXT("ShoreWetSand"));
+	ShoreWetSand->SetupAttachment(ForestRoot);
+	// Sem colisão: a faixa é a MARCA da onda no chão, não um degrau. Fechá-la
+	// faria o jogador esbarrar num muro invisível de oito unidades ao caminhar
+	// para o mar.
+	ShoreWetSand->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	ShoreWetSand->SetCastShadow(false);
+
+	ShoreFoam = CreateDefaultSubobject<UHierarchicalInstancedStaticMeshComponent>(
+		TEXT("ShoreFoam"));
+	ShoreFoam->SetupAttachment(ForestRoot);
+	ShoreFoam->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	ShoreFoam->SetCastShadow(false);
+
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CuboDaOrla(CuboDaEngine);
+	if (CuboDaOrla.Succeeded())
+	{
+		ShoreWetSand->SetStaticMesh(CuboDaOrla.Object);
+		ShoreFoam->SetStaticMesh(CuboDaOrla.Object);
+	}
+
+	ShoreTrees = CreateDefaultSubobject<UHierarchicalInstancedStaticMeshComponent>(
+		TEXT("ShoreTrees"));
+	ShoreTrees->SetupAttachment(ForestRoot);
+	// A árvore de beira FECHA, como qualquer tronco: ela é o que dá escala à
+	// praia, e atravessá-la desmentiria o tamanho que ela acabou de sugerir.
+	ShoreTrees->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	ShoreTrees->SetCastShadow(true);
+
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> TroncoDaBeira(
+		*FString::Printf(TEXT("%s%s.%s"), PastaDaMata, TEXT("tree_thin"), TEXT("tree_thin")));
+	if (TroncoDaBeira.Succeeded())
+	{
+		ShoreTrees->SetStaticMesh(TroncoDaBeira.Object);
 	}
 
 	SpeciesClusters.Reset();
@@ -499,6 +690,10 @@ void AForestBackdrop::BuildForest(float CellSize, uint32 Seed, const FVector2D& 
 	{
 		ReliefMounds->ClearInstances();
 	}
+
+	// Pelo mesmo motivo, a mata não tem beira de mar. Limpar aqui é o que
+	// impede uma laje de espuma de continuar de pé no meio de uma clareira.
+	LimparOrla();
 
 	ApplyGroundMaterial();
 
@@ -607,6 +802,24 @@ void AForestBackdrop::BuildRegion(float CellSize, uint32 Seed, EIslandBiome Biom
 	if (Presenca.PapelDoChao != EScenaryRole::Count)
 	{
 		ScenaryPalette::PaintComponent(ReliefMounds, Presenca.PapelDoChao);
+	}
+
+	// A ORLA é a única parte deste ator que depende de ONDE ele está, e não só
+	// do bioma que lhe mandaram: a linha d'água é um arco de raio conhecido em
+	// volta da ilha. Sem a posição, a faixa cairia no meio da areia num pedaço
+	// e dentro do mar no vizinho.
+	LimparOrla();
+	if (Biome == EIslandBiome::Beach)
+	{
+		const FVector Aqui = GetActorLocation();
+		PlantarOrla(ShoreWetSand, ShoreFoam, ShoreTrees,
+			FVector2D(Aqui.X, Aqui.Y), SideUnits, Seed);
+
+		ScenaryPalette::PaintComponent(ShoreWetSand, EScenaryRole::WetSand);
+		ScenaryPalette::PaintComponent(ShoreFoam, EScenaryRole::SeaFoam);
+		// Árvore de praia continua sendo árvore: pintá-la de outra cor abriria
+		// um papel novo para dizer exatamente o que `CanopyTree` já diz.
+		ScenaryPalette::PaintComponent(ShoreTrees, EScenaryRole::CanopyTree);
 	}
 
 	// A vida dos obstáculos é POSICIONAL: a chave aponta para um agrupamento e
@@ -731,6 +944,30 @@ float AForestBackdrop::RegionGroundSideUnits(float SideUnits)
 UHierarchicalInstancedStaticMeshComponent* AForestBackdrop::GetReliefMounds() const
 {
 	return ReliefMounds;
+}
+
+UHierarchicalInstancedStaticMeshComponent* AForestBackdrop::GetShoreWetSand() const
+{
+	return ShoreWetSand;
+}
+
+UHierarchicalInstancedStaticMeshComponent* AForestBackdrop::GetShoreFoam() const
+{
+	return ShoreFoam;
+}
+
+UHierarchicalInstancedStaticMeshComponent* AForestBackdrop::GetShoreTrees() const
+{
+	return ShoreTrees;
+}
+
+void AForestBackdrop::LimparOrla()
+{
+	// As três juntas, sempre. Limpar duas e esquecer a terceira deixaria a
+	// espuma boiando sozinha num deserto, que é pior que não ter praia.
+	if (ShoreWetSand) { ShoreWetSand->ClearInstances(); }
+	if (ShoreFoam)    { ShoreFoam->ClearInstances(); }
+	if (ShoreTrees)   { ShoreTrees->ClearInstances(); }
 }
 
 float AForestBackdrop::GroundTopLocalZ()

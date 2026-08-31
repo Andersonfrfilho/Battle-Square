@@ -125,6 +125,30 @@ public:
 	UHierarchicalInstancedStaticMeshComponent* GetReliefMounds() const;
 
 	/**
+	 * A faixa de areia molhada deste pedaço, na beira do mar.
+	 *
+	 * Ela acompanha o ARCO da ilha, não a borda do ladrilho: o pedaço tem 6400
+	 * de lado e a praia tem 1600 de largura, então todo pedaço de praia é meio
+	 * areia e meio interior. Faixa pintada no ladrilho inteiro molharia mata.
+	 */
+	UHierarchicalInstancedStaticMeshComponent* GetShoreWetSand() const;
+
+	/** A espuma na linha d'água — o lado de FORA da areia molhada. */
+	UHierarchicalInstancedStaticMeshComponent* GetShoreFoam() const;
+
+	/**
+	 * As árvores de beira: finas, altas e tombadas para o mar.
+	 *
+	 * Uma praia sem nada em pé é uma rampa bege — não há o que dê escala nem o
+	 * que faça sombra, e o jogador chega na água sem ter visto que chegava.
+	 *
+	 * O pacote não traz coqueiro. `tree_thin` inclinada é o que mais perto
+	 * chega da silhueta, e inclinar é metade do efeito: árvore de praia cresce
+	 * torta porque o vento vem sempre do mesmo lado.
+	 */
+	UHierarchicalInstancedStaticMeshComponent* GetShoreTrees() const;
+
+	/**
 	 * O papel de paleta do chão deste pedaço; `Count` quando não é pedaço.
 	 *
 	 * Existe para o teste poder cobrar que cada bioma pinta o SEU chão. A cor
@@ -202,6 +226,15 @@ private:
 	 */
 	void ApplyGroundMaterial();
 
+	/**
+	 * Apaga a orla inteira.
+	 *
+	 * Chamada em TODA montagem, antes de qualquer filtro de bioma: o mesmo
+	 * ator vira praia, vira geleira e volta a ser a mata da arena, e uma laje
+	 * esquecida não teria nada no mundo explicando de onde veio.
+	 */
+	void LimparOrla();
+
 	UPROPERTY()
 	TObjectPtr<USceneComponent> ForestRoot;
 
@@ -221,6 +254,23 @@ private:
 	 */
 	UPROPERTY()
 	TObjectPtr<UHierarchicalInstancedStaticMeshComponent> ReliefMounds;
+
+	/**
+	 * As três peças da ORLA, montadas só onde o bioma é praia.
+	 *
+	 * Elas são as únicas coisas deste ator que dependem de ONDE ele está no
+	 * mundo, e não só do bioma que lhe mandaram: a linha d'água é um arco de
+	 * raio conhecido, e sem consultar a posição do pedaço a faixa cairia no
+	 * meio da areia num lugar e dentro do mar no outro.
+	 */
+	UPROPERTY()
+	TObjectPtr<UHierarchicalInstancedStaticMeshComponent> ShoreWetSand;
+
+	UPROPERTY()
+	TObjectPtr<UHierarchicalInstancedStaticMeshComponent> ShoreFoam;
+
+	UPROPERTY()
+	TObjectPtr<UHierarchicalInstancedStaticMeshComponent> ShoreTrees;
 
 	/**
 	 * A malha QUADRADA do chão, para quem é ladrilho.

@@ -753,7 +753,7 @@ AForestBackdrop::AForestBackdrop()
 	ShoreTrees->SetCastShadow(true);
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> TroncoDaBeira(
-		*FString::Printf(TEXT("%s%s.%s"), PastaDaMata, TEXT("tree_thin"), TEXT("tree_thin")));
+		*AForestBackdrop::SpeciesAssetPath(TEXT("tree_thin")));
 	if (TroncoDaBeira.Succeeded())
 	{
 		ShoreTrees->SetStaticMesh(TroncoDaBeira.Object);
@@ -825,7 +825,7 @@ AForestBackdrop::AForestBackdrop()
 		// asset passa em todo teste de lógica e não existe na tela — foi
 		// assim três vezes neste projeto (pets, inimigos do mundo, o
 		// próprio jogador).
-		const FString Caminho = FString::Printf(TEXT("%s%s.%s"), PastaDaMata, Especie.Nome, Especie.Nome);
+		const FString Caminho = AForestBackdrop::SpeciesAssetPath(Especie.Nome);
 		ConstructorHelpers::FObjectFinder<UStaticMesh> Malha(*Caminho);
 		if (Malha.Succeeded())
 		{
@@ -840,6 +840,12 @@ AForestBackdrop::AForestBackdrop()
 		// primeira reordenação.
 		SpeciesRoles.Add(Especie.Papel);
 	}
+}
+
+FString AForestBackdrop::SpeciesAssetPath(const FString& SpeciesName)
+{
+	return FString::Printf(TEXT("%s%s.%s"),
+		MataDoCenario::PastaDaMata, *SpeciesName, *SpeciesName);
 }
 
 TArray<FString> AForestBackdrop::SpeciesNames()

@@ -94,6 +94,15 @@ public:
 	 */
 	static TArray<FString> SpeciesNames();
 
+	/**
+	 * Caminho do asset de uma espécie do pacote de mata.
+	 *
+	 * Uma função e não a pasta solta em cada lugar: o campo de treino também
+	 * monta peças deste mesmo pacote, e duas montagens do caminho concordam
+	 * até a primeira vez que o pacote muda de pasta (§16, L-032).
+	 */
+	static FString SpeciesAssetPath(const FString& SpeciesName);
+
 	/** Espécies da mata, para o teste que exige asset atribuído em todas. */
 	const TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>>& GetSpeciesClusters() const { return SpeciesClusters; }
 

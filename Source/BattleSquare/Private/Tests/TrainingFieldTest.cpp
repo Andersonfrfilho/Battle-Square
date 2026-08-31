@@ -10,6 +10,9 @@
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "World/WorldTrainingField.h"
+#include "Components/HierarchicalInstancedStaticMeshComponent.h"
+#include "Environment/BiomeFlora.h"
+#include "Environment/ForestBackdrop.h"
 
 // O RESTO acumulado atravessa as visitas.
 //
@@ -235,5 +238,145 @@ bool FTerrainIsAlwaysDullerThanCreaturesTest::RunTest(const FString& Parameters)
 			SaturacaoDoCampo < SaturacaoMinimaDeCriatura);
 	}
 
+	return true;
+}
+
+
+namespace
+{
+	/** Os cinco atributos que existem, na grafia do requisito de golpe. */
+	TArray<FString> AtributosDoCampoDeTreino()
+	{
+		return {
+			TEXT("musculature"), TEXT("personality"),
+			TEXT("camouflage"), TEXT("flight"), TEXT("underground"),
+		};
+	}
+}
+
+// AS PEÇAS DO CAMPO SAEM DO ELENCO DA FLORESTA.
+//
+// O campo era um disco chapado de cor lisa deitado na grama, e foi a primeira
+// coisa que o jogador apontou na tela: "uma forma redonda marrom, isso pode
+// sair, não tem porque". Agora ele é feito de peças do MESMO pacote que planta
+// a mata em volta — e o modo de falhar novo é escrever aqui o nome de uma peça
+// que aquele elenco não planta, ou que nem existe no pacote. Nenhum dos dois
+// avisa: o campo simplesmente nasceria sem marco, ou com a única peça que a
+// mata em volta não tem, voltando a parecer colado de fora.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FTrainingMarkerComesFromForestCastTest,
+	"BattleSquare.World.Training.MarcoSaiDoElencoDaFloresta",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FTrainingMarkerComesFromForestCastTest::RunTest(const FString& Parameters)
+{
+	const TArray<FString> Pacote = AForestBackdrop::SpeciesNames();
+	TSet<FString> MarcosVistos;
+
+	for (const FString& Atributo : AtributosDoCampoDeTreino())
+	{
+		const FTrainingFieldMarker Marco = AWorldTrainingField::MarkerForAttribute(Atributo);
+
+		TestFalse(FString::Printf(TEXT("%s tem marco"), *Atributo), Marco.MarkerSpecies.IsEmpty());
+		TestFalse(FString::Printf(TEXT("%s tem peça de borda"), *Atributo), Marco.BorderSpecies.IsEmpty());
+
+		TestTrue(FString::Printf(TEXT("o marco de %s existe no pacote"), *Atributo),
+			Pacote.Contains(Marco.MarkerSpecies));
+		TestTrue(FString::Printf(TEXT("a borda de %s existe no pacote"), *Atributo),
+			Pacote.Contains(Marco.BorderSpecies));
+
+		TestTrue(FString::Printf(TEXT("o marco de %s é da floresta"), *Atributo),
+			BiomeFlora::FitsBiome(Marco.MarkerSpecies, EIslandBiome::Forest));
+		TestTrue(FString::Printf(TEXT("a borda de %s é da floresta"), *Atributo),
+			BiomeFlora::FitsBiome(Marco.BorderSpecies, EIslandBiome::Forest));
+
+		MarcosVistos.Add(Marco.MarkerSpecies);
+	}
+
+	// CINCO MARCOS DIFERENTES. Se dois atributos partilhassem a peça do centro,
+	// as duas clareiras ficariam iguais de longe — e é justamente de longe que
+	// o jogador decide para qual delas andar.
+	TestEqual(TEXT("Cada atributo tem o SEU marco"), MarcosVistos.Num(), 5);
+
+	// O desconhecido ganha peça, e não o nada: marco invisível seria campo que
+	// não está na tela. Quem denuncia o erro é a cor cinza.
+	const FTrainingFieldMarker Torto = AWorldTrainingField::MarkerForAttribute(TEXT("nao_existe"));
+	TestFalse(TEXT("Atributo torto ainda ganha um marco"), Torto.MarkerSpecies.IsEmpty());
+	TestEqual(TEXT("E a cor dele denuncia"),
+		AWorldTrainingField::ColorForAttribute(TEXT("nao_existe")), FLinearColor(0.5f, 0.5f, 0.5f));
+
+	return true;
+}
+
+// O ANEL É QUEM DIZ ATÉ ONDE O CAMPO VAI, e é o que substituiu o contorno do
+// disco. Sem ele o campo teria um marco no meio e nenhuma borda — o jogador
+// veria a pedra e continuaria sem saber onde parar de andar.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FTrainingRingReplacesTheDiscTest,
+	"BattleSquare.World.Training.AnelSubstituiODisco",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FTrainingRingReplacesTheDiscTest::RunTest(const FString& Parameters)
+{
+	const AWorldTrainingField* Padrao = GetDefault<AWorldTrainingField>();
+	TestTrue(TEXT("O anel nasce com malha ATRIBUÍDA no CDO"),
+		Padrao->GetBorderProps() != nullptr && Padrao->GetBorderProps()->GetStaticMesh() != nullptr);
+
+	UWorld* Mundo = UWorld::CreateWorld(EWorldType::Game, /*bInformEngineOfWorld=*/false);
+	if (!Mundo)
+	{
+		AddError(TEXT("não foi possível criar mundo de teste"));
+		return false;
+	}
+
+	AWorldTrainingField* Campo = Mundo->SpawnActor<AWorldTrainingField>(
+		AWorldTrainingField::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator);
+	Campo->FieldRadiusUnits = 400.0f;
+	Campo->TrainedAttribute = TEXT("flight");
+	Campo->RebuildMarker();
+
+	UHierarchicalInstancedStaticMeshComponent* Anel = Campo->GetBorderProps();
+	const int32 Plantadas = Anel ? Anel->GetInstanceCount() : 0;
+	TestTrue(TEXT("O anel tem peças"), Plantadas > 0);
+
+	int32 ForaDaBorda = 0;
+	for (int32 Indice = 0; Indice < Plantadas; ++Indice)
+	{
+		FTransform Pouso;
+		Anel->GetInstanceTransform(Indice, Pouso, /*bWorldSpace=*/false);
+
+		const FVector Local = Pouso.GetLocation();
+		const float Distancia = FVector2D(Local.X, Local.Y).Size();
+		if (Distancia < Campo->FieldRadiusUnits - 60.0f || Distancia > Campo->FieldRadiusUnits + 60.0f)
+		{
+			++ForaDaBorda;
+		}
+	}
+	TestEqual(TEXT("Toda peça do anel fica NA borda"), ForaDaBorda, 0);
+
+	// O marco segue o atributo: pedir voo e receber a pedra da musculatura era
+	// o defeito de ordem que fez as cinco clareiras nascerem iguais.
+	UStaticMesh* MalhaDoMarco = Campo->GetFieldMesh()->GetStaticMesh();
+	TestTrue(TEXT("O marco de voo é a árvore alta"),
+		MalhaDoMarco != nullptr && MalhaDoMarco->GetName() == TEXT("tree_tall"));
+
+	// E A PROVA DE QUE O DISCO SAIU: a escala do marco é UNIFORME. O disco era
+	// 8 x 8 x 0,12 — uma elipse chapada —, e nenhuma peça da mata é isso.
+	const FVector Escala = Campo->GetFieldMesh()->GetRelativeScale3D();
+	TestTrue(TEXT("O marco não é um disco achatado"),
+		FMath::IsNearlyEqual(Escala.X, Escala.Z, 0.01) && FMath::IsNearlyEqual(Escala.X, Escala.Y, 0.01));
+
+	// REMONTAR NÃO DUPLICA. Quem cria os campos atribui o atributo depois do
+	// nascimento, então esta função corre duas vezes por campo, sempre.
+	Campo->TrainedAttribute = TEXT("personality");
+	Campo->RebuildMarker();
+
+	TestEqual(TEXT("Remontar mantém a conta do anel"), Anel->GetInstanceCount(), Plantadas);
+
+	UStaticMesh* MalhaNova = Campo->GetFieldMesh()->GetStaticMesh();
+	TestTrue(TEXT("E troca o marco junto com o atributo"),
+		MalhaNova != nullptr && MalhaNova->GetName() == TEXT("stump_round"));
+
+	Mundo->DestroyWorld(false);
 	return true;
 }

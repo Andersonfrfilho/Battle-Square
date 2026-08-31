@@ -807,9 +807,18 @@ void ABattleSquareGameMode::SpawnTrainingFields()
 	}
 
 	// MESMO pawn que a mata usou: campo de treino num lugar e chão em outro
-	// deixaria os discos boiando fora da clareira.
+	// deixaria as clareiras boiando fora da mata.
+	//
+	// A altura é a dos PÉS do pawn, não a do centro dele. A origem do ator é a
+	// base do marco, e no centro da cápsula o marco nasceria uma meia-altura
+	// acima do chão — pedra flutuando, que é o mesmo defeito de aparência que
+	// esta mudança veio consertar.
 	const APawn* Jogador = AcharPawnDoJogador(World);
-	const FVector Centro = Jogador ? Jogador->GetActorLocation() : FVector::ZeroVector;
+	FVector Centro = Jogador ? Jogador->GetActorLocation() : FVector::ZeroVector;
+	if (Jogador)
+	{
+		Centro.Z -= Jogador->GetSimpleCollisionHalfHeight();
+	}
 
 	// Os cinco atributos que existem, na mesma grafia do requisito de golpe.
 	const TCHAR* Atributos[] = {
@@ -834,6 +843,12 @@ void ABattleSquareGameMode::SpawnTrainingFields()
 		if (Campo)
 		{
 			Campo->TrainedAttribute = Atributos[Indice];
+
+			// REMONTA depois de atribuir. `BeginPlay` já correu dentro do
+			// `SpawnActor`, com o atributo ainda no padrão — sem esta linha os
+			// cinco campos nasciam com o marco e a cor da MUSCULATURA, cinco
+			// clareiras idênticas dizendo que treinavam coisas diferentes.
+			Campo->RebuildMarker();
 		}
 	}
 

@@ -1983,6 +1983,48 @@ void ABattleSquareGameMode::MaintainEncounterPopulation()
 #if !UE_BUILD_SHIPPING
 namespace
 {
+	/**
+	 * `bs.ShotAfter <segundos>` — tira uma captura depois de esperar.
+	 *
+	 * Existe porque `HighResShot` no `-ExecCmds` dispara no INSTANTE do boot, e
+	 * o que ele fotografa é a tela de carregamento: o mundo ainda não montou.
+	 * Foi exatamente o que aconteceu na primeira tentativa, e a imagem saiu um
+	 * retângulo creme.
+	 *
+	 * Com isto, quem verifica de fora consegue pedir "abra o jogo, espere o
+	 * mundo, e fotografe" numa linha só — e passa a ENXERGAR o que antes só
+	 * dava para deduzir do log. Boa parte do roteiro manual é sobre o que
+	 * aparece na tela, e o que aparece na tela cabe numa imagem.
+	 *
+	 * Ferramenta de DESENVOLVIMENTO, compilada fora do Shipping.
+	 */
+	FAutoConsoleCommandWithWorldAndArgs GShotAfterCommand(
+		TEXT("bs.ShotAfter"),
+		TEXT("Tira uma captura depois de N segundos (padrão 8). Espera o mundo montar."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(
+			[](const TArray<FString>& Args, UWorld* World)
+			{
+				if (!World)
+				{
+					return;
+				}
+
+				const float Espera = Args.Num() > 0
+					? FMath::Clamp(FCString::Atof(*Args[0]), 0.5f, 120.0f)
+					: 8.0f;
+
+				FTimerHandle Disparo;
+				World->GetTimerManager().SetTimer(Disparo,
+					FTimerDelegate::CreateLambda([World]()
+					{
+						// Pelo console, e não por API: `HighResShot` já resolve
+						// caminho, formato e nome do arquivo, e reimplementar
+						// isso seria uma segunda fonte para a mesma coisa.
+						GEngine->Exec(World, TEXT("HighResShot 1280x720"));
+					}),
+					Espera, /*bLoop=*/false);
+			}));
+
 	FAutoConsoleCommandWithWorldAndArgs GMarcarCommand(
 		TEXT("bs.Marcar"),
 		TEXT("Marca o lugar onde você está no mapa — ou apaga, se já houver marcação aqui. "

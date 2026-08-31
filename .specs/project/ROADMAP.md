@@ -1,6 +1,14 @@
 # Roadmap
 
-**Marco atual:** roadmap percorrido até onde esta máquina permite (2026-08-26). M1–M5 e M7 concluídos; **M6 é o único incompleto**, e por bloqueio de infraestrutura, não de código — ver B-006/B-006b/B-007 (nenhuma plataforma móvel compila aqui) e B-008 (console exige licença e devkit).
+**Marco atual:** roadmap percorrido até onde esta máquina permite. M8 seguiu
+crescendo até 31/08/2026 com terreno, mapa e o espectro.
+
+⚠️ **O maior risco aberto não é código:** doze roteiros de verificação, nenhum
+rodado. Tudo o que entrou entre 29 e 31/08 está verificado por 612 testes e por
+NENHUM olho. Este projeto já registrou três atores que passaram por baterias
+inteiras e não existiam na tela.
+
+**Histórico:** roadmap M1–M7 percorrido até onde esta máquina permite (2026-08-26). M1–M5 e M7 concluídos; **M6 é o único incompleto**, e por bloqueio de infraestrutura, não de código — ver B-006/B-006b/B-007 (nenhuma plataforma móvel compila aqui) e B-008 (console exige licença e devkit).
 **Status:** M1, M2, M3 e M4 concluídos
 **Objetivo de fechamento do roadmap inteiro (M3→M7):** `.specs/project/OBJECTIVE.md` — ordem, dependências entre marcos, gates (B-001, B-004) e critério de "pronto" do projeto completo.
 
@@ -165,6 +173,36 @@ a escolha de ataques e magias que dependem desses atributos"*.
 **Duas decisões seguem do usuário, e estão marcadas na spec:** se o treino
 avança offline (DP-atr-10, hoje "só com o jogo aberto"), e se dá para trocar de
 especialidade (DP-atr-11, hoje não).
+
+**Espectro — Fantasma e Luz** — ✅ CONCLUÍDO (31/08/2026, cinco fatias) — escola
+`Espiritual` e elementos `Fantasma` e `Luz`. O golpe FÍSICO não alcança o
+incorpóreo (e `Magia` ser universal é o que impede isso de ser invencível);
+`Atravessar` passa por dentro do obstáculo sem derrubá-lo; `Iluminar` revela
+qualquer esconderijo por um slot; e `drainPercent` devolve parte do dano como
+vida. Luz contra Fantasma é 200 — o número mais alto da tabela. Seis pets novos,
+e a regra do catálogo deixou de exigir todas as combinações: com 4×6 ela
+produziria pets de enchimento.
+
+**Fundura, gelo e lama** — ✅ CONCLUÍDO (30/08/2026, três fatias) — a água ganhou
+FUNDURA (poça e funda), o requisito de terreno saiu do código e virou dado, e o
+gelo entrou como TERRENO TEMPORÁRIO: congela, nega o terreno, e derrete. A cadeia
+gelo → poça → lama → chão seco corre sozinha, e só produz lama onde há clima
+úmido E água em quantidade — senão a poça evapora. A lama é o terreno INCERTO:
+escorrega, atrasa, ou deixa passar.
+
+**A arena é o LUGAR** — ✅ CONCLUÍDO (30/08/2026) — a arena nasce do pedaço de
+mapa onde o encontro aconteceu, e não de um sorteio em `Arenas.json`. Árvore vira
+casa bloqueada, rio vira água funda, margem segue o clima. ⚠️ **Há uma
+duplicação por conferir:** a outra frente entregou "a arena veste o bioma de onde
+o encontro aconteceu (item 16)" no mesmo dia — dois sistemas decidindo a mesma
+coisa, e ninguém verificou se concordam.
+
+**Mapa por descoberta** — ✅ CONCLUÍDO (30–31/08/2026, três fatias) — o mapa
+deixou de ser espelho do mundo e virou registro do que se andou. Traços de
+terreno (mata, clareira, margem, água, serra), legenda, e marcações do jogador
+por `bs.Marcar`, onde marcar de novo apaga. Decisão registrada (DP-mapa-01): se a
+ilha crescer demais, o mapa passa a ser por ÁREA — e há um teste que AVISA quando
+a hora chegar, em vez de depender de alguém lembrar.
 
 ---
 

@@ -147,6 +147,53 @@ tem um dia de vida, custa nada; depois custa o mapa de todo jogador.
   que se carregam.
 - **Quantas ilhas no começo?** Uma boa, e depois se decide.
 
+
+## A primeira região: três vilas, uma cidade e as fronteiras
+
+**Decidido em 31/08/2026.**
+
+**Cada assentamento tem função PRÓPRIA.** Três vilas iguais é uma vila visitada
+três vezes — a segunda não acrescenta nada, e a viagem até ela vira imposto.
+
+| lugar | função | por que ali |
+|---|---|---|
+| **Vila inicial** (bloco 0,0) | Centro de Recuperação e Escola do treinador | É casa. Cura de graça, e é onde `bs.Especializar` deixa de ser console. **Sem academia**, de propósito: assim a primeira viagem tem motivo |
+| **Vila da academia** | treino rápido e PAGO, de alguns atributos | O primeiro ralo da economia, e o primeiro motivo de ter dinheiro |
+| **Vila do mercado** | troca de pets por raridade, e o quadro de trabalhos | Onde o repetido vira alguma coisa, e onde os poderes do pet rendem |
+| **Cidade grande** | a ARENA e o ranking da região, mais tudo o que as vilas têm | O clímax. Ser o melhor daqui é o que abre a fronteira |
+
+### As fronteiras exigem o ranking
+
+Os postos de fronteira ficam na borda e **só abrem para quem venceu o ranking
+da região**. Isso transforma a região de corredor em lugar que se conquista, e
+dá ao "acabou aqui" um momento exato.
+
+E casa com a economia: o ranking já era a FONTE de dinheiro e já parava de
+pagar no primeiro lugar. Agora esse mesmo primeiro lugar é a chave da porta —
+o incentivo aponta para a saída no instante em que a região se esgota.
+
+### O que isso obriga, e é bom saber antes
+
+**Toda região inicial precisa ser autossuficiente.** Se a fronteira exige o
+ranking, quem nasce na região B não visita a A antes de vencer a B — então B
+precisa ter cura, escola, treino, mercado e arena. Nenhuma região pode depender
+de outra para o básico.
+
+Isso reforça a estrutura de ilhas: cada uma completa, e nenhuma é um corredor
+para a próxima.
+
+### Distâncias, com o raio de 1 km
+
+- **Vila inicial** no centro — bloco 0,0.
+- **Vila da academia** e **vila do mercado** a cerca de 400 m, em direções
+  diferentes: quatro minutos de caminhada da casa, e uma da outra.
+- **Cidade grande** a cerca de 700 m: longe o bastante para a chegada
+  significar alguma coisa.
+- **Postos de fronteira** na borda, perto dos 950 m.
+
+Assim nenhum trecho passa de uns dois minutos a pé, e a região inteira se
+percorre sem que a caminhada vire espera.
+
 ## Perguntas em aberto
 
 - **Quantas vilas iniciais?** Uma por bioma, ou só nos que fazem sentido para

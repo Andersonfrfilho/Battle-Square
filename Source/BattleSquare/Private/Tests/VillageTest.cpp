@@ -119,3 +119,39 @@ bool FAVilaNasceOndeOJogadorNasceTest::RunTest(const FString&)
 
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FNaoNasceMataNaPracaTest,
+	"BattleSquare.World.Vila.NaoNasceMataNaPraca",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FNaoNasceMataNaPracaTest::RunTest(const FString&)
+{
+	// A clareira é MAIOR que o lote. Com a folga exata, a mata encosta na
+	// parede — e árvore colada no Centro de Recuperação faz a vila parecer
+	// engolida pelo mato em vez de aberta nele.
+	TestTrue(TEXT("A clareira sobra em volta do lote"),
+		VillageLayout::ClearingHalfExtentUnits() > VillageLayout::PlotHalfExtentUnits());
+
+	// O centro da praça não se planta.
+	TestTrue(TEXT("Na praça não se planta"),
+		VillageLayout::BlocksPlanting(FVector2D::ZeroVector));
+
+	// Nem em cima de nenhum prédio — que é o caso que importa: árvore dentro
+	// da parede é o defeito que se vê e que ninguém consegue remover à mão.
+	for (const FVillagePlacement& Peca : VillageLayout::Plan())
+	{
+		TestTrue(TEXT("Não se planta em cima de prédio"),
+			VillageLayout::BlocksPlanting(Peca.OffsetUnits));
+	}
+
+	// E LONGE se planta: uma clareira que barrasse o mundo inteiro deixaria a
+	// ilha pelada, e o defeito seria muito pior que o que ela conserta.
+	const float Longe = VillageLayout::ClearingHalfExtentUnits() * 4.0f;
+	TestFalse(TEXT("Longe da vila a mata volta"),
+		VillageLayout::BlocksPlanting(FVector2D(Longe, Longe)));
+	TestFalse(TEXT("E logo depois da folga também"),
+		VillageLayout::BlocksPlanting(
+			FVector2D(VillageLayout::ClearingHalfExtentUnits() + 10.0f, 0.0f)));
+
+	return true;
+}

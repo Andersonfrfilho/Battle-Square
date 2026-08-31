@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Environment/ForestBackdrop.h"
+#include "World/VillageLayout.h"
 
 #include "Battle/DeterministicSpread.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
@@ -1363,6 +1364,18 @@ void AForestBackdrop::BuildRegion(float CellSize, uint32 Seed, EIslandBiome Biom
 					SementeDaEspecie, FluxoDaPlanta(Planta, 0, ESorteio::Angulo))),
 				BattleSpread::Between(-Meio, Meio, BattleSpread::Fraction(
 					SementeDaEspecie, FluxoDaPlanta(Planta, 0, ESorteio::Raio))));
+
+			// A CLAREIRA DA VILA não recebe planta. Sem esta pergunta nasce
+			// árvore dentro da praça, e "remover a árvore da praça" viraria
+			// caso especial que nunca acaba.
+			//
+			// Em coordenada de MUNDO: a vila está na origem e cada pedaço só
+			// sabe onde ele mesmo está.
+			const FVector2D NoMundo = FVector2D(GetActorLocation()) + Posicao;
+			if (VillageLayout::BlocksPlanting(NoMundo))
+			{
+				continue;
+			}
 
 			Grupo->AddInstance(PousoDaPlanta(SementeDaEspecie, Planta, 0,
 				Posicao, EscalaBase, Presenca.TomboMaximoEmGraus));

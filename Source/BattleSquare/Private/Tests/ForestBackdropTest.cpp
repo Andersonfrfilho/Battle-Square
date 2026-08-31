@@ -791,6 +791,14 @@ bool FForestRegionKeepsDensityAcrossSizesTest::RunTest(const FString& Parameters
 		return false;
 	}
 
+	// LONGE DA ORIGEM, e é uma correção: a origem virou a praça da vila, e
+	// nada se planta lá. Medido ali, o pedaço pequeno perdia proporcionalmente
+	// mais do que o grande, e a densidade parecia mudar com o tamanho quando
+	// quem mudava era a clareira.
+	//
+	// O teste sempre quis medir mata comum; a origem só era conveniente.
+	Mata->SetActorLocation(FVector(500000.0f, 500000.0f, 0.0f));
+
 	Mata->BuildRegion(CasaDeTeste, 5u, EIslandBiome::Forest, LadoDoPedacoDeTeste);
 	const int32 Pequeno = Mata->GetPlantedCount();
 

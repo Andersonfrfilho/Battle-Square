@@ -13,6 +13,14 @@ namespace
 	 */
 	constexpr float FracaoDoBloco = 0.34f;
 
+	/**
+	 * A folga entre o último prédio e a primeira árvore.
+	 *
+	 * Uma vila com mata encostada na parede parece engolida; com folga, ela
+	 * parece aberta na mata — que é o que uma clareira é.
+	 */
+	constexpr float FolgaDaClareiraUnidades = 260.0f;
+
 	/** Meio-lado de um prédio comum. */
 	constexpr float MeioLadoDaCasa = 200.0f;
 
@@ -104,4 +112,19 @@ bool VillageLayout::FitsInPlot(const FVillagePlacement& Placement)
 	const float Metade = PlotHalfExtentUnits();
 	return FMath::Abs(Placement.OffsetUnits.X) + Placement.HalfExtentUnits.X <= Metade
 		&& FMath::Abs(Placement.OffsetUnits.Y) + Placement.HalfExtentUnits.Y <= Metade;
+}
+
+float VillageLayout::ClearingHalfExtentUnits()
+{
+	return PlotHalfExtentUnits() + FolgaDaClareiraUnidades;
+}
+
+bool VillageLayout::BlocksPlanting(const FVector2D& WorldXY)
+{
+	// A vila fica na ORIGEM do mundo — o centro do bloco 0,0, onde o jogador
+	// nasce. Quando houver mais vilas, esta função passa a consultar a lista
+	// delas, e é por isso que ela recebe posição de mundo em vez de um
+	// deslocamento.
+	const float Metade = ClearingHalfExtentUnits();
+	return FMath::Abs(WorldXY.X) <= Metade && FMath::Abs(WorldXY.Y) <= Metade;
 }

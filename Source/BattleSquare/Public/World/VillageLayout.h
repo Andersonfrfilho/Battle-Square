@@ -98,4 +98,25 @@ namespace VillageLayout
 
 	/** A pegada inteira cabe no lote. */
 	BATTLESQUARE_API bool FitsInPlot(const FVillagePlacement& Placement);
+
+	/**
+	 * A CLAREIRA da vila: o lote mais uma folga.
+	 *
+	 * Maior que o lote de propósito. Com a folga exata, a mata encosta na
+	 * parede — e uma árvore colada no Centro de Recuperação faz a vila parecer
+	 * engolida pelo mato em vez de aberta nele.
+	 */
+	BATTLESQUARE_API float ClearingHalfExtentUnits();
+
+	/**
+	 * Aqui não se planta.
+	 *
+	 * O gerador da mata pergunta isto antes de pôr cada instância. Sem a
+	 * pergunta, nasce árvore dentro da praça — e "remover a árvore da praça"
+	 * viraria caso especial que nunca acaba.
+	 *
+	 * A conta é em coordenada de MUNDO porque a vila fica na origem e a mata é
+	 * plantada por pedaço: cada pedaço só sabe onde ELE está.
+	 */
+	BATTLESQUARE_API bool BlocksPlanting(const FVector2D& WorldXY);
 }

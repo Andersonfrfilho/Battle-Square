@@ -49,6 +49,66 @@ O que isso dá de bom, e não estava no pedido:
 - **Casa com os pets que envelhecem** (`mundo-vivo`): cansaço é fadiga curta,
   idade é desgaste longo, e as duas se leem no mesmo lugar.
 
+### O que cansa: distância, INCLINAÇÃO e PESO
+
+**Decidido em 31/08/2026.** O cansaço não é uma régua sobre o mapa: subir custa,
+e carregar custa.
+
+| fator | efeito |
+|---|---|
+| **distância** | a base |
+| **subida** | custa MUITO mais que o plano |
+| **descida** | custa um pouco mais que o plano — nunca menos |
+| **peso carregado** | multiplica tudo acima |
+
+**A descida não é de graça, e essa é a decisão que faz a inclinação importar.**
+Se descer devolvesse o que subir tirou, toda ida e volta se anularia e o relevo
+deixaria de existir para quem viaja — o morro seria só um desenho. Descer custa
+pouco, mas custa: é freio, não descanso. (E é verdade no corpo também: quem
+desce a serra sente os joelhos, não o fôlego.)
+
+Isso dá ao mapa uma coisa que ele não tinha: **rota**. Contornar o morro passa
+a ser uma escolha legítima contra atravessá-lo, e a trilha desenhada vira o
+conselho de quem já andou ali — ela vai pelo caminho barato.
+
+### O peso: o que o jogador carrega
+
+**Decidido em 31/08/2026.** Peso multiplica o cansaço, e é o que dá custo à
+coleta de pedra, madeira e barro (`mundo-vivo`). Sem ele, coletar é lucro sem
+contrapartida, e o mapa vira depósito.
+
+E é aqui que a montaria encontra a função mais bonita dela: **o pet que carrega
+é diferente do pet que luta.** O forte carrega mais e cansa menos com carga — e
+aí manter dois pets deixa de ser preferência e vira estratégia.
+
+**Duas amarras, e as duas contra o mesmo defeito: virar jogo de inventário.**
+
+1. **Peso nunca BLOQUEIA — ele torna lento e cansa mais.** Limite rígido produz
+   a mesma cena em todo jogo que o tem: a pessoa parada no chão decidindo o que
+   largar. Isso não é decisão, é contabilidade.
+2. **Peso pequeno não conta.** Só a partir de uma carga que se note. Senão cada
+   pedra apanhada obriga a pensar, e apanhar uma pedra deve ser um gesto.
+
+### O que isto obriga, e o mundo ainda não tem
+
+**Não existe altura do chão.** A ilha é plana, e as montanhas são atores em
+cima dela: nenhuma função responde "que altura tem aqui". Sem isso, "subida
+cansa mais" não tem como ser calculado nem testado.
+
+O caminho, e ele é o padrão que já funcionou três vezes neste projeto:
+**`IslandGeography::GroundHeightAt(WorldXY)`, pura.** Uma fonte só, consultada
+por quem CONSTRÓI o relevo, por quem traça a trilha e por quem cobra o cansaço.
+
+É o que torna "a trilha evita a subida" e "subir a montanha cansa mais que
+contorná-la" asserções de milissegundos, em vez de uma caminhada dentro do
+jogo. E é o que impede a terceira cópia do relevo — este projeto já pagou por
+duas fontes da mesma verdade em L-032, L-033 e num defeito de direção.
+
+**Enquanto `GroundHeightAt` não existir, o cansaço é só distância e peso.** Não
+é meia regra: é a regra inteira menos o fator que ainda não tem como ser
+medido, e escrever inclinação sobre um mundo plano seria afirmar um número que
+sempre daria zero.
+
 ### O que precisa ser decidido junto
 
 - **O cansaço se recupera sozinho com o tempo?** Se não, toda viagem termina

@@ -76,6 +76,77 @@ volta.
 Medir antes de mudar o raio. É barato, e o contrário é um mundo vazio que
 parece defeito de geração.
 
+
+## Uma ilha, uma aventura, um mapa
+
+**Decidido em 31/08/2026.** O mundo não é uma ilha só que cresce — são ILHAS,
+cada uma completa em si.
+
+Com 1 km de raio cabem uns quinze pontos de parada: vila inicial, uma cidade
+grande, cinco campos de treino, três rios com lago e cachoeira, três montanhas,
+uma caverna grande, um vulcão e o anel de praia. Entre vizinhos, 200 a 400
+metros — um a dois minutos de caminhada. Se cada ponto valer de 5 a 15 minutos,
+**a ilha inteira dá de uma hora e meia a três horas.** Isso é aventura
+completa.
+
+E vale dizer o que a conta não diz: **o que faz aventura é DENSIDADE, não
+área.** Kanto inteiro cabe num quarteirão em metros reais e ninguém o achou
+pequeno. Mundo grande e vazio é o erro clássico do gênero — 3,14 km² cheios
+valem mais que 12 km² com nada entre os marcos.
+
+### O que a estrutura de ilhas resolve de graça
+
+1. **O mapa por área.** A ilha É a área. Cada uma tem o seu mapa inteiro, e a
+   divisão que `DP-mapa-01` mandava fazer deixa de ser problema — não porque o
+   limite sumiu, mas porque a unidade passou a ser natural.
+2. **O spawn por bioma.** Uma ilha por família de bioma dá a cada jogador vila,
+   cidade, ranking e espécies próprias, sem que começar num lugar seja começar
+   pior.
+3. **A progressão.** Sair da ilha é o marco de "terminei aqui" — coisa que um
+   mundo contínuo tem dificuldade de expressar.
+4. **O motivo de trocar pets.** Se as espécies são DA ILHA, quem começou noutra
+   tem o que você não alcança sozinho.
+
+### O custo, dito na cara
+
+**Cada ilha é conteúdo.** Uma ilha excelente vale mais que quatro medianas, e a
+tentação de multiplicar antes de a primeira ficar boa é forte. Construir UMA
+inteira — a floresta — e só então a segunda, reusando o molde com paleta e
+espécies diferentes.
+
+### A correção que a conta expôs
+
+Ilhas resolvem a divisão conceitual do mapa, mas **não resolviam a contagem de
+pedaços** — e eu disse que resolviam antes de fazer a conta. Com raio de 1 km e
+região de descoberta fixa em 800 unidades, o mapa desenharia 160 mil pedaços.
+
+A causa é a mesma dos anéis das peças, e o mesmo tipo de decisão velha: **800
+unidades é número absoluto**, escolhido quando a ilha só tinha 200 metros.
+
+**A região de descoberta passa a ser o raio dividido por 25.** Isso mantém
+tudo constante, cresça a ilha o quanto crescer:
+
+| raio | região | de ponta a ponta | pedaços |
+|---|---|---|---|
+| 20.000 (hoje) | 800 u (8 m) | 80 | 6.400 |
+| 100.000 | 4.000 u (40 m) | 80 | 6.400 |
+| 200.000 | 8.000 u (80 m) | 80 | 6.400 |
+
+A fração foi escolhida para dar **exatamente as 800 unidades de hoje** com o
+raio atual — mesma disciplina dos anéis: converter absoluto em fração não pode
+mudar o mundo de ninguém.
+
+**Ressalva:** mudar o tamanho da região invalida a descoberta já salva, porque
+a chave da região muda de significado. Fazer isso AGORA, enquanto a descoberta
+tem um dia de vida, custa nada; depois custa o mapa de todo jogador.
+
+### Perguntas em aberto
+
+- **Como se viaja entre ilhas?** Barco, portal, ou o marco de retorno da vila?
+  A resposta muda se as ilhas são vizinhas no mesmo mundo ou lugares separados
+  que se carregam.
+- **Quantas ilhas no começo?** Uma boa, e depois se decide.
+
 ## Perguntas em aberto
 
 - **Quantas vilas iniciais?** Uma por bioma, ou só nos que fazem sentido para

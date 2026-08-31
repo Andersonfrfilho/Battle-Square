@@ -157,13 +157,28 @@ enum class EScenaryRole : uint8
 	WetSand,
 
 	/**
-	 * A espuma na linha d'água.
+	 * A espuma da água branca — a do mar E a da cachoeira.
 	 *
 	 * Quase branca, e a coisa mais clara da paleta inteira: espuma cinzenta é
-	 * pedra achatada. Ela mora do lado de FORA da areia molhada, porque é ali
-	 * que a onda quebra.
+	 * pedra achatada. Na praia ela mora do lado de FORA da areia molhada,
+	 * porque é ali que a onda quebra; no rio, no degrau em que a água despenca.
+	 *
+	 * Chamou-se `SeaFoam` por um dia, quando só a praia a usava. O nome durou
+	 * até a primeira cachoeira: espuma é espuma, e dois papéis com a mesma cor
+	 * são duas cores no dia em que alguém editar uma delas.
 	 */
-	SeaFoam,
+	WaterFoam,
+
+	/**
+	 * A água DOCE: rio, lago e queda.
+	 *
+	 * Clara e esverdeada, e é assim de propósito — o mar da borda é azul fundo
+	 * e dessaturado, a poça da caverna é quase preta, e o charco é verde
+	 * parado. Se a água do rio nascesse parecida com qualquer uma das três,
+	 * quem olha o mapa perderia justamente a informação que ela carrega: esta
+	 * dá para beber, atravessar e seguir até o monte de onde ela desce.
+	 */
+	FreshWater,
 
 	/**
 	 * Quantos papéis existem. Não é papel nenhum.

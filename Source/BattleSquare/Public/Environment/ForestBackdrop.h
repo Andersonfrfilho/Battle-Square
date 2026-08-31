@@ -148,6 +148,10 @@ public:
 	 */
 	UHierarchicalInstancedStaticMeshComponent* GetShoreTrees() const;
 
+	UHierarchicalInstancedStaticMeshComponent* GetRiverSurface() const;
+	UHierarchicalInstancedStaticMeshComponent* GetRiverFallFoam() const;
+	UHierarchicalInstancedStaticMeshComponent* GetRiverTrail() const;
+
 	/**
 	 * O papel de paleta do chão deste pedaço; `Count` quando não é pedaço.
 	 *
@@ -235,6 +239,15 @@ private:
 	 */
 	void LimparOrla();
 
+	/**
+	 * Apaga rio, queda e trilha de beira.
+	 *
+	 * Mesmo motivo da orla: o ator é reaproveitado de um pedaço para o outro, e
+	 * um trecho de rio esquecido correria por dentro de um pedaço por onde rio
+	 * nenhum passa.
+	 */
+	void LimparAguaDoce();
+
 	UPROPERTY()
 	TObjectPtr<USceneComponent> ForestRoot;
 
@@ -271,6 +284,13 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UHierarchicalInstancedStaticMeshComponent> ShoreTrees;
+
+	UPROPERTY()
+	TObjectPtr<UHierarchicalInstancedStaticMeshComponent> RiverSurface;
+	UPROPERTY()
+	TObjectPtr<UHierarchicalInstancedStaticMeshComponent> RiverFallFoam;
+	UPROPERTY()
+	TObjectPtr<UHierarchicalInstancedStaticMeshComponent> RiverTrail;
 
 	/**
 	 * A malha QUADRADA do chão, para quem é ladrilho.

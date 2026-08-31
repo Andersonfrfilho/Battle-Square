@@ -171,8 +171,18 @@ namespace PaletaDoCenario
 	 */
 	const FLinearColor ParadoDaAreiaMolhada(0.427f, 0.412f, 0.361f);
 
-	/** A espuma: o branco mais alto da paleta, com um sopro de azul do mar. */
+	/** A espuma: o branco mais alto da paleta, com um sopro de azul. */
 	const FLinearColor BrancoDaEspuma(0.925f, 0.949f, 0.949f);
+
+	/**
+	 * A água doce: turquesa clara, a única água clara da ilha.
+	 *
+	 * O mar da borda é (0,06 / 0,16 / 0,26) e o charco é verde parado; esta
+	 * fica acima dos dois em brilho e puxa para o ciano. Contra a grama, que é
+	 * verde médio, ela precisa desse degrau de claridade — água doce escura
+	 * sobre mato lê como sombra de árvore, não como rio.
+	 */
+	const FLinearColor TurquesaDoRio(0.235f, 0.514f, 0.545f);
 
 	/**
 	 * A lama do brejo: escura, parda e quase sem saturação.
@@ -321,8 +331,11 @@ FLinearColor ScenaryPalette::ColorFor(EScenaryRole Role, FName MaterialSlot)
 	case EScenaryRole::WetSand:
 		return ParadoDaAreiaMolhada;
 
-	case EScenaryRole::SeaFoam:
+	case EScenaryRole::WaterFoam:
 		return BrancoDaEspuma;
+
+	case EScenaryRole::FreshWater:
+		return TurquesaDoRio;
 
 	case EScenaryRole::Count:
 		break;

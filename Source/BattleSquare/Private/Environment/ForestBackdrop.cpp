@@ -7,6 +7,7 @@
 #include "World/WorldObstacleBreaking.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "Environment/FreshWater.h"
 #include "Environment/IslandGeography.h"
 #include "Environment/ScenaryPalette.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -424,6 +425,150 @@ namespace MataDoCenario
 		Laje->AddInstance(Pouso);
 	}
 
+	/** Comprimento de cada laje do rio, medido AO LONGO da correnteza. */
+	constexpr float PassoDoRio = 240.0f;
+
+	/**
+	 * Quanto cada laje do rio invade a seguinte.
+	 *
+	 * Sem sobra, duas lajes vizinhas em rumos diferentes deixam uma fresta em
+	 * cada curva — e um rio pontilhado é pior que rio nenhum, porque parece
+	 * defeito em vez de escolha.
+	 */
+	constexpr float SobreposicaoDoRio = 1.15f;
+
+	/**
+	 * A que altura a lâmina d'água corre sobre o chão.
+	 *
+	 * Acima da orla inteira de propósito: a areia molhada ocupa até quatro
+	 * unidades acima do chão e a espuma até doze, e lâmina disputando altura
+	 * com elas seria o rio piscando na foz. Dezesseis unidades num mundo em
+	 * que um pet tem centenas é degrau que ninguém enxerga.
+	 */
+	constexpr float AlturaDaLaminaDoRio = 16.0f;
+	constexpr float EspessuraDaLamina = 8.0f;
+
+	/** A espuma da queda vai por cima da lâmina, e é mais grossa. */
+	constexpr float AlturaDaEspumaDaQueda = 26.0f;
+	constexpr float EspessuraDaEspumaDaQueda = 10.0f;
+
+	/** A espuma transborda um pouco da calha: água caindo espirra. */
+	constexpr float AlargamentoDaEspuma = 1.15f;
+
+	/** A trilha é chão pisado, e por isso quase rente ao chão. */
+	constexpr float AlturaDaTrilhaDoRio = 2.0f;
+	constexpr float EspessuraDaTrilhaDoRio = 6.0f;
+
+	/** Se este ponto do mundo cai dentro do ladrilho, e onde ele cai. */
+	bool PontoNoPedaco(const FVector2D& Mundo, const FVector2D& CentroDoPedaco,
+		float Meio, FVector2D& OutLocal)
+	{
+		OutLocal = Mundo - CentroDoPedaco;
+		return FMath::Abs(OutLocal.X) <= Meio && FMath::Abs(OutLocal.Y) <= Meio;
+	}
+
+	/** Deita uma laje de curso d'água, virada na direção da correnteza. */
+	void DeitarLajeDoRio(UHierarchicalInstancedStaticMeshComponent* Laje,
+		const FVector2D& Local, float Graus, float Largura, float AlturaLocal,
+		float Espessura)
+	{
+		FTransform Pouso;
+		Pouso.SetLocation(FVector(Local.X, Local.Y, AlturaLocal));
+		Pouso.SetRotation(FQuat(FRotator(0.0f, Graus, 0.0f)));
+		// Depois do giro o X aponta rio abaixo e o Y atravessa a calha.
+		Pouso.SetScale3D(FVector(
+			PassoDoRio * SobreposicaoDoRio / CilindroDaEngineUnidades,
+			Largura / CilindroDaEngineUnidades,
+			Espessura / CilindroDaEngineUnidades));
+		Laje->AddInstance(Pouso);
+	}
+
+	/**
+	 * Monta os cursos d'água que passam por este pedaço.
+	 *
+	 * Mesmo desenho da orla, e pelo mesmo motivo: percorre o rio INTEIRO,
+	 * da nascente à foz, e guarda só o que cai no ladrilho. Assim nenhum
+	 * pedaço precisa saber que o vizinho existe, e o trecho de um encosta no
+	 * do outro por construção.
+	 *
+	 * A laje é de quem tem o CENTRO dela dentro do quadrado. Aceitar também as
+	 * que só encostam faria dois pedaços desenharem a mesma laje, e duas lajes
+	 * no mesmo lugar brigam por pixel.
+	 */
+	void PlantarAguaDoce(UHierarchicalInstancedStaticMeshComponent* Lamina,
+		UHierarchicalInstancedStaticMeshComponent* Queda,
+		UHierarchicalInstancedStaticMeshComponent* Trilha,
+		const FVector2D& CentroDoPedaco, float LadoDoPedaco)
+	{
+		if (LadoDoPedaco <= KINDA_SMALL_NUMBER)
+		{
+			return;
+		}
+
+		const float Meio = LadoDoPedaco * 0.5f;
+		const float TopoDoChao = AForestBackdrop::GroundTopLocalZ();
+
+		// A trilha morre onde a areia começa: caminho de terra sobre praia não
+		// é caminho, é mancha — na areia se anda em qualquer direção.
+		const float FimDaTrilha = IslandGeography::LandRadiusUnits()
+			- IslandGeography::BeachWidthUnits();
+
+		for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
+		{
+			for (float Raio = Curso.SourceRadiusUnits; Raio <= Curso.MouthRadiusUnits;
+				Raio += PassoDoRio)
+			{
+				const FVector2D Aqui = FreshWater::PointAt(Curso, Raio);
+				const FVector2D Adiante = FreshWater::PointAt(Curso,
+					FMath::Min(Raio + PassoDoRio, Curso.MouthRadiusUnits));
+
+				const FVector2D Correnteza = (Adiante - Aqui).GetSafeNormal();
+				if (Correnteza.IsNearlyZero())
+				{
+					continue;
+				}
+
+				const float Graus = FMath::RadiansToDegrees(
+					FMath::Atan2(Correnteza.Y, Correnteza.X));
+				const float MeiaLargura = FreshWater::HalfWidthAt(Curso, Raio);
+
+				FVector2D Local;
+				if (PontoNoPedaco(Aqui, CentroDoPedaco, Meio, Local))
+				{
+					DeitarLajeDoRio(Lamina, Local, Graus, MeiaLargura * 2.0f,
+						TopoDoChao + AlturaDaLaminaDoRio, EspessuraDaLamina);
+
+					if (FreshWater::IsFallAt(Curso, Raio))
+					{
+						DeitarLajeDoRio(Queda, Local, Graus,
+							MeiaLargura * 2.0f * AlargamentoDaEspuma,
+							TopoDoChao + AlturaDaEspumaDaQueda, EspessuraDaEspumaDaQueda);
+					}
+				}
+
+				if (Raio >= FimDaTrilha)
+				{
+					continue;
+				}
+
+				// Sempre a MESMA margem. Trocando de lado no meio do caminho, a
+				// trilha atravessaria o rio sem ponte — e quem a segue chegaria
+				// à água esperando continuar andando.
+				const FVector2D Margem(-Correnteza.Y, Correnteza.X);
+				const FVector2D NaTrilha = Aqui + Margem
+					* (MeiaLargura + FreshWater::TrailOffsetUnits());
+
+				FVector2D LocalDaTrilha;
+				if (PontoNoPedaco(NaTrilha, CentroDoPedaco, Meio, LocalDaTrilha))
+				{
+					DeitarLajeDoRio(Trilha, LocalDaTrilha, Graus,
+						FreshWater::TrailHalfWidthUnits() * 2.0f,
+						TopoDoChao + AlturaDaTrilhaDoRio, EspessuraDaTrilhaDoRio);
+				}
+			}
+		}
+	}
+
 	/**
 	 * Monta a ORLA deste pedaço: areia molhada, espuma e árvores de beira.
 	 *
@@ -613,6 +758,40 @@ AForestBackdrop::AForestBackdrop()
 		ShoreTrees->SetStaticMesh(TroncoDaBeira.Object);
 	}
 
+	// As tres pecas da AGUA DOCE: a lamina do rio, a espuma da queda e a
+	// trilha que acompanha a margem. Elas vao juntas porque sao o mesmo curso
+	// visto de tres jeitos, e separa-las em atores diferentes seria abrir a
+	// porta para a trilha ficar num pedaco em que o rio ja nao passa.
+	RiverSurface = CreateDefaultSubobject<UHierarchicalInstancedStaticMeshComponent>(
+		TEXT("RiverSurface"));
+	RiverSurface->SetupAttachment(ForestRoot);
+	// Sem colisão: a lâmina é a SUPERFÍCIE da água, e água não é degrau. Foi
+	// exatamente o contrário disso que produziu "parte da agua ele afunda" —
+	// ali o pet caía; aqui ele anda por cima, porque a lâmina fica acima do
+	// chão e não tenta empurrá-lo.
+	RiverSurface->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	RiverSurface->SetCastShadow(false);
+
+	RiverFallFoam = CreateDefaultSubobject<UHierarchicalInstancedStaticMeshComponent>(
+		TEXT("RiverFallFoam"));
+	RiverFallFoam->SetupAttachment(ForestRoot);
+	RiverFallFoam->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	RiverFallFoam->SetCastShadow(false);
+
+	RiverTrail = CreateDefaultSubobject<UHierarchicalInstancedStaticMeshComponent>(
+		TEXT("RiverTrail"));
+	RiverTrail->SetupAttachment(ForestRoot);
+	RiverTrail->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	RiverTrail->SetCastShadow(false);
+
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CuboDoRio(CuboDaEngine);
+	if (CuboDoRio.Succeeded())
+	{
+		RiverSurface->SetStaticMesh(CuboDoRio.Object);
+		RiverFallFoam->SetStaticMesh(CuboDoRio.Object);
+		RiverTrail->SetStaticMesh(CuboDoRio.Object);
+	}
+
 	SpeciesClusters.Reset();
 	SpeciesRoles.Reset();
 	for (int32 Indice = 0; Indice < TotalDeEspecies; ++Indice)
@@ -694,6 +873,10 @@ void AForestBackdrop::BuildForest(float CellSize, uint32 Seed, const FVector2D& 
 	// Pelo mesmo motivo, a mata não tem beira de mar. Limpar aqui é o que
 	// impede uma laje de espuma de continuar de pé no meio de uma clareira.
 	LimparOrla();
+
+	// Nem rio: a arena é um recorte de mata, não um trecho da ilha, e não tem
+	// raio nenhum em relação ao centro do mundo para um curso d'água seguir.
+	LimparAguaDoce();
 
 	ApplyGroundMaterial();
 
@@ -816,10 +999,27 @@ void AForestBackdrop::BuildRegion(float CellSize, uint32 Seed, EIslandBiome Biom
 			FVector2D(Aqui.X, Aqui.Y), SideUnits, Seed);
 
 		ScenaryPalette::PaintComponent(ShoreWetSand, EScenaryRole::WetSand);
-		ScenaryPalette::PaintComponent(ShoreFoam, EScenaryRole::SeaFoam);
+		ScenaryPalette::PaintComponent(ShoreFoam, EScenaryRole::WaterFoam);
 		// Árvore de praia continua sendo árvore: pintá-la de outra cor abriria
 		// um papel novo para dizer exatamente o que `CanopyTree` já diz.
 		ScenaryPalette::PaintComponent(ShoreTrees, EScenaryRole::CanopyTree);
+	}
+
+	// A ÁGUA DOCE não pergunta o bioma, e é essa a diferença dela para a orla:
+	// a orla só existe onde a areia está, mas o rio ATRAVESSA — nasce na saia
+	// de um monte, corta mata, campo e areia, e só acaba no mar. Condicioná-lo
+	// ao bioma o cortaria em pedaços na primeira fronteira que ele cruzasse.
+	LimparAguaDoce();
+	{
+		const FVector Aqui = GetActorLocation();
+		PlantarAguaDoce(RiverSurface, RiverFallFoam, RiverTrail,
+			FVector2D(Aqui.X, Aqui.Y), SideUnits);
+
+		ScenaryPalette::PaintComponent(RiverSurface, EScenaryRole::FreshWater);
+		ScenaryPalette::PaintComponent(RiverFallFoam, EScenaryRole::WaterFoam);
+		// A trilha de beira é a MESMA coisa que a trilha da montanha: chão
+		// pisado. Cor própria diria ao jogador que são dois tipos de caminho.
+		ScenaryPalette::PaintComponent(RiverTrail, EScenaryRole::MountainTrail);
 	}
 
 	// A vida dos obstáculos é POSICIONAL: a chave aponta para um agrupamento e
@@ -959,6 +1159,28 @@ UHierarchicalInstancedStaticMeshComponent* AForestBackdrop::GetShoreFoam() const
 UHierarchicalInstancedStaticMeshComponent* AForestBackdrop::GetShoreTrees() const
 {
 	return ShoreTrees;
+}
+
+UHierarchicalInstancedStaticMeshComponent* AForestBackdrop::GetRiverSurface() const
+{
+	return RiverSurface;
+}
+
+UHierarchicalInstancedStaticMeshComponent* AForestBackdrop::GetRiverFallFoam() const
+{
+	return RiverFallFoam;
+}
+
+UHierarchicalInstancedStaticMeshComponent* AForestBackdrop::GetRiverTrail() const
+{
+	return RiverTrail;
+}
+
+void AForestBackdrop::LimparAguaDoce()
+{
+	if (RiverSurface)  { RiverSurface->ClearInstances(); }
+	if (RiverFallFoam) { RiverFallFoam->ClearInstances(); }
+	if (RiverTrail)    { RiverTrail->ClearInstances(); }
 }
 
 void AForestBackdrop::LimparOrla()

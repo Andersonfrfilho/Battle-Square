@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Environment/ForestBackdrop.h"
+#include "Environment/FreshWater.h"
 #include "Environment/IslandGeography.h"
 #include "Environment/RegionResidency.h"
 #include "Battle/BattleArena.h"
@@ -1128,6 +1129,366 @@ bool FForestShoreRepeatsForTheSamePlaceTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("e a primeira árvore está onde estava"),
 			SegundaArvore.GetLocation().Equals(PrimeiraArvore.GetLocation(), 0.01));
 	}
+
+	DestroyForestTestWorld(World);
+	return true;
+}
+
+namespace
+{
+	/**
+	 * Um pedaço apoiado EM CIMA de um rio, num raio escolhido pelo curso.
+	 *
+	 * Nome próprio (L-042). O centro não é escrito à mão: quem decide por onde
+	 * o rio passa é o `FreshWater`, e um ponto fixo aqui descolaria do curso na
+	 * primeira vez que alguém mexesse na serpente.
+	 */
+	FVector CentroDoPedacoDoRioDeTeste(float FracaoDoPercurso)
+	{
+		const TArray<FreshWater::FRiverCourse> Cursos = FreshWater::Plan();
+		if (Cursos.Num() == 0)
+		{
+			return FVector::ZeroVector;
+		}
+
+		const FreshWater::FRiverCourse& Curso = Cursos[0];
+		const float Raio = FMath::Lerp(Curso.SourceRadiusUnits, Curso.MouthRadiusUnits,
+			FracaoDoPercurso);
+		const FVector2D Ponto = FreshWater::PointAt(Curso, Raio);
+		return FVector(Ponto.X, Ponto.Y, 0.0f);
+	}
+
+	/** Um pedaço no raio exato em que o primeiro rio vira lago. */
+	FVector CentroDoPedacoDoLagoDeTeste()
+	{
+		const TArray<FreshWater::FRiverCourse> Cursos = FreshWater::Plan();
+		if (Cursos.Num() == 0)
+		{
+			return FVector::ZeroVector;
+		}
+
+		const FVector2D Ponto = FreshWater::PointAt(Cursos[0], Cursos[0].LakeRadiusUnits);
+		return FVector(Ponto.X, Ponto.Y, 0.0f);
+	}
+
+	/** Um pedaço no raio exato da queda do primeiro rio. */
+	FVector CentroDoPedacoDaQuedaDeTeste()
+	{
+		const TArray<FreshWater::FRiverCourse> Cursos = FreshWater::Plan();
+		if (Cursos.Num() == 0)
+		{
+			return FVector::ZeroVector;
+		}
+
+		const FVector2D Ponto = FreshWater::PointAt(Cursos[0], Cursos[0].FallRadiusUnits);
+		return FVector(Ponto.X, Ponto.Y, 0.0f);
+	}
+
+	/** A altura local do topo de uma instância deste agrupamento. */
+	float AlturaDaInstanciaDoRio(const UHierarchicalInstancedStaticMeshComponent* Grupo,
+		int32 Instancia)
+	{
+		FTransform Onde;
+		Grupo->GetInstanceTransform(Instancia, Onde);
+		return static_cast<float>(Onde.GetLocation().Z);
+	}
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FForestRiverRunsThroughTheChunkItCrossesTest,
+	"BattleSquare.Environment.ForestBackdrop.RiverRunsThroughTheChunkItCrosses",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FForestRiverRunsThroughTheChunkItCrossesTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateForestTestWorld();
+	if (!World)
+	{
+		AddError(TEXT("Sem mundo de teste"));
+		return false;
+	}
+
+	AForestBackdrop* NoRio = World->SpawnActor<AForestBackdrop>(
+		AForestBackdrop::StaticClass(), FTransform(CentroDoPedacoDoRioDeTeste(0.7f)));
+
+	// O miolo da ilha fica dentro do anel dos montes: nenhum rio nasce lá.
+	AForestBackdrop* NoMiolo = World->SpawnActor<AForestBackdrop>();
+	if (!NoRio || !NoMiolo)
+	{
+		DestroyForestTestWorld(World);
+		AddError(TEXT("Sem cenário"));
+		return false;
+	}
+
+	NoRio->BuildRegion(CasaDeTeste, 4242u, EIslandBiome::Forest, LadoDoPedacoDeTeste);
+	NoMiolo->BuildRegion(CasaDeTeste, 4242u, EIslandBiome::Forest, LadoDoPedacoDeTeste);
+
+	TestTrue(TEXT("o pedaço por onde o rio passa tem lâmina d'água"),
+		NoRio->GetRiverSurface()->GetInstanceCount() > 0);
+	TestEqual(TEXT("e o pedaço do miolo não tem nenhuma"),
+		NoMiolo->GetRiverSurface()->GetInstanceCount(), 0);
+
+	// A lâmina fica ACIMA do chão, nunca dentro dele: foi afundar no chão que
+	// produziu "parte da agua ele afunda".
+	const float TopoDoChao = AForestBackdrop::GroundTopLocalZ();
+	for (int32 Instancia = 0; Instancia < NoRio->GetRiverSurface()->GetInstanceCount();
+		++Instancia)
+	{
+		TestTrue(TEXT("cada laje do rio corre por cima do chão"),
+			AlturaDaInstanciaDoRio(NoRio->GetRiverSurface(), Instancia) > TopoDoChao);
+	}
+
+	// E a lâmina não fecha: o pet ATRAVESSA o rio, não esbarra nele.
+	TestEqual(TEXT("a lâmina d'água não tem colisão"),
+		static_cast<int32>(NoRio->GetRiverSurface()->GetCollisionEnabled()),
+		static_cast<int32>(ECollisionEnabled::NoCollision));
+
+	DestroyForestTestWorld(World);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FForestRiverWidensIntoALakeTest,
+	"BattleSquare.Environment.ForestBackdrop.RiverWidensIntoALake",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FForestRiverWidensIntoALakeTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateForestTestWorld();
+	if (!World)
+	{
+		AddError(TEXT("Sem mundo de teste"));
+		return false;
+	}
+
+	AForestBackdrop* NoLago = World->SpawnActor<AForestBackdrop>(
+		AForestBackdrop::StaticClass(), FTransform(CentroDoPedacoDoLagoDeTeste()));
+	const TArray<FreshWater::FRiverCourse> Cursos = FreshWater::Plan();
+	if (!NoLago || Cursos.Num() == 0)
+	{
+		DestroyForestTestWorld(World);
+		AddError(TEXT("Sem cenário"));
+		return false;
+	}
+
+	NoLago->BuildRegion(CasaDeTeste, 909u, EIslandBiome::Forest, LadoDoPedacoDeTeste);
+
+	// A comparação é entre LAJES, e não entre pedaços. O ladrilho tem 6400 de
+	// lado e o rio inteiro cabe dentro dele: "o pedaço do lago" e "o pedaço do
+	// rio" seriam o mesmo pedaço com dois nomes, e foi exatamente isso que a
+	// primeira versão deste teste afirmou — e errou.
+	//
+	// A largura de uma laje é a escala em Y: depois do giro, Y atravessa a
+	// calha. Se a laje mais larga não estiver no lago, ele não é lago — é rio
+	// com outro nome.
+	const UHierarchicalInstancedStaticMeshComponent* Agua = NoLago->GetRiverSurface();
+	TestTrue(TEXT("o pedaço do lago tem água"), Agua->GetInstanceCount() > 0);
+
+	float MaiorLargura = 0.0f;
+	float RaioDaMaior = 0.0f;
+	float MenorLargura = TNumericLimits<float>::Max();
+	float RaioDaMenor = 0.0f;
+	for (int32 Instancia = 0; Instancia < Agua->GetInstanceCount(); ++Instancia)
+	{
+		FTransform Onde;
+		Agua->GetInstanceTransform(Instancia, Onde);
+		const FVector Mundo = NoLago->GetActorLocation() + Onde.GetLocation();
+		const float Raio = FVector2D(Mundo.X, Mundo.Y).Size();
+		const float Largura = static_cast<float>(Onde.GetScale3D().Y);
+
+		if (Largura > MaiorLargura)
+		{
+			MaiorLargura = Largura;
+			RaioDaMaior = Raio;
+		}
+		if (Largura < MenorLargura)
+		{
+			MenorLargura = Largura;
+			RaioDaMenor = Raio;
+		}
+	}
+
+	const float RaioDoLago = Cursos[0].LakeRadiusUnits;
+	TestTrue(TEXT("a calha mais larga é bem mais larga que a mais estreita"),
+		MaiorLargura > MenorLargura * 2.0f);
+	TestTrue(TEXT("e ela está no lago, não num trecho qualquer"),
+		FMath::Abs(RaioDaMaior - RaioDoLago) < FMath::Abs(RaioDaMenor - RaioDoLago));
+
+	DestroyForestTestWorld(World);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FForestRiverFoamsOnlyWhereItFallsTest,
+	"BattleSquare.Environment.ForestBackdrop.RiverFoamsOnlyWhereItFalls",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FForestRiverFoamsOnlyWhereItFallsTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateForestTestWorld();
+	if (!World)
+	{
+		AddError(TEXT("Sem mundo de teste"));
+		return false;
+	}
+
+	AForestBackdrop* NaQueda = World->SpawnActor<AForestBackdrop>(
+		AForestBackdrop::StaticClass(), FTransform(CentroDoPedacoDaQuedaDeTeste()));
+	if (!NaQueda)
+	{
+		DestroyForestTestWorld(World);
+		AddError(TEXT("Sem cenário"));
+		return false;
+	}
+
+	NaQueda->BuildRegion(CasaDeTeste, 55u, EIslandBiome::Forest, LadoDoPedacoDeTeste);
+
+	const UHierarchicalInstancedStaticMeshComponent* Espuma = NaQueda->GetRiverFallFoam();
+	TestTrue(TEXT("no degrau a água espuma"), Espuma->GetInstanceCount() > 0);
+
+	// E espuma SÓ ali. O ladrilho é maior que o rio inteiro, então o pedaço da
+	// queda contém também o lago e o trecho calmo: quem separa água batida de
+	// água parada é o RAIO de cada laje, nunca o pedaço em que ela caiu.
+	const TArray<FreshWater::FRiverCourse> Cursos = FreshWater::Plan();
+	for (int32 Instancia = 0; Instancia < Espuma->GetInstanceCount(); ++Instancia)
+	{
+		FTransform Onde;
+		Espuma->GetInstanceTransform(Instancia, Onde);
+		const FVector Mundo = NaQueda->GetActorLocation() + Onde.GetLocation();
+		const float Raio = FVector2D(Mundo.X, Mundo.Y).Size();
+
+		bool bNumDegrau = false;
+		for (const FreshWater::FRiverCourse& Curso : Cursos)
+		{
+			bNumDegrau = bNumDegrau || FreshWater::IsFallAt(Curso, Raio);
+		}
+
+		TestTrue(TEXT("toda espuma está num degrau, e água parada não espuma"),
+			bNumDegrau);
+	}
+
+	// A espuma vai por CIMA da lâmina: espuma na mesma altura da água briga
+	// por pixel com ela e pisca conforme a câmera anda.
+	if (NaQueda->GetRiverFallFoam()->GetInstanceCount() > 0
+		&& NaQueda->GetRiverSurface()->GetInstanceCount() > 0)
+	{
+		TestTrue(TEXT("a espuma da queda fica acima da lâmina d'água"),
+			AlturaDaInstanciaDoRio(NaQueda->GetRiverFallFoam(), 0)
+			> AlturaDaInstanciaDoRio(NaQueda->GetRiverSurface(), 0));
+	}
+
+	DestroyForestTestWorld(World);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FForestRiverTrailWalksTheBankTest,
+	"BattleSquare.Environment.ForestBackdrop.RiverTrailWalksTheBank",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FForestRiverTrailWalksTheBankTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateForestTestWorld();
+	if (!World)
+	{
+		AddError(TEXT("Sem mundo de teste"));
+		return false;
+	}
+
+	AForestBackdrop* NoRio = World->SpawnActor<AForestBackdrop>(
+		AForestBackdrop::StaticClass(), FTransform(CentroDoPedacoDoRioDeTeste(0.5f)));
+	if (!NoRio)
+	{
+		DestroyForestTestWorld(World);
+		AddError(TEXT("Sem cenário"));
+		return false;
+	}
+
+	NoRio->BuildRegion(CasaDeTeste, 606u, EIslandBiome::Forest, LadoDoPedacoDeTeste);
+
+	TestTrue(TEXT("quem segue o rio tem por onde andar"),
+		NoRio->GetRiverTrail()->GetInstanceCount() > 0);
+
+	// A trilha é chão pisado: fica MAIS BAIXA que a água, ou pareceria uma
+	// ponte correndo ao lado do rio.
+	if (NoRio->GetRiverTrail()->GetInstanceCount() > 0
+		&& NoRio->GetRiverSurface()->GetInstanceCount() > 0)
+	{
+		TestTrue(TEXT("a trilha corre rente ao chão, abaixo da água"),
+			AlturaDaInstanciaDoRio(NoRio->GetRiverTrail(), 0)
+			< AlturaDaInstanciaDoRio(NoRio->GetRiverSurface(), 0));
+	}
+
+	// E ela nunca cai dentro da calha: trilha que atravessa a água é trilha
+	// que some justamente onde o jogador precisaria dela.
+	const FVector CentroDoPedaco = NoRio->GetActorLocation();
+	const TArray<FreshWater::FRiverCourse> Cursos = FreshWater::Plan();
+	for (int32 Instancia = 0; Instancia < NoRio->GetRiverTrail()->GetInstanceCount();
+		++Instancia)
+	{
+		FTransform Onde;
+		NoRio->GetRiverTrail()->GetInstanceTransform(Instancia, Onde);
+		const FVector Mundo = CentroDoPedaco + Onde.GetLocation();
+		const FVector2D Plano(Mundo.X, Mundo.Y);
+		const float Raio = Plano.Size();
+
+		for (const FreshWater::FRiverCourse& Curso : Cursos)
+		{
+			if (Raio < Curso.SourceRadiusUnits || Raio > Curso.MouthRadiusUnits)
+			{
+				continue;
+			}
+
+			const FVector2D NoCurso = FreshWater::PointAt(Curso, Raio);
+			TestTrue(TEXT("nenhum trecho de trilha cai dentro da água"),
+				FVector2D::Distance(Plano, NoCurso)
+				> FreshWater::HalfWidthAt(Curso, Raio));
+		}
+	}
+
+	DestroyForestTestWorld(World);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FForestRiverLeavesNoWaterBehindTest,
+	"BattleSquare.Environment.ForestBackdrop.RiverLeavesNoWaterBehind",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FForestRiverLeavesNoWaterBehindTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateForestTestWorld();
+	if (!World)
+	{
+		AddError(TEXT("Sem mundo de teste"));
+		return false;
+	}
+
+	// O ator é REAPROVEITADO de um pedaço para o outro. Sem limpeza, um trecho
+	// de rio do pedaço anterior continuaria correndo por onde rio não passa.
+	AForestBackdrop* Mata = World->SpawnActor<AForestBackdrop>(
+		AForestBackdrop::StaticClass(), FTransform(CentroDoPedacoDoRioDeTeste(0.7f)));
+	if (!Mata)
+	{
+		DestroyForestTestWorld(World);
+		AddError(TEXT("Sem cenário"));
+		return false;
+	}
+
+	Mata->BuildRegion(CasaDeTeste, 7u, EIslandBiome::Forest, LadoDoPedacoDeTeste);
+	TestTrue(TEXT("o pedaço do rio nasce com água"),
+		Mata->GetRiverSurface()->GetInstanceCount() > 0);
+
+	Mata->SetActorLocation(FVector::ZeroVector);
+	Mata->BuildRegion(CasaDeTeste, 7u, EIslandBiome::Forest, LadoDoPedacoDeTeste);
+	TestEqual(TEXT("mudou para o miolo e a água ficou para trás"),
+		Mata->GetRiverSurface()->GetInstanceCount(), 0);
+	TestEqual(TEXT("a espuma também"),
+		Mata->GetRiverFallFoam()->GetInstanceCount(), 0);
+	TestEqual(TEXT("e a trilha de beira também"),
+		Mata->GetRiverTrail()->GetInstanceCount(), 0);
+
+	// A arena é um recorte de mata, não um trecho da ilha: rio nenhum ali.
+	Mata->SetActorLocation(CentroDoPedacoDoRioDeTeste(0.7f));
+	Mata->BuildRegion(CasaDeTeste, 7u, EIslandBiome::Forest, LadoDoPedacoDeTeste);
+	Mata->BuildForest(CasaDeTeste, 7u, CameraDeTeste);
+	TestEqual(TEXT("a arena não tem rio"),
+		Mata->GetRiverSurface()->GetInstanceCount(), 0);
 
 	DestroyForestTestWorld(World);
 	return true;

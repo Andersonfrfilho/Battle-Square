@@ -596,7 +596,8 @@ bool FForestRegionGivesEachBiomeItsGroundTest::RunTest(const FString& Parameters
 
 	const EIslandBiome Biomas[] = {
 		EIslandBiome::Desert, EIslandBiome::Glacier,
-		EIslandBiome::Volcano, EIslandBiome::Beach };
+		EIslandBiome::Volcano, EIslandBiome::Beach,
+		EIslandBiome::Swamp };
 
 	TSet<EScenaryRole> Vistos;
 	for (const EIslandBiome Bioma : Biomas)
@@ -616,6 +617,56 @@ bool FForestRegionGivesEachBiomeItsGroundTest::RunTest(const FString& Parameters
 	TestEqual(TEXT("A mata continua com a cor de chão de sempre"),
 		static_cast<int32>(Mata->GetRegionGroundRole()),
 		static_cast<int32>(EScenaryRole::Count));
+
+	DestroyForestTestWorld(World);
+	return true;
+}
+
+/**
+ * O brejo NÃO é a mata com outra cor.
+ *
+ * Ele nasceu sem `case` na tabela de presença e caiu no retorno da floresta:
+ * a geografia sabia que ali era pântano, o clima sabia, o pino do mapa sabia,
+ * e a tela desenhava mata. Defeito que nenhum teste de lógica alcança, porque
+ * toda lógica estava certa — só o desenho é que não era o do lugar.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FForestSwampIsNotJustDarkForestTest,
+	"BattleSquare.Environment.ForestBackdrop.OBrejoNaoEAMataComOutraCor",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FForestSwampIsNotJustDarkForestTest::RunTest(const FString& Parameters)
+{
+	UWorld* World = CreateForestTestWorld();
+	AForestBackdrop* Mata = World->SpawnActor<AForestBackdrop>();
+	if (!TestNotNull(TEXT("AForestBackdrop spawna sem crash"), Mata))
+	{
+		DestroyForestTestWorld(World);
+		return false;
+	}
+
+	Mata->BuildRegion(CasaDeTeste, 7u, EIslandBiome::Forest, LadoDoPedacoDeTeste);
+	const int32 ArvoresDaMata = ContaEspeciesDoPedaco(Mata, TEXT("tree"));
+	const int32 TroncosDaMata = ContaEspeciesDoPedaco(Mata, TEXT("log"))
+		+ ContaEspeciesDoPedaco(Mata, TEXT("stump"));
+
+	Mata->BuildRegion(CasaDeTeste, 7u, EIslandBiome::Swamp, LadoDoPedacoDeTeste);
+	const int32 ArvoresDoBrejo = ContaEspeciesDoPedaco(Mata, TEXT("tree"));
+	const int32 TroncosDoBrejo = ContaEspeciesDoPedaco(Mata, TEXT("log"))
+		+ ContaEspeciesDoPedaco(Mata, TEXT("stump"));
+
+	// A copa é o que separa os dois de longe: brejo é mata que não drenou, e
+	// árvore alta não fica de pé em chão encharcado.
+	TestTrue(TEXT("O brejo tem MENOS copa que a mata"),
+		ArvoresDoBrejo < ArvoresDaMata);
+
+	// E o tronco caído é o que ele tem de sobra — é o que a copa virou.
+	TestTrue(TEXT("E não tem menos tronco caído que ela"),
+		TroncosDoBrejo >= TroncosDaMata);
+
+	// Sem capim nenhum o brejo viraria lama pelada, que é deserto escuro.
+	TestTrue(TEXT("O junco continua lá"),
+		ContaEspeciesDoPedaco(Mata, TEXT("grass")) > 0);
 
 	DestroyForestTestWorld(World);
 	return true;

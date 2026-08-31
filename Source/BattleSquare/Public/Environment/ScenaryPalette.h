@@ -111,6 +111,26 @@ enum class EScenaryRole : uint8
 	BeachSand,
 
 	/**
+	 * A lama do pântano: o chão mais escuro que existe ao ar livre.
+	 *
+	 * Ela precisa ser mais escura que a mata, e não só mais parda: o pântano
+	 * é a mata que não drenou, e os dois se encostam numa faixa larga em volta
+	 * de toda a ilha. Se o chão dos dois tiver a mesma luminância, o jogador
+	 * atravessa a divisa sem perceber que atravessou — que é exatamente o que
+	 * acontece hoje, porque o brejo herda a tabela da floresta.
+	 */
+	SwampMud,
+
+	/**
+	 * A poça parada.
+	 *
+	 * Verde, não azul: água parada com matéria orgânica dentro não reflete o
+	 * céu como o mar reflete. O azul aqui diria "mar raso", e mar raso é o que
+	 * o pântano justamente NÃO é.
+	 */
+	SwampWater,
+
+	/**
 	 * Quantos papéis existem. Não é papel nenhum.
 	 *
 	 * Existe para o teste poder percorrer a lista inteira e cobrar `case` de

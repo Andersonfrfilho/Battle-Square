@@ -216,6 +216,19 @@ namespace MataDoCenario
 			// mar, e enchê-la de arbusto fecharia justamente a passagem.
 			return { EScenaryRole::BeachSand, EScenaryRole::Rock, 12, 0, 8, 20, 35, 0 };
 
+		case EIslandBiome::Swamp:
+			// O brejo é a mata que NÃO drenou, e a diferença entre os dois é
+			// o que estava faltando na tela: aqui o chão é lama, o tronco
+			// caído é o que mais aparece, e a copa alta some. Mata fechada
+			// com chão escuro seria só uma mata à noite.
+			//
+			// As poucas pedras viram POÇA — mesma malha, pintada com a água
+			// parada. Pântano sem água visível é floresta parda, e este era
+			// justamente o defeito: a geografia sabia que ali era brejo, o
+			// clima sabia, o mapa sabia, e só a tela não.
+			return { EScenaryRole::SwampMud, EScenaryRole::SwampWater,
+				90, 60, 70, 100, 18, 25 };
+
 		case EIslandBiome::Forest:
 			break;
 		}

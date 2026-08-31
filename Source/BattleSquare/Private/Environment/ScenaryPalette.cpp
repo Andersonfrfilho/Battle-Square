@@ -156,6 +156,19 @@ namespace PaletaDoCenario
 	 */
 	const FLinearColor PalidoDaPraia(0.694f, 0.655f, 0.549f);
 
+	/**
+	 * A lama do brejo: escura, parda e quase sem saturação.
+	 *
+	 * Fica em 0,10 de luminância contra os 0,22 do chão de mata. É uma
+	 * distância grande de propósito — a divisa entre os dois é uma faixa
+	 * larga em volta da ilha inteira, e divisa que só se nota de perto não
+	 * cumpre o papel de dizer onde se está.
+	 */
+	const FLinearColor PardoDaLama(0.153f, 0.129f, 0.094f);
+
+	/** A poça parada: verde escuro, o oposto do azul do mar. */
+	const FLinearColor VerdeDaPoca(0.184f, 0.243f, 0.161f);
+
 	// Acentos: pontos pequenos, saturados, que só funcionam porque o resto
 	// do quadro é dessaturado.
 
@@ -274,6 +287,12 @@ FLinearColor ScenaryPalette::ColorFor(EScenaryRole Role, FName MaterialSlot)
 
 	case EScenaryRole::BeachSand:
 		return PalidoDaPraia;
+
+	case EScenaryRole::SwampMud:
+		return PardoDaLama;
+
+	case EScenaryRole::SwampWater:
+		return VerdeDaPoca;
 
 	case EScenaryRole::Count:
 		break;

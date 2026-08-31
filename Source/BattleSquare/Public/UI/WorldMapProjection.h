@@ -203,10 +203,20 @@ public:
 	 * O lado de um pedaço de terreno, para a ilha que existe.
 	 *
 	 * Acompanha a ilha em vez de ser fixo: com a ilha em 20000 de raio, um
-	 * pedaço fixo de 800 daria seis mil manchas de menos de um pixel — custo
-	 * de desenho que ninguém vê, e o pedido foi explícito que nada pode ficar
-	 * devagar. Quarenta e oito de ponta a ponta é mancha visível e conta
-	 * constante, cresça a ilha o quanto crescer.
+	 * pedaço fixo pequeno daria milhares de manchas minúsculas — custo de
+	 * desenho que ninguém vê, e o pedido foi explícito que nada pode ficar
+	 * devagar. Quarenta e oito de ponta a ponta é a MIRA: mancha visível e
+	 * conta praticamente constante, cresça a ilha o quanto crescer.
+	 *
+	 * Mas o resultado é ENCAIXADO num divisor da região de descoberta, e isso
+	 * não é capricho. O pedaço é pintado conforme a descoberta do CENTRO dele.
+	 * Um pedaço maior que a região cobre mais de uma, e aí ele revela terreno
+	 * que o jogador nunca viu — ou esconde o que ele viu. Com a ilha em 6000 o
+	 * cálculo dava 400 e dividia 800 POR ACASO; com 20000 dá 1333, e a borda
+	 * da descoberta passa a mentir nos dois sentidos.
+	 *
+	 * Encaixar custa alguns pedaços a mais e paga com uma fronteira que
+	 * corresponde ao que se andou — que é a feature inteira.
 	 */
 	static float TerrainTileSideUnits(float LandRadiusUnits);
 

@@ -2,6 +2,8 @@
 
 #include "World/WorldDiscovery.h"
 #include "UI/WorldMapProjection.h"
+#include "Environment/WorldBoundaryWater.h"
+#include "Environment/IslandGeography.h"
 #include "Misc/AutomationTest.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMapaComecaEmBrancoTest,
@@ -235,6 +237,66 @@ bool FMapaDistingueOsBiomasTest::RunTest(const FString&)
 	TestEqual(TEXT("A praia é a margem que o mapa já conhecia"),
 		static_cast<int32>(FWorldMapProjection::TerrainForBiome(EIslandBiome::Beach)),
 		static_cast<int32>(EWorldMapTerrain::Margem));
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPedacoDoMapaCabeNaRegiaoDescobertaTest,
+	"BattleSquare.World.Map.PedacoCabeNaRegiaoDescoberta",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FPedacoDoMapaCabeNaRegiaoDescobertaTest::RunTest(const FString&)
+{
+	// UMA RELAÇÃO, e não um valor — que é por isso que nenhum teste anterior a
+	// pegou: o tamanho do pedaço estava certo, o tamanho da região estava
+	// certo, e o par estava errado.
+	//
+	// O pedaço é pintado conforme a descoberta do CENTRO dele. Maior que a
+	// região, ele cobre mais de uma e revela terreno nunca visto — ou esconde
+	// o já visto. Com a ilha em 6000 dividia POR ACASO; a ilha virou 20000 e
+	// a fronteira passou a mentir nos dois sentidos.
+	const float Regiao = FWorldDiscovery::RegionSizeUnits;
+
+	for (const float RaioDaIlha : { 1000.0f, 3000.0f, 6000.0f, 12000.0f, 20000.0f, 50000.0f })
+	{
+		const float Lado = FWorldMapProjection::TerrainTileSideUnits(RaioDaIlha);
+
+		TestTrue(FString::Printf(
+			TEXT("Ilha %.0f: o pedaço nunca passa da região"), RaioDaIlha),
+			Lado <= Regiao + KINDA_SMALL_NUMBER);
+
+		const float Quantos = Regiao / Lado;
+		TestTrue(FString::Printf(
+			TEXT("Ilha %.0f: cabe um número inteiro de pedaços na região"), RaioDaIlha),
+			FMath::Abs(Quantos - FMath::RoundToFloat(Quantos)) < KINDA_SMALL_NUMBER);
+	}
+
+	// E o pedaço não vira poeira: mancha de duas unidades seria custo de
+	// desenho que ninguém vê, que é o motivo de o tamanho seguir a ilha.
+	TestTrue(TEXT("O pedaço continua grande o bastante para ser mancha"),
+		FWorldMapProjection::TerrainTileSideUnits(20000.0f) >= Regiao * 0.25f);
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FUmaFonteSoParaORaioDaTerraTest,
+	"BattleSquare.World.Map.UmaFonteSoParaORaioDaTerra",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FUmaFonteSoParaORaioDaTerraTest::RunTest(const FString&)
+{
+	// O retrato do mapa e a água do mundo precisam concordar sobre onde a
+	// terra acaba. Duas fontes concordam até a primeira edição, e o sintoma
+	// seria o mapa desenhando praia onde o jogador já está nadando.
+	const float DaGeografia = IslandGeography::LandRadiusUnits();
+
+	const FWorldMapSnapshot RetratoNovo;
+	TestEqual(TEXT("O retrato nasce com o raio da geografia"),
+		RetratoNovo.ShoreRadiusUnits, DaGeografia);
+
+	const AWorldBoundaryWater* AguaPadrao = GetDefault<AWorldBoundaryWater>();
+	TestEqual(TEXT("E a água do mundo com o mesmo"),
+		AguaPadrao->ShoreRadiusUnits, DaGeografia);
 
 	return true;
 }

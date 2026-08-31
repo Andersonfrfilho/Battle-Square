@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "UI/WorldMapProjection.h"
+#include "World/WorldDiscovery.h"
 
 #define LOCTEXT_NAMESPACE "MapaDoMundo"
 
@@ -70,7 +71,17 @@ bool FWorldMapProjection::IsMarkerVisible(const FWorldMapMarkerInfo& Marker,
 float FWorldMapProjection::TerrainTileSideUnits(float LandRadiusUnits)
 {
 	const float Alcance = FMath::Max(LandRadiusUnits, 1.0f) * TerrainMarginFactor;
-	return (Alcance * 2.0f) / static_cast<float>(TerrainTilesAcross);
+	const float Desejado = (Alcance * 2.0f) / static_cast<float>(TerrainTilesAcross);
+
+	// ENCAIXA num divisor da região de descoberta: o pedaço nunca passa do
+	// tamanho da região, e sempre cabe um número inteiro deles dentro dela.
+	// É o que garante que um pedaço pertença a UMA região só — e portanto que
+	// a fronteira do que foi descoberto seja a fronteira que se vê.
+	const float Regiao = FWorldDiscovery::RegionSizeUnits;
+	const int32 QuantosCabem = FMath::Max(1,
+		FMath::CeilToInt(Regiao / FMath::Max(Desejado, 1.0f)));
+
+	return Regiao / static_cast<float>(QuantosCabem);
 }
 
 FLinearColor FWorldMapProjection::ColorForTerrain(EWorldMapTerrain Terrain)

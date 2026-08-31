@@ -300,3 +300,49 @@ bool FUmaFonteSoParaORaioDaTerraTest::RunTest(const FString&)
 
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FQuandoAIlhaCrescerDemaisSepararPorAreasTest,
+	"BattleSquare.World.Map.QuandoAIlhaCrescerDemaisSepararPorAreas",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FQuandoAIlhaCrescerDemaisSepararPorAreasTest::RunTest(const FString&)
+{
+	// ESTE TESTE É UM GATILHO, não uma verificação de defeito.
+	//
+	// O mapa desenha um pedaço por casa da ilha inteira, e a contagem cresce
+	// com o QUADRADO do raio: 6.400 pedaços a 20.000, 25.600 a 40.000, 57.600
+	// a 60.000. O pedaço não pode crescer junto — ele já está preso ao tamanho
+	// da região de descoberta, e passar disso faz a fronteira do que se andou
+	// mentir (ver PedacoCabeNaRegiaoDescoberta).
+	//
+	// A saída decidida é MAPA POR ÁREA: o mapa passa a ter o tamanho do setor
+	// onde o jogador está, e não do planeta. A costura já existe —
+	// `IslandGeography::BiomeOfSector` já divide a ilha — então o dia da
+	// separação não pede arquitetura nova, só o mapa parar de olhar o mundo
+	// inteiro de uma vez.
+	//
+	// Isto NÃO foi construído: com a ilha em 20.000 não é preciso, e feature
+	// especulativa envelhece mal. O que foi construído é o AVISO — porque um
+	// plano que depende de alguém lembrar é um plano que ninguém executa, e
+	// este projeto já registrou mais de uma vez o custo disso.
+	//
+	// Quando este teste falhar, ele não achou um defeito: ele avisou que
+	// chegou a hora. Separe o mapa por área, e suba o teto junto.
+	constexpr int32 TetoDePedacos = 10000;
+
+	const float RaioDaIlha = IslandGeography::LandRadiusUnits();
+	const float Lado = FWorldMapProjection::TerrainTileSideUnits(RaioDaIlha);
+	const float Travessia =
+		(RaioDaIlha * FWorldMapProjection::TerrainMarginFactor * 2.0f) / Lado;
+	const int32 Pedacos = FMath::CeilToInt(Travessia) * FMath::CeilToInt(Travessia);
+
+	TestTrue(FString::Printf(
+		TEXT("A ilha (%.0f) pede %d pedaços de mapa, acima do teto de %d. ")
+		TEXT("Não é defeito: é a hora de separar o mapa por ÁREA, mostrando o ")
+		TEXT("setor onde o jogador está em vez do planeta inteiro. ")
+		TEXT("IslandGeography::BiomeOfSector já divide a ilha."),
+		RaioDaIlha, Pedacos, TetoDePedacos),
+		Pedacos <= TetoDePedacos);
+
+	return true;
+}

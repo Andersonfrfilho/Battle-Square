@@ -722,6 +722,37 @@ find "$HOME/Library/Logs/Unreal Engine/BattleSquareEditor" Saved/Logs -newer <ma
 **Previne:** ao acrescentar um campo a um `USaveGame` já existente, procurar **toda** função que monta esse save do zero. E ao juntar dois dados num arquivo, o teste que importa é o que **cruza** os caminhos de escrita — nunca os dois testes separados, que continuam verdes enquanto um apaga o outro.
 
 
+### DP-mapa-01: quando a ilha crescer demais, o mapa separa por ÁREA
+
+**Decidido em 30/08/2026, não construído.**
+
+O mapa desenha um pedaço por casa da ilha inteira, e a contagem cresce com o
+QUADRADO do raio: 6.400 pedaços a 20.000 de raio, 14.400 a 30.000, 57.600 a
+60.000. O pedaço não pode crescer junto para compensar — ele está preso ao
+tamanho da região de descoberta, e passar disso faz a fronteira do que se andou
+mentir nos dois sentidos (ver o teste `PedacoCabeNaRegiaoDescoberta`).
+
+**A saída é mapa por ÁREA**: o mapa passa a ter o tamanho do SETOR onde o
+jogador está, e não do planeta. Isso limita a contagem por construção, em vez de
+por ajuste de número — e é como jogos de mundo grande sempre resolveram.
+
+A costura já existe: `IslandGeography::BiomeOfSector` divide a ilha. O dia da
+separação não pede arquitetura nova, só o mapa parar de olhar o mundo inteiro de
+uma vez.
+
+**Por que não foi construído:** com a ilha em 20.000 não é preciso, e feature
+especulativa envelhece mal — ela é escrita contra um problema imaginado e
+descobre-se errada quando o problema chega de verdade.
+
+**O que FOI construído é o gatilho.** O teste
+`BattleSquare.World.Map.QuandoAIlhaCrescerDemaisSepararPorAreas` falha quando a
+ilha configurada passa de 10.000 pedaços, e a mensagem dele diz que não é
+defeito — é a hora. Verificado que dispara: com a ilha em 30.000 ele acusa
+14.400 pedaços e reprova.
+
+Plano que depende de alguém lembrar é plano que ninguém executa, e este projeto
+já pagou por isso mais de uma vez.
+
 ### B-010: os cubos do teste de streaming — RESOLVIDO em 30/08/2026
 
 Os 216 cubos e os 36 atores de HLOD gerados a partir deles foram apagados do

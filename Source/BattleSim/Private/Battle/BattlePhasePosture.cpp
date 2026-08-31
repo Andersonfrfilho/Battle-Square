@@ -44,6 +44,61 @@ namespace
 		{
 			AssumedFlag = static_cast<uint16>(EBattlePostureFlags::Underground);
 		}
+		else if (Action.Type == EActionType::Escavar)
+		{
+			// ERGUE TERRA na casa à frente. Não é postura de quem cava — é
+			// mudança do TABULEIRO, e por isso não veste bandeira nenhuma.
+			int8 DeltaColuna = 0;
+			int8 DeltaLinha = 0;
+			GetDirectionDelta(Action.Direction, DeltaColuna, DeltaLinha);
+
+			const int32 Coluna = static_cast<int32>(Pet->Column) + DeltaColuna;
+			const int32 Linha = static_cast<int32>(Pet->Row) + DeltaLinha;
+
+			// Fora da grade, sem direção, ou casa OCUPADA: não ergue. Levantar
+			// terra em cima de alguém seria enterrá-lo, e enterrar é outra
+			// jogada — com outro nome, outro custo e outro evento.
+			const bool bTemAlguem = State.Pets.ContainsByPredicate(
+				[Coluna, Linha](const FPetState& Outro)
+				{
+					return Outro.IsAlive()
+						&& static_cast<int32>(Outro.Column) == Coluna
+						&& static_cast<int32>(Outro.Row) == Linha;
+				});
+
+			const int32 Casa = State.IsInside(Coluna, Linha)
+				? State.CellIndex(Coluna, Linha) : INDEX_NONE;
+
+			const bool bPodeErguer = Casa != INDEX_NONE && !bTemAlguem
+				&& State.CellLayout[Casa] == static_cast<uint8>(ECellProperty::None);
+
+			if (!bPodeErguer)
+			{
+				FBattleEvent Falhou;
+				Falhou.Type = EBattleEventType::PosturaFalhou;
+				Falhou.SlotIndex = SlotIndex;
+				Falhou.Phase = 2;
+				Falhou.ActorId = Pet->PetId;
+				Falhou.TargetId = BattleEventNoActor;
+				Falhou.Detail = static_cast<uint8>(Action.Type);
+				OutTrace.Add(Falhou);
+				return;
+			}
+
+			State.SetTemporaryTerrain(Coluna, Linha,
+				static_cast<uint8>(ECellProperty::Blocked), /*Slots=*/0);
+
+			FBattleEvent Ergueu;
+			Ergueu.Type = EBattleEventType::TerrenoMudou;
+			Ergueu.SlotIndex = SlotIndex;
+			Ergueu.Phase = 2;
+			Ergueu.ActorId = Pet->PetId;
+			Ergueu.TargetId = BattleEventNoActor;
+			Ergueu.ToCell = PackCell(static_cast<uint8>(Coluna), static_cast<uint8>(Linha));
+			Ergueu.Value = static_cast<int32>(ECellProperty::Blocked);
+			OutTrace.Add(Ergueu);
+			return;
+		}
 		else if (Action.Type == EActionType::Iluminar)
 		{
 			// ILUMINAR não é postura de quem a usa: ela marca o OUTRO. Por

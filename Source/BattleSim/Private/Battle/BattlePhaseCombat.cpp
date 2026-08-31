@@ -510,10 +510,16 @@ namespace
 				// sido resolvido — e passariam a existir duas regras para
 				// remover o mesmo obstáculo, que concordariam até a primeira
 				// edição.
-				// Com prazo, é terreno que PASSA — o gelo. Sem prazo, é o
-				// alagamento de sempre, que fica.
+				// SECAR apaga em vez de pintar: água, lama e gelo somem e a
+				// casa volta a ser chão. É o único depósito que REMOVE, e por
+				// isso ele passa por aqui em vez de virar mais um terreno que
+				// se acumula sobre o anterior.
+				const bool bSeca =
+					Deposito.Terrain == static_cast<uint8>(ECellProperty::Dries);
+
 				State.SetTemporaryTerrain(TargetPtr->Column, TargetPtr->Row,
-					Deposito.Terrain, Deposito.Slots);
+					bSeca ? static_cast<uint8>(ECellProperty::None) : Deposito.Terrain,
+					bSeca ? 0 : Deposito.Slots);
 
 				FBattleEvent Terreno;
 				Terreno.Type = EBattleEventType::TerrenoMudou;

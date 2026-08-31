@@ -86,7 +86,9 @@
     0.72
    ],
    "tiltDegrees": -80,
-   "skills": []
+   "skills": [
+    "escavar"
+   ]
   },
   {
    "name": "Fantasma",

@@ -41,7 +41,23 @@ enum class EActionType : uint8
 	 * fica invisível e que o físico não acerta não teria contra-jogo — e
 	 * "forte contra" viraria só um número na tabela.
 	 */
-	Iluminar
+	Iluminar,
+
+	/**
+	 * ESCAVAR: o pet de terra levanta uma barreira de terra à frente.
+	 *
+	 * A skill do elemento Terra, que era o único sem nenhuma — fogo voa, água
+	 * submerge, planta camufla, fantasma atravessa, luz ilumina, e a terra
+	 * ficava sem identidade própria.
+	 *
+	 * Ela é o oposto de tudo que existe: NADA no jogo cria obstáculo hoje,
+	 * eles só são derrubados. Um pet que ergue cobertura muda o tabuleiro a
+	 * favor em vez de contra, e é a única ação que faz isso.
+	 *
+	 * Ao FIM do enum, pelo mesmo motivo dos anteriores: os valores viajam no
+	 * commit de todo turno e no hash do traço.
+	 */
+	Escavar
 };
 
 // As 8 direções da grade. Defender e Aguardar ignoram a direção.
@@ -261,7 +277,21 @@ enum class ECellProperty : uint8
 	 *
 	 * Ao FIM do enum, pelo mesmo motivo dos anteriores.
 	 */
-	Mud
+	Mud,
+
+	/**
+	 * SECAR não é terreno — é EFEITO.
+	 *
+	 * Ela nunca fica numa casa: um golpe que a deposita apaga a água, a lama e
+	 * o gelo dali, e a casa volta a ser chão seco. Vive neste enum porque o
+	 * golpe carrega um `ECellProperty` só, e um campo novo em `FBattleAction`
+	 * cresceria o commit de toda partida para dizer o que cabe aqui.
+	 *
+	 * Existe porque faltava: o terreno só ficava MAIS molhado ou congelava, e
+	 * nada o secava de propósito. A cadeia seca com o tempo, e ninguém podia
+	 * forçar — então quem alagou o campo tinha vantagem sem resposta.
+	 */
+	Dries
 };
 
 /**

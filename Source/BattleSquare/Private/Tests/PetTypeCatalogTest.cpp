@@ -261,14 +261,29 @@ bool FSkillsComeFromTheOneTypeCatalogTest::RunTest(const FString& Parameters)
 		Skills.GetSkillsForType(TEXT("Psiquica/Fogo")).Num(),
 		Skills.GetSkillsForType(TEXT("Natural/Fogo")).Num());
 
-	// E Terra segue sem skill própria — a ausência é declarada, não esquecida.
-	TestEqual(TEXT("Terra não tem skill"),
-		Skills.GetSkillsForType(TEXT("Fisica/Terra")).Num(), 0);
+	// A TERRA ESCAVA. Ela era o único elemento sem skill, e a ausência estava
+	// declarada aqui como se fosse decisão — mas era buraco: fogo voa, água
+	// submerge, planta camufla, fantasma atravessa, luz ilumina, e o pet de
+	// terra não tinha nada de seu. Num sistema de trabalhos ele seria o pior
+	// elemento por omissão.
+	TestTrue(TEXT("Terra escava"),
+		Skills.GetSkillsForType(TEXT("Fisica/Terra")).Contains(EActionType::Escavar));
 
-	// Sem skill NÃO é sem ação: os seis universais são de todo pet.
-	TestTrue(TEXT("Mas continua com as ações universais"),
-		Skills.GetAvailableActionsForType(TEXT("Fisica/Terra")).Num()
-			== FPetSkillCatalog::GetUniversalActions().Num());
+	// E a regra que substitui a ausência: NENHUM elemento fica sem skill. É
+	// mais forte que o teste antigo, porque o antigo travava justamente o
+	// buraco em vez de proibi-lo.
+	for (const FPetElementDefinition& Elemento : Tipos.GetElements())
+	{
+		const FString Tipo = FString::Printf(TEXT("Fisica/%s"), *Elemento.Name);
+		TestTrue(*FString::Printf(TEXT("O elemento %s tem ao menos uma skill"), *Elemento.Name),
+			Skills.GetSkillsForType(Tipo).Num() > 0);
+
+		// Skill NÃO substitui a gramática: os universais continuam sendo de
+		// todo pet, e o que o elemento dá vem POR CIMA deles.
+		TestTrue(*FString::Printf(TEXT("%s mantém as ações universais"), *Elemento.Name),
+			Skills.GetAvailableActionsForType(Tipo).Num()
+				> FPetSkillCatalog::GetUniversalActions().Num());
+	}
 
 	return true;
 }

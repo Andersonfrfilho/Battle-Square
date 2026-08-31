@@ -23,26 +23,46 @@ namespace
 			return;
 		}
 
-		uint8 AssumedFlag = 0;
+		uint16 AssumedFlag = 0;
 		if (Action.Type == EActionType::Defender)
 		{
-			AssumedFlag = static_cast<uint8>(EBattlePostureFlags::Defending);
+			AssumedFlag = static_cast<uint16>(EBattlePostureFlags::Defending);
 		}
 		else if (Action.Type == EActionType::Esquivar)
 		{
-			AssumedFlag = static_cast<uint8>(EBattlePostureFlags::Dodging);
+			AssumedFlag = static_cast<uint16>(EBattlePostureFlags::Dodging);
 		}
 		else if (Action.Type == EActionType::Camuflar)
 		{
-			AssumedFlag = static_cast<uint8>(EBattlePostureFlags::Camouflaged);
+			AssumedFlag = static_cast<uint16>(EBattlePostureFlags::Camouflaged);
 		}
 		else if (Action.Type == EActionType::Voar)
 		{
-			AssumedFlag = static_cast<uint8>(EBattlePostureFlags::Flying);
+			AssumedFlag = static_cast<uint16>(EBattlePostureFlags::Flying);
 		}
 		else if (Action.Type == EActionType::Submergir)
 		{
-			AssumedFlag = static_cast<uint8>(EBattlePostureFlags::Underground);
+			AssumedFlag = static_cast<uint16>(EBattlePostureFlags::Underground);
+		}
+		else if (Action.Type == EActionType::Atravessar)
+		{
+			// ATRAVESSAR é do INCORPÓREO, e a recusa é dado como todas as
+			// outras: quem tem corpo não passa por dentro do tronco, e dizer
+			// isso aqui como `if` reabriria a porta que a fundura fechou.
+			if (!Pet->HasTrait(EPetTrait::Incorporeo))
+			{
+				FBattleEvent Falhou;
+				Falhou.Type = EBattleEventType::PosturaFalhou;
+				Falhou.SlotIndex = SlotIndex;
+				Falhou.Phase = 2;
+				Falhou.ActorId = Pet->PetId;
+				Falhou.TargetId = BattleEventNoActor;
+				Falhou.Detail = static_cast<uint8>(Action.Type);
+				OutTrace.Add(Falhou);
+				return;
+			}
+
+			AssumedFlag = static_cast<uint16>(EBattlePostureFlags::Phasing);
 		}
 		else
 		{

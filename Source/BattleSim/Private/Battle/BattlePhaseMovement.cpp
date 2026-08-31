@@ -55,7 +55,7 @@ namespace
 			// A intenção nem é coletada — sair daqui como intenção anulada
 			// emitiria MovimentoBloqueado, que o feed narra como "esbarrou no
 			// limite da arena", e a causa é outra.
-			if ((Pet.PostureFlags & static_cast<uint8>(EBattlePostureFlags::Emerging)) != 0)
+			if ((Pet.PostureFlags & static_cast<uint16>(EBattlePostureFlags::Emerging)) != 0)
 			{
 				continue;
 			}
@@ -67,8 +67,11 @@ namespace
 			// aleatório de toda partida já gravada, e todo snapshot de
 			// determinismo passaria a divergir por uma regra que aquelas
 			// batalhas nem exercem.
+			// O CHÃO não cobra de quem não pisa nele. Vale para o fantasma
+			// sempre, e para quem voa ou submerge enquanto durar — a mesma
+			// pergunta, num lugar só.
 			const uint8 ChaoDaCasa = State.CellLayout[State.CellIndex(Pet.Column, Pet.Row)];
-			if (State.TerrainAffectsDeparture(ChaoDaCasa))
+			if (!Pet.IsOffTheGround() && State.TerrainAffectsDeparture(ChaoDaCasa))
 			{
 				const int32 Sorte = State.Random.NextRange(1, 100);
 				const int32 ChanceDeEscorregar = State.TerrainSlipPercent[ChaoDaCasa];
@@ -101,7 +104,7 @@ namespace
 					// no fim do slot com o resto das posturas — atraso que
 					// sobrevivesse ao slot seria um segundo efeito de
 					// atributo, com regra própria de expiração para manter.
-					Pet.PostureFlags |= static_cast<uint8>(EBattlePostureFlags::Slowed);
+					Pet.PostureFlags |= static_cast<uint16>(EBattlePostureFlags::Slowed);
 
 					FBattleEvent Atrasou;
 					Atrasou.Type = EBattleEventType::AtravessouDevagar;
@@ -135,7 +138,14 @@ namespace
 			// "destino válido", nome mantido para não mexer no resto do
 			// algoritmo (colisão entre aliados, EmitBlocked já existentes).
 			const bool bWithinBounds = State.IsInside(DestColumn, DestRow);
-			Intent.bDestinationIsObstacle = bWithinBounds
+			// ATRAVESSANDO, o obstáculo não é obstáculo: o tronco continua em
+			// pé e ele passa por dentro. Não é derrubar — quem derruba abre a
+			// passagem para todo mundo, e isso é outra jogada, com outro
+			// custo e outro evento.
+			const bool bAtravessando =
+				(Pet.PostureFlags & static_cast<uint16>(EBattlePostureFlags::Phasing)) != 0;
+
+			Intent.bDestinationIsObstacle = bWithinBounds && !bAtravessando
 				&& State.CellLayout[State.CellIndex(DestColumn, DestRow)] == static_cast<uint8>(ECellProperty::Blocked);
 			Intent.bInsideGrid = bWithinBounds && !Intent.bDestinationIsObstacle;
 			OutIntents.Add(Intent);
@@ -486,12 +496,8 @@ void BattlePhases::ApplyMovement(
 		}
 		// DP-ia-04: voar e submergir tiram o pet do CHÃO, e a casa só alcança
 		// quem está pisando nela. Camuflar não conta — quem se esconde
-		// continua em pé no mesmo lugar.
-		const bool bFolgaDoChao =
-			(Pet.PostureFlags & static_cast<uint8>(EBattlePostureFlags::Flying)) != 0
-			|| (Pet.PostureFlags & static_cast<uint8>(EBattlePostureFlags::Underground)) != 0;
-
-		if (!bFolgaDoChao
+		// continua em pé no mesmo lugar. O INCORPÓREO nunca esteve nele.
+		if (!Pet.IsOffTheGround()
 			&& State.CellLayout[State.CellIndex(Pet.Column, Pet.Row)] == static_cast<uint8>(ECellProperty::Damage))
 		{
 			Pet.PendingDamage += BattleArenaConstants::CellDamageAmount;

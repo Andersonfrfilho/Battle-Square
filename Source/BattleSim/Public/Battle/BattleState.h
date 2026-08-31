@@ -7,9 +7,29 @@
 #include "Battle/BattleTypes.h"
 #include "BattleState.generated.h"
 
+/**
+ * O que o pet É por natureza — vem do ELEMENTO, e não de uma escolha do turno.
+ */
+UENUM()
+enum class EPetTrait : uint8
+{
+	Nenhum = 0,
+
+	/**
+	 * INCORPÓREO: não encosta no chão, nunca.
+	 *
+	 * O fantasma. Casa de dano não o alcança, gelo não o faz escorregar e lama
+	 * não o atola — não porque ele resista a isso, mas porque nada disso toca
+	 * nele. É a diferença entre uma imunidade concedida e uma que decorre do
+	 * que a criatura é.
+	 */
+	Incorporeo = 1 << 0
+};
+
+
 // Postura assumida num slot — bitmask, zerada ao fim de F5 (BTL-12).
 UENUM(meta = (Bitflags))
-enum class EBattlePostureFlags : uint8
+enum class EBattlePostureFlags : uint16
 {
 	None        = 0,
 	Defending   = 1 << 0,
@@ -27,10 +47,17 @@ enum class EBattlePostureFlags : uint8
 	Revealing   = 1 << 5,  // saindo da camuflagem
 	Emerging    = 1 << 6,  // saindo do subsolo
 
-	// Atravessou a lama devagar. ÚLTIMO BIT do byte — quem precisar do
-	// próximo terá de alargar PostureFlags, e alargar é mudar o hash de todo
-	// snapshot de determinismo. Não é bloqueio, é aviso: a conta fecha aqui.
 	Slowed      = 1 << 7,
+
+	/**
+	 * ATRAVESSANDO: o incorpóreo passa pelo que tem corpo, neste slot.
+	 *
+	 * O byte ANTERIOR acabava aqui — `Slowed` era o oitavo bit, e eu tinha
+	 * escrito que o próximo obrigaria a alargar. Obrigou. `PostureFlags` virou
+	 * uint16, e isso muda o hash de todo estado: é mudança deliberada, não
+	 * descuido, e a alternativa era espremer duas ideias no mesmo bit.
+	 */
+	Phasing     = 1 << 8,
 };
 ENUM_CLASS_FLAGS(EBattlePostureFlags)
 
@@ -197,7 +224,7 @@ struct FPetState
 		// que o jogador tinha acabado de lançar — e ele veria o efeito dele
 		// sumir sem nada explicar.
 		const bool bNaLama = Which == EBattleStat::Velocidade
-			&& (PostureFlags & static_cast<uint8>(EBattlePostureFlags::Slowed)) != 0;
+			&& (PostureFlags & static_cast<uint16>(EBattlePostureFlags::Slowed)) != 0;
 		const int32 ComLama = bNaLama
 			? FMath::Max(1, Base - (Base * MudSlowPercent) / 100)
 			: Base;
@@ -234,7 +261,37 @@ struct FPetState
 	}
 
 	UPROPERTY()
-	uint8 PostureFlags = 0; // EBattlePostureFlags empacotado
+	uint16 PostureFlags = 0; // EBattlePostureFlags empacotado
+
+	/**
+	 * O que este pet É, e não o que ele escolheu fazer.
+	 *
+	 * Postura é decisão do turno e some no fim do slot; TRAÇO é do bicho, vem
+	 * do elemento dele e vale sempre. Guardar "incorpóreo" em PostureFlags
+	 * faria o fantasma virar corpo toda vez que o slot terminasse.
+	 */
+	UPROPERTY()
+	uint8 Traits = 0;
+
+	bool HasTrait(EPetTrait Trait) const
+	{
+		return (Traits & static_cast<uint8>(Trait)) != 0;
+	}
+
+	/**
+	 * Este pet está fora do chão AGORA?
+	 *
+	 * Um lugar só para a pergunta, porque três fases a fazem — o dano da
+	 * casa, o escorregão e o atolo — e três cópias concordariam até a
+	 * primeira edição. O fantasma entrou justamente por aqui: ele é a
+	 * primeira criatura que está fora do chão sem ter feito nada.
+	 */
+	bool IsOffTheGround() const
+	{
+		return HasTrait(EPetTrait::Incorporeo)
+			|| (PostureFlags & static_cast<uint16>(EBattlePostureFlags::Flying)) != 0
+			|| (PostureFlags & static_cast<uint16>(EBattlePostureFlags::Underground)) != 0;
+	}
 
 	// Acumulador de dano de F4 (Combate) — NUNCA aplicado na própria fase
 	// (design.md, BTL-07). F5 (Encerramento) aplica tudo de uma vez e

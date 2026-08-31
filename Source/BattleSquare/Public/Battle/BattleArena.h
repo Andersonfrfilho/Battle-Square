@@ -537,7 +537,7 @@ private:
 	// guardá-los enquanto o traço é reproduzido.
 	FTurnCommit LastCommitBySide[2];
 
-	uint8 FindPostureFlagsForPet(uint8 PetId) const;
+	uint16 FindPostureFlagsForPet(uint8 PetId) const;
 
 	// T5 (colecao-e-captura) 🧠: varre o trace por BatalhaEncerrada; se o
 	// jogador local venceu, captura o pet do lado OPOSTO — nunca o

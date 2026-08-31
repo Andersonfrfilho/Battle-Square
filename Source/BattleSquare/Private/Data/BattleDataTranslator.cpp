@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Data/BattleDataTranslator.h"
+#include "Balance/PetTypeIdentity.h"
 
 #include "Battle/BattleArenaConstants.h"
 
@@ -87,6 +88,17 @@ void FBattleDataTranslator::TranslatePet(
 	OutBattleState.MaxHealth = Source.MaxHealth;
 	// Health = MaxHealth no início da batalha (T18).
 	OutBattleState.Health = Source.MaxHealth;
+
+	// O TRAÇO vem do ELEMENTO, e é aqui que ele atravessa a fronteira: o
+	// núcleo guarda o efeito (`Incorporeo`), a camada de fora guarda o
+	// significado (o elemento se chama "Fantasma"). Mesma divisão da umidade
+	// e do efeito de terreno.
+	OutBattleState.Traits = 0;
+	if (FPetTypeIdentity::Parse(Source.Type).Element.Equals(
+		TEXT("Fantasma"), ESearchCase::IgnoreCase))
+	{
+		OutBattleState.Traits |= static_cast<uint8>(EPetTrait::Incorporeo);
+	}
 
 	OutPresentation = FPetPresentationInfo();
 	OutPresentation.PetId = PetId;

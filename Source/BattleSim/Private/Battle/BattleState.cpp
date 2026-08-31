@@ -62,6 +62,7 @@ uint64 FBattleState::ComputeHash() const
 		Hash = CombineBattleHash(Hash, Pet->ActiveEffectSlotsRemaining);
 
 		Hash = CombineBattleHash(Hash, Pet->PostureFlags);
+		Hash = CombineBattleHash(Hash, Pet->Traits);
 	}
 
 	// Arenas Variadas (design.md): layout entra no hash na ordem fixa do

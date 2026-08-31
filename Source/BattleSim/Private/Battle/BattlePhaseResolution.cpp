@@ -123,18 +123,18 @@ void BattlePhases::ApplyResolution(
 		// novo entraria no hash do estado e invalidaria os snapshots de
 		// determinismo de cenários que nem usam estas ações.
 		const bool bEstavaCamuflado =
-			(Pet.PostureFlags & static_cast<uint8>(EBattlePostureFlags::Camouflaged)) != 0;
+			(Pet.PostureFlags & static_cast<uint16>(EBattlePostureFlags::Camouflaged)) != 0;
 		const bool bEstavaSubmerso =
-			(Pet.PostureFlags & static_cast<uint8>(EBattlePostureFlags::Underground)) != 0;
+			(Pet.PostureFlags & static_cast<uint16>(EBattlePostureFlags::Underground)) != 0;
 
 		Pet.PostureFlags = 0;
 		if (bEstavaCamuflado)
 		{
-			Pet.PostureFlags = static_cast<uint8>(EBattlePostureFlags::Revealing);
+			Pet.PostureFlags = static_cast<uint16>(EBattlePostureFlags::Revealing);
 		}
 		else if (bEstavaSubmerso)
 		{
-			Pet.PostureFlags = static_cast<uint8>(EBattlePostureFlags::Emerging);
+			Pet.PostureFlags = static_cast<uint16>(EBattlePostureFlags::Emerging);
 		}
 	}
 

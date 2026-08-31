@@ -9,6 +9,9 @@
 #include "World/VillageLayout.h"
 #include "Environment/FreshWater.h"
 #include "World/TrailLayout.h"
+#include "World/LandUseLayout.h"
+#include "Environment/CaveLabyrinth.h"
+#include "Net/BattleSquareGameMode.h"
 
 /**
  * Despeja o traçado da ilha em `Saved/IslandMap.json`.
@@ -145,8 +148,107 @@ bool FIslandMapDumpTest::RunTest(const FString& Parameters)
 	}
 	Json += TEXT("],\n");
 
+	// FONTES e CÓRREGOS: a água do miolo, que a ilha não tinha.
+	Json += TEXT("  \"fontes\": [");
+	const TArray<FreshWater::FSpring> Fontes = FreshWater::PlanSprings();
+	for (int32 Indice = 0; Indice < Fontes.Num(); ++Indice)
+	{
+		Json += FString::Printf(TEXT("%s[%.0f,%.0f,%.0f]"), Indice == 0 ? TEXT("") : TEXT(","),
+			Fontes[Indice].CenterUnits.X, Fontes[Indice].CenterUnits.Y,
+			Fontes[Indice].PoolHalfWidthUnits);
+	}
+	Json += TEXT("],\n  \"corregos\": [\n");
+	const TArray<FreshWater::FBrook> Corregos = FreshWater::PlanBrooks();
+	for (int32 Indice = 0; Indice < Corregos.Num(); ++Indice)
+	{
+		Json += TEXT("    [");
+		for (int32 Ponto = 0; Ponto < Corregos[Indice].PointsUnits.Num(); ++Ponto)
+		{
+			Json += FString::Printf(TEXT("%s[%.0f,%.0f]"), Ponto == 0 ? TEXT("") : TEXT(","),
+				Corregos[Indice].PointsUnits[Ponto].X, Corregos[Indice].PointsUnits[Ponto].Y);
+		}
+		Json += FString::Printf(TEXT("]%s\n"), Indice + 1 < Corregos.Num() ? TEXT(",") : TEXT(""));
+	}
+	Json += TEXT("  ],\n");
+
+	// USO DO SOLO: bosque, clareira fechada e fazenda.
+	Json += TEXT("  \"solo\": [\n");
+	const TArray<FGroundUsePatch> Manchas = LandUseLayout::Plan();
+	for (int32 Indice = 0; Indice < Manchas.Num(); ++Indice)
+	{
+		const TCHAR* Nome = TEXT("nenhum");
+		switch (Manchas[Indice].Use)
+		{
+		case EGroundUse::Bosque:          Nome = TEXT("bosque"); break;
+		case EGroundUse::ClareiraFechada: Nome = TEXT("clareira"); break;
+		case EGroundUse::Fazenda:         Nome = TEXT("fazenda"); break;
+		default: break;
+		}
+
+		Json += FString::Printf(TEXT("    {\"uso\":\"%s\",\"x\":%.0f,\"y\":%.0f,\"meio\":%.0f}%s\n"),
+			Nome, Manchas[Indice].CenterUnits.X, Manchas[Indice].CenterUnits.Y,
+			Manchas[Indice].HalfExtentUnits, Indice + 1 < Manchas.Num() ? TEXT(",") : TEXT(""));
+	}
+	Json += TEXT("  ],\n");
+
+	// OS MAPAS DAS CAVERNAS. A semente sai de `SeedForPlacement`, a mesma que
+	// o GameMode usa — é para isso que ela saiu de lá.
+	Json += TEXT("  \"cavernas\": [\n");
+	{
+		const ABattleSquareGameMode* Padrao = GetDefault<ABattleSquareGameMode>();
+		const int32 SementeDoMundo = Padrao ? Padrao->GetWorldScenerySeedForMap() : 0;
+
+		TArray<IslandFeatureLayout::FFeaturePlacement> Cavernas;
+		for (const IslandFeatureLayout::FFeaturePlacement& Peca : IslandFeatureLayout::Plan())
+		{
+			if (Peca.Feature == IslandFeatureLayout::EIslandFeature::Cave)
+			{
+				Cavernas.Add(Peca);
+			}
+		}
+		Cavernas.Append(FreshWater::PlanGrottoes());
+
+		for (int32 Indice = 0; Indice < Cavernas.Num(); ++Indice)
+		{
+			const int32 Lado = Cavernas[Indice].CaveSide;
+			const CaveLabyrinth::FCaveGrid Planta = CaveLabyrinth::Carve(Lado, Lado,
+				IslandFeatureLayout::SeedForPlacement(SementeDoMundo, Cavernas[Indice]));
+
+			Json += FString::Printf(
+				TEXT("    {\"x\":%.0f,\"y\":%.0f,\"lado\":%d,\"entrada\":%d,\"paredes\":["),
+				Cavernas[Indice].CenterUnits().X, Cavernas[Indice].CenterUnits().Y,
+				Planta.Columns, Planta.EntranceColumn);
+
+			for (int32 Casa = 0; Casa < Planta.Walls.Num(); ++Casa)
+			{
+				Json += FString::Printf(TEXT("%s%d"),
+					Casa == 0 ? TEXT("") : TEXT(","), static_cast<int32>(Planta.Walls[Casa]));
+			}
+
+			Json += FString::Printf(TEXT("]}%s\n"),
+				Indice + 1 < Cavernas.Num() ? TEXT(",") : TEXT(""));
+		}
+	}
+	Json += TEXT("  ],\n");
+
+	// As passagens subterrâneas: a ligação que não cabe na superfície.
+	Json += TEXT("  \"passagens\": [");
+	const TArray<FreshWater::FUnderwaterLink> Passagens = FreshWater::PlanUnderwaterLinks();
+	for (int32 Indice = 0; Indice < Passagens.Num(); ++Indice)
+	{
+		Json += FString::Printf(TEXT("%s[%.0f,%.0f,%.0f,%.0f]"),
+			Indice == 0 ? TEXT("") : TEXT(","),
+			Passagens[Indice].FromUnits.X, Passagens[Indice].FromUnits.Y,
+			Passagens[Indice].ToUnits.X, Passagens[Indice].ToUnits.Y);
+	}
+	Json += TEXT("],\n");
+
 	// Os campos de treino, no anel que o GameMode usa.
-	Json += FString::Printf(TEXT("  \"anelDeTreino\": %.1f,\n"), 1800.0f);
+	{
+		const ABattleSquareGameMode* Padrao = GetDefault<ABattleSquareGameMode>();
+		Json += FString::Printf(TEXT("  \"anelDeTreino\": %.1f,\n"),
+			Padrao ? Padrao->GetTrainingFieldRingForMap() : 0.0f);
+	}
 
 	// A malha de alturas: é ela que permite ver o relevo no desenho, e é a
 	// única prova de que `GroundHeightAt` produz morro em vez de prato.

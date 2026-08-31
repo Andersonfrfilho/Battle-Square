@@ -2,6 +2,7 @@
 
 #include "Environment/ForestBackdrop.h"
 #include "World/VillageLayout.h"
+#include "World/LandUseLayout.h"
 
 #include "Battle/DeterministicSpread.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
@@ -1377,8 +1378,36 @@ void AForestBackdrop::BuildRegion(float CellSize, uint32 Seed, EIslandBiome Biom
 				continue;
 			}
 
+			// E o USO DO SOLO manda no resto: fazenda e clareira fechada são
+			// vazios, bosque é mata cerrada. A mata uniforme não é floresta, é
+			// textura — quem anda por ela não sabe se andou cem metros ou mil.
+			//
+			// A densidade chega como um MULTIPLICADOR, e não como regras: o
+			// gerador da mata não precisa aprender o que é uma fazenda.
+			const float Densidade = LandUseLayout::PlantingDensityAt(NoMundo);
+			if (Densidade <= 0.0f)
+			{
+				continue;
+			}
+
 			Grupo->AddInstance(PousoDaPlanta(SementeDaEspecie, Planta, 0,
 				Posicao, EscalaBase, Presenca.TomboMaximoEmGraus));
+
+			// No bosque, a mesma posição rende uma segunda planta ao lado. É
+			// mais barato e mais estável que mexer na CONTA de plantas: mexer
+			// nela mudaria a sequência do sorteio, e o pedaço inteiro nasceria
+			// diferente a cada vez que o uso do solo mudasse.
+			for (float Extra = 1.0f; Extra + 1.0f <= Densidade; Extra += 1.0f)
+			{
+				const FVector2D AoLado = Posicao + FVector2D(
+					BattleSpread::Between(-Meio * 0.04f, Meio * 0.04f,
+						BattleSpread::Fraction(SementeDaEspecie, Planta * 7 + 3)),
+					BattleSpread::Between(-Meio * 0.04f, Meio * 0.04f,
+						BattleSpread::Fraction(SementeDaEspecie, Planta * 7 + 5)));
+
+				Grupo->AddInstance(PousoDaPlanta(SementeDaEspecie, Planta, 1,
+					AoLado, EscalaBase, Presenca.TomboMaximoEmGraus));
+			}
 		}
 	}
 }

@@ -267,3 +267,9 @@ namespace IslandFeatureLayout
 		return FVector2D::Distance(First.CenterUnits(), Second.CenterUnits()) < Exigido;
 	}
 }
+
+uint32 IslandFeatureLayout::SeedForPlacement(int32 WorldSeed, const FFeaturePlacement& Placement)
+{
+	return static_cast<uint32>(WorldSeed)
+		+ static_cast<uint32>(FMath::RoundToInt(Placement.AngleDegrees));
+}

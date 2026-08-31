@@ -1659,10 +1659,10 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 		const FVector2D Deslocamento = Peca.CenterUnits();
 		const FVector OndeNaIlha(Origem.X + Deslocamento.X, Origem.Y + Deslocamento.Y, AlturaDoChao);
 
-		// A semente muda com o ângulo. Com a mesma para todas, as três trilhas
-		// serpenteariam igual e a ilha pareceria a mesma montanha copiada.
-		const uint32 SementeDaPeca = static_cast<uint32>(WorldScenerySeed)
-			+ static_cast<uint32>(FMath::RoundToInt(Peca.AngleDegrees));
+		// A conta mora no TRAÇADO, não aqui: quem desenha o mapa de uma caverna
+		// precisa da mesma semente, e ela não pode existir só onde o ator nasce.
+		const uint32 SementeDaPeca =
+			IslandFeatureLayout::SeedForPlacement(WorldScenerySeed, Peca);
 
 		// `switch` sem `default`, e é de propósito: quando a montanha era o
 		// caso especial e TODO o resto caía na caverna, o vulcão nasceu como

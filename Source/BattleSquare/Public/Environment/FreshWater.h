@@ -90,6 +90,90 @@ namespace FreshWater
 	 */
 	BATTLESQUARE_API int32 RiversPerMountain();
 
+	/**
+	 * Uma FONTE: onde a água brota do chão, longe de qualquer monte.
+	 *
+	 * Ela existe porque a ilha só tinha água que descia de montanha, e isso
+	 * deixava o miolo inteiro seco. Fonte é a água do lugar plano — e é o que
+	 * permite haver água doce perto de quem mora.
+	 */
+	struct BATTLESQUARE_API FSpring
+	{
+		FVector2D CenterUnits = FVector2D::ZeroVector;
+		float PoolHalfWidthUnits = 0.0f;
+	};
+
+	BATTLESQUARE_API TArray<FSpring> PlanSprings();
+
+	/**
+	 * Um CÓRREGO: o fio de água que liga uma fonte a um rio, ou um rio a outro.
+	 *
+	 * Sem eles a ilha tem seis rios paralelos e nada entre eles — água que
+	 * corre lado a lado sem nunca se encontrar não é bacia, é listras.
+	 *
+	 * O córrego é estreito de propósito: ele se atravessa a pé, e por isso não
+	 * corta a ilha. Quem precisa de ponte é o rio.
+	 */
+	struct BATTLESQUARE_API FBrook
+	{
+		TArray<FVector2D> PointsUnits;
+		float HalfWidthUnits = 0.0f;
+	};
+
+	BATTLESQUARE_API TArray<FBrook> PlanBrooks();
+
+	/**
+	 * O que passa por um trecho de água.
+	 *
+	 * A largura decide, e é a mesma largura que já desenha o rio — não há uma
+	 * segunda tabela dizendo onde o barco cabe. Duas tabelas concordariam até
+	 * a primeira vez que alguém alargasse um rio (L-032).
+	 */
+	enum class ENavigability : uint8
+	{
+		/** Nem canoa: aqui se anda. */
+		APe,
+
+		/** Só barco pequeno — o córrego e o rio na cabeceira. */
+		BarcoPequeno,
+
+		/** Barco grande: o rio maduro e o lago. */
+		BarcoGrande
+	};
+
+	BATTLESQUARE_API ENavigability NavigabilityForHalfWidth(float HalfWidthUnits);
+
+	/**
+	 * Uma passagem SUBTERRÂNEA entre duas águas.
+	 *
+	 * Existe porque nem toda ligação cabe na superfície: dois rios podem ter
+	 * um espigão entre eles, e cavar um córrego por cima seria a água subindo
+	 * o morro. Por baixo, ela não sobe — atravessa.
+	 *
+	 * E dá função a uma coisa que já existia sem ter: as grutas de cachoeira
+	 * eram cenário bonito com água dentro. Agora elas são as BOCAS da
+	 * passagem, e entrar numa delas leva a algum lugar.
+	 */
+	struct BATTLESQUARE_API FUnderwaterLink
+	{
+		FVector2D FromUnits = FVector2D::ZeroVector;
+		FVector2D ToUnits = FVector2D::ZeroVector;
+
+		/** Passagem de pedra é apertada: barco grande não entra. */
+		ENavigability Navigability = ENavigability::BarcoPequeno;
+	};
+
+	BATTLESQUARE_API TArray<FUnderwaterLink> PlanUnderwaterLinks();
+
+	/**
+	 * Toda a água doce da ilha está ligada — por cima ou por baixo.
+	 *
+	 * É a pergunta que o pedido "dá para ir de barco a todo lugar" vira em
+	 * código: um grafo, e ele é conexo ou não é. Sem esta função, a resposta
+	 * seria olhar o mapa e achar que sim.
+	 */
+	BATTLESQUARE_API bool IsWaterNetworkConnected();
+
 	/** Onde, no plano do mundo, o rio cruza este raio. */
 	BATTLESQUARE_API FVector2D PointAt(const FRiverCourse& Course, float RadiusUnits);
 

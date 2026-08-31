@@ -155,6 +155,150 @@ namespace FreshWater
 
 	int32 RiversPerMountain() { return RiosPorMonte; }
 
+	namespace
+	{
+		/**
+		 * Quantas fontes, e onde elas cabem.
+		 *
+		 * No MIOLO, entre a casa e a saia dos montes: é a faixa que os rios não
+		 * alcançam, porque eles descem para fora. Sem fonte, essa faixa — que é
+		 * justamente onde todo mundo mora — não tem uma gota.
+		 */
+		constexpr int32 QuantasFontes = 5;
+		constexpr float PrimeiroAnelDeFonte = 0.22f;
+		constexpr float UltimoAnelDeFonte = 0.52f;
+
+		/** A poça da fonte: bem menor que um lago, e maior que a calha. */
+		constexpr float FracaoDaPoca = 0.010f;
+
+		/** O córrego é fio de água: atravessa-se a pé, e por isso não pede ponte. */
+		constexpr float FracaoDoCorrego = 0.0022f;
+
+		/** Em quantos trechos o córrego é descrito. */
+		constexpr int32 TrechosDoCorrego = 12;
+
+		/** Quanto ele serpenteia, em fração do próprio comprimento. */
+		constexpr float SerpenteDoCorrego = 0.13f;
+	}
+
+	TArray<FSpring> PlanSprings()
+	{
+		TArray<FSpring> Fontes;
+
+		for (int32 Indice = 0; Indice < QuantasFontes; ++Indice)
+		{
+			const uint32 Semente = BattleSpread::SeedFromText(
+				FString::Printf(TEXT("fonte-do-miolo-%d"), Indice));
+
+			// O rumo é espalhado por igual e depois EMPURRADO pelo sorteio: só
+			// sorteado, cinco fontes cairiam em duas do mesmo lado, e o miolo
+			// continuaria seco de um dos lados.
+			const float Rumo = (360.0f * Indice / QuantasFontes)
+				+ BattleSpread::Between(-24.0f, 24.0f, BattleSpread::Fraction(Semente, 0));
+
+			const float Anel = IslandGeography::LandRadiusUnits() * BattleSpread::Between(
+				PrimeiroAnelDeFonte, UltimoAnelDeFonte, BattleSpread::Fraction(Semente, 1));
+
+			const float Radianos = FMath::DegreesToRadians(Rumo);
+
+			FSpring Fonte;
+			Fonte.CenterUnits = FVector2D(FMath::Cos(Radianos), FMath::Sin(Radianos)) * Anel;
+			Fonte.PoolHalfWidthUnits = IslandGeography::LandRadiusUnits() * FracaoDaPoca;
+			Fontes.Add(Fonte);
+		}
+
+		return Fontes;
+	}
+
+	TArray<FBrook> PlanBrooks()
+	{
+		TArray<FBrook> Corregos;
+		const TArray<FRiverCourse> Rios = Plan();
+		if (Rios.Num() == 0)
+		{
+			return Corregos;
+		}
+
+		const float MeiaCalha = IslandGeography::LandRadiusUnits() * FracaoDoCorrego;
+
+		/** O ponto do rio mais perto de onde a fonte está. */
+		auto NoRioMaisPerto = [&Rios](const FVector2D& Daqui)
+		{
+			FVector2D Melhor = PointAt(Rios[0], Rios[0].SourceRadiusUnits);
+			float Menor = TNumericLimits<float>::Max();
+
+			for (const FRiverCourse& Rio : Rios)
+			{
+				const float Passo = (Rio.MouthRadiusUnits - Rio.SourceRadiusUnits) / 60.0f;
+				for (float Raio = Rio.SourceRadiusUnits; Raio <= Rio.MouthRadiusUnits; Raio += Passo)
+				{
+					const FVector2D Ali = PointAt(Rio, Raio);
+					const float Daqui2 = FVector2D::DistSquared(Daqui, Ali);
+					if (Daqui2 < Menor)
+					{
+						Menor = Daqui2;
+						Melhor = Ali;
+					}
+				}
+			}
+
+			return Melhor;
+		};
+
+		/**
+		 * Traça o fio de água. Ele SERPENTEIA: córrego reto é vala, e vala é
+		 * obra de gente — a água nunca desce em linha.
+		 */
+		auto Fio = [MeiaCalha](const FVector2D& Daqui, const FVector2D& Prali, uint32 Semente)
+		{
+			FBrook Corrego;
+			Corrego.HalfWidthUnits = MeiaCalha;
+
+			const FVector2D AoLongo = Prali - Daqui;
+			const FVector2D DeLado = FVector2D(-AoLongo.Y, AoLongo.X).GetSafeNormal();
+			const float Amplitude = AoLongo.Size() * SerpenteDoCorrego
+				* BattleSpread::Between(0.5f, 1.0f, BattleSpread::Fraction(Semente, 0));
+
+			for (int32 Trecho = 0; Trecho <= TrechosDoCorrego; ++Trecho)
+			{
+				const float Onde = static_cast<float>(Trecho) / TrechosDoCorrego;
+
+				// Meia onda: sai da fonte e chega no rio sem desvio, e a barriga
+				// fica no meio. Onda inteira faria o córrego nascer torto.
+				const float Desvio = FMath::Sin(Onde * PI) * Amplitude;
+				Corrego.PointsUnits.Add(FMath::Lerp(Daqui, Prali, Onde) + DeLado * Desvio);
+			}
+
+			return Corrego;
+		};
+
+		int32 Indice = 0;
+		for (const FSpring& Fonte : PlanSprings())
+		{
+			const uint32 Semente = BattleSpread::SeedFromText(
+				FString::Printf(TEXT("corrego-da-fonte-%d"), Indice));
+			Corregos.Add(Fio(Fonte.CenterUnits, NoRioMaisPerto(Fonte.CenterUnits), Semente));
+			++Indice;
+		}
+
+		// E os córregos que ligam RIO A RIO, no meio do percurso: sem eles a
+		// ilha tem seis fios paralelos e nada os une. Um por par vizinho.
+		for (int32 Rio = 0; Rio + 1 < Rios.Num(); ++Rio)
+		{
+			const float NoMeio = (Rios[Rio].SourceRadiusUnits + Rios[Rio].MouthRadiusUnits) * 0.5f;
+			const float NoMeioDoOutro =
+				(Rios[Rio + 1].SourceRadiusUnits + Rios[Rio + 1].MouthRadiusUnits) * 0.5f;
+
+			const uint32 Semente = BattleSpread::SeedFromText(
+				FString::Printf(TEXT("corrego-entre-rios-%d"), Rio));
+
+			Corregos.Add(Fio(PointAt(Rios[Rio], NoMeio),
+				PointAt(Rios[Rio + 1], NoMeioDoOutro), Semente));
+		}
+
+		return Corregos;
+	}
+
 	TArray<FRiverCourse> Plan()
 	{
 		TArray<FRiverCourse> Cursos;
@@ -360,4 +504,165 @@ namespace FreshWater
 
 		return Grutas;
 	}
+}
+
+FreshWater::ENavigability FreshWater::NavigabilityForHalfWidth(float HalfWidthUnits)
+{
+	// Os cortes saem da largura do RIO comum, que é a régua natural: acima
+	// dela passa barco grande, abaixo só o pequeno, e um terço dela já é
+	// travessia a pé. Números soltos aqui perderiam o sentido no dia em que a
+	// ilha mudasse de tamanho.
+	const float DoRio = RiverHalfWidthUnits();
+
+	if (HalfWidthUnits >= DoRio)
+	{
+		return ENavigability::BarcoGrande;
+	}
+	if (HalfWidthUnits >= DoRio * 0.30f)
+	{
+		return ENavigability::BarcoPequeno;
+	}
+
+	return ENavigability::APe;
+}
+
+TArray<FreshWater::FUnderwaterLink> FreshWater::PlanUnderwaterLinks()
+{
+	TArray<FUnderwaterLink> Passagens;
+
+	// Cada gruta de cachoeira vira BOCA de passagem, ligada à gruta mais
+	// próxima que ainda não tem par. Ligar todas a todas faria um queijo; uma
+	// por gruta faz uma rede.
+	const TArray<IslandFeatureLayout::FFeaturePlacement> Grutas = PlanGrottoes();
+
+	TArray<bool> JaLigada;
+	JaLigada.Init(false, Grutas.Num());
+
+	for (int32 Daqui = 0; Daqui < Grutas.Num(); ++Daqui)
+	{
+		if (JaLigada[Daqui])
+		{
+			continue;
+		}
+
+		int32 Escolhida = INDEX_NONE;
+		float Menor = TNumericLimits<float>::Max();
+
+		for (int32 Prali = 0; Prali < Grutas.Num(); ++Prali)
+		{
+			if (Prali == Daqui || JaLigada[Prali])
+			{
+				continue;
+			}
+
+			const float Ate = FVector2D::DistSquared(
+				Grutas[Daqui].CenterUnits(), Grutas[Prali].CenterUnits());
+			if (Ate < Menor)
+			{
+				Menor = Ate;
+				Escolhida = Prali;
+			}
+		}
+
+		if (Escolhida == INDEX_NONE)
+		{
+			continue;
+		}
+
+		FUnderwaterLink Passagem;
+		Passagem.FromUnits = Grutas[Daqui].CenterUnits();
+		Passagem.ToUnits = Grutas[Escolhida].CenterUnits();
+
+		// Passagem de pedra é apertada, sempre: se ela coubesse barco grande,
+		// o atalho de baixo tornaria o rio de cima decorativo.
+		Passagem.Navigability = ENavigability::BarcoPequeno;
+
+		Passagens.Add(Passagem);
+		JaLigada[Daqui] = true;
+		JaLigada[Escolhida] = true;
+	}
+
+	return Passagens;
+}
+
+bool FreshWater::IsWaterNetworkConnected()
+{
+	const TArray<FRiverCourse> Rios = Plan();
+	if (Rios.Num() == 0)
+	{
+		return true;
+	}
+
+	// Conjuntos disjuntos: cada rio começa sozinho, e cada ligação junta dois.
+	// No fim, ou sobrou um conjunto — e dá para ir de barco a todo lugar — ou
+	// sobrou mais de um, e há água que não se alcança.
+	TArray<int32> Dono;
+	Dono.Reserve(Rios.Num());
+	for (int32 Indice = 0; Indice < Rios.Num(); ++Indice)
+	{
+		Dono.Add(Indice);
+	}
+
+	TFunction<int32(int32)> Raiz = [&Dono, &Raiz](int32 Qual)
+	{
+		return Dono[Qual] == Qual ? Qual : (Dono[Qual] = Raiz(Dono[Qual]));
+	};
+
+	auto Juntar = [&Dono, &Raiz](int32 Um, int32 Outro)
+	{
+		Dono[Raiz(Um)] = Raiz(Outro);
+	};
+
+	/** De que rio este ponto está mais perto. */
+	auto RioDoPonto = [&Rios](const FVector2D& Onde)
+	{
+		int32 Melhor = 0;
+		float Menor = TNumericLimits<float>::Max();
+
+		for (int32 Indice = 0; Indice < Rios.Num(); ++Indice)
+		{
+			const float Passo =
+				(Rios[Indice].MouthRadiusUnits - Rios[Indice].SourceRadiusUnits) / 40.0f;
+
+			for (float Raio = Rios[Indice].SourceRadiusUnits;
+				Raio <= Rios[Indice].MouthRadiusUnits; Raio += Passo)
+			{
+				const float Ate = FVector2D::DistSquared(Onde, PointAt(Rios[Indice], Raio));
+				if (Ate < Menor)
+				{
+					Menor = Ate;
+					Melhor = Indice;
+				}
+			}
+		}
+
+		return Melhor;
+	};
+
+	// Os CÓRREGOS ligam por cima.
+	for (const FBrook& Corrego : PlanBrooks())
+	{
+		if (Corrego.PointsUnits.Num() < 2)
+		{
+			continue;
+		}
+
+		Juntar(RioDoPonto(Corrego.PointsUnits[0]), RioDoPonto(Corrego.PointsUnits.Last()));
+	}
+
+	// E as PASSAGENS ligam por baixo.
+	for (const FUnderwaterLink& Passagem : PlanUnderwaterLinks())
+	{
+		Juntar(RioDoPonto(Passagem.FromUnits), RioDoPonto(Passagem.ToUnits));
+	}
+
+	for (int32 Indice = 1; Indice < Rios.Num(); ++Indice)
+	{
+		if (Raiz(Indice) != Raiz(0))
+		{
+			return false;
+		}
+	}
+
+	return true;
 }

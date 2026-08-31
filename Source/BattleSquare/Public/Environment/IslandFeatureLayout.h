@@ -40,6 +40,18 @@ namespace IslandFeatureLayout
 		Volcano,
 	};
 
+	/**
+	 * A semente de uma peça. A FONTE ÚNICA.
+	 *
+	 * Ela morava no GameMode, e por isso ninguém de fora conseguia reproduzir
+	 * o labirinto de uma caverna — nem o mapa que quer desenhá-lo. Semente que
+	 * só existe onde o ator nasce é semente que nada mais pode conferir.
+	 *
+	 * Muda com o ÂNGULO: com a mesma para todas, as três trilhas de monte
+	 * serpenteariam igual e a ilha pareceria a mesma montanha copiada.
+	 */
+	BATTLESQUARE_API uint32 SeedForPlacement(int32 WorldSeed, const struct FFeaturePlacement& Placement);
+
 	/** Uma peça plantada: o que é, onde fica e quanto espaço ocupa. */
 	struct BATTLESQUARE_API FFeaturePlacement
 	{

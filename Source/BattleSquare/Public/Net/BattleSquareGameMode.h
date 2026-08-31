@@ -436,6 +436,16 @@ public:
 	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
 	int32 WorldScenerySeed = 20260829;
 
+public:
+	/**
+	 * Só para o despejo do mapa ler os mesmos números que o mundo usa.
+	 *
+	 * Sem eles, quem desenha a carta transcreve — e transcrição é a cópia que
+	 * concorda até a primeira edição (L-032).
+	 */
+	int32 GetWorldScenerySeedForMap() const { return WorldScenerySeed; }
+	float GetTrainingFieldRingForMap() const { return TrainingFieldRingRadiusUnits; }
+
 	/**
 	 * A hora em que o mundo abre, de 0 a 24.
 	 *

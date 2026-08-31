@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "World/WorldDiscovery.h"
+#include "World/WorldMapPins.h"
 #include "UI/WorldMapProjection.h"
 #include "Math/RandomStream.h"
 #include "Engine/TimerHandle.h"
@@ -209,6 +210,21 @@ public:
 	TArray<FWorldMapTerrainTile> WorldTerrainTiles;
 
 	void BuildWorldTerrainTiles();
+
+public:
+	/**
+	 * Marca o lugar onde o jogador está — ou apaga, se já houver marcação aqui.
+	 *
+	 * NA POSIÇÃO DELE, e não onde ele clicar no mapa: clique em widget de
+	 * viewport já falhou três vezes neste projeto (o painel de depuração
+	 * inteiro nasceu disso), e L-038 diz que caminho que falha três vezes é a
+	 * dependência errada. Marcar onde se está sempre funciona, e é o gesto que
+	 * o jogador faz mais — "isto aqui eu quero achar de novo".
+	 */
+	void ToggleMapPinHere(EWorldPinKind Kind);
+
+private:
+	FWorldMapPins MapPins;
 
 	/**
 	 * Escreve o painel do mundo: seu pet, seus atributos, quem está por perto.

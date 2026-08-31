@@ -392,6 +392,7 @@ FString ABattleSquareGameMode::SetUpWorldEncounterFlow()
 		// que faz o mapa lembrar de uma sessão para a outra.
 		WorldDiscovery = FPetCollectionService::LoadDiscovery(PetCollectionSlotName);
 		BuildWorldTerrainTiles();
+		MapPins = FPetCollectionService::LoadMapPins(PetCollectionSlotName);
 		World->GetTimerManager().SetTimer(DiscoveryTimer, this,
 			&ABattleSquareGameMode::RefreshWorldDiscovery,
 			WorldStatusRefreshSeconds, /*bLoop=*/true);
@@ -1052,6 +1053,47 @@ bool ABattleSquareGameMode::LearnSpecialtyOfCurrentField()
 	return false;
 }
 
+void ABattleSquareGameMode::ToggleMapPinHere(EWorldPinKind Kind)
+{
+	const APawn* Jogador = AcharPawnDoJogador(GetWorld());
+	if (!Jogador)
+	{
+		return;
+	}
+
+	const FVector2D Onde(Jogador->GetActorLocation());
+	const FWorldMapPins::EResult Resultado = MapPins.ToggleAt(Onde, Kind);
+
+	// TODA marcação vira linha na tela, inclusive a recusada. Gesto que não
+	// responde parece gesto que não chegou, e foi assim que três tentativas de
+	// usar a tecla de copiar viraram três rodadas perdidas.
+	switch (Resultado)
+	{
+	case FWorldMapPins::EResult::Posta:
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("marcado aqui (%d de %d)"),
+				MapPins.Pins.Num(), FWorldMapPins::MaxPins),
+			4.0f, FColor(255, 220, 120), /*Key=*/-1);
+		break;
+
+	case FWorldMapPins::EResult::Apagada:
+		FBattleDebugScreen::Show(TEXT("marcação apagada"),
+			4.0f, FColor(255, 220, 120), /*Key=*/-1);
+		break;
+
+	case FWorldMapPins::EResult::Cheio:
+		// RECUSA com motivo, e sem trocar a mais antiga: perder uma marcação
+		// que se pôs de propósito, em silêncio, é pior que não marcar.
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("mapa cheio: %d marcações. Apague uma marcando em cima dela."),
+				FWorldMapPins::MaxPins),
+			6.0f, FColor::Orange, /*Key=*/-1);
+		return;
+	}
+
+	FPetCollectionService::SaveMapPins(PetCollectionSlotName, MapPins);
+}
+
 void ABattleSquareGameMode::BuildWorldTerrainTiles()
 {
 	// A GEOGRAFIA responde, não o que está plantado.
@@ -1132,6 +1174,7 @@ void ABattleSquareGameMode::RefreshWorldMap()
 	Retrato.ShoreRadiusUnits = IslandGeography::LandRadiusUnits();
 	Retrato.Discovery = WorldDiscovery;
 	Retrato.Terrain = WorldTerrainTiles;
+	Retrato.Pins = MapPins;
 
 	// CAMPOS DE TREINO na cor de cada atributo: são o único destino do mapa,
 	// e um mapa sem destino é um radar.
@@ -1621,6 +1664,39 @@ void ABattleSquareGameMode::MaintainEncounterPopulation()
 #if !UE_BUILD_SHIPPING
 namespace
 {
+	FAutoConsoleCommandWithWorldAndArgs GMarcarCommand(
+		TEXT("bs.Marcar"),
+		TEXT("Marca o lugar onde você está no mapa — ou apaga, se já houver marcação aqui. "
+			 "Argumento opcional: interesse (padrão), perigo, destino."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(
+			[](const TArray<FString>& Args, UWorld* World)
+			{
+				ABattleSquareGameMode* GameMode =
+					World ? World->GetAuthGameMode<ABattleSquareGameMode>() : nullptr;
+				if (!GameMode)
+				{
+					return;
+				}
+
+				// Tipo desconhecido vira INTERESSE em vez de recusar: quem
+				// digitou errado quis marcar, e negar o gesto por causa da
+				// palavra perde a marcação junto.
+				EWorldPinKind Tipo = EWorldPinKind::Interesse;
+				if (Args.Num() > 0)
+				{
+					if (Args[0].Equals(TEXT("perigo"), ESearchCase::IgnoreCase))
+					{
+						Tipo = EWorldPinKind::Perigo;
+					}
+					else if (Args[0].Equals(TEXT("destino"), ESearchCase::IgnoreCase))
+					{
+						Tipo = EWorldPinKind::Destino;
+					}
+				}
+
+				GameMode->ToggleMapPinHere(Tipo);
+			}));
+
 	FAutoConsoleCommandWithWorldAndArgs GEspecializarCommand(
 		TEXT("bs.Especializar"),
 		TEXT("Vira especialista no atributo do campo de treino em que você está. NÃO se desfaz."),

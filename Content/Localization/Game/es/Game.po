@@ -4,8 +4,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Game\n"
-"POT-Creation-Date: 2026-08-30 23:22\n"
-"PO-Revision-Date: 2026-08-30 23:22\n"
+"POT-Creation-Date: 2026-08-31 00:27\n"
+"PO-Revision-Date: 2026-08-31 00:27\n"
 "Language-Team: \n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
@@ -623,64 +623,120 @@ msgid "BATTLE SQUARE"
 msgstr ""
 
 #. Key:	MapaClareira
-#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapProjection.cpp(92)
-#: Source/BattleSquare/Private/UI/WorldMapProjection.cpp(92)
+#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapProjection.cpp(102)
+#: Source/BattleSquare/Private/UI/WorldMapProjection.cpp(102)
 msgctxt "MapaDoMundo,MapaClareira"
 msgid "clareira"
 msgstr ""
 
 #. Key:	MapaMata
-#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapProjection.cpp(93)
-#: Source/BattleSquare/Private/UI/WorldMapProjection.cpp(93)
+#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapProjection.cpp(103)
+#: Source/BattleSquare/Private/UI/WorldMapProjection.cpp(103)
 msgctxt "MapaDoMundo,MapaMata"
 msgid "mata"
 msgstr ""
 
 #. Key:	MapaMargem
-#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapProjection.cpp(94)
-#: Source/BattleSquare/Private/UI/WorldMapProjection.cpp(94)
+#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapProjection.cpp(104)
+#: Source/BattleSquare/Private/UI/WorldMapProjection.cpp(104)
 msgctxt "MapaDoMundo,MapaMargem"
 msgid "margem"
 msgstr ""
 
 #. Key:	MapaAgua
-#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapProjection.cpp(95)
-#: Source/BattleSquare/Private/UI/WorldMapProjection.cpp(95)
+#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapProjection.cpp(105)
+#: Source/BattleSquare/Private/UI/WorldMapProjection.cpp(105)
 msgctxt "MapaDoMundo,MapaAgua"
 msgid "água"
 msgstr ""
 
 #. Key:	MapaRelevo
-#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapProjection.cpp(96)
-#: Source/BattleSquare/Private/UI/WorldMapProjection.cpp(96)
+#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapProjection.cpp(106)
+#: Source/BattleSquare/Private/UI/WorldMapProjection.cpp(106)
 msgctxt "MapaDoMundo,MapaRelevo"
 msgid "serra"
 msgstr ""
 
+#. Key:	MapaAreia
+#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapProjection.cpp(107)
+#: Source/BattleSquare/Private/UI/WorldMapProjection.cpp(107)
+msgctxt "MapaDoMundo,MapaAreia"
+msgid "deserto"
+msgstr ""
+
+#. Key:	MapaGelo
+#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapProjection.cpp(108)
+#: Source/BattleSquare/Private/UI/WorldMapProjection.cpp(108)
+msgctxt "MapaDoMundo,MapaGelo"
+msgid "glaciar"
+msgstr ""
+
+#. Key:	MapaLava
+#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapProjection.cpp(109)
+#: Source/BattleSquare/Private/UI/WorldMapProjection.cpp(109)
+msgctxt "MapaDoMundo,MapaLava"
+msgid "vulcão"
+msgstr ""
+
 #. Key:	MapaDesconhecido
-#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapProjection.cpp(99)
-#: Source/BattleSquare/Private/UI/WorldMapProjection.cpp(99)
+#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapProjection.cpp(113)
+#: Source/BattleSquare/Private/UI/WorldMapProjection.cpp(113)
 msgctxt "MapaDoMundo,MapaDesconhecido"
 msgid "desconhecido"
 msgstr ""
 
+#. Key:	PinoInteresse
+#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapProjection.cpp(151)
+#: Source/BattleSquare/Private/UI/WorldMapProjection.cpp(151)
+msgctxt "MapaDoMundo,PinoInteresse"
+msgid "sua marca: interesse"
+msgstr ""
+
+#. Key:	PinoPerigo
+#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapProjection.cpp(152)
+#: Source/BattleSquare/Private/UI/WorldMapProjection.cpp(152)
+msgctxt "MapaDoMundo,PinoPerigo"
+msgid "sua marca: perigo"
+msgstr ""
+
+#. Key:	PinoDestino
+#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapProjection.cpp(153)
+#: Source/BattleSquare/Private/UI/WorldMapProjection.cpp(153)
+msgctxt "MapaDoMundo,PinoDestino"
+msgid "sua marca: destino"
+msgstr ""
+
+#. Key:	PinoDesconhecido
+#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapProjection.cpp(156)
+#: Source/BattleSquare/Private/UI/WorldMapProjection.cpp(156)
+msgctxt "MapaDoMundo,PinoDesconhecido"
+msgid "sua marca"
+msgstr ""
+
 #. Key:	LegendaAdversario
-#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapScreen.cpp(232)
-#: Source/BattleSquare/Private/UI/WorldMapScreen.cpp(232)
+#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapScreen.cpp(260)
+#: Source/BattleSquare/Private/UI/WorldMapScreen.cpp(260)
 msgctxt "MapaDoMundo,LegendaAdversario"
 msgid "adversário"
 msgstr ""
 
 #. Key:	LegendaTreino
-#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapScreen.cpp(234)
-#: Source/BattleSquare/Private/UI/WorldMapScreen.cpp(234)
+#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapScreen.cpp(262)
+#: Source/BattleSquare/Private/UI/WorldMapScreen.cpp(262)
 msgctxt "MapaDoMundo,LegendaTreino"
 msgid "campo de treino (cor do atributo)"
 msgstr ""
 
+#. Key:	LegendaMarcar
+#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapScreen.cpp(317)
+#: Source/BattleSquare/Private/UI/WorldMapScreen.cpp(317)
+msgctxt "MapaDoMundo,LegendaMarcar"
+msgid "bs.Marcar [interesse|perigo|destino] marca onde você está — de novo apaga"
+msgstr ""
+
 #. Key:	LegendaEscuro
-#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapScreen.cpp(263)
-#: Source/BattleSquare/Private/UI/WorldMapScreen.cpp(263)
+#. SourceLocation:	Source/BattleSquare/Private/UI/WorldMapScreen.cpp(325)
+#: Source/BattleSquare/Private/UI/WorldMapScreen.cpp(325)
 msgctxt "MapaDoMundo,LegendaEscuro"
 msgid "o escuro é o que você ainda não viu"
 msgstr ""

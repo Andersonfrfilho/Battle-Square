@@ -122,7 +122,32 @@ namespace
 					FWorldMapProjection::ColorForTerrain(Pedaco.Kind));
 			}
 
-			int32 CamadaAtual = Camada + 3;
+			// AS MARCAÇÕES, por cima de tudo — inclusive dos marcadores do
+			// jogo. O que o jogador escreveu no mapa vale mais que o que o
+			// jogo achou de mostrar nele, e um pino coberto por um campo de
+			// treino seria o mapa apagando a anotação de quem o escreveu.
+			//
+			// E elas NÃO obedecem à descoberta: ele marcou, logo ele sabe.
+			for (const FWorldMapPin& Marca : GSnapshot.Pins.Pins)
+			{
+				const FVector2D Normalizado = FWorldMapProjection::ToMapSpace(
+					Marca.WorldXY, GSnapshot, Modo, AlcanceUnidades);
+				if (Normalizado.Size() > 1.0f)
+				{
+					continue;
+				}
+
+				// Uma AURA escura por baixo: a marcação precisa se ler sobre
+				// água e sobre clareira, e cor viva sozinha some contra o
+				// fundo claro da margem.
+				const FVector2D EmPixelsDaMarca = Centro + Normalizado * RaioEmPixels;
+				DesenharPonto(Elementos, Camada + 3, Geometria, EmPixelsDaMarca,
+					14.0f, FLinearColor(0.05f, 0.05f, 0.07f, 0.85f));
+				DesenharPonto(Elementos, Camada + 4, Geometria, EmPixelsDaMarca,
+					9.0f, FWorldMapProjection::ColorForPin(Marca.Kind));
+			}
+
+			int32 CamadaAtual = Camada + 5;
 
 			for (const FWorldMapMarkerInfo& Marcador : GSnapshot.Markers)
 			{
@@ -260,7 +285,41 @@ namespace
 			];
 		}
 
+		const EWorldPinKind Pinos[] = {
+			EWorldPinKind::Interesse, EWorldPinKind::Perigo, EWorldPinKind::Destino };
+
+		for (const EWorldPinKind Pino : Pinos)
+		{
+			Caixa->AddSlot().AutoHeight().Padding(0.0f, 2.0f)
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+				[
+					SNew(SBox).WidthOverride(14.0f).HeightOverride(14.0f)
+					[
+						SNew(SImage)
+						.Image(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
+						.ColorAndOpacity(FWorldMapProjection::ColorForPin(Pino))
+					]
+				]
+				+ SHorizontalBox::Slot().AutoWidth().Padding(6.0f, 0.0f, 0.0f, 0.0f)
+				  .VAlign(VAlign_Center)
+				[
+					SNew(STextBlock).Text(FWorldMapProjection::LabelForPin(Pino))
+					.ColorAndOpacity(FSlateColor(FLinearColor(0.85f, 0.85f, 0.85f)))
+				]
+			];
+		}
+
 		Caixa->AddSlot().AutoHeight().Padding(0.0f, 10.0f, 0.0f, 0.0f)
+		[
+			SNew(STextBlock)
+			.Text(NSLOCTEXT("MapaDoMundo", "LegendaMarcar",
+				"bs.Marcar [interesse|perigo|destino] marca onde você está — de novo apaga"))
+			.ColorAndOpacity(FSlateColor(FLinearColor(0.60f, 0.60f, 0.60f)))
+		];
+
+		Caixa->AddSlot().AutoHeight().Padding(0.0f, 4.0f, 0.0f, 0.0f)
 		[
 			SNew(STextBlock)
 			.Text(NSLOCTEXT("MapaDoMundo", "LegendaEscuro",

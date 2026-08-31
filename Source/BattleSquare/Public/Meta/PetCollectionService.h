@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "World/WorldDiscovery.h"
+#include "World/WorldMapPins.h"
 #include "Meta/PetCollectionSaveGame.h"
 
 // T2–T3 (tasks.md, Coleção e Captura): captura e persistência da
@@ -48,4 +49,8 @@ public:
 	static FWorldDiscovery LoadDiscovery(const FString& SlotName);
 
 	static void SaveDiscovery(const FString& SlotName, const FWorldDiscovery& Discovery);
+
+	static FWorldMapPins LoadMapPins(const FString& SlotName);
+
+	static void SaveMapPins(const FString& SlotName, const FWorldMapPins& Pins);
 };

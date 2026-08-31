@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "World/WorldDiscovery.h"
+#include "World/WorldMapPins.h"
 #include "GameFramework/SaveGame.h"
 #include "PetCollectionSaveGame.generated.h"
 
@@ -117,4 +118,14 @@ public:
 	 */
 	UPROPERTY()
 	FWorldDiscovery Discovery;
+
+	/**
+	 * As marcações que o jogador escreveu no mapa.
+	 *
+	 * Ao lado da descoberta, e no mesmo save: as duas são a memória DELE sobre
+	 * o mundo, e separá-las daria um mapa que lembra onde ele andou e esquece
+	 * o que ele anotou.
+	 */
+	UPROPERTY()
+	FWorldMapPins MapPins;
 };

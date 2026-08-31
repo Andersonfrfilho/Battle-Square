@@ -153,3 +153,29 @@ void FPetCollectionService::SaveDiscovery(const FString& SlotName, const FWorldD
 		Save.Discovery = Discovery;
 	});
 }
+
+FWorldMapPins FPetCollectionService::LoadMapPins(const FString& SlotName)
+{
+	if (!UGameplayStatics::DoesSaveGameExist(SlotName, /*UserIndex=*/0))
+	{
+		return {};
+	}
+
+	if (const UPetCollectionSaveGame* SaveGame = Cast<UPetCollectionSaveGame>(
+		UGameplayStatics::LoadGameFromSlot(SlotName, /*UserIndex=*/0)))
+	{
+		return SaveGame->MapPins;
+	}
+
+	return {};
+}
+
+void FPetCollectionService::SaveMapPins(const FString& SlotName, const FWorldMapPins& Pins)
+{
+	// Quarto campo do save, e o primeiro que não precisou reler os outros
+	// três: `MutarSave` fechou L-048 como classe.
+	MutarSave(SlotName, [&Pins](UPetCollectionSaveGame& Save)
+	{
+		Save.MapPins = Pins;
+	});
+}

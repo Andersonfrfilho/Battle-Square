@@ -130,4 +130,30 @@ EWorldMapTerrain FWorldMapProjection::TerrainForBiome(EIslandBiome Biome)
 	return EWorldMapTerrain::Mata;
 }
 
+FLinearColor FWorldMapProjection::ColorForPin(EWorldPinKind Kind)
+{
+	// VIVAS, ao contrário do terreno: a marcação é o que o jogador procura no
+	// mapa, e ela precisa saltar do fundo tanto quanto o adversário.
+	switch (Kind)
+	{
+		case EWorldPinKind::Interesse: return FLinearColor(1.00f, 0.85f, 0.30f);
+		case EWorldPinKind::Perigo:    return FLinearColor(0.95f, 0.25f, 0.25f);
+		case EWorldPinKind::Destino:   return FLinearColor(0.40f, 0.85f, 1.00f);
+	}
+
+	return FLinearColor::White;
+}
+
+FText FWorldMapProjection::LabelForPin(EWorldPinKind Kind)
+{
+	switch (Kind)
+	{
+		case EWorldPinKind::Interesse: return LOCTEXT("PinoInteresse", "sua marca: interesse");
+		case EWorldPinKind::Perigo:    return LOCTEXT("PinoPerigo", "sua marca: perigo");
+		case EWorldPinKind::Destino:   return LOCTEXT("PinoDestino", "sua marca: destino");
+	}
+
+	return LOCTEXT("PinoDesconhecido", "sua marca");
+}
+
 #undef LOCTEXT_NAMESPACE

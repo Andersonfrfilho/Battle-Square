@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Environment/IslandGeography.h"
 #include "World/WorldDiscovery.h"
+#include "World/WorldMapPins.h"
 
 /**
  * O TERRENO de um pedaço do mundo, para o mapa desenhar.
@@ -111,6 +112,16 @@ struct BATTLESQUARE_API FWorldMapSnapshot
 	 * não — e a borda da descoberta vira serrilha em vez de fronteira.
 	 */
 	TArray<FWorldMapTerrainTile> Terrain;
+
+	/**
+	 * As marcações do jogador.
+	 *
+	 * Fora de `Markers` de propósito: elas NÃO obedecem à descoberta. O
+	 * jogador marcou aquilo, então ele sabe que está lá — esconder a própria
+	 * anotação porque a região saiu do alcance seria o mapa discordando da
+	 * memória de quem o escreveu.
+	 */
+	FWorldMapPins Pins;
 };
 
 /**
@@ -203,6 +214,11 @@ public:
 
 	/** O nome que o jogador lê na legenda. */
 	static FText LabelForTerrain(EWorldMapTerrain Terrain);
+
+	/** A cor de cada tipo de marcação — a mesma no mapa e na legenda. */
+	static FLinearColor ColorForPin(EWorldPinKind Kind);
+
+	static FText LabelForPin(EWorldPinKind Kind);
 
 	/**
 	 * O terreno que o mapa desenha para cada bioma da ilha.

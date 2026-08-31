@@ -929,6 +929,23 @@ namespace
 		return FVector(IslandGeography::LandRadiusUnits() - 200.0f, 0.0f, 0.0f);
 	}
 
+	/**
+	 * O pedaço centrado nas ÁRVORES da beira, que ficam bem mais para dentro.
+	 *
+	 * Existe porque a praia deixou de caber num pedaço. Ela é uma FRAÇÃO do
+	 * raio (8%), então numa ilha de 1,4 km ela tem 112 metros — e o pedaço tem
+	 * 64. Com a ilha de 20.000 a faixa inteira cabia num ladrilho e um centro
+	 * só servia a todos os testes da orla; deixou de servir.
+	 *
+	 * Não é defeito da praia nem do pedaço: é a suposição de que os dois
+	 * tinham tamanhos comparáveis, verdadeira num tamanho de ilha só.
+	 */
+	FVector CentroDoPedacoDasArvoresDaOrla()
+	{
+		const float RecuoDasArvores = IslandGeography::BeachWidthUnits() * 0.55f;
+		return FVector(IslandGeography::LandRadiusUnits() - RecuoDasArvores, 0.0f, 0.0f);
+	}
+
 	/** A que distância do CENTRO DA ILHA está esta instância. */
 	float RaioDaInstanciaDaOrla(const AForestBackdrop* Mata,
 		const UHierarchicalInstancedStaticMeshComponent* Grupo, int32 Instancia)
@@ -1072,7 +1089,7 @@ bool FForestShoreStandsTreesOnTheSandTest::RunTest(const FString& Parameters)
 	}
 
 	AForestBackdrop* Mata = World->SpawnActor<AForestBackdrop>(
-		AForestBackdrop::StaticClass(), FTransform(CentroDoPedacoDaOrlaDeTeste()));
+		AForestBackdrop::StaticClass(), FTransform(CentroDoPedacoDasArvoresDaOrla()));
 	if (!Mata)
 	{
 		DestroyForestTestWorld(World);

@@ -288,8 +288,12 @@ bool FPedacoDoMapaCabeNaRegiaoDescobertaTest::RunTest(const FString&)
 
 	// E o pedaço não vira poeira: mancha de duas unidades seria custo de
 	// desenho que ninguém vê, que é o motivo de o tamanho seguir a ilha.
+	// Com o RAIO CONFIGURADO, e não com 20.000 fixo: passar um raio por
+	// parâmetro enquanto a região vem do ini mede uma combinação que nunca
+	// acontece. Eu já tinha consertado isso no teste vizinho e repeti aqui.
 	TestTrue(TEXT("O pedaço continua grande o bastante para ser mancha"),
-		FWorldMapProjection::TerrainTileSideUnits(20000.0f) >= Regiao * 0.25f);
+		FWorldMapProjection::TerrainTileSideUnits(
+			IslandGeography::LandRadiusUnits()) >= Regiao * 0.25f);
 
 	return true;
 }

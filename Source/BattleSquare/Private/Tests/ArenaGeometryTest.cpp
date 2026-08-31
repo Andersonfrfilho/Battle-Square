@@ -690,8 +690,16 @@ namespace ArenaBiomaDaLuta
 	 */
 	FVector2D PontoNaGeleira()
 	{
+		// FRAÇÃO do raio, e não 12.000 unidades.
+		//
+		// O número absoluto caía na geleira quando a ilha tinha 20.000, e caiu
+		// dentro do MIOLO — que é sempre mata — quando ela cresceu para
+		// 140.000. O teste passou a afirmar "a geleira é mata", e a culpa não
+		// era do código: era de uma posição escolhida quando só existia um
+		// tamanho de ilha. Mesmo padrão dos anéis das peças e da região de
+		// descoberta, agora nos testes.
 		const float Angulo = FMath::DegreesToRadians(252.0f);
-		const float Raio = 12000.0f;
+		const float Raio = IslandGeography::LandRadiusUnits() * 0.60f;
 		return FVector2D(Raio * FMath::Cos(Angulo), Raio * FMath::Sin(Angulo));
 	}
 }

@@ -251,6 +251,81 @@ A capacidade de CPU e de rede. Os números acima são de DENSIDADE — calculado
 confio neles. Carga real precisa de teste com servidor dedicado, que hoje
 esbarra em B-004: a engine instalada não compila `TargetType.Server`.
 
+
+## As quatro ilhas, e por que essas
+
+**Decidido em 31/08/2026. Raio de 1,4 km, 100 jogadores por ilha.**
+
+O leque de biomas possíveis é enorme — Minecraft tem 53 só no mundo comum. A
+graça não é ter muitos: é cada um significar alguma coisa. E o filtro que
+importa aqui não é "que biomas existem", é **onde cada ELEMENTO mora**.
+
+A gente decidiu que as espécies são próprias de cada região. Então elemento sem
+casa é elemento que não tem onde ser comum — e três dos seis estavam assim.
+
+| ilha | dominante | secundário | reusa o que já existe |
+|---|---|---|---|
+| **Floresta e Ruínas** | Planta | **Fantasma** | mata, rios, cachoeiras, pântano |
+| **Pântano e Mangue** | **Água** | Planta | água doce, brejo, praia, grutas |
+| **Geleira** | **Luz** | Água | neve, aurora, montanha |
+| **Vulcão e Cavernas** | Fogo | **Terra** | vulcão, cavernas, labirinto, lava |
+
+Três escolhas têm razão além da estética:
+
+**O fantasma não ganha ilha — ganha um LUGAR dentro de uma.** Ruínas cobertas de
+névoa na floresta. É o que ele é: fantasma não tem terra natal, tem lugar
+assombrado. E economiza uma ilha inteira.
+
+**A geleira é a casa da Luz** porque a AURORA já está construída — é literalmente
+luz no céu. Nenhum outro candidato reusa tanto trabalho pronto.
+
+**A Terra fica no vulcão**, pela rocha e pelas cavernas — que já existem no
+código como feições, sem serem bioma de ninguém.
+
+### O que se perde
+
+**O deserto sai dos quatro**, e ele está construído. Volta como quinta ilha, ou
+como faixa seca dentro da ilha do vulcão — terra queimada ao lado de lava é
+vizinhança natural.
+
+### O leque completo, para quando houver mais ilhas
+
+| família | biomas |
+|---|---|
+| vegetação | floresta temperada, selva, taiga, bosque claro, campos, savana, floresta morta |
+| água | oceano/arquipélago, pântano, mangue, costa, recife, região de lagos |
+| seco | deserto de areia, deserto de pedra, cânion, dunas, salinas |
+| frio | tundra, geleira, montanha nevada, banquisa |
+| vulcânico | vulcão, campos de lava, fontes termais, terra queimada |
+| subterrâneo | cavernas, cavernas de cristal, minas, abismo |
+| altitude | planalto, montanha rochosa, penhascos |
+| sinistro | ruínas na névoa, cemitério, terra assombrada |
+| humano | campo e fazendas, urbano, **cidade abandonada** |
+
+## Cidades abandonadas
+
+**São a casa do Fantasma, e a resposta a uma pergunta que o mundo vivo abriu.**
+
+Uma cidade abandonada não é cenário decorativo: ela é o que **um desastre
+deixou**. E os desastres já existem — terremoto, furacão e tsunami foram
+construídos. A cidade abandonada é a cicatriz deles.
+
+Isso dá três coisas de uma vez:
+
+1. **Casa para o Fantasma** sem gastar uma ilha.
+2. **Destino de exploração** com motivo próprio — o que sobrou de uma cidade é
+   o que ninguém levou.
+3. **História sem escrever história.** O jogador entende sozinho por que ela
+   está vazia, porque ele já viu o mundo tremer.
+
+**A amarra:** ela precisa ter sido uma cidade DE VERDADE — com as mesmas partes
+que as vilas vivas têm, em ruína. Uma cidade abandonada montada com prédios que
+não existem em nenhuma cidade viva é cenário fingindo ser lugar, e o jogador
+percebe.
+
+O molde já existe: `VillageLayout` é puro e parametrizável. A cidade abandonada
+é o mesmo traçado, com material, colisão e povoamento diferentes.
+
 ## Perguntas em aberto
 
 - **Quantas vilas iniciais?** Uma por bioma, ou só nos que fazem sentido para

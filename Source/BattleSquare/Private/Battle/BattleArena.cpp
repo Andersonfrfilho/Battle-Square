@@ -451,10 +451,7 @@ void ABattleArena::SpawnForestBackdrop()
 	// de a mata existir; quando corre depois, quem aplica é AdoptAmbience.
 	ApplyAdoptedGroundMaterial();
 
-	FBattleDebugScreen::Show(
-		FString::Printf(TEXT("cenario: mata de floresta com %d elementos"),
-			ForestBackdrop->GetPlantedCount()),
-		0.0f, FColor::Green, /*Key=*/21);
+	ShowScenaryPanelLine();
 
 	// Sem esta linha, "a arena virou parte do cenário" é opinião: ninguém
 	// distingue na tela um chão de mata de um prato com a mesma textura.
@@ -886,6 +883,23 @@ EScenaryClimate ABattleArena::ResolveScenaryClimate() const
 		: ScenaryClimate::ConfiguredClimate();
 }
 
+void ABattleArena::ShowScenaryPanelLine()
+{
+	if (!ForestBackdrop)
+	{
+		return;
+	}
+
+	// Painel de desenvolvimento, não texto de jogador: some no Shipping.
+	// O nome do bioma sai de `ResolveEncounterBiome`, o MESMO que o plantio
+	// consultou — dizer "floresta" fixo fazia a tela contradizer o cenário.
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("cenario: mata de %s com %d elementos"),
+			IslandGeography::BiomeDebugName(ResolveEncounterBiome()),
+			ForestBackdrop->GetPlantedCount()),
+		0.0f, FColor::Green, /*Key=*/21);
+}
+
 void ABattleArena::RebuildScenaryForBiome()
 {
 	// As duas construções limpam antes de plantar, então refazer não duplica
@@ -897,6 +911,7 @@ void ABattleArena::RebuildScenaryForBiome()
 		ForestBackdrop->BuildForest(CellSize, static_cast<uint32>(ForestSeed),
 			FVector2D(CameraLocal.X, CameraLocal.Y), ResolveEncounterBiome());
 		ApplyAdoptedGroundMaterial();
+		ShowScenaryPanelLine();
 	}
 
 	if (MountainRange)
@@ -918,12 +933,6 @@ bool ABattleArena::AdoptAmbienceFromWorldLocation(const FVector& WorldLocation)
 	// um vão sem colisão ainda é lutar na geleira.
 	EncounterBiome = IslandGeography::BiomeAt(FVector2D(WorldLocation));
 	RebuildScenaryForBiome();
-
-	// Painel de desenvolvimento, não texto de jogador: some no Shipping.
-	FBattleDebugScreen::Show(
-		FString::Printf(TEXT("cenario da luta: bioma %s"),
-			IslandGeography::BiomeDebugName(EncounterBiome.GetValue())),
-		0.0f, FColor::Green, /*Key=*/22);
 
 	const FVector Alto = WorldLocation + FVector(0.0f, 0.0f, ArenaGeometria::AlturaDaSondaDeChao);
 	const FVector Baixo = WorldLocation - FVector(0.0f, 0.0f, ArenaGeometria::AlcanceDaSondaDeChao);

@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Environment/ForestBackdrop.h"
+#include "Environment/BiomeFlora.h"
 #include "Environment/FreshWater.h"
 #include "Environment/IslandGeography.h"
 #include "Environment/RegionResidency.h"
@@ -180,17 +181,40 @@ bool FForestBackdropActuallyPlantsSomethingTest::RunTest(const FString& Paramete
 	TestTrue(TEXT("A mata planta um número substancial de elementos"),
 		Mata->GetPlantedCount() > 150);
 
-	// Toda espécie contribui: uma que planta zero é uma malha que não
-	// carregou, e isso não pode passar calado.
+	// Toda espécie DO ELENCO contribui: uma que planta zero é uma malha que
+	// não carregou, e isso não pode passar calado. Antes o teste cobrava
+	// isso de todas as 28, e cobrar de todas é dizer que os seis biomas
+	// plantam o mesmo — que era o defeito.
+	const TArray<FString> NomesDasEspecies = AForestBackdrop::SpeciesNames();
+	const TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>>& Grupos =
+		Mata->GetSpeciesClusters();
+
 	int32 EspeciesVazias = 0;
-	for (const TObjectPtr<UHierarchicalInstancedStaticMeshComponent>& Grupo : Mata->GetSpeciesClusters())
+	int32 EspeciesForaDoElenco = 0;
+	for (int32 Indice = 0; Indice < Grupos.Num() && Indice < NomesDasEspecies.Num(); ++Indice)
 	{
-		if (Grupo && Grupo->GetInstanceCount() == 0)
+		if (!Grupos[Indice])
+		{
+			continue;
+		}
+
+		const bool bDoElenco = BiomeFlora::FitsBiome(NomesDasEspecies[Indice], EIslandBiome::Forest);
+		const int32 Plantadas = Grupos[Indice]->GetInstanceCount();
+
+		if (bDoElenco && Plantadas == 0)
 		{
 			++EspeciesVazias;
 		}
+		if (!bDoElenco && Plantadas > 0)
+		{
+			++EspeciesForaDoElenco;
+		}
 	}
-	TestEqual(TEXT("Nenhuma espécie fica sem uma única planta"), EspeciesVazias, 0);
+	TestEqual(TEXT("Nenhuma espécie do elenco fica sem uma única planta"), EspeciesVazias, 0);
+
+	// A outra metade, e a que o jogador reclamou: agulha de pedra e conífera
+	// de geleira não têm o que fazer na mata de casa.
+	TestEqual(TEXT("Nada de fora do elenco da floresta planta"), EspeciesForaDoElenco, 0);
 
 	DestroyForestTestWorld(World);
 	return true;
@@ -370,10 +394,21 @@ bool FForestBackdropPaintsEverySpeciesFromThePaletteTest::RunTest(const FString&
 
 	Mata->BuildForest(CasaDeTeste, /*Seed=*/7u, CameraDeTeste);
 
+	// Só o elenco da floresta: espécie que este bioma não planta também não
+	// pinta, e cobrar tinta dela mediria a lista de elenco, não a paleta.
+	const TArray<FString> NomesDaPaleta = AForestBackdrop::SpeciesNames();
+	const TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>>& GruposDaPaleta =
+		Mata->GetSpeciesClusters();
+
 	int32 EspeciesSemTinta = 0;
-	for (const TObjectPtr<UHierarchicalInstancedStaticMeshComponent>& Grupo : Mata->GetSpeciesClusters())
+	for (int32 Indice = 0; Indice < GruposDaPaleta.Num() && Indice < NomesDaPaleta.Num(); ++Indice)
 	{
+		const TObjectPtr<UHierarchicalInstancedStaticMeshComponent>& Grupo = GruposDaPaleta[Indice];
 		if (!Grupo || !Grupo->GetStaticMesh())
+		{
+			continue;
+		}
+		if (!BiomeFlora::FitsBiome(NomesDaPaleta[Indice], EIslandBiome::Forest))
 		{
 			continue;
 		}

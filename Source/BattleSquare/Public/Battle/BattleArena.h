@@ -418,6 +418,17 @@ protected:
 	 */
 	void RebuildScenaryForBiome();
 
+	/**
+	 * Escreve no painel o bioma e a contagem do que a mata plantou.
+	 *
+	 * Uma função e não duas linhas soltas porque quem planta são DOIS lugares
+	 * (o nascimento da arena e o refazer com o bioma sabido), e só o primeiro
+	 * escrevia. O painel ficava dizendo "floresta com N elementos" depois de a
+	 * luta ter mudado para geleira — que é exatamente a leitura de "a arena nao
+	 * pegou o cenario", com o cenário certo por baixo.
+	 */
+	void ShowScenaryPanelLine();
+
 	/** De onde a luta veio, quando alguém contou. Ver GetEncounterBiome. */
 	TOptional<EIslandBiome> EncounterBiome;
 

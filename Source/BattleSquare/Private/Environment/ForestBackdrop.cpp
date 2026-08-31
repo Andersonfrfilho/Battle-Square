@@ -7,6 +7,7 @@
 #include "World/WorldObstacleBreaking.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "Environment/BiomeFlora.h"
 #include "Environment/FreshWater.h"
 #include "Environment/IslandGeography.h"
 #include "Environment/ScenaryPalette.h"
@@ -841,6 +842,20 @@ AForestBackdrop::AForestBackdrop()
 	}
 }
 
+TArray<FString> AForestBackdrop::SpeciesNames()
+{
+	using namespace MataDoCenario;
+
+	TArray<FString> Nomes;
+	Nomes.Reserve(TotalDeEspecies);
+	for (int32 Indice = 0; Indice < TotalDeEspecies; ++Indice)
+	{
+		Nomes.Add(Especies[Indice].Nome);
+	}
+
+	return Nomes;
+}
+
 void AForestBackdrop::BuildForest(float CellSize, uint32 Seed, const FVector2D& CameraGroundOffset,
 	EIslandBiome Biome)
 {
@@ -906,6 +921,16 @@ void AForestBackdrop::BuildForest(float CellSize, uint32 Seed, const FVector2D& 
 
 		UStaticMesh* Malha = Grupo->GetStaticMesh();
 		if (!Malha)
+		{
+			continue;
+		}
+
+		// O ELENCO antes da proporção: espécie que não é deste bioma não
+		// nasce, qualquer que seja o percentual do papel dela. Sem isto,
+		// geleira e floresta plantavam a MESMA árvore — só em quantidades
+		// diferentes —, e proporção diferente sobre elenco igual não faz
+		// lugar diferente.
+		if (!BiomeFlora::FitsBiome(Especie.Nome, Biome))
 		{
 			continue;
 		}
@@ -1087,6 +1112,14 @@ void AForestBackdrop::BuildRegion(float CellSize, uint32 Seed, EIslandBiome Biom
 
 		UStaticMesh* Malha = Grupo->GetStaticMesh();
 		if (!Malha)
+		{
+			continue;
+		}
+
+		// Mesmo elenco, mesma ordem: o pedaço do mundo e a mata da arena
+		// plantam pela MESMA lista, senão o lugar da briga não parece o lugar
+		// de onde ela veio.
+		if (!BiomeFlora::FitsBiome(Especie.Nome, Biome))
 		{
 			continue;
 		}

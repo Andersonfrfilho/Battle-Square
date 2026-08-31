@@ -84,6 +84,16 @@ public:
 	 */
 	void BuildRegion(float CellSize, uint32 Seed, EIslandBiome Biome, float SideUnits);
 
+	/**
+	 * Nomes das malhas de espécie, na ordem da tabela.
+	 *
+	 * Existe para o teste poder cobrar que todo nome escrito num elenco de
+	 * bioma (`BiomeFlora`) EXISTE aqui. Nome errado no elenco nunca planta e
+	 * nada avisa — é o modo de falhar silencioso que a lista de elenco
+	 * introduz, e a única defesa contra ele é comparar as duas.
+	 */
+	static TArray<FString> SpeciesNames();
+
 	/** Espécies da mata, para o teste que exige asset atribuído em todas. */
 	const TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>>& GetSpeciesClusters() const { return SpeciesClusters; }
 

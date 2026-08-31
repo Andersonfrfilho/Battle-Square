@@ -631,8 +631,15 @@ void ABattleSquareGameMode::HandleRoomReady(const FString& Code)
 	// A UMIDADE do lugar entra no estado: é ela que decide se a poça vira lama
 	// ou seca. Vem do mesmo clima que põe neve na serra — dois números
 	// diferentes sobre o mesmo lugar, e não duas ideias de clima.
+	//
+	// O TEMPO entra junto: chover encharca o campo, e sem isto o número saía
+	// do clima e ignorava o céu que o jogador acabou de atravessar. Sem cena
+	// de mundo (sala aberta direto, teste) o céu é limpo, que é o que sempre
+	// foi.
 	InitialState.Humidity = static_cast<uint8>(FMath::Clamp(
-		ScenaryClimate::HumidityPercent(ClimaOndeOJogadorEsta(GetWorld())), 0, 100));
+		WorldWeather::HumidityPercent(
+			ClimaOndeOJogadorEsta(GetWorld()),
+			CenaDoMundo ? CenaDoMundo->GetWeather() : EWeather::Clear), 0, 100));
 
 
 	TArray<FPetPresentationInfo> Presentations;
@@ -878,10 +885,15 @@ void ABattleSquareGameMode::MostrarTempoDoMundo()
 
 	CenaDoMundo->SetWeather(Tempo);
 
+	// A cor sobe de tom com a severidade, porque a linha é lida de relance: o
+	// grau da chuva precisa saltar antes da palavra ser lida.
 	FColor CorDoTempo = FColor::Yellow;
 	switch (Tempo)
 	{
+	case EWeather::Storm:    CorDoTempo = FColor::Magenta; break;
+	case EWeather::Downpour: CorDoTempo = FColor::Cyan;    break;
 	case EWeather::Rain:     CorDoTempo = FColor::Blue;    break;
+	case EWeather::Drizzle:  CorDoTempo = FColor::Turquoise; break;
 	case EWeather::Overcast: CorDoTempo = FColor::Silver;  break;
 	case EWeather::Cloudy:   CorDoTempo = FColor::White;   break;
 	case EWeather::Clear:    CorDoTempo = FColor::Yellow;  break;
@@ -892,13 +904,26 @@ void ABattleSquareGameMode::MostrarTempoDoMundo()
 	// enlameado.
 	const int32 Umidade = WorldWeather::HumidityPercent(Clima, Tempo);
 
+	// Duas marcas e não uma escolha entre elas: numa tempestade o campo vem
+	// alagado E enlameado, e mostrar só a mais chamativa esconderia metade do
+	// que vai mudar no tabuleiro.
+	FString Marca;
+	if (WorldWeather::IsFlooding(Tempo))
+	{
+		Marca += TEXT(" (ALAGADO)");
+	}
+	if (Umidade >= MudMinHumidity)
+	{
+		Marca += TEXT(" (campo de LAMA)");
+	}
+
 	FBattleDebugScreen::Show(
 		FString::Printf(TEXT("tempo: %s em %s — umidade %d%%%s"),
 			WorldWeather::WeatherDebugName(Tempo),
 			IslandGeography::BiomeDebugName(
 				IslandGeography::BiomeAt(OndeOJogadorEsta(GetWorld()))),
 			Umidade,
-			Umidade >= MudMinHumidity ? TEXT(" (campo de LAMA)") : TEXT("")),
+			*Marca),
 		0.0f, CorDoTempo, /*Key=*/751);
 }
 

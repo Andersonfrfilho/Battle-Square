@@ -5,6 +5,8 @@
 #include "World/WorldBattleTransitionService.h"
 #include "World/WorldEncounterActor.h"
 #include "World/ArenaWorldSampler.h"
+#include "Environment/SceneLighting.h"
+#include "EngineUtils.h"
 #include "Battle/BattleArena.h"
 
 void UWorldEncounterFlow::Initialize(AActor* InWorldPawn,
@@ -44,6 +46,17 @@ ABattleArena* UWorldEncounterFlow::HandleEncounterTriggered(AWorldEncounterActor
 	Params.EncounterLocation = Encounter->GetActorLocation();
 	FArenaWorldSampler::Collect(Encounter->GetWorld(),
 		Params.EncounterLocation, Params.WorldFeatures);
+
+	// O CÉU DE AGORA, perguntado a quem já o está mostrando. A cena do mundo é
+	// quem o GameMode mantém em dia; ler dela garante que a arena chegue com o
+	// mesmo tempo que o jogador acabou de atravessar a pé. Recalcular aqui
+	// pediria semente e hora decorrida de volta, e criaria um segundo lugar
+	// que discordaria do painel na virada do bloco (L-032).
+	TActorIterator<ABattleSceneLighting> Cena(Encounter->GetWorld());
+	if (Cena)
+	{
+		Params.Weather = Cena->GetWeather();
+	}
 
 	FBattleState InitialState;
 	TArray<FPetPresentationInfo> Presentations;

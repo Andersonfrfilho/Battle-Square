@@ -42,6 +42,17 @@ struct FArenaFromWorldParams
 	/** Umidade do lugar. Beira de água em clima úmido vira LAMA, não poça. */
 	int32 HumidityPercent = 70;
 
+	/**
+	 * Está ALAGADO: a água transbordou o leito e a margem subiu.
+	 *
+	 * Separado da umidade porque são coisas de natureza diferente. Umidade
+	 * MOLHA o que já era beira de água — é adjetivo do terreno que existe.
+	 * Alagamento CRIA terreno: casa seca encostada na água vira poça, e uma
+	 * arena sem gota nenhuma continua seca por mais que chova, porque não há
+	 * leito de onde a água saia.
+	 */
+	bool bFlooded = false;
+
 	TArray<FWorldFeatureSample> Features;
 };
 

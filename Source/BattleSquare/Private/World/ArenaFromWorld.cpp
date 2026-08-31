@@ -29,6 +29,61 @@ namespace
 		}
 	}
 
+	/**
+	 * A enchente: casa SECA encostada em água vira poça rasa.
+	 *
+	 * Uma passada só, e lida de uma cópia. Sem a cópia, a poça que acabou de
+	 * nascer molharia a vizinha dela na mesma varredura, e a água atravessaria
+	 * o tabuleiro inteiro numa chamada — o que não é enchente, é dilúvio, e
+	 * ainda dependeria da ordem em que as casas foram visitadas.
+	 *
+	 * Nasce RASA de propósito: alagamento é água por cima do chão, não um lago
+	 * fundo. Quem submerge continua precisando do leito de verdade, e quando a
+	 * água baixar é a regra de secagem que já existe (`WouldFormMud`) que
+	 * decide se aquilo virou lama — não uma segunda cópia dela aqui.
+	 *
+	 * Pedra e clareira de treino ficam de fora: a pedra continua em pé dentro
+	 * d'água, e apagar a casa de bônus faria a tempestade DESTRUIR terreno em
+	 * vez de cobri-lo.
+	 */
+	void EspalharAlagamento(TArray<uint8>& Layout, int32 Columns, int32 Rows)
+	{
+		const TArray<uint8> Antes = Layout;
+
+		auto EhAgua = [&Antes](int32 Indice)
+		{
+			if (!Antes.IsValidIndex(Indice))
+			{
+				return false;
+			}
+			const ECellProperty Casa = static_cast<ECellProperty>(Antes[Indice]);
+			return Casa == ECellProperty::Water || Casa == ECellProperty::ShallowWater;
+		};
+
+		for (int32 Linha = 0; Linha < Rows; ++Linha)
+		{
+			for (int32 Coluna = 0; Coluna < Columns; ++Coluna)
+			{
+				const int32 Indice = CellLayoutIndex(Coluna, Linha, Columns);
+				if (static_cast<ECellProperty>(Antes[Indice]) != ECellProperty::None)
+				{
+					continue;
+				}
+
+				const bool bEncostaNaAgua =
+					(Coluna > 0           && EhAgua(CellLayoutIndex(Coluna - 1, Linha, Columns)))
+					|| (Coluna < Columns - 1 && EhAgua(CellLayoutIndex(Coluna + 1, Linha, Columns)))
+					|| (Linha > 0            && EhAgua(CellLayoutIndex(Coluna, Linha - 1, Columns)))
+					|| (Linha < Rows - 1     && EhAgua(CellLayoutIndex(Coluna, Linha + 1, Columns)));
+
+				if (bEncostaNaAgua)
+				{
+					Layout[Indice] = static_cast<uint8>(ECellProperty::ShallowWater);
+				}
+			}
+		}
+	}
+
 	uint8 TerrenoDaAmostra(EWorldFeatureKind Kind, int32 HumidityPercent)
 	{
 		switch (Kind)
@@ -100,6 +155,14 @@ TArray<uint8> FArenaFromWorld::Build(const FArenaFromWorldParams& Params)
 		{
 			Layout[Indice] = Novo;
 		}
+	}
+
+	// Depois das amostras e ANTES de desobstruir as casas iniciais: a água
+	// espalha a partir do que o mundo pôs ali, e um duelista pode nascer com o
+	// pé na água — o que não pode é nascer dentro de pedra.
+	if (Params.bFlooded)
+	{
+		EspalharAlagamento(Layout, Params.Columns, Params.Rows);
 	}
 
 	ClearStartingCells(Layout, Params.Columns, Params.Rows);

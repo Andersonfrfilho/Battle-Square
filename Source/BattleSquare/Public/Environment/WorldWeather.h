@@ -8,14 +8,19 @@
 /**
  * Que tempo faz agora.
  *
- * São quatro estados e não os quatro que se pede em voz alta ("chuva, limpo,
- * nublado, ensolarado"), porque *limpo* e *ensolarado* são o MESMO céu — a
+ * *Limpo* e *ensolarado* NÃO são dois valores, porque são o mesmo céu — a
  * diferença entre eles é a altura do sol, que o relógio já sabe. Inventar um
  * valor de enum para "limpo com sol alto" criaria um segundo lugar decidindo
- * se é dia, e ele discordaria do relógio no primeiro pôr do sol.
+ * se é dia, e ele discordaria do relógio no primeiro pôr do sol. Quem responde
+ * é `IsSunny`, combinando céu limpo com sol no alto.
  *
- * Então: o céu tem quatro graus de nuvem, e `IsSunny` responde a pergunta
- * combinando céu limpo com sol no alto.
+ * A chuva, ao contrário, tem GRAU — e o grau é valor de enum e não um número
+ * ao lado, porque um número separado permitiria "céu limpo com força 3", que
+ * é um estado sem significado que alguém teria de lembrar de nunca escrever.
+ *
+ * A ORDEM É A SEVERIDADE, e disso dependem `IsRaining` e todo teste que
+ * compara dois céus. Enfiar um valor no meio muda o significado de todos eles
+ * de uma vez; valor novo entra no FIM da faixa a que ele pertence.
  */
 enum class EWeather : uint8
 {
@@ -25,8 +30,14 @@ enum class EWeather : uint8
 	Cloudy,
 	/** Encoberto: fechado de ponta a ponta, sem sol, e ainda sem chuva. */
 	Overcast,
+	/** Garoa: molha o chão e não faz mais nada. */
+	Drizzle,
 	/** Chuva. */
-	Rain
+	Rain,
+	/** Chuva forte: escurece de dia e encharca o campo. */
+	Downpour,
+	/** Tempestade: chuva forte com ALAGAMENTO — a água sai do leito. */
+	Storm
 };
 
 /**
@@ -52,7 +63,7 @@ namespace WorldWeather
 	 */
 	constexpr float HoursPerSpell = 3.0f;
 
-	/** Chance de chover, de 0 a 100, neste clima. */
+	/** Chance de chover de qualquer jeito, de 0 a 100, neste clima. */
 	BATTLESQUARE_API int32 RainChancePercent(EScenaryClimate Climate);
 
 	/**
@@ -91,8 +102,21 @@ namespace WorldWeather
 	 */
 	BATTLESQUARE_API int32 HumidityPercent(EScenaryClimate Climate, EWeather Weather);
 
-	/** Está chovendo. */
+	/** Está chovendo, de garoa a tempestade. */
 	BATTLESQUARE_API bool IsRaining(EWeather Weather);
+
+	/**
+	 * A água SAIU DO LEITO: o campo da próxima batalha vem alagado.
+	 *
+	 * É a única pergunta sobre o tempo que muda o TABULEIRO e não só um
+	 * número. Umidade encharca o chão que já era beira de água; alagamento
+	 * cria água onde não havia — a margem sobe, e casa seca encostada na
+	 * água vira poça.
+	 *
+	 * Só a tempestade alaga. Chuva forte encharca sem transbordar, e é a
+	 * diferença que faz a tempestade valer a espera.
+	 */
+	BATTLESQUARE_API bool IsFlooding(EWeather Weather);
 
 	/**
 	 * Está ensolarado: céu limpo E sol no alto.

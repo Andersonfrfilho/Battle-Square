@@ -7,6 +7,7 @@
 #include "Data/BattleDataTranslator.h"
 #include "Battle/BattleState.h"
 #include "World/ArenaFromWorld.h"
+#include "Environment/WorldWeather.h"
 
 struct FEncounterMatchParams
 {
@@ -39,6 +40,17 @@ struct FEncounterMatchParams
 	 */
 	FVector EncounterLocation = FVector::ZeroVector;
 	TArray<FWorldFeatureSample> WorldFeatures;
+
+	/**
+	 * QUE TEMPO FAZIA quando o encontro começou.
+	 *
+	 * Chega de fora e não é recalculado aqui de propósito. O céu que o jogador
+	 * acabou de ver é o que a cena do mundo está mostrando; refazer o sorteio
+	 * daria um segundo lugar decidindo o tempo, e ele discordaria do painel na
+	 * primeira virada de bloco (L-032). O padrão é céu limpo, que é o certo
+	 * para batalha montada à mão, sem mundo por trás.
+	 */
+	EWeather Weather = EWeather::Clear;
 };
 
 /**

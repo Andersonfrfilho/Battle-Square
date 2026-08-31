@@ -17,8 +17,34 @@ namespace
 	constexpr int32 BlocosAmostradosDoTempo = 400;
 
 	const EWeather CeusDoTempo[] = {
-		EWeather::Clear, EWeather::Cloudy, EWeather::Overcast, EWeather::Rain
+		EWeather::Clear, EWeather::Cloudy, EWeather::Overcast,
+		EWeather::Drizzle, EWeather::Rain, EWeather::Downpour, EWeather::Storm
 	};
+
+	/** Os GRAUS da chuva, do mais fraco ao mais forte, na ordem do enum. */
+	const EWeather ChuvasDoTempo[] = {
+		EWeather::Drizzle, EWeather::Rain, EWeather::Downpour, EWeather::Storm
+	};
+
+	/**
+	 * É um céu que o jogo conhece.
+	 *
+	 * Contra a LISTA e não contra uma faixa: a faixa `>= Clear` é sempre
+	 * verdadeira porque `Clear` é zero, e passaria com qualquer lixo dentro do
+	 * `uint8`. A lista é a mesma de `CeusDoTempo`, então grau novo entra num
+	 * lugar só.
+	 */
+	bool EhCeuConhecidoDoTempo(EWeather Ceu)
+	{
+		for (const EWeather Conhecido : CeusDoTempo)
+		{
+			if (Ceu == Conhecido)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
 
 	const EScenaryClimate ClimasDoTempo[] = {
 		EScenaryClimate::Temperate, EScenaryClimate::Cold,
@@ -251,9 +277,157 @@ bool FWorldWeatherSurvivesNegativeHours::RunTest(const FString& Parameters)
 		const float Hora = -WorldWeather::HoursPerSpell * Passo;
 		const EWeather Ceu = WorldWeather::WeatherAt(SementeDoTempo, EScenaryClimate::Temperate, Hora);
 		TestTrue(FString::Printf(TEXT("hora %.1f: ceu valido"), Hora),
-			Ceu == EWeather::Clear || Ceu == EWeather::Cloudy
-			|| Ceu == EWeather::Overcast || Ceu == EWeather::Rain);
+			EhCeuConhecidoDoTempo(Ceu));
 	}
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FWorldWeatherRainHasFourGrades,
+	"BattleSquare.Environment.WorldWeather.AChuvaTemQuatroGraus",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FWorldWeatherRainHasFourGrades::RunTest(const FString& Parameters)
+{
+	// Todos os quatro graus TÊM de sair em algum bloco no clima temperado.
+	// Sem esta varredura, uma repartição errada (ou uma faixa de zero por
+	// cento) faria a tempestade nunca acontecer, e nada quebraria: o jogo
+	// continuaria chovendo, só que nunca do jeito que se lembra depois.
+	TSet<EWeather> Vistos;
+	for (int32 Bloco = 0; Bloco < BlocosAmostradosDoTempo; ++Bloco)
+	{
+		const float Hora = Bloco * WorldWeather::HoursPerSpell;
+		Vistos.Add(WorldWeather::WeatherAt(SementeDoTempo, EScenaryClimate::Temperate, Hora));
+	}
+
+	for (const EWeather Grau : ChuvasDoTempo)
+	{
+		TestTrue(FString::Printf(TEXT("o grau %s acontece"), WorldWeather::WeatherDebugName(Grau)),
+			Vistos.Contains(Grau));
+	}
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FWorldWeatherEveryGradeIsRain,
+	"BattleSquare.Environment.WorldWeather.TodoGrauEhChuva",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FWorldWeatherEveryGradeIsRain::RunTest(const FString& Parameters)
+{
+	for (const EWeather Grau : ChuvasDoTempo)
+	{
+		TestTrue(FString::Printf(TEXT("%s conta como chuva"), WorldWeather::WeatherDebugName(Grau)),
+			WorldWeather::IsRaining(Grau));
+		TestFalse(FString::Printf(TEXT("%s nao e ensolarado ao meio-dia"),
+				WorldWeather::WeatherDebugName(Grau)),
+			WorldWeather::IsSunny(Grau, 12.0f));
+	}
+
+	TestFalse(TEXT("ceu limpo nao e chuva"), WorldWeather::IsRaining(EWeather::Clear));
+	TestFalse(TEXT("nublado nao e chuva"), WorldWeather::IsRaining(EWeather::Cloudy));
+
+	// Encoberto é o caso que separa "fechado" de "molhado": é o céu logo antes
+	// da garoa na ordem do enum, e se `IsRaining` escorregar um valor é aqui
+	// que aparece.
+	TestFalse(TEXT("encoberto ainda nao e chuva"), WorldWeather::IsRaining(EWeather::Overcast));
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FWorldWeatherOnlyStormFloods,
+	"BattleSquare.Environment.WorldWeather.SoATempestadeAlaga",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FWorldWeatherOnlyStormFloods::RunTest(const FString& Parameters)
+{
+	// Alagar é o único efeito do tempo que MUDA O TABULEIRO. Se chuva forte
+	// também alagasse, o alagamento deixaria de ser evento e viraria o normal
+	// de todo dia chuvoso.
+	for (const EWeather Ceu : CeusDoTempo)
+	{
+		const bool bAlaga = WorldWeather::IsFlooding(Ceu);
+		TestEqual(FString::Printf(TEXT("%s alaga?"), WorldWeather::WeatherDebugName(Ceu)),
+			bAlaga, Ceu == EWeather::Storm);
+	}
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FWorldWeatherHumidityRisesWithGrade,
+	"BattleSquare.Environment.WorldWeather.UmidadeSobeComOGrau",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FWorldWeatherHumidityRisesWithGrade::RunTest(const FString& Parameters)
+{
+	for (const EScenaryClimate Clima : ClimasDoTempo)
+	{
+		int32 Anterior = WorldWeather::HumidityPercent(Clima, EWeather::Overcast);
+		for (const EWeather Grau : ChuvasDoTempo)
+		{
+			const int32 Agora = WorldWeather::HumidityPercent(Clima, Grau);
+			TestTrue(FString::Printf(TEXT("%s nao molha menos que o grau anterior"),
+					WorldWeather::WeatherDebugName(Grau)),
+				Agora >= Anterior);
+
+			// A subida só é ESTRITA enquanto há para onde subir: na mata,
+			// chuva forte já satura em 100 e a tempestade não tem como
+			// molhar mais. Exigir estrito no teto transformaria o limite
+			// natural do por-cento em defeito.
+			TestTrue(FString::Printf(TEXT("%s molha mais, se o chao ainda comportar"),
+					WorldWeather::WeatherDebugName(Grau)),
+				Anterior >= 100 || Agora > Anterior);
+			TestTrue(TEXT("umidade fica entre 0 e 100"), Agora >= 0 && Agora <= 100);
+			Anterior = Agora;
+		}
+	}
+
+	// A tempestade enlameia até o DESERTO — é o que faz uma enxurrada no
+	// deserto valer a raridade dela. Com a garoa ele continua seco.
+	TestTrue(TEXT("tempestade enlameia o deserto"),
+		WorldWeather::HumidityPercent(EScenaryClimate::Desert, EWeather::Storm) >= MudMinHumidity);
+	TestTrue(TEXT("garoa nao enlameia o deserto"),
+		WorldWeather::HumidityPercent(EScenaryClimate::Desert, EWeather::Drizzle) < MudMinHumidity);
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FWorldWeatherDesertStormsAreRareNotImpossible,
+	"BattleSquare.Environment.WorldWeather.TempestadeNoDesertoEhRaraNaoImpossivel",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FWorldWeatherDesertStormsAreRareNotImpossible::RunTest(const FString& Parameters)
+{
+	// A razão de o grau sair de um SEGUNDO sorteio mora aqui. Com um sorteio
+	// só, a força viria de onde o número caiu dentro da faixa de chuva do
+	// clima — e a faixa do deserto tem três inteiros de largura, o que tornaria
+	// a tempestade aritmeticamente inalcançável em vez de rara.
+	constexpr int32 BlocosDeUmaVidaInteira = 20000;
+
+	int32 Tempestades = 0;
+	int32 Chuvas = 0;
+	for (int32 Bloco = 0; Bloco < BlocosDeUmaVidaInteira; ++Bloco)
+	{
+		const float Hora = Bloco * WorldWeather::HoursPerSpell;
+		const EWeather Ceu = WorldWeather::WeatherAt(SementeDoTempo, EScenaryClimate::Desert, Hora);
+		if (WorldWeather::IsRaining(Ceu))
+		{
+			++Chuvas;
+		}
+		if (Ceu == EWeather::Storm)
+		{
+			++Tempestades;
+		}
+	}
+
+	TestTrue(TEXT("no deserto chove alguma vez"), Chuvas > 0);
+	TestTrue(TEXT("no deserto a tempestade acontece"), Tempestades > 0);
+	TestTrue(TEXT("no deserto a tempestade e mais rara que a chuva"), Tempestades < Chuvas);
 
 	return true;
 }

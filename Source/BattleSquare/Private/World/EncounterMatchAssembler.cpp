@@ -75,9 +75,15 @@ bool FEncounterMatchAssembler::AssembleFromEncounter(const FEncounterMatchParams
 	// tropeça no inimigo dentro do deserto luta num campo seco; quem tropeça
 	// na mata luta na lama. A mesma coordenada que monta o terreno responde
 	// pelo clima, então o chão e a umidade não podem discordar.
+	//
+	// E O TEMPO entra junto com o clima. O clima diz como o lugar é em geral;
+	// o tempo diz como ele está agora. Só com o clima, chover não mudava nada
+	// do combate — o comentário de `WorldWeather.h` já prometia lama depois da
+	// chuva enquanto esta linha ignorava o céu inteiro.
 	OutInitialState.Humidity = static_cast<uint8>(FMath::Clamp(
-		ScenaryClimate::HumidityPercent(
-			IslandGeography::ClimateAt(FVector2D(Params.EncounterLocation))), 0, 100));
+		WorldWeather::HumidityPercent(
+			IslandGeography::ClimateAt(FVector2D(Params.EncounterLocation)),
+			Params.Weather), 0, 100));
 
 	// A ARENA É O LUGAR. Antes ela era sorteada de um catálogo, e o jogador
 	// topava com um inimigo na beira do lago para cair num "Campo Aberto" —
@@ -98,6 +104,7 @@ bool FEncounterMatchAssembler::AssembleFromEncounter(const FEncounterMatchParams
 		Terreno.Columns = OutInitialState.GridColumns;
 		Terreno.Rows = OutInitialState.GridRows;
 		Terreno.HumidityPercent = OutInitialState.Humidity;
+		Terreno.bFlooded = WorldWeather::IsFlooding(Params.Weather);
 		Terreno.Features = Params.WorldFeatures;
 
 		const TArray<uint8> DoMundo = FArenaFromWorld::Build(Terreno);

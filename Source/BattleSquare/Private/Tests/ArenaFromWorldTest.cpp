@@ -186,3 +186,65 @@ bool FPedraNaCasaInicialSaiDaFrenteTest::RunTest(const FString&)
 
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAEnchenteSobeUmaCasaTest,
+	"BattleSquare.Arena.FromWorld.AEnchenteSobeUmaCasa",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FAEnchenteSobeUmaCasaTest::RunTest(const FString&)
+{
+	FArenaFromWorldParams Params = ArenaDoMundoTeste::Campo3x3();
+	Params.Features.Add({ ArenaDoMundoTeste::CentroDaCasa(Params, 2, 0),
+		EWorldFeatureKind::DeepWater });
+
+	// Sem tempestade, o mesmo campo continua seco. É a metade do teste que
+	// impede o alagamento de virar o normal: sem ela, um `bFlooded` ignorado
+	// (ou sempre ligado) passaria despercebido.
+	const TArray<uint8> Seco = FArenaFromWorld::Build(Params);
+	TestEqual(TEXT("Sem tempestade a casa ao lado do rio continua seca"),
+		Seco[CellLayoutIndex(1, 0, 3)], static_cast<uint8>(ECellProperty::None));
+
+	Params.bFlooded = true;
+	const TArray<uint8> Alagado = FArenaFromWorld::Build(Params);
+
+	TestEqual(TEXT("O rio continua fundo"),
+		Alagado[CellLayoutIndex(2, 0, 3)], static_cast<uint8>(ECellProperty::Water));
+	TestEqual(TEXT("A casa encostada no rio virou poça"),
+		Alagado[CellLayoutIndex(1, 0, 3)], static_cast<uint8>(ECellProperty::ShallowWater));
+
+	// UMA casa, e não o tabuleiro inteiro: a poça recém-nascida não pode molhar
+	// a vizinha dela na mesma passada, senão a água atravessaria o campo de uma
+	// vez e o resultado dependeria da ordem de varredura.
+	TestEqual(TEXT("A casa duas de distância continua seca"),
+		Alagado[CellLayoutIndex(1, 1, 3)], static_cast<uint8>(ECellProperty::None));
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAEnchenteNaoDerrubaPedraTest,
+	"BattleSquare.Arena.FromWorld.AEnchenteNaoDerrubaPedra",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FAEnchenteNaoDerrubaPedraTest::RunTest(const FString&)
+{
+	FArenaFromWorldParams Params = ArenaDoMundoTeste::Campo3x3();
+	Params.bFlooded = true;
+	Params.Features.Add({ ArenaDoMundoTeste::CentroDaCasa(Params, 1, 0),
+		EWorldFeatureKind::DeepWater });
+	Params.Features.Add({ ArenaDoMundoTeste::CentroDaCasa(Params, 0, 0),
+		EWorldFeatureKind::Solid });
+	Params.Features.Add({ ArenaDoMundoTeste::CentroDaCasa(Params, 1, 1),
+		EWorldFeatureKind::TrainingGround });
+
+	const TArray<uint8> Layout = FArenaFromWorld::Build(Params);
+
+	// Enchente COBRE o chão; ela não demole nem apaga o que estava ali. Uma
+	// pedra continua de pé dentro d'água, e comer a casa de bônus faria a
+	// tempestade destruir terreno em vez de alagá-lo.
+	TestEqual(TEXT("A pedra continua bloqueando"),
+		Layout[CellLayoutIndex(0, 0, 3)], static_cast<uint8>(ECellProperty::Blocked));
+	TestEqual(TEXT("A clareira de treino continua dando bônus"),
+		Layout[CellLayoutIndex(1, 1, 3)], static_cast<uint8>(ECellProperty::Buff));
+
+	return true;
+}

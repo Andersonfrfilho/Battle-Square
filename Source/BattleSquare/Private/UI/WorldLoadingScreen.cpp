@@ -55,7 +55,15 @@ int32 FWorldLoadingProgress::PercentComplete() const
 
 void FWorldLoadingScreen::Show(UWorld* World)
 {
-	if (!GEngine || !GEngine->GameViewport || GLoadingWidget.IsValid())
+	// Mesmo defeito do mapa: a global sobrevive ao PIE e o viewport não. Aqui
+	// o sintoma seria pior — a tela de carregamento não apareceria no segundo
+	// Play, e o jogador voltaria a existir num mundo ainda não montado.
+	if (GLoadingWidget.IsValid())
+	{
+		Hide();
+	}
+
+	if (!GEngine || !GEngine->GameViewport)
 	{
 		return;
 	}

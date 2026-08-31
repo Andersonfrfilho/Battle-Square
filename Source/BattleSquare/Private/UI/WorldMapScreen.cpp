@@ -412,7 +412,23 @@ namespace
 
 void FWorldMapScreen::Show(UWorld* World)
 {
-	if (!GEngine || !GEngine->GameViewport || GMinimapa.IsValid())
+	// A GLOBAL SOBREVIVE AO PIE, e o viewport não.
+	//
+	// Este `Show` saía fora quando a global ainda era válida, e isso está certo
+	// dentro de UMA sessão. Entre duas, não: ao fim do PIE o viewport é
+	// destruído e a global continua apontando para um widget que já não está
+	// em tela nenhuma. No Play seguinte o `Show` desistia, e o mapa nunca mais
+	// aparecia — quem jogasse duas vezes o via uma vez só.
+	//
+	// Descoberto pelo usuário jogando: "o minimapa não está aparecendo mais em
+	// tela". Nenhum teste pegaria — os widgets nascem certos, e o defeito mora
+	// na fronteira entre duas sessões.
+	if (GMinimapa.IsValid() || GMapaCompleto.IsValid())
+	{
+		Hide();
+	}
+
+	if (!GEngine || !GEngine->GameViewport)
 	{
 		return;
 	}

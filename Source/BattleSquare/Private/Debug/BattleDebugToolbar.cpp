@@ -254,7 +254,16 @@ namespace
 
 void FBattleDebugToolbar::Show(UWorld* World)
 {
-	if (!GEngine || !GEngine->GameViewport || GToolbar.IsValid())
+	// Mesmo defeito do mapa e do carregamento: a global sobrevive ao PIE e o
+	// viewport não. Sem isto a barra aparece no primeiro Play e some em todos
+	// os seguintes — e ela é o ÚNICO caminho que funciona para as ações do
+	// jogador 2 e para trocar de lado.
+	if (GToolbar.IsValid())
+	{
+		Hide();
+	}
+
+	if (!GEngine || !GEngine->GameViewport)
 	{
 		return;
 	}

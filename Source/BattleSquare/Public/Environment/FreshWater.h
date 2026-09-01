@@ -110,6 +110,15 @@ namespace FreshWater
 		TArray<FVector2D> PointsUnits;
 
 		bool FlowsToTheSea() const { return JoinRadiusUnits <= 0.0f; }
+
+		/**
+		 * Este curso tem cachoeira.
+		 *
+		 * Nem todo tem, e forçar uma em cada foz inventa acidente onde o
+		 * terreno não tem. Quem pergunta por queda pergunta ISTO antes — foi
+		 * ler o valor sem checar que pôs uma trilha mirando o mar aberto.
+		 */
+		bool HasFall() const { return FallAtProgress >= 0.0f; }
 	};
 
 	/** Largura de meia calha do rio comum. */

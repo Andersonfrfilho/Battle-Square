@@ -5,7 +5,6 @@
 #include "Misc/ConfigCacheIni.h"
 #include "World/RegionLayout.h"
 #include "World/VillageLayout.h"
-#include "Environment/FreshWater.h"
 
 namespace GeografiaDaIlha
 {
@@ -240,54 +239,8 @@ namespace Relevo
 			* IslandGeography::LandRadiusUnits() * FracaoDaOndulacao;
 	}
 
-	/** Altura do degrau de uma cachoeira, e o comprimento em que ele desce. */
-	constexpr float FracaoDoDegrauDaQueda = 0.012f;
-	constexpr float CalhasDeDescida = 2.2f;
 
-	/**
-	 * O degrau de cada cachoeira, somado ao relevo.
-	 *
-	 * Vale 1 antes da queda e 0 depois, com a descida no meio: quem está acima
-	 * fica no alto do degrau, quem está abaixo fica no pé dele.
-	 *
-	 * Ele consulta `FreshWater`, e isso não é ciclo: o plano dos rios não
-	 * pergunta a altura do chão. Se um dia perguntar, o mundo entra em
-	 * recursão — e é por isso que este comentário existe.
-	 */
-	float DegrauDasQuedas(const FVector2D& Onde)
-	{
-		float Total = 0.0f;
 
-		for (const FreshWater::FRiverCourse& Curso : FreshWater::PlanTrunks())
-		{
-			const FVector2D NaQueda = FreshWater::PointAtProgress(Curso, Curso.FallAtProgress);
-			const float Alcance = FreshWater::LakeHalfWidthUnits();
-
-			if (FVector2D::Distance(Onde, NaQueda) > Alcance)
-			{
-				continue;
-			}
-
-			// Quanto o ponto está ACIMA da queda, medido ao LONGO DO CURSO.
-			//
-			// Era medido no raio, e raio não diz mais o que é montante: numa
-			// bacia de verdade o galho corre de lado, e dois pontos no mesmo
-			// raio podem estar um acima e outro abaixo da mesma queda.
-			float NoCurso = 0.0f;
-			FreshWater::NearestOn(Curso, Onde, NoCurso);
-
-			const float Comprimento = FMath::Max(1.0f, FreshWater::CourseLengthUnits(Curso));
-			const float Descida =
-				FreshWater::RiverHalfWidthUnits() * 2.0f * CalhasDeDescida / Comprimento;
-
-			const float Acima = FMath::Clamp(
-				(Curso.FallAtProgress + Descida * 0.5f - NoCurso) / Descida, 0.0f, 1.0f);
-
-			Total += IslandGeography::LandRadiusUnits() * FracaoDoDegrauDaQueda * Acima;
-		}
-
-		return Total;
-	}
 
 	float ConeDoVulcao(const FVector2D& Centro, float RaioQueimado, const FVector2D& Onde)
 	{
@@ -600,7 +553,7 @@ namespace IslandGeography
 		return Relevo::EstaNaRampa(Relevo::CentroDoPlanalto(), PositionUnits);
 	}
 
-	float GroundHeightAt(const FVector2D& PositionUnits)
+	float BedrockHeightAt(const FVector2D& PositionUnits)
 	{
 		// A ORDEM é a regra, e cada passo pode sobrescrever o anterior. Trocá-la
 		// põe morro dentro da praça.
@@ -635,26 +588,89 @@ namespace IslandGeography
 		Altura += Relevo::ConeDoVulcao(VolcanoCenterUnits(), VolcanoScorchedRadiusUnits(),
 			PositionUnits);
 
-		// 4b. O DEGRAU DA CACHOEIRA.
+		// AQUI HAVIA UM DEGRAU DESENHADO EM CADA CACHOEIRA, E ELE CRIAVA UM
+		// CICLO.
 		//
-		// Sem ele a queda era um rótulo em chão plano: a água "despencava" onde
-		// o terreno não descia nada, e o poço saía com meio metro de fundo. É a
-		// mesma família de defeito do ator sem malha — existe na lógica e não
-		// existe na tela.
+		// O relevo perguntava onde estavam as quedas; as quedas perguntavam o
+		// plano dos rios; o plano dos rios estava sendo construído naquele
+		// instante — e entrar de novo num inicializador em construção trava.
 		//
-		// O degrau é local e estreito, medido em calhas de rio: cachoeira é uma
-		// quebra do leito, não uma encosta.
-		Altura += Relevo::DegrauDasQuedas(PositionUnits);
+		// A inversão é o conserto, e ela é melhor: **o terreno não sabe de
+		// água.** É a água que procura onde o leito despenca e põe a queda ali.
+		// Assim a cachoeira nasce num degrau que já existia, em vez de cavar um
+		// para si — que é o que acontece de verdade.
+
+		// E PARA AQUI. A mesa da cidade é o próximo passo, e ela pergunta onde
+		// a cidade está — que é justamente o que fecha o ciclo.
+
+		// E PARA AQUI: o achatamento dos lotes é o passo que pergunta pelos
+		// assentamentos, e é ele que fecharia o ciclo.
+		return Altura;
+	}
+
+	float NaturalGroundHeightAt(const FVector2D& PositionUnits)
+	{
+		// A ORDEM é a regra, e cada passo pode sobrescrever o anterior. Trocá-la
+		// põe morro dentro da praça.
+		const float Distancia = PositionUnits.Size();
+
+		// 1. Fora da terra é mar, e o mar é o zero de tudo.
+		if (Distancia >= LandRadiusUnits())
+		{
+			return 0.0f;
+		}
+
+		// 2. A praia sobe do mar até o nível da terra. Sem esta rampa, a ilha
+		//    seria um prato com parede — que foi exatamente o relato de jogo:
+		//    "ao chegar na água eu afundo para sempre".
+		const float Borda = LandRadiusUnits() - BeachWidthUnits();
+		const float DaOrla = (Distancia > Borda)
+			? FMath::Clamp((LandRadiusUnits() - Distancia) / BeachWidthUnits(), 0.0f, 1.0f)
+			: 1.0f;
+
+		float Altura = Relevo::AlturaDaTerra() * DaOrla;
+
+		// 3. As ondulações, ENCOLHIDAS pela mesma orla. É o que faz a caminhada
+		//    ter custo diferente por caminho, e é de onde a rota nasce.
+		//
+		//    O encolhimento não é enfeite: sem ele o vale de um morro na faixa
+		//    de praia descia abaixo do nível do mar, e a ilha ganhava buracos
+		//    de água. O teste mediu; eu tinha olhado só o miolo.
+		Altura += Relevo::Ondulacao(PositionUnits) * DaOrla;
+
+		// 4. O cone do vulcão, e ele vem antes do planalto porque o vulcão é o
+		//    marco mais alto: nada o achata.
+		Altura += Relevo::ConeDoVulcao(VolcanoCenterUnits(), VolcanoScorchedRadiusUnits(),
+			PositionUnits);
+
+		// AQUI HAVIA UM DEGRAU DESENHADO EM CADA CACHOEIRA, E ELE CRIAVA UM
+		// CICLO.
+		//
+		// O relevo perguntava onde estavam as quedas; as quedas perguntavam o
+		// plano dos rios; o plano dos rios estava sendo construído naquele
+		// instante — e entrar de novo num inicializador em construção trava.
+		//
+		// A inversão é o conserto, e ela é melhor: **o terreno não sabe de
+		// água.** É a água que procura onde o leito despenca e põe a queda ali.
+		// Assim a cachoeira nasce num degrau que já existia, em vez de cavar um
+		// para si — que é o que acontece de verdade.
 
 		// 5. O PLANALTO da cidade grande, com o barranco por borda. É ele que
 		//    impede resolver a região correndo em linha reta: ou se sobe pela
 		//    rampa da trilha, ou se escala devagar.
 		Altura = Relevo::ComPlanalto(Altura, PositionUnits);
 
-		// 6. Os LOTES são planos, e este passo é o último de propósito: prédio
-		//    em chão inclinado fica com meia parede enterrada, que é a mesma
-		//    família de defeito do pet afundando no tabuleiro.
-		return Relevo::ComLotesPlanos(Altura, PositionUnits);
+		// E PARA AQUI: o achatamento dos lotes é o passo que pergunta pelos
+		// assentamentos, e é ele que fecharia o ciclo.
+		return Altura;
+	}
+
+	float GroundHeightAt(const FVector2D& PositionUnits)
+	{
+		// Os LOTES são planos, e este passo é o último de propósito: prédio em
+		// chão inclinado fica com meia parede enterrada, que é a mesma família
+		// de defeito do pet afundando no tabuleiro.
+		return Relevo::ComLotesPlanos(NaturalGroundHeightAt(PositionUnits), PositionUnits);
 	}
 
 	float UphillCostWeight() { return Relevo::PesoDaSubida; }

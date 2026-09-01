@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "World/TrailLayout.h"
+#include "World/PlanReentryGuard.h"
 #include "World/VillageLayout.h"
 #include "Environment/IslandGeography.h"
 #include "Battle/DeterministicSpread.h"
@@ -735,8 +736,21 @@ namespace
 		//
 		// Sinalizar ausência com um valor fora de faixa só funciona enquanto
 		// ninguém lê o valor. Três lugares leram.
-		for (const FreshWater::FRiverCourse& Rio : FreshWater::PlanTrunks())
+		// TODOS os cursos, não só os troncos.
+		//
+		// A queda deixou de morar no tronco quando passou a ser escolhida pelo
+		// leito — ela está onde a água despenca, que é rio acima. Percorrer só
+		// os troncos deixava a maioria das cachoeiras sem caminho, e cachoeira
+		// sem caminho é a que o relato de jogo disse nunca ter visto.
+		for (const FreshWater::FRiverCourse& Rio : FreshWater::Plan())
 		{
+			// Só quem TEM queda ganha caminho. Prometer trilha para uma
+			// cachoeira que não existe foi o que gerou sete linhas retas.
+			if (!Rio.HasFall())
+			{
+				continue;
+			}
+
 			const FVector2D NaQueda = FreshWater::PointAtProgress(Rio, Rio.FallAtProgress);
 			const float Afastar = FreshWater::HalfWidthAtProgress(Rio, Rio.FallAtProgress)
 				+ TrailLayout::HalfWidthUnits() * 2.0f;
@@ -826,7 +840,11 @@ const TArray<FTrailRoute>& TrailLayout::Plan()
 {
 	// Traçado uma vez. Dijkstra sobre a ilha inteira não é conta para se
 	// refazer a cada árvore plantada — e `BlocksPlanting` pergunta por ponto.
-	static TArray<FTrailRoute> Trilhas = TracarTrilhas();
+	static TArray<FTrailRoute> Trilhas = []()
+	{
+		const FPlanReentryGuard Guarda(TEXT("TrailLayout::Plan"));
+		return TracarTrilhas();
+	}();
 	return Trilhas;
 }
 

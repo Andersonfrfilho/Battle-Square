@@ -115,6 +115,36 @@ namespace IslandGeography
 	BATTLESQUARE_API float GroundHeightAt(const FVector2D& PositionUnits);
 
 	/**
+	 * A altura NATURAL: tudo menos o achatamento dos lotes.
+	 *
+	 * Existe para quebrar um ciclo de três pontas, e a separação é honesta por
+	 * si: o relevo achata os lotes das vilas → pergunta onde são os
+	 * assentamentos → o Mercado do Lago pergunta onde é o lago → pergunta o
+	 * plano dos rios, que está sendo montado naquele instante.
+	 *
+	 * E o rio não deve mesmo saber de lote: o leito dele é anterior à vila. O
+	 * achatamento é obra de gente, e vem depois.
+	 */
+	BATTLESQUARE_API float NaturalGroundHeightAt(const FVector2D& PositionUnits);
+
+	/**
+	 * A ROCHA: o chão antes de qualquer decisão sobre onde as pessoas moram.
+	 *
+	 * Mar, praia, ondulação e o cone do vulcão. Nada mais.
+	 *
+	 * Ela existe porque as outras duas alturas dependem da REGIÃO — o
+	 * achatamento dos lotes é óbvio, e a mesa da Cidade Alta também é: ela está
+	 * onde a cidade está, e portanto não é acidente natural, é consequência de
+	 * uma escolha de povoamento.
+	 *
+	 * Isso importa porque o leito do rio é anterior a tudo isso. Perguntar a
+	 * altura com a mesa já posta fechava um ciclo — relevo pergunta a região, a
+	 * região pergunta o lago, o lago pergunta os rios, e os rios estavam sendo
+	 * montados. O processo abortava.
+	 */
+	BATTLESQUARE_API float BedrockHeightAt(const FVector2D& PositionUnits);
+
+	/**
 	 * A inclinação num ponto, em altura por unidade andada.
 	 *
 	 * Medida por diferença nas quatro vizinhas, e não por derivada analítica:

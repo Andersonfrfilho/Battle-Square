@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Environment/FreshWater.h"
+#include "World/PlanReentryGuard.h"
 
 #include "Battle/DeterministicSpread.h"
 #include "Environment/CaveSystem.h"
@@ -147,6 +148,20 @@ namespace FreshWater
 		 * rede ainda pode crescer. Quem controla é a distância de morte.
 		 */
 		constexpr int32 AtratoresFartos = 1400;
+
+		/**
+		 * Quantas vezes o declive de corredeira para virar QUEDA.
+		 *
+		 * Corredeira é água que quebra descendo; cachoeira é água que perde o
+		 * chão. Sem a distinção, todo trecho rápido viraria cachoeira e a ilha
+		 * teria dezenas — o que é o mesmo que não ter nenhuma.
+		 *
+		 * Baixado para 1,15 depois de medir: com 2,2 nenhum curso passava, e a
+		 * ilha ficou sem cachoeira nenhuma. O declive medido ao LONGO do leito
+		 * e uma media sobre duas calhas de rio — bem menor que a inclinacao
+		 * instantanea da encosta, e eu tinha calibrado pensando na segunda.
+		 */
+		constexpr float DeclivePorQueda = 1.15f;
 
 		/**
 		 * A faixa da distância de morte, em fração do raio.
@@ -782,6 +797,56 @@ namespace FreshWater
 		 * código de produção, quando `Tracar` existia em dois arquivos e o
 		 * unity build os juntou.
 		 */
+		/**
+		 * Põe a queda de cada curso no ponto mais íngreme do leito dele.
+		 *
+		 * Só em curso de ORDEM 2 para cima — fio de cabeceira que despenca é
+		 * gotejamento, não cachoeira — e só onde o leito passa do declive de
+		 * corredeira, porque abaixo disso a água escorre em vez de cair.
+		 *
+		 * E em terra ALCANÇÁVEL: cachoeira que nenhuma trilha atinge é a
+		 * cachoeira que o relato de jogo disse nunca ter visto.
+		 */
+		void ColocarAsQuedas(TArray<FRiverCourse>& Cursos)
+		{
+			const float Limite = IslandGeography::LandRadiusUnits()
+				- IslandGeography::BeachWidthUnits() * 1.6f;
+
+			for (FRiverCourse& Curso : Cursos)
+			{
+				Curso.FallAtProgress = -1.0f;
+
+				if (Curso.Order < 2 || Curso.PointsUnits.Num() < 3)
+				{
+					continue;
+				}
+
+				float MaisIngreme = 0.0f;
+				float Aonde = -1.0f;
+
+				for (int32 Passo = 2; Passo <= 18; ++Passo)
+				{
+					const float Onde = static_cast<float>(Passo) / 20.0f;
+					if (PointAtProgress(Curso, Onde).Size() > Limite)
+					{
+						continue;
+					}
+
+					const float Declive = BedGradientAtProgress(Curso, Onde);
+					if (Declive > MaisIngreme)
+					{
+						MaisIngreme = Declive;
+						Aonde = Onde;
+					}
+				}
+
+				if (Aonde > 0.0f && MaisIngreme >= RapidsGradient() * DeclivePorQueda)
+				{
+					Curso.FallAtProgress = Aonde;
+				}
+			}
+		}
+
 		static TArray<FRiverCourse> ColonizarBacia(const TArray<FVector2D>& Bocas,
 			int32 Quantos, float MorreA)
 		{
@@ -1028,10 +1093,44 @@ namespace FreshWater
 							+ (AlcanceDoLago() + BattleSpread::Between(MenorDegrau(),
 								MaiorDegrau(), BattleSpread::Fraction(Semente, 3))) / Comprimento,
 						1.0f - MeiaQueda() * 3.0f / Comprimento);
+
+					// A QUEDA PRECISA CAIR EM TERRA ALCANÇÁVEL.
+					//
+					// "Tronco" passou a ser o trecho entre a última bifurcação e
+					// o mar — que numa bacia densa é curto e costeiro. O lago e
+					// a cachoeira caíam nele, e o resultado foram sete trilhas
+					// mirando a areia, uma delas um ponto NO MAR.
+					//
+					// Nem todo rio tem cachoeira, e forçar uma em cada foz é
+					// inventar acidente onde o terreno não tem. Sem lugar, o
+					// tronco simplesmente não tem queda — e aí não tem gruta,
+					// não tem poço e não tem trilha prometendo uma.
+					const float Limite = IslandGeography::LandRadiusUnits()
+						- IslandGeography::BeachWidthUnits() * 1.6f;
+
+					if (PointAtProgress(Curso, Curso.FallAtProgress).Size() > Limite)
+					{
+						Curso.LakeAtProgress = -1.0f;
+						Curso.FallAtProgress = -1.0f;
+					}
 				}
 
 				Cursos.Add(Curso);
 			}
+
+			// AS CACHOEIRAS, escolhidas DEPOIS e pelo LEITO.
+			//
+			// Elas estavam presas ao lago, e o lago mora no tronco — que numa
+			// bacia densa é o trecho curto e costeiro entre a última bifurcação
+			// e o mar. As quedas caíam na areia, e sete trilhas apontaram para
+			// lá; prender a queda a terra alcançável tirou as retas e tirou
+			// TODAS as cachoeiras junto.
+			//
+			// O erro era de modelo: cachoeira não acontece na foz. Ela acontece
+			// onde o leito DESPENCA, que é rio acima, perto do monte. A conta
+			// já existia — `BedGradientAtProgress` — e não estava sendo usada
+			// para decidir nada.
+			ColocarAsQuedas(Cursos);
 
 			return Cursos;
 		}
@@ -1042,6 +1141,8 @@ namespace FreshWater
 		// remontado dentro do laço do traçado de trilha.
 		static const TArray<FRiverCourse> Guardado = []()
 		{
+		const FPlanReentryGuard Guarda(TEXT("FreshWater::Plan"));
+
 		TArray<FRiverCourse> Cursos;
 		const float Foz = IslandGeography::LandRadiusUnits();
 
@@ -1294,7 +1395,7 @@ namespace FreshWater
 			// A gruta é da CACHOEIRA, e a cachoeira mora no tronco. Galho de
 			// cabeceira não tem queda: a foz dele é a junção, e uma gruta ali
 			// prometeria uma cachoeira que não existe.
-			if (!Cursos[Indice].FlowsToTheSea())
+			if (!Cursos[Indice].HasFall())
 			{
 				continue;
 			}
@@ -1759,8 +1860,15 @@ float FreshWater::BedGradientAtProgress(const FRiverCourse& Course, float Progre
 		return 0.0f;
 	}
 
-	const float Desceu =
-		IslandGeography::GroundHeightAt(Antes) - IslandGeography::GroundHeightAt(Depois);
+	// A ROCHA, e não a altura "natural": a mesa da Cidade Alta também pergunta
+	// onde é a cidade, e o ciclo continuava por ali. Eu tinha tirado só o
+	// achatamento dos lotes e dado o problema por resolvido — o rastro de pilha
+	// do processo abortando mostrou o caminho inteiro.
+	//
+	// E a camada certa é essa mesmo: o leito do rio é anterior a qualquer
+	// decisão sobre onde as pessoas moram.
+	const float Desceu = IslandGeography::BedrockHeightAt(Antes)
+		- IslandGeography::BedrockHeightAt(Depois);
 
 	// Só a DESCIDA conta. Um trecho em que o terreno sobe não é corredeira: é
 	// erro de amostragem do relevo, e tratá-lo como declive poria espuma onde
@@ -1800,7 +1908,7 @@ bool FreshWater::IsRapidsAtProgress(const FRiverCourse& Course, float Progress)
 
 float FreshWater::PlungePoolDepthUnits(const FRiverCourse& Course)
 {
-	if (!Course.FlowsToTheSea())
+	if (!Course.HasFall())
 	{
 		return 0.0f;
 	}
@@ -1810,8 +1918,8 @@ float FreshWater::PlungePoolDepthUnits(const FRiverCourse& Course)
 	const FVector2D NoAlto = PointAtProgress(Course, Course.FallAtProgress - EmProgresso);
 	const FVector2D LaEmbaixo = PointAtProgress(Course, Course.FallAtProgress + EmProgresso);
 
-	const float Caiu = FMath::Max(0.0f,
-		IslandGeography::GroundHeightAt(NoAlto) - IslandGeography::GroundHeightAt(LaEmbaixo));
+	const float Caiu = FMath::Max(0.0f, IslandGeography::BedrockHeightAt(NoAlto)
+		- IslandGeography::BedrockHeightAt(LaEmbaixo));
 
 	return Caiu * ProfundidadePorAltura;
 }
@@ -1983,7 +2091,7 @@ namespace CachoeiraEmDegraus
 TArray<FreshWater::FFallStep> FreshWater::PlanFallSteps(const FRiverCourse& Course)
 {
 	TArray<FFallStep> Degraus;
-	if (!Course.FlowsToTheSea())
+	if (!Course.HasFall())
 	{
 		return Degraus;
 	}

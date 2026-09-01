@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "World/RegionLayout.h"
+#include "World/PlanReentryGuard.h"
 #include "Environment/IslandGeography.h"
 #include "Environment/FreshWater.h"
 #include "World/VillageLayout.h"
@@ -158,6 +159,8 @@ TArray<FSettlementPlacement> RegionLayout::Plan()
 	// Milhões de arestas, uma montagem de região em cada.
 	static const TArray<FSettlementPlacement> Guardado = []()
 	{
+		const FPlanReentryGuard Guarda(TEXT("RegionLayout::Plan"));
+
 	TArray<FSettlementPlacement> Pecas;
 
 	// A vila inicial no CENTRO, debaixo de onde o jogador nasce. Sair de casa é

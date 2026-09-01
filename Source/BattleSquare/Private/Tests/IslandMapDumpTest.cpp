@@ -127,8 +127,12 @@ bool FIslandMapDumpTest::RunTest(const FString& Parameters)
 		}
 
 		Json += FString::Printf(
-			TEXT("],\"ordem\":%d,\"aoMar\":%d,\"lagoX\":%.0f,\"lagoY\":%.0f,")
+			TEXT("],\"declive\":%.4f,\"comprimento\":%.0f,\"ordem\":%d,\"aoMar\":%d,\"lagoX\":%.0f,\"lagoY\":%.0f,")
 			TEXT("\"quedaX\":%.0f,\"quedaY\":%.0f,\"poco\":%.0f,\"fundo\":%.0f}%s\n"),
+			[&]() { float M = 0.0f; for (int32 P = 2; P <= 18; ++P)
+				{ M = FMath::Max(M, FreshWater::BedGradientAtProgress(
+					Rios[Indice], static_cast<float>(P) / 20.0f)); } return M; }(),
+			FreshWater::CourseLengthUnits(Rios[Indice]),
 			Rios[Indice].Order, Rios[Indice].FlowsToTheSea() ? 1 : 0,
 			NoLago.X, NoLago.Y, NaQueda.X, NaQueda.Y,
 			FreshWater::PlungePoolHalfWidthUnits(Rios[Indice]),

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Environment/IslandGeography.h"
 
 #include "Environment/IslandFeatureLayout.h"
 
@@ -271,6 +272,22 @@ namespace FreshWater
 	 * seria olhar o mapa e achar que sim.
 	 */
 	BATTLESQUARE_API bool IsWaterNetworkConnected();
+
+	/**
+	 * QUANTA ÁGUA um bioma tem, como fração da área de terra.
+	 *
+	 * É o botão que faltava. A densidade da bacia era um número de atratores
+	 * escolhido por tentativa — e "quantos atratores" não quer dizer nada para
+	 * quem desenha um mundo. "Seis por cento da terra é água doce" quer.
+	 *
+	 * Tudo o mais deriva daqui: quantos cursos, quantos córregos, quantas
+	 * galerias. Trocar de bioma passa a ser trocar UM número, e é o que permite
+	 * reusar o mesmo gerador no pântano e no deserto.
+	 */
+	BATTLESQUARE_API float WaterCoverageForBiome(EIslandBiome Biome);
+
+	/** Quanto da terra ESTÁ molhado de fato, medido na máscara. */
+	BATTLESQUARE_API float MeasuredWaterCoverage();
 
 	/** Onde, no plano do mundo, o rio cruza este raio. */
 	BATTLESQUARE_API FVector2D PointAtProgress(const FRiverCourse& Course, float Progress);

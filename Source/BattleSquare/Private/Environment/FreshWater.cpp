@@ -9,6 +9,14 @@
 
 namespace FreshWater
 {
+	/**
+	 * Declarada antes de usar: a sonda de cobertura precisa dos córregos para
+	 * medir, e os córregos precisam dos rios — que a sonda ainda está ajudando
+	 * a escolher. Uma declaração adiantada resolve sem circularidade real,
+	 * porque nada aqui chama `Plan()`.
+	 */
+	TArray<FBrook> MontarCorregos(const TArray<FRiverCourse>& Rios);
+
 	namespace
 	{
 		/**
@@ -89,7 +97,197 @@ namespace FreshWater
 		 * puxam o mesmo nó para lados diferentes, ele BIFURCA sozinho — a
 		 * ramificação não é programada, ela acontece.
 		 */
-		constexpr int32 QuantosAtratores = 420;
+
+		/**
+		 * A COBERTURA de referência e quantos atratores ela custa.
+		 *
+		 * Os atratores deixaram de ser um número escolhido: eles saem da
+		 * cobertura de água pedida pelo bioma, proporcionalmente.
+		 *
+		 * O par abaixo é MEDIDO, e a primeira vez eu o escrevi por estimativa:
+		 * supus que 420 atratores dariam 6% de terra molhada, e a máscara disse
+		 * **35%**. Um terço da ilha era água. Estimar o par de calibração é o
+		 * mesmo erro de olhar o desenho em vez de medir, só que escondido num
+		 * número que parece inofensivo.
+		 *
+		 * E ela NÃO É LINEAR. Dois pontos medidos na máscara:
+		 *
+		 *     72 atratores  ->  1,83% de terra molhada
+		 *    420 atratores  -> 35,1%
+		 *
+		 * Isso dá expoente ~1,67, e o motivo é geométrico: mais atratores não
+		 * só alongam a rede, eles criam mais CONFLUÊNCIA — e confluência sobe a
+		 * ordem de Strahler, que alarga a calha. A água cresce em comprimento e
+		 * em largura ao mesmo tempo.
+		 *
+		 * Tratar como linear foi o meu segundo erro seguido de estimativa: a
+		 * primeira vez errei o par de calibração, a segunda errei a forma da
+		 * curva entre os pares.
+		 */
+		constexpr float CoberturaDeReferencia = 0.0183f;
+		constexpr int32 AtratoresDaReferencia = 72;
+		/**
+		 * A resolução da grade de água, usada pela máscara do jogo E pela sonda
+		 * de calibragem. Uma só, pelo motivo acima.
+		 *
+		 * Precisa ser mais FINA que o rio mais estreito — grade grossa não vê o
+		 * que é fino, e este mundo já pagou por isso quatro vezes.
+		 */
+		constexpr int32 LadoDaGradeDeAgua = 700;
+
+		/** Os limites e o esforço da busca. */
+		constexpr int32 MenosAtratores = 24;
+		constexpr int32 MaisAtratores = 700;
+		constexpr int32 TentativasDeCalibragem = 8;
+
+		/**
+		 * A cobertura de uma lista de cursos, medida numa grade grossa.
+		 *
+		 * Grossa de propósito: ela roda uma vez por tentativa da busca, e o que
+		 * se quer dela é a PROPORÇÃO, não a borda exata. A máscara fina do jogo
+		 * é outra coisa e vem depois.
+		 */
+		float CoberturaDosCursos(const TArray<FRiverCourse>& Cursos)
+		{
+			// A MESMA resolução da máscara do jogo, e não uma própria.
+			//
+			// Grade mais grossa engorda o rio: o carimbo arredonda o centro
+			// para a casa e o raio cobre casas inteiras. A sonda dizia 6% onde
+			// a máscara lia 1,8%, e a busca convergia para um mundo seco.
+			//
+			// Duas resoluções da mesma verdade é o mesmo defeito de duas
+			// tabelas da mesma verdade (L-032), vestido de outra roupa.
+			const int32 LadoDaSonda = LadoDaGradeDeAgua;
+
+			const float Raio = IslandGeography::LandRadiusUnits();
+			const float Casa = (Raio * 2.0f) / static_cast<float>(LadoDaSonda - 1);
+
+			TArray<bool> Molhado;
+			Molhado.Init(false, LadoDaSonda * LadoDaSonda);
+
+			for (const FRiverCourse& Curso : Cursos)
+			{
+				const float Comprimento = FMath::Max(1.0f, FreshWater::CourseLengthUnits(Curso));
+				float Andado = 0.0f;
+
+				for (int32 Ponto = 1; Ponto < Curso.PointsUnits.Num(); ++Ponto)
+				{
+					const FVector2D Daqui = Curso.PointsUnits[Ponto - 1];
+					const FVector2D Prali = Curso.PointsUnits[Ponto];
+					Andado += static_cast<float>(FVector2D::Distance(Daqui, Prali));
+
+					const float Meia =
+						FreshWater::HalfWidthAtProgress(Curso, Andado / Comprimento);
+					const int32 Alcance = FMath::CeilToInt(Meia / Casa);
+
+					const int32 Quantos = FMath::Max(1, FMath::CeilToInt(
+						FVector2D::Distance(Daqui, Prali) / (Casa * 0.5f)));
+
+					for (int32 Passo = 0; Passo <= Quantos; ++Passo)
+					{
+						const FVector2D Onde = FMath::Lerp(Daqui, Prali,
+							static_cast<float>(Passo) / Quantos);
+
+						const int32 Coluna = FMath::RoundToInt((Onde.X + Raio) / Casa);
+						const int32 Linha = FMath::RoundToInt((Onde.Y + Raio) / Casa);
+
+						for (int32 dY = -Alcance; dY <= Alcance; ++dY)
+						{
+							for (int32 dX = -Alcance; dX <= Alcance; ++dX)
+							{
+								const int32 C = Coluna + dX;
+								const int32 L = Linha + dY;
+								if (C < 0 || L < 0 || C >= LadoDaSonda || L >= LadoDaSonda)
+								{
+									continue;
+								}
+
+								// CÍRCULO, igual à máscara do jogo. Carimbar o
+								// quadrado inteiro engorda o rio em até o dobro
+								// da área, e a busca binária, medindo demais,
+								// convergia para um mundo quase seco.
+								//
+								// Duas rasterizações da mesma verdade discordam
+								// na primeira diferença (L-032) — e discordaram.
+								if (FMath::Square(dX * Casa) + FMath::Square(dY * Casa)
+									> Meia * Meia)
+								{
+									continue;
+								}
+
+								Molhado[L * LadoDaSonda + C] = true;
+							}
+						}
+					}
+				}
+			}
+
+			// OS CÓRREGOS entram na conta.
+			//
+			// Sem eles a busca regulava uma coisa e a máscara media outra: o
+			// botão pedia 6% de rio, e o mundo entregava 19% de água — porque
+			// há mais córrego do que rio, e ninguém os estava contando.
+			for (const FBrook& Corrego : MontarCorregos(Cursos))
+			{
+				const int32 Alcance = FMath::CeilToInt(Corrego.HalfWidthUnits / Casa);
+
+				for (int32 Ponto = 1; Ponto < Corrego.PointsUnits.Num(); ++Ponto)
+				{
+					const FVector2D Daqui = Corrego.PointsUnits[Ponto - 1];
+					const FVector2D Prali = Corrego.PointsUnits[Ponto];
+					const int32 Quantos = FMath::Max(1, FMath::CeilToInt(
+						FVector2D::Distance(Daqui, Prali) / (Casa * 0.5f)));
+
+					for (int32 Passo = 0; Passo <= Quantos; ++Passo)
+					{
+						const FVector2D Onde = FMath::Lerp(Daqui, Prali,
+							static_cast<float>(Passo) / Quantos);
+						const int32 Coluna = FMath::RoundToInt((Onde.X + Raio) / Casa);
+						const int32 Linha = FMath::RoundToInt((Onde.Y + Raio) / Casa);
+
+						for (int32 dY = -Alcance; dY <= Alcance; ++dY)
+						{
+							for (int32 dX = -Alcance; dX <= Alcance; ++dX)
+							{
+								const int32 C = Coluna + dX;
+								const int32 L = Linha + dY;
+								if (C < 0 || L < 0 || C >= LadoDaSonda || L >= LadoDaSonda)
+								{
+									continue;
+								}
+
+								if (FMath::Square(dX * Casa) + FMath::Square(dY * Casa)
+									> Corrego.HalfWidthUnits * Corrego.HalfWidthUnits)
+								{
+									continue;
+								}
+
+								Molhado[L * LadoDaSonda + C] = true;
+							}
+						}
+					}
+				}
+			}
+
+			int32 EmTerra = 0;
+			int32 Molhadas = 0;
+			for (int32 Linha = 0; Linha < LadoDaSonda; ++Linha)
+			{
+				for (int32 Coluna = 0; Coluna < LadoDaSonda; ++Coluna)
+				{
+					const FVector2D Onde(-Raio + Coluna * Casa, -Raio + Linha * Casa);
+					if (Onde.Size() > Raio)
+					{
+						continue;
+					}
+
+					++EmTerra;
+					Molhadas += Molhado[Linha * LadoDaSonda + Coluna] ? 1 : 0;
+				}
+			}
+
+			return (EmTerra > 0) ? static_cast<float>(Molhadas) / EmTerra : 0.0f;
+		}
 
 		/** De onde até onde a bacia enche. O miolo fica seco: é onde a vila mora. */
 		constexpr float MioloSemRio = 0.16f;
@@ -105,8 +303,15 @@ namespace FreshWater
 		/** Teto de voltas, para um caso patológico não travar o mundo. */
 		constexpr int32 VoltasNoMaximo = 220;
 
-		/** A rede do SUBSOLO: mais rala e mais curta que a de cima. */
-		constexpr int32 AtratoresDoSubsolo = 260;
+		/**
+		 * A rede do SUBSOLO: mais rala e mais curta que a de cima.
+		 *
+		 * O subsolo acompanha a superfície: bioma seco tem pouca galeria, porque
+		 * galeria é água que dissolveu pedra. Ele é uma FRAÇÃO da superfície,
+		 * não um número próprio — dois números soltos divergiriam na primeira
+		 * vez que alguém mexesse num.
+		 */
+		constexpr float SubsoloSobreSuperficie = 0.62f;
 		constexpr int32 VoltasNoSubsolo = 140;
 		constexpr float AlcanceDoAtratorNoSubsolo = 0.24f;
 		constexpr float MorreAPertoNoSubsolo = 0.045f;
@@ -460,10 +665,9 @@ namespace FreshWater
 		return Fontes;
 	}
 
-	TArray<FBrook> PlanBrooks()
+	TArray<FBrook> MontarCorregos(const TArray<FRiverCourse>& Rios)
 	{
 		TArray<FBrook> Corregos;
-		const TArray<FRiverCourse> Rios = Plan();
 		if (Rios.Num() == 0)
 		{
 			return Corregos;
@@ -530,18 +734,27 @@ namespace FreshWater
 			++Indice;
 		}
 
-		// E os córregos que ligam RIO A RIO, no meio do percurso: sem eles a
-		// ilha tem seis fios paralelos e nada os une. Um por par vizinho.
-		for (int32 Rio = 0; Rio + 1 < Rios.Num(); ++Rio)
-		{
-			const uint32 Semente = BattleSpread::SeedFromText(
-				FString::Printf(TEXT("corrego-entre-rios-%d"), Rio));
-
-			Corregos.Add(Fio(PointAtProgress(Rios[Rio], 0.5f),
-				PointAtProgress(Rios[Rio + 1], 0.5f), Semente));
-		}
+		// NÃO HÁ MAIS CÓRREGO LIGANDO RIO A RIO.
+		//
+		// A regra era "liga o curso i ao i+1", e ela nasceu quando a ilha tinha
+		// três rios paralelos que precisavam se encontrar. Com a bacia
+		// dendrítica são centenas de cursos, e a regra passou a cavar centenas
+		// de canais retos atravessando a ilha — inventando mais água do que
+		// todos os rios juntos, e sujando o mapa.
+		//
+		// A bacia já é conexa por construção: todo curso desemboca no seguinte
+		// até o mar. O que liga uma BACIA à outra é a rede subterrânea, e é o
+		// lugar certo para isso.
 
 		return Corregos;
+	}
+
+	TArray<FBrook> PlanBrooks()
+	{
+		// Os córregos da bacia REAL. `MontarCorregos` existe separado porque a
+		// sonda de cobertura precisa medi-los durante a busca, quando `Plan()`
+		// ainda não existe — chamar `Plan()` de lá seria recursão.
+		return MontarCorregos(Plan());
 	}
 
 
@@ -556,7 +769,7 @@ namespace FreshWater
 		 * código de produção, quando `Tracar` existia em dois arquivos e o
 		 * unity build os juntou.
 		 */
-		static TArray<FRiverCourse> ColonizarBacia(const TArray<FVector2D>& Bocas)
+		static TArray<FRiverCourse> ColonizarBacia(const TArray<FVector2D>& Bocas, int32 Quantos)
 		{
 			TArray<FRiverCourse> Cursos;
 			if (Bocas.Num() == 0)
@@ -583,7 +796,7 @@ namespace FreshWater
 			// Grade sacudida é uniforme por ÁREA e não tem estrutura angular
 			// nenhuma para a raiz copiar.
 			TArray<FVector2D> Atratores = AtratoresEmGrade(
-				QuantosAtratores, Raio * MioloSemRio, Raio * (1.0f - BordaSemRio),
+				Quantos, Raio * MioloSemRio, Raio * (1.0f - BordaSemRio),
 				TEXT("bacia"));
 
 			// A árvore: posições e de quem cada nó veio.
@@ -836,7 +1049,59 @@ namespace FreshWater
 			++Indice;
 		}
 
-		Cursos = ColonizarBacia(Bocas);
+		// PROCURA o número de atratores que acerta a cobertura pedida.
+		//
+		// Calibrar por fórmula falhou duas vezes seguidas, e a segunda ensinou
+		// por quê: não é lei de potência. Três pontos medidos —
+		// 72 -> 1,8%, 149 -> 16,2%, 420 -> 35,1% — descrevem uma curva que
+		// dispara e depois satura, porque mais atratores criam CONFLUÊNCIA, e
+		// confluência sobe a ordem de Strahler, que alarga a calha.
+		//
+		// O mapa é fixo e o gerador é rápido: então não se estima, procura-se.
+		// A busca binária custa algumas montagens uma única vez, e em troca a
+		// porcentagem vira um botão de verdade em vez de um desejo.
+		{
+			const float Pedida =
+				FreshWater::WaterCoverageForBiome(IslandGeography::IslandBiome());
+
+			int32 Menos = MenosAtratores;
+			int32 Mais = MaisAtratores;
+
+			// Guarda o MELHOR, não o último.
+			//
+			// Devolver o último candidato entrega o que a busca estava
+			// experimentando quando acabou o orçamento de tentativas, e não o
+			// que ela achou. Deu 9,3% para 6% pedidos — a busca tinha o número
+			// certo e jogou fora.
+			TArray<FRiverCourse> Melhor;
+			float MenorErro = TNumericLimits<float>::Max();
+
+			for (int32 Tentativa = 0; Tentativa < TentativasDeCalibragem; ++Tentativa)
+			{
+				const int32 Meio = (Menos + Mais) / 2;
+				TArray<FRiverCourse> Tentada = ColonizarBacia(Bocas, Meio);
+
+				const float Deu = CoberturaDosCursos(Tentada);
+				const float Erro = FMath::Abs(Deu - Pedida);
+
+				if (Erro < MenorErro)
+				{
+					MenorErro = Erro;
+					Melhor = Tentada;
+				}
+
+				if (Deu < Pedida)
+				{
+					Menos = Meio;
+				}
+				else
+				{
+					Mais = Meio;
+				}
+			}
+
+			Cursos = MoveTemp(Melhor);
+		}
 
 		return Cursos;
 		}();
@@ -1149,7 +1414,10 @@ TArray<FreshWater::FUnderwaterLink> FreshWater::PlanUnderwaterLinks()
 	// arqueada. Espalhados por área, a galeria vagueia e as bocas se encontram
 	// porque a rede cresceu, não porque eu apontei uma para a outra.
 	TArray<FVector2D> Atratores = AtratoresEmGrade(
-		AtratoresDoSubsolo, 0.0f, Raio * 0.94f, TEXT("subsolo"));
+		// O subsolo acompanha o tamanho da bacia que a busca achou, e não um
+		// número próprio: dois números soltos divergem na primeira edição.
+		FMath::RoundToInt(Plan().Num() * SubsoloSobreSuperficie),
+		0.0f, Raio * 0.94f, TEXT("subsolo"));
 
 	TArray<FVector2D> Nos;
 	TArray<int32> Pai;
@@ -1590,7 +1858,7 @@ namespace MascaraDaAgua
 	 * vezes (a ponte que não nascia, o barranco que não se subia, a corredeira
 	 * que não existia).
 	 */
-	constexpr int32 Lado = 700;
+	constexpr int32 Lado = 700;  // espelha `LadoDaGradeDeAgua`; ver a nota lá.
 
 	const TArray<bool>& Grade()
 	{
@@ -1696,4 +1964,54 @@ bool FreshWater::IsFreshWaterAt(const FVector2D& PositionUnits)
 	}
 
 	return MascaraDaAgua::Grade()[Linha * MascaraDaAgua::Lado + Coluna];
+}
+
+float FreshWater::WaterCoverageForBiome(EIslandBiome Biome)
+{
+	// Fração da área de TERRA coberta por água doce.
+	//
+	// Os valores não são gosto: eles seguem o que cada clima faz com a chuva.
+	// Pântano é terra que não drena; deserto perde a água antes de ela correr;
+	// geleira tem tanta quanto a mata, só que dura, e por isso a rede existe
+	// mas é curta.
+	switch (Biome)
+	{
+		case EIslandBiome::Swamp:   return 0.14f;
+		case EIslandBiome::Forest:  return 0.06f;
+		case EIslandBiome::Glacier: return 0.035f;
+		case EIslandBiome::Volcano: return 0.02f;
+		case EIslandBiome::Desert:  return 0.012f;
+		case EIslandBiome::Beach:   break;
+	}
+
+	return 0.06f;
+}
+
+float FreshWater::MeasuredWaterCoverage()
+{
+	// Medido na MÁSCARA, que é a mesma coisa que o jogo consulta para saber se
+	// um ponto está molhado. Medir no plano dos cursos daria a intenção; medir
+	// na máscara dá o que existe.
+	const float Raio = IslandGeography::LandRadiusUnits();
+	const float Casa = (Raio * 2.0f) / static_cast<float>(MascaraDaAgua::Lado - 1);
+
+	int32 EmTerra = 0;
+	int32 Molhadas = 0;
+
+	for (int32 Linha = 0; Linha < MascaraDaAgua::Lado; ++Linha)
+	{
+		for (int32 Coluna = 0; Coluna < MascaraDaAgua::Lado; ++Coluna)
+		{
+			const FVector2D Onde(-Raio + Coluna * Casa, -Raio + Linha * Casa);
+			if (Onde.Size() > Raio)
+			{
+				continue;
+			}
+
+			++EmTerra;
+			Molhadas += MascaraDaAgua::Grade()[Linha * MascaraDaAgua::Lado + Coluna] ? 1 : 0;
+		}
+	}
+
+	return (EmTerra > 0) ? static_cast<float>(Molhadas) / static_cast<float>(EmTerra) : 0.0f;
 }

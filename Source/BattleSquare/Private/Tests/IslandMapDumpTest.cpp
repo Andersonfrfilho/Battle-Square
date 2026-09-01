@@ -269,7 +269,28 @@ bool FIslandMapDumpTest::RunTest(const FString& Parameters)
 	// Os campos de treino, no anel que o GameMode usa.
 	{
 		const ABattleSquareGameMode* Padrao = GetDefault<ABattleSquareGameMode>();
-		Json += FString::Printf(TEXT("  \"anelDeTreino\": %.1f,\n"),
+		// AS TRAVESSIAS com o tipo, para o mapa distinguir vau de ponte.
+	Json += TEXT("  \"travessias\": [\n");
+	const TArray<TrailLayout::FCrossing> Travessias = TrailLayout::Crossings();
+	for (int32 Indice = 0; Indice < Travessias.Num(); ++Indice)
+	{
+		const TCHAR* Tipo = TEXT("vau");
+		if (Travessias[Indice].Kind == TrailLayout::ECrossingKind::Ponte) { Tipo = TEXT("ponte"); }
+		if (Travessias[Indice].Kind == TrailLayout::ECrossingKind::Barranco) { Tipo = TEXT("barranco"); }
+
+		Json += FString::Printf(
+			TEXT("    {\"tipo\":\"%s\",\"x\":%.0f,\"y\":%.0f,\"fundura\":%.0f}%s\n"),
+			Tipo, Travessias[Indice].CenterUnits.X, Travessias[Indice].CenterUnits.Y,
+			Travessias[Indice].DepthUnits,
+			Indice + 1 < Travessias.Num() ? TEXT(",") : TEXT(""));
+	}
+	Json += TEXT("  ],\n");
+
+	Json += FString::Printf(TEXT("  \"aguaPedida\": %.4f, \"aguaMedida\": %.4f,\n"),
+		FreshWater::WaterCoverageForBiome(IslandGeography::IslandBiome()),
+		FreshWater::MeasuredWaterCoverage());
+
+	Json += FString::Printf(TEXT("  \"anelDeTreino\": %.1f,\n"),
 			Padrao ? Padrao->GetTrainingFieldRingForMap() : 0.0f);
 	}
 

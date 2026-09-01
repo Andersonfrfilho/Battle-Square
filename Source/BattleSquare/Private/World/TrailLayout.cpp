@@ -626,36 +626,141 @@ bool TrailLayout::IsOnTrail(const FVector2D& PositionUnits)
 	return false;
 }
 
-TArray<FVector2D> TrailLayout::BridgePoints()
+float TrailLayout::WadableDepthUnits()
 {
-	TArray<FVector2D> Pontes;
+	// Um metro. Acima disso ninguém atravessa a pé carregando coisa, e é o
+	// mesmo limite que o combate usa para dizer que a água deixou de ser poça.
+	return 100.0f;
+}
+
+namespace
+{
+	/**
+	 * A fundura da água num ponto, estimada pela LARGURA da calha.
+	 *
+	 * Rio largo é rio fundo — a relação vale em qualquer escala, e é a única
+	 * medida que este mundo tem sem modelar o leito. Um córrego de três metros
+	 * dá dez centímetros; um tronco de vinte e oito metros dá quase dois.
+	 *
+	 * Estimar não é inventar: a alternativa seria um campo de profundidade
+	 * separado, que é uma segunda fonte da mesma verdade (L-032).
+	 */
+	constexpr float FunduraSobreLargura = 0.065f;
+
+	float FunduraEm(const FVector2D& Onde)
+	{
+		float MaisFunda = 0.0f;
+
+		for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
+		{
+			float NoCurso = 0.0f;
+			const float Ate = FreshWater::NearestOn(Curso, Onde, NoCurso);
+			const float Meia = FreshWater::HalfWidthAtProgress(Curso, NoCurso);
+
+			if (Ate <= Meia)
+			{
+				MaisFunda = FMath::Max(MaisFunda, Meia * 2.0f * FunduraSobreLargura);
+			}
+		}
+
+		for (const FreshWater::FBrook& Corrego : FreshWater::PlanBrooks())
+		{
+			for (int32 Ponto = 1; Ponto < Corrego.PointsUnits.Num(); ++Ponto)
+			{
+				const FVector2D Trecho = Corrego.PointsUnits[Ponto] - Corrego.PointsUnits[Ponto - 1];
+				const float Comprimento = static_cast<float>(Trecho.SizeSquared());
+				if (Comprimento <= KINDA_SMALL_NUMBER)
+				{
+					continue;
+				}
+
+				const float Aonde = FMath::Clamp(static_cast<float>(FVector2D::DotProduct(
+					Onde - Corrego.PointsUnits[Ponto - 1], Trecho)) / Comprimento, 0.0f, 1.0f);
+				const FVector2D MaisPerto = Corrego.PointsUnits[Ponto - 1] + Trecho * Aonde;
+
+				if (FVector2D::Distance(Onde, MaisPerto) <= Corrego.HalfWidthUnits)
+				{
+					MaisFunda = FMath::Max(MaisFunda,
+						Corrego.HalfWidthUnits * 2.0f * FunduraSobreLargura);
+				}
+			}
+		}
+
+		return MaisFunda;
+	}
+
+	/** A partir de que inclinação a margem é degrau, e não beira. */
+	constexpr float MargemVirouBarranco = 0.35f;
+}
+
+TArray<TrailLayout::FCrossing> TrailLayout::Crossings()
+{
+	TArray<FCrossing> Travessias;
 
 	for (const FTrailRoute& Trilha : Plan())
 	{
 		bool bEstavaNaAgua = false;
 
-		// Amostrado FINO dentro de cada trecho: o rio é mais estreito que o
+		// Amostrado FINO dentro de cada trecho: a água é mais estreita que o
 		// passo do traçado, e olhar só os vértices não vê a travessia.
 		for (int32 Ponto = 1; Ponto < Trilha.PointsUnits.Num(); ++Ponto)
 		{
 			for (int32 Amostra = 0; Amostra <= AmostrasPorTrecho; ++Amostra)
 			{
-				const float Onde =
+				const float Aonde =
 					static_cast<float>(Amostra) / static_cast<float>(AmostrasPorTrecho);
 				const FVector2D Aqui = FMath::Lerp(
-					Trilha.PointsUnits[Ponto - 1], Trilha.PointsUnits[Ponto], Onde);
+					Trilha.PointsUnits[Ponto - 1], Trilha.PointsUnits[Ponto], Aonde);
 
-				const bool bAgora = NaAgua(Aqui);
+				const bool bAgora = FreshWater::IsFreshWaterAt(Aqui);
 
-				// A ponte fica na ENTRADA da água, uma por travessia. Uma por
-				// amostra molhada poria seis pontes empilhadas num rio largo.
+				// Uma travessia por ENTRADA na água. Uma por amostra molhada
+				// poria seis obras empilhadas no mesmo rio.
 				if (bAgora && !bEstavaNaAgua)
 				{
-					Pontes.Add(Aqui);
+					FCrossing Travessia;
+					Travessia.CenterUnits = Aqui;
+					Travessia.DepthUnits = FunduraEm(Aqui);
+
+					// A ORDEM decide, e é a regra inteira:
+					//
+					// 1. margem alta manda, por mais rasa que a água seja —
+					//    ponte precisa de dois apoios no mesmo nível;
+					// 2. raso o bastante se atravessa andando;
+					// 3. o resto é ponte.
+					if (IslandGeography::GroundSlopeAt(Aqui) >= MargemVirouBarranco)
+					{
+						Travessia.Kind = ECrossingKind::Barranco;
+					}
+					else if (Travessia.DepthUnits <= WadableDepthUnits())
+					{
+						Travessia.Kind = ECrossingKind::Vau;
+					}
+					else
+					{
+						Travessia.Kind = ECrossingKind::Ponte;
+					}
+
+					Travessias.Add(Travessia);
 				}
 
 				bEstavaNaAgua = bAgora;
 			}
+		}
+	}
+
+	return Travessias;
+}
+
+TArray<FVector2D> TrailLayout::BridgePoints()
+{
+	TArray<FVector2D> Pontes;
+
+	for (const FCrossing& Travessia : Crossings())
+	{
+		if (Travessia.Kind == ECrossingKind::Ponte)
+		{
+			Pontes.Add(Travessia.CenterUnits);
 		}
 	}
 

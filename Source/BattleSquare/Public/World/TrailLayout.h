@@ -67,7 +67,49 @@ namespace TrailLayout
 	 * A ponte não é enfeite: sem ela a trilha entra na água, e um caminho que
 	 * afunda é pior que caminho nenhum, porque promete passagem.
 	 */
+	/**
+	 * O que a trilha faz onde ela encontra água.
+	 *
+	 * Não é sempre ponte, e essa era a distorção: com água em toda parte, a
+	 * região ganhou 483 pontes. Quem cruza um córrego de três metros molha o
+	 * pé; ponte ali é obra sem motivo, e denuncia que ninguém pensou na
+	 * travessia.
+	 */
+	enum class ECrossingKind : uint8
+	{
+		/** VAU: raso o bastante para passar andando. Não constrói nada. */
+		Vau,
+
+		/** PONTE: fundo demais para passar, e a margem permite apoiar. */
+		Ponte,
+
+		/**
+		 * BARRANCO: a margem é alta, e a travessia é um corte na terra.
+		 *
+		 * Ele existe porque ponte precisa de duas margens no mesmo nível. Onde
+		 * uma delas é um degrau, o que se faz é cavar a descida — e isso é uma
+		 * coisa diferente de construir, com outra silhueta.
+		 */
+		Barranco
+	};
+
+	struct BATTLESQUARE_API FCrossing
+	{
+		FVector2D CenterUnits = FVector2D::ZeroVector;
+		ECrossingKind Kind = ECrossingKind::Vau;
+
+		/** A fundura estimada da água ali, que é o que decide. */
+		float DepthUnits = 0.0f;
+	};
+
+	/** Onde cada trilha encontra água, e o que se faz ali. */
+	BATTLESQUARE_API TArray<FCrossing> Crossings();
+
+	/** Só as travessias que viram ponte — o que o mundo constrói. */
 	BATTLESQUARE_API TArray<FVector2D> BridgePoints();
+
+	/** A fundura a partir da qual não se passa a pé. */
+	BATTLESQUARE_API float WadableDepthUnits();
 
 	/** O tamanho do passo do traçado — também a distância entre pontos. */
 	BATTLESQUARE_API float StepUnits();

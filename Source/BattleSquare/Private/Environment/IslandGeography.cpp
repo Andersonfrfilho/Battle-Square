@@ -96,7 +96,27 @@ namespace Relevo
 	 * despejo do mapa mostrou altura mínima negativa — vales abaixo do nível
 	 * do mar, ou seja, buracos de água dentro da ilha. Há teste.
 	 */
-	constexpr float FracaoDaTerra = 0.026f;
+	/**
+	 * Configurável em `DefaultGame.ini`, chave `WorldPeakHeightUnits`.
+	 *
+	 * Com 1,4 km de raio o topo dá 178 m, que é proporção de ilha real — a
+	 * Madeira tem 1.860 m em 22 km, mais íngreme; um atol tem quase zero. 178
+	 * é ilha mansa, e subir o monte é caminhada, não escalada.
+	 *
+	 * Sai do `.ini` porque "quanto o mundo é montanhoso" é decisão de produto,
+	 * e não uma constante enterrada num arquivo de geografia.
+	 */
+	float FracaoDaTerra()
+	{
+		float Escrito = 0.0f;
+		if (GConfig && GConfig->GetFloat(GeografiaDaIlha::SecaoDoMundo,
+			TEXT("WorldPeakHeightUnits"), Escrito, GGameIni) && Escrito > 0.0f)
+		{
+			return Escrito / IslandGeography::LandRadiusUnits();
+		}
+
+		return 0.026f;
+	}
 	constexpr float FracaoDaOndulacao = 0.015f;
 
 	/** Tamanho de um morro. Grande demais vira planície; pequeno, arrepio. */
@@ -142,7 +162,7 @@ namespace Relevo
 	/** O cone do vulcão sobe bem mais que qualquer morro: ele é O marco. */
 	constexpr float FracaoDoCone = 0.10f;
 
-	float AlturaDaTerra() { return IslandGeography::LandRadiusUnits() * FracaoDaTerra; }
+	float AlturaDaTerra() { return IslandGeography::LandRadiusUnits() * FracaoDaTerra(); }
 
 	/** Passo da medida de inclinação: um metro. */
 	float PassoDaMedida() { return 100.0f; }

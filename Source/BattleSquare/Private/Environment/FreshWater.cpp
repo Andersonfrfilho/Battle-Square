@@ -68,6 +68,59 @@ namespace FreshWater
 		constexpr float AberturaDoFiapo = 24.0f;
 
 		/**
+		 * SPACE COLONIZATION — o algoritmo de Runions, o mesmo que gera árvore,
+		 * nervura de folha e raiz.
+		 *
+		 * Ele existe aqui porque as duas tentativas anteriores desenharam a
+		 * mesma coisa errada. A primeira parametrizava o curso pelo raio, então
+		 * todo galho corria do centro para fora; a segunda cresceu da foz para
+		 * dentro mas OBRIGAVA cada passo a entrar, e obrigar a entrar desenha
+		 * um círculo. Nenhuma quantidade de galhos conserta uma regra que
+		 * proíbe o galho de ir para o lado.
+		 *
+		 * A ideia do algoritmo é o contrário de mandar: espalha-se ATRAÇÃO pelo
+		 * espaço, e o galho cresce para onde há atração ainda não atendida. A
+		 * forma sai do espaço a preencher, não de uma fórmula — e é por isso
+		 * que ela parece orgânica.
+		 *
+		 * O laço é: cada atrator escolhe o nó mais próximo dentro do alcance;
+		 * cada nó escolhido cresce um passo na média das direções dos seus
+		 * atratores; atrator alcançado morre. Onde dois conjuntos de atratores
+		 * puxam o mesmo nó para lados diferentes, ele BIFURCA sozinho — a
+		 * ramificação não é programada, ela acontece.
+		 */
+		constexpr int32 QuantosAtratores = 420;
+
+		/** De onde até onde a bacia enche. O miolo fica seco: é onde a vila mora. */
+		constexpr float MioloSemRio = 0.16f;
+		constexpr float BordaSemRio = 0.02f;
+
+		/** Até onde um atrator enxerga um nó, e a que distância ele morre. */
+		constexpr float AlcanceDoAtrator = 0.20f;
+		constexpr float MorreAPerto = 0.055f;
+
+		/** O passo de crescimento. */
+		constexpr float PassoDoGalho = 0.019f;
+
+		/** Teto de voltas, para um caso patológico não travar o mundo. */
+		constexpr int32 VoltasNoMaximo = 220;
+
+		/** A rede do SUBSOLO: mais rala e mais curta que a de cima. */
+		constexpr int32 AtratoresDoSubsolo = 260;
+		constexpr int32 VoltasNoSubsolo = 140;
+		constexpr float AlcanceDoAtratorNoSubsolo = 0.24f;
+		constexpr float MorreAPertoNoSubsolo = 0.045f;
+		constexpr float PassoDaGaleria = 0.016f;
+
+		/** Quanto os atratores se espalham em volta da linha entre duas grutas. */
+		/** Quanto o ruído torce o rumo do passo. Acima disso vira nó, não curva. */
+		constexpr float TorceOGalho = 0.42f;
+		constexpr float TorceAGaleria = 0.55f;
+
+		/** Até onde duas galerias de cavernas diferentes se emendam. */
+		constexpr float EmendaNoMaximo = 0.09f;
+
+		/**
 		 * Quanto o poço da queda afunda por unidade de altura caída, e quantas
 		 * vezes ele aprofunda mais depressa do que alarga.
 		 *
@@ -245,6 +298,111 @@ namespace FreshWater
 		return Troncos;
 	}
 
+	namespace
+	{
+		/** O comprimento acumulado de cada ponto do curso. */
+		void MedirCurso(const FRiverCourse& Course, TArray<float>& OutAcumulado, float& OutTotal)
+		{
+			OutAcumulado.Reset();
+			OutTotal = 0.0f;
+
+			if (Course.PointsUnits.Num() == 0)
+			{
+				return;
+			}
+
+			OutAcumulado.Add(0.0f);
+			for (int32 Ponto = 1; Ponto < Course.PointsUnits.Num(); ++Ponto)
+			{
+				OutTotal += static_cast<float>(FVector2D::Distance(
+					Course.PointsUnits[Ponto - 1], Course.PointsUnits[Ponto]));
+				OutAcumulado.Add(OutTotal);
+			}
+		}
+	}
+
+	/** O comprimento total do curso. */
+	float CourseLengthUnits(const FRiverCourse& Course)
+	{
+		TArray<float> Acumulado;
+		float Total = 0.0f;
+		MedirCurso(Course, Acumulado, Total);
+		return Total;
+	}
+
+
+	namespace
+	{
+		/**
+		 * Atratores numa GRADE SACUDIDA — uniforme por área, sem estrutura
+		 * angular para a rede copiar.
+		 *
+		 * Cada casa da grade ganha um ponto no centro dela mais um empurrão
+		 * sorteado de até meia casa. É o jeito barato de ter distribuição sem
+		 * grumo e sem alinhamento: sorteio puro faz grumo, grade pura faz
+		 * fileira, e a sacudida tira as duas coisas.
+		 */
+		TArray<FVector2D> AtratoresEmGrade(int32 Quantos, float Dentro, float Fora,
+			const TCHAR* Assunto)
+		{
+			TArray<FVector2D> Atratores;
+			if (Quantos <= 0 || Fora <= 0.0f)
+			{
+				return Atratores;
+			}
+
+			const int32 Lado = FMath::Max(2, FMath::CeilToInt(FMath::Sqrt(
+				static_cast<float>(Quantos) * 4.0f / PI)));
+			const float Casa = (Fora * 2.0f) / static_cast<float>(Lado);
+
+			for (int32 Linha = 0; Linha < Lado; ++Linha)
+			{
+				for (int32 Coluna = 0; Coluna < Lado; ++Coluna)
+				{
+					const uint32 Semente = BattleSpread::SeedFromText(
+						FString::Printf(TEXT("atrator-%s-%d-%d"), Assunto, Coluna, Linha));
+
+					const FVector2D Onde(
+						-Fora + (Coluna + 0.5f) * Casa + BattleSpread::Between(
+							-Casa * 0.5f, Casa * 0.5f, BattleSpread::Fraction(Semente, 0)),
+						-Fora + (Linha + 0.5f) * Casa + BattleSpread::Between(
+							-Casa * 0.5f, Casa * 0.5f, BattleSpread::Fraction(Semente, 1)));
+
+					const float Distancia = static_cast<float>(Onde.Size());
+					if (Distancia < Dentro || Distancia > Fora)
+					{
+						continue;
+					}
+
+					Atratores.Add(Onde);
+				}
+			}
+
+			return Atratores;
+		}
+
+		/**
+		 * O empurrão ORGÂNICO do passo, vindo de ruído coerente na posição.
+		 *
+		 * Sem ele o galho anda em segmentos retos entre nós e sai com cara de
+		 * esqueleto de arame. E o ruído tem de ser COERENTE — função da
+		 * posição, não sorteio por passo: sorteio independente dá tremor, e
+		 * tremor não é curva.
+		 */
+		FVector2D EmpurraoOrganico(const FVector2D& Onde, float Amplitude)
+		{
+			const float Escala = IslandGeography::LandRadiusUnits() * 0.06f;
+			const uint32 Semente = BattleSpread::SeedFromText(FString::Printf(
+				TEXT("ruido-%d-%d"),
+				FMath::FloorToInt(Onde.X / Escala), FMath::FloorToInt(Onde.Y / Escala)));
+
+			const float Angulo = BattleSpread::Between(0.0f, 2.0f * PI,
+				BattleSpread::Fraction(Semente, 0));
+
+			return FVector2D(FMath::Cos(Angulo), FMath::Sin(Angulo)) * Amplitude;
+		}
+	}
+
 	int32 RiversPerMountain() { return CursosPorMonte; }
 
 	namespace
@@ -316,15 +474,14 @@ namespace FreshWater
 		/** O ponto do rio mais perto de onde a fonte está. */
 		auto NoRioMaisPerto = [&Rios](const FVector2D& Daqui)
 		{
-			FVector2D Melhor = PointAt(Rios[0], Rios[0].SourceRadiusUnits);
+			FVector2D Melhor = PointAtProgress(Rios[0], 0.0f);
 			float Menor = TNumericLimits<float>::Max();
 
 			for (const FRiverCourse& Rio : Rios)
 			{
-				const float Passo = (Rio.MouthRadiusUnits - Rio.SourceRadiusUnits) / 60.0f;
-				for (float Raio = Rio.SourceRadiusUnits; Raio <= Rio.MouthRadiusUnits; Raio += Passo)
+				for (int32 Passo = 0; Passo <= 60; ++Passo)
 				{
-					const FVector2D Ali = PointAt(Rio, Raio);
+					const FVector2D Ali = PointAtProgress(Rio, static_cast<float>(Passo) / 60.0f);
 					const float Daqui2 = FVector2D::DistSquared(Daqui, Ali);
 					if (Daqui2 < Menor)
 					{
@@ -377,19 +534,280 @@ namespace FreshWater
 		// ilha tem seis fios paralelos e nada os une. Um por par vizinho.
 		for (int32 Rio = 0; Rio + 1 < Rios.Num(); ++Rio)
 		{
-			const float NoMeio = (Rios[Rio].SourceRadiusUnits + Rios[Rio].MouthRadiusUnits) * 0.5f;
-			const float NoMeioDoOutro =
-				(Rios[Rio + 1].SourceRadiusUnits + Rios[Rio + 1].MouthRadiusUnits) * 0.5f;
-
 			const uint32 Semente = BattleSpread::SeedFromText(
 				FString::Printf(TEXT("corrego-entre-rios-%d"), Rio));
 
-			Corregos.Add(Fio(PointAt(Rios[Rio], NoMeio),
-				PointAt(Rios[Rio + 1], NoMeioDoOutro), Semente));
+			Corregos.Add(Fio(PointAtProgress(Rios[Rio], 0.5f),
+				PointAtProgress(Rios[Rio + 1], 0.5f), Semente));
 		}
 
 		return Corregos;
 	}
+
+
+		/**
+		 * A bacia inteira, por space colonization.
+		 *
+		 * Devolve um curso por SEGMENTO da árvore: do nó em que ele nasceu até
+		 * a próxima bifurcação ou até a ponta. É essa fatia que o resto do
+		 * mundo chama de "rio".
+		 *
+		 * `static` e com nome específico: L-042 já apareceu neste módulo em
+		 * código de produção, quando `Tracar` existia em dois arquivos e o
+		 * unity build os juntou.
+		 */
+		static TArray<FRiverCourse> ColonizarBacia(const TArray<FVector2D>& Bocas)
+		{
+			TArray<FRiverCourse> Cursos;
+			if (Bocas.Num() == 0)
+			{
+				return Cursos;
+			}
+
+			const float Raio = IslandGeography::LandRadiusUnits();
+			const float Alcance = Raio * AlcanceDoAtrator;
+			const float Morte = Raio * MorreAPerto;
+			const float Passo = Raio * PassoDoGalho;
+
+			// OS ATRATORES, espalhados na coroa que a bacia deve encher.
+			//
+			// Em disco por RAIZ do sorteio: sem a raiz eles se acumulam no
+			// centro da coroa e a bacia nasce densa no meio e rala nas pontas.
+			// EM GRADE SACUDIDA, e nunca em coordenada polar.
+			//
+			// Espalhar por ângulo e raio parece natural e é a causa do defeito
+			// mais visível deste mundo: uma rede que cresce para atratores
+			// numa COROA herda a coroa. Os galhos param nas bordas dela, e o
+			// desenho vira arco — "fluxo de água formando círculos".
+			//
+			// Grade sacudida é uniforme por ÁREA e não tem estrutura angular
+			// nenhuma para a raiz copiar.
+			TArray<FVector2D> Atratores = AtratoresEmGrade(
+				QuantosAtratores, Raio * MioloSemRio, Raio * (1.0f - BordaSemRio),
+				TEXT("bacia"));
+
+			// A árvore: posições e de quem cada nó veio.
+			TArray<FVector2D> Nos;
+			TArray<int32> Pai;
+
+			for (const FVector2D& Boca : Bocas)
+			{
+				Nos.Add(Boca);
+				Pai.Add(INDEX_NONE);
+			}
+
+			for (int32 Volta = 0; Volta < VoltasNoMaximo && Atratores.Num() > 0; ++Volta)
+			{
+				// Cada atrator vota no nó mais perto dentro do alcance.
+				TMap<int32, FVector2D> Puxao;
+				TMap<int32, int32> Votos;
+
+				for (const FVector2D& Atrator : Atratores)
+				{
+					int32 MaisPerto = INDEX_NONE;
+					float Menor = Alcance * Alcance;
+
+					for (int32 No = 0; No < Nos.Num(); ++No)
+					{
+						const float Ate = FVector2D::DistSquared(Atrator, Nos[No]);
+						if (Ate < Menor)
+						{
+							Menor = Ate;
+							MaisPerto = No;
+						}
+					}
+
+					if (MaisPerto == INDEX_NONE)
+					{
+						continue;
+					}
+
+					Puxao.FindOrAdd(MaisPerto) += (Atrator - Nos[MaisPerto]).GetSafeNormal();
+					Votos.FindOrAdd(MaisPerto) += 1;
+				}
+
+				if (Puxao.Num() == 0)
+				{
+					break;
+				}
+
+				// Cada nó votado cresce UM passo na média dos seus atratores.
+				//
+				// É aqui que a bifurcação acontece SOZINHA: quando dois grupos
+				// de atratores puxam o mesmo nó para lados opostos, a média cai
+				// no meio, o galho avança, e na volta seguinte os dois grupos
+				// já enxergam nós diferentes. Ninguém programou o "abre em Y".
+				const int32 QuantosAntes = Nos.Num();
+				for (const TPair<int32, FVector2D>& Quem : Puxao)
+				{
+					if (Quem.Key >= QuantosAntes)
+					{
+						continue;
+					}
+
+					const FVector2D Rumo = (Quem.Value.GetSafeNormal()
+						+ EmpurraoOrganico(Nos[Quem.Key], TorceOGalho)).GetSafeNormal();
+					if (Rumo.IsNearlyZero())
+					{
+						continue;
+					}
+
+					const FVector2D Novo = Nos[Quem.Key] + Rumo * Passo;
+					if (Novo.Size() > Raio)
+					{
+						continue;
+					}
+
+					Nos.Add(Novo);
+					Pai.Add(Quem.Key);
+				}
+
+				if (Nos.Num() == QuantosAntes)
+				{
+					break;
+				}
+
+				// Atrator alcançado morre. Sem isso a árvore cresce para sempre
+				// na direção do mesmo ponto e vira um fio único e reto.
+				//
+				// Só os nós NOVOS são conferidos: os velhos já foram, na volta
+				// em que nasceram. Comparar todos contra todos a cada volta é
+				// quadrático em cima de quadrático, e foi o que travou a
+				// primeira versão — ela não terminava.
+				Atratores.RemoveAll([&Nos, QuantosAntes, Morte](const FVector2D& Atrator)
+				{
+					for (int32 No = QuantosAntes; No < Nos.Num(); ++No)
+					{
+						if (FVector2D::DistSquared(Atrator, Nos[No]) < Morte * Morte)
+						{
+							return true;
+						}
+					}
+
+					return false;
+				});
+			}
+
+			// Quantos filhos cada nó tem — é o que diz onde estão as
+			// bifurcações, e portanto onde um curso acaba e outro começa.
+			TArray<int32> Filhos;
+			Filhos.Init(0, Nos.Num());
+			for (int32 No = 0; No < Nos.Num(); ++No)
+			{
+				if (Pai[No] != INDEX_NONE)
+				{
+					++Filhos[Pai[No]];
+				}
+			}
+
+			// A ORDEM DE STRAHLER, de folha para raiz: folha é 1, e um nó com
+			// dois filhos de mesma ordem sobe um. É a largura da calha.
+			TArray<int32> Ordem;
+			Ordem.Init(1, Nos.Num());
+			for (int32 No = Nos.Num() - 1; No >= 0; --No)
+			{
+				if (Pai[No] == INDEX_NONE)
+				{
+					continue;
+				}
+
+				const int32 NoPai = Pai[No];
+				if (Ordem[No] > Ordem[NoPai])
+				{
+					Ordem[NoPai] = Ordem[No];
+				}
+				else if (Ordem[No] == Ordem[NoPai] && Filhos[NoPai] > 1)
+				{
+					Ordem[NoPai] = Ordem[No] + 1;
+				}
+			}
+
+			// Cada CURSO é o pedaço entre duas bifurcações.
+			for (int32 Ponta = 0; Ponta < Nos.Num(); ++Ponta)
+			{
+				// Um curso começa numa FOLHA, numa BIFURCAÇÃO, ou logo abaixo de
+				// uma bifurcação.
+				//
+				// Faltava a bifurcação, e o defeito era grande: cada cadeia
+				// sobe de uma folha e para no primeiro nó que se parte — então
+				// o pedaço entre esse nó e a FOZ não pertencia a curso nenhum.
+				// A ilha ficou com 390 cursos e nenhum chegando ao mar, e junto
+				// foram-se as cachoeiras, as grutas e as passagens.
+				const bool bComecaAqui = (Filhos[Ponta] != 1)
+					|| (Pai[Ponta] != INDEX_NONE && Filhos[Pai[Ponta]] > 1);
+
+				if (!bComecaAqui)
+				{
+					continue;
+				}
+
+				FRiverCourse Curso;
+				Curso.Order = Ordem[Ponta];
+
+				int32 Onde = Ponta;
+				Curso.PointsUnits.Add(Nos[Onde]);
+
+				while (Pai[Onde] != INDEX_NONE)
+				{
+					Onde = Pai[Onde];
+					Curso.PointsUnits.Add(Nos[Onde]);
+
+					// Para na bifurcação seguinte: dali para baixo já é outro
+					// curso, mais largo, e emendá-los faria a calha do fio de
+					// cabeceira chegar ao mar.
+					if (Filhos[Onde] > 1 && Onde != Ponta)
+					{
+						break;
+					}
+				}
+
+				if (Curso.PointsUnits.Num() < 2)
+				{
+					continue;
+				}
+
+				Curso.SourceRadiusUnits = static_cast<float>(Curso.PointsUnits[0].Size());
+				Curso.MouthRadiusUnits = static_cast<float>(Curso.PointsUnits.Last().Size());
+				Curso.BearingRadians = FMath::Atan2(
+					Curso.PointsUnits.Last().Y, Curso.PointsUnits.Last().X);
+
+				const bool bChegaNoMar =
+					Curso.PointsUnits.Last().Size() >= Raio - Passo * 1.5f;
+
+				if (!bChegaNoMar)
+				{
+					Curso.JoinRadiusUnits = Curso.MouthRadiusUnits;
+					Curso.JoinBearingRadians = Curso.BearingRadians;
+					// Fora da faixa 0..1 para dizer "não tem". Quem perguntar tem
+					// de checar `FlowsToTheSea` antes — foi ler este valor como
+					// posição que pôs o mercado fora da ilha.
+					Curso.LakeAtProgress = -1.0f;
+					Curso.FallAtProgress = -1.0f;
+				}
+				else
+				{
+					const uint32 Semente = BattleSpread::SeedFromText(
+						FString::Printf(TEXT("tronco-da-bacia-%d"), Cursos.Num()));
+
+					const float Comprimento = FMath::Max(1.0f, CourseLengthUnits(Curso));
+
+					Curso.LakeAtProgress = BattleSpread::Between(
+						PrimeiroLago, UltimoLago, BattleSpread::Fraction(Semente, 2));
+
+					// A queda SEMPRE depois do lago, por SOMA: sorteados à
+					// parte, um dia sairia cachoeira dentro do lago.
+					Curso.FallAtProgress = FMath::Min(
+						Curso.LakeAtProgress
+							+ (AlcanceDoLago() + BattleSpread::Between(MenorDegrau(),
+								MaiorDegrau(), BattleSpread::Fraction(Semente, 3))) / Comprimento,
+						1.0f - MeiaQueda() * 3.0f / Comprimento);
+				}
+
+				Cursos.Add(Curso);
+			}
+
+			return Cursos;
+		}
 
 	TArray<FRiverCourse> Plan()
 	{
@@ -400,6 +818,7 @@ namespace FreshWater
 		TArray<FRiverCourse> Cursos;
 		const float Foz = IslandGeography::LandRadiusUnits();
 
+		TArray<FVector2D> Bocas;
 		int32 Indice = 0;
 		for (const IslandFeatureLayout::FFeaturePlacement& Peca : IslandFeatureLayout::Plan())
 		{
@@ -408,120 +827,16 @@ namespace FreshWater
 				continue;
 			}
 
-			// UMA RAIZ, e não um Y.
-			//
-			// Rio de verdade é dendrítico: muitos fiapos de cabeceira entrando
-			// em galhos, e galhos entrando num tronco — em ordens sucessivas e
-			// em alturas DIFERENTES. Dois galhos no mesmo ponto desenham uma
-			// flecha; é preciso escalonar as junções para virar bacia.
-			const float DaSaia = Peca.RadiusUnits + Peca.ClearanceUnits * SaiaDaNascente;
-			const float Percurso = FMath::Max(0.0f, Foz - DaSaia);
-
-			auto Semear = [&](FRiverCourse& Curso, int32 Qual)
-			{
-				const uint32 Semente = BattleSpread::SeedFromText(
-					FString::Printf(TEXT("rio-da-montanha-%d"), Qual));
-
-				Curso.MeanderRadians = BattleSpread::Between(MenorSerpente, MaiorSerpente,
-					BattleSpread::Fraction(Semente, 0));
-
-				const float SeuPercurso =
-					FMath::Max(0.0f, Curso.MouthRadiusUnits - Curso.SourceRadiusUnits);
-				const float Onda = MeiaCalhaDoRio() * 2.0f * LargurasPorOnda;
-				Curso.MeanderTurns = (Onda > KINDA_SMALL_NUMBER ? SeuPercurso / Onda : 1.0f)
-					* BattleSpread::Between(MenosCurvas, MaisCurvas,
-						BattleSpread::Fraction(Semente, 1));
-			};
-
-			// O TRONCO: ordem 3, da saia ao mar.
-			FRiverCourse Tronco;
-			Tronco.SourceRadiusUnits = DaSaia;
-			Tronco.MouthRadiusUnits = Foz;
-			Tronco.BearingRadians = FMath::DegreesToRadians(Peca.AngleDegrees);
-			Tronco.Order = 3;
-			Semear(Tronco, Indice);
-
-			const float EncontroMaisAlto = DaSaia + Percurso * PrimeiroEncontroDeGalho;
-
-			// O LAGO e a QUEDA moram no tronco, e depois do último encontro: o
-			// lago é água parada, e água parada precisa de volume — pô-lo antes
-			// das junções seria um lago maior que o rio que o alimenta.
-			{
-				const uint32 Semente = BattleSpread::SeedFromText(
-					FString::Printf(TEXT("rio-da-montanha-%d"), Indice));
-				const float DepoisDeTudo = DaSaia + Percurso * SegundoEncontroDeGalho;
-				const float Sobra = FMath::Max(0.0f, Foz - DepoisDeTudo);
-
-				Tronco.LakeRadiusUnits = DepoisDeTudo + Sobra * BattleSpread::Between(
-					PrimeiroLago, UltimoLago, BattleSpread::Fraction(Semente, 2));
-
-				// A queda vem SEMPRE depois do lago, e por soma em vez de
-				// sorteio independente: sorteados à parte, um dia sairia uma
-				// cachoeira no meio do lago — água caindo dentro de água parada.
-				Tronco.FallRadiusUnits = Tronco.LakeRadiusUnits + AlcanceDoLago()
-					+ BattleSpread::Between(MenorDegrau(), MaiorDegrau(),
-						BattleSpread::Fraction(Semente, 3));
-			}
-
-			Cursos.Add(Tronco);
+			// Este monte contribui com UMA FOZ. A bacia inteira é gerada
+			// depois, de uma vez, porque o algoritmo precisa ver todos os
+			// atratores para repartir o espaço entre as bacias.
+			Bocas.Add(FVector2D(
+				FMath::Cos(FMath::DegreesToRadians(Peca.AngleDegrees)),
+				FMath::Sin(FMath::DegreesToRadians(Peca.AngleDegrees))) * Foz);
 			++Indice;
-
-			for (int32 Galho = 0; Galho < GalhosPorTronco; ++Galho)
-			{
-				const float ParaOnde = (Galho == 0) ? 1.0f : -1.0f;
-				const float OndeEncontra = DaSaia + Percurso
-					* ((Galho == 0) ? PrimeiroEncontroDeGalho : SegundoEncontroDeGalho);
-
-				// O GALHO: ordem 2, nasce na saia e morre no tronco.
-				FRiverCourse Curso;
-				Curso.SourceRadiusUnits = DaSaia;
-				Curso.MouthRadiusUnits = OndeEncontra;
-				Curso.BearingRadians = FMath::DegreesToRadians(
-					Peca.AngleDegrees + ParaOnde * AberturaDoGalho);
-				Curso.Order = 2;
-				Curso.JoinRadiusUnits = OndeEncontra;
-				Curso.JoinBearingRadians = Tronco.BearingRadians;
-				Semear(Curso, Indice);
-
-				// Sem lago e sem queda. O raio fica FORA do percurso, e quem
-				// perguntar por lago tem de perguntar antes se o curso chega ao
-				// mar — foi ler este valor como posição que pôs o mercado fora
-				// da ilha.
-				Curso.LakeRadiusUnits = Curso.MouthRadiusUnits * 2.0f;
-				Curso.FallRadiusUnits = Curso.MouthRadiusUnits * 2.2f;
-
-				Cursos.Add(Curso);
-				++Indice;
-
-				const float PercursoDoGalho =
-					FMath::Max(0.0f, Curso.MouthRadiusUnits - Curso.SourceRadiusUnits);
-
-				for (int32 Fiapo = 0; Fiapo < FiaposPorGalho; ++Fiapo)
-				{
-					const float ParaLa = (Fiapo == 0) ? 1.0f : -1.0f;
-
-					// O FIAPO: ordem 1, o fio de cabeceira. Ele entra no galho
-					// bem antes de o galho entrar no tronco — é o escalonamento
-					// das junções que faz o desenho virar raiz.
-					FRiverCourse Fio;
-					Fio.SourceRadiusUnits = DaSaia;
-					Fio.MouthRadiusUnits = DaSaia + PercursoDoGalho * EncontroDoFiapo
-						+ PercursoDoGalho * 0.22f * static_cast<float>(Fiapo);
-					Fio.BearingRadians = Curso.BearingRadians
-						+ FMath::DegreesToRadians(ParaLa * AberturaDoFiapo);
-					Fio.Order = 1;
-					Fio.JoinRadiusUnits = Fio.MouthRadiusUnits;
-					Fio.JoinBearingRadians = Curso.BearingRadians;
-					Semear(Fio, Indice);
-
-					Fio.LakeRadiusUnits = Fio.MouthRadiusUnits * 2.0f;
-					Fio.FallRadiusUnits = Fio.MouthRadiusUnits * 2.2f;
-
-					Cursos.Add(Fio);
-					++Indice;
-				}
-			}
 		}
+
+		Cursos = ColonizarBacia(Bocas);
 
 		return Cursos;
 		}();
@@ -529,70 +844,131 @@ namespace FreshWater
 		return Guardado;
 	}
 
-	FVector2D PointAt(const FRiverCourse& Course, float RadiusUnits)
+	FVector2D PointAtProgress(const FRiverCourse& Course, float Progress)
 	{
-		const float Percurso = Course.MouthRadiusUnits - Course.SourceRadiusUnits;
-		const float Andado = (Percurso > KINDA_SMALL_NUMBER)
-			? (RadiusUnits - Course.SourceRadiusUnits) / Percurso
-			: 0.0f;
-
-		// O galho CONVERGE para o rumo do tronco à medida que chega na junção.
-		//
-		// Sem isto o galho terminava paralelo ao tronco e "entrar nele" seria
-		// duas linhas encostando de lado. A convergência é o que faz o desenho
-		// ler como raiz: os fios se fecham num ponto.
-		float Base = Course.BearingRadians;
-		if (!Course.FlowsToTheSea())
+		const TArray<FVector2D>& Pontos = Course.PointsUnits;
+		if (Pontos.Num() == 0)
 		{
-			// Ao quadrado: o galho fica no rumo dele quase todo o percurso e só
-			// vira perto do fim. Linear faria a "junção" ser uma curva longa e
-			// suave, que lê como dois rios paralelos se aproximando.
-			Base = FMath::Lerp(Course.BearingRadians, Course.JoinBearingRadians,
-				FMath::Clamp(Andado, 0.0f, 1.0f) * FMath::Clamp(Andado, 0.0f, 1.0f));
+			return FVector2D::ZeroVector;
+		}
+		if (Pontos.Num() == 1)
+		{
+			return Pontos[0];
 		}
 
-		// E o meandro se APAGA na junção, pelo mesmo motivo: rio serpenteando
-		// no instante em que encontra outro erra o encontro.
-		const float Serpente = Course.FlowsToTheSea()
-			? 1.0f
-			: (1.0f - FMath::Clamp(Andado, 0.0f, 1.0f));
+		// Progresso é medido em COMPRIMENTO andado, não em índice de ponto: os
+		// passos do gerador não têm todos o mesmo tamanho, e contar índices
+		// faria o meio do curso cair no lugar errado.
+		TArray<float> Acumulado;
+		float Total = 0.0f;
+		MedirCurso(Course, Acumulado, Total);
 
-		const float Rumo = Base + Course.MeanderRadians * Serpente
-			* FMath::Sin(2.0f * PI * Course.MeanderTurns * Andado);
+		if (Total <= KINDA_SMALL_NUMBER)
+		{
+			return Pontos[0];
+		}
 
-		return FVector2D(FMath::Cos(Rumo) * RadiusUnits, FMath::Sin(Rumo) * RadiusUnits);
+		const float Alvo = FMath::Clamp(Progress, 0.0f, 1.0f) * Total;
+
+		for (int32 Ponto = 1; Ponto < Pontos.Num(); ++Ponto)
+		{
+			if (Acumulado[Ponto] < Alvo)
+			{
+				continue;
+			}
+
+			const float Vao = Acumulado[Ponto] - Acumulado[Ponto - 1];
+			const float Onde = (Vao > KINDA_SMALL_NUMBER)
+				? (Alvo - Acumulado[Ponto - 1]) / Vao
+				: 0.0f;
+
+			return FMath::Lerp(Pontos[Ponto - 1], Pontos[Ponto], Onde);
+		}
+
+		return Pontos.Last();
 	}
 
-	float HalfWidthAt(const FRiverCourse& Course, float RadiusUnits)
+	float NearestOn(const FRiverCourse& Course, const FVector2D& PositionUnits, float& OutProgress)
 	{
-		const float Distancia = FMath::Abs(RadiusUnits - Course.LakeRadiusUnits);
-		// A calha sai da ORDEM do curso e de quanto ele já andou. Galho de
-		// cabeceira é fio; tronco é rio; e todo curso engrossa rio abaixo,
-		// porque a chuva da bacia entra pela margem o percurso inteiro — não
-		// só nas junções.
-		const float Percurso = Course.MouthRadiusUnits - Course.SourceRadiusUnits;
-		const float Andado = (Percurso > KINDA_SMALL_NUMBER)
-			? FMath::Clamp((RadiusUnits - Course.SourceRadiusUnits) / Percurso, 0.0f, 1.0f)
-			: 0.0f;
+		OutProgress = 0.0f;
 
+		const TArray<FVector2D>& Pontos = Course.PointsUnits;
+		if (Pontos.Num() == 0)
+		{
+			return TNumericLimits<float>::Max();
+		}
+		if (Pontos.Num() == 1)
+		{
+			return static_cast<float>(FVector2D::Distance(PositionUnits, Pontos[0]));
+		}
+
+		TArray<float> Acumulado;
+		float Total = 0.0f;
+		MedirCurso(Course, Acumulado, Total);
+
+		float Menor = TNumericLimits<float>::Max();
+
+		for (int32 Ponto = 1; Ponto < Pontos.Num(); ++Ponto)
+		{
+			const FVector2D Trecho = Pontos[Ponto] - Pontos[Ponto - 1];
+			const float Comprimento = static_cast<float>(Trecho.SizeSquared());
+			if (Comprimento <= KINDA_SMALL_NUMBER)
+			{
+				continue;
+			}
+
+			const float Onde = FMath::Clamp(static_cast<float>(
+				FVector2D::DotProduct(PositionUnits - Pontos[Ponto - 1], Trecho)) / Comprimento,
+				0.0f, 1.0f);
+
+			const FVector2D MaisPerto = Pontos[Ponto - 1] + Trecho * Onde;
+			const float Ate = static_cast<float>(FVector2D::Distance(PositionUnits, MaisPerto));
+
+			if (Ate < Menor)
+			{
+				Menor = Ate;
+				OutProgress = (Total > KINDA_SMALL_NUMBER)
+					? (Acumulado[Ponto - 1] + FMath::Sqrt(Comprimento) * Onde) / Total
+					: 0.0f;
+			}
+		}
+
+		return Menor;
+	}
+
+	float HalfWidthAtProgress(const FRiverCourse& Course, float Progress)
+	{
+		const float Onde = FMath::Clamp(Progress, 0.0f, 1.0f);
+
+		// A calha sai da ORDEM do curso e de quanto ele já andou. Fio de
+		// cabeceira é fio; tronco é rio; e todo curso engrossa rio abaixo,
+		// porque a chuva da bacia entra pela margem o percurso inteiro — não só
+		// nas junções.
 		const float PorOrdem =
 			FMath::Pow(EngrossaPorOrdem, static_cast<float>(Course.Order - 1));
 		const float DaCalha = MeiaCalhaDoRio() * PorOrdem
-			* FMath::Lerp(1.0f / EngrossaAteAFoz, 1.0f, Andado);
+			* FMath::Lerp(1.0f / EngrossaAteAFoz, 1.0f, Onde);
 
-		if (Distancia >= AlcanceDoLago())
+		// O lago é uma barriga no meio do curso, medida em PROGRESSO. Antes ela
+		// era medida em raio, e num galho que corre de lado o mesmo raio
+		// aparecia duas vezes — o lago nascia partido em dois.
+		const float ateOLago = FMath::Abs(Onde - Course.LakeAtProgress);
+		const float AlcanceEmProgresso = AlcanceDoLago() / FMath::Max(1.0f, CourseLengthUnits(Course));
+
+		if (ateOLago >= AlcanceEmProgresso)
 		{
 			return DaCalha;
 		}
 
-		const float Subida = 1.0f - Distancia / AlcanceDoLago();
+		const float Subida = 1.0f - ateOLago / AlcanceEmProgresso;
 		const float Suave = Subida * Subida * (3.0f - 2.0f * Subida);
 		return DaCalha + (MeiaCalhaDoLago() - DaCalha) * Suave;
 	}
 
-	bool IsFallAt(const FRiverCourse& Course, float RadiusUnits)
+	bool IsFallAtProgress(const FRiverCourse& Course, float Progress)
 	{
-		return FMath::Abs(RadiusUnits - Course.FallRadiusUnits) <= MeiaQueda();
+		const float EmProgresso = MeiaQueda() / FMath::Max(1.0f, CourseLengthUnits(Course));
+		return FMath::Abs(Progress - Course.FallAtProgress) <= EmProgresso;
 	}
 
 	namespace
@@ -603,13 +979,12 @@ namespace FreshWater
 			float Menor = TNumericLimits<float>::Max();
 			for (const FRiverCourse& Curso : Cursos)
 			{
-				for (float Raio = Curso.SourceRadiusUnits; Raio <= Curso.MouthRadiusUnits;
-					Raio += PassoDeSondagemDoRio)
-				{
-					const float Daqui = static_cast<float>(
-						FVector2D::Distance(Ponto, PointAt(Curso, Raio))) - HalfWidthAt(Curso, Raio);
-					Menor = FMath::Min(Menor, Daqui);
-				}
+				// A pergunta é "a que distância da margem", e agora ela tem
+				// função própria: `NearestOn`. Antes era uma varredura por raio,
+				// que numa árvore de verdade pula os trechos que correm de lado.
+				float Onde = 0.0f;
+				const float Ate = NearestOn(Curso, Ponto, Onde);
+				Menor = FMath::Min(Menor, Ate - HalfWidthAtProgress(Curso, Onde));
 			}
 
 			return Menor;
@@ -634,7 +1009,7 @@ namespace FreshWater
 				continue;
 			}
 
-			const FVector2D NaQueda = PointAt(Cursos[Indice], Cursos[Indice].FallRadiusUnits);
+			const FVector2D NaQueda = PointAtProgress(Cursos[Indice], Cursos[Indice].FallAtProgress);
 
 			IslandFeatureLayout::FFeaturePlacement Gruta;
 			Gruta.Feature = IslandFeatureLayout::EIslandFeature::Cave;
@@ -744,58 +1119,251 @@ FreshWater::ENavigability FreshWater::NavigabilityForHalfWidth(float HalfWidthUn
 
 TArray<FreshWater::FUnderwaterLink> FreshWater::PlanUnderwaterLinks()
 {
+	// A REDE SUBTERRÂNEA, pelo mesmo algoritmo da bacia — e é aqui que o
+	// desenho de raiz pertence de verdade.
+	//
+	// Água que corre em calcário dissolve a pedra seguindo fratura, e o que sai
+	// é uma rede dendrítica: galho fino entrando em galho grosso, sem nenhuma
+	// direção privilegiada. Era um risco reto entre duas grutas, e era a coisa
+	// mais fora de lugar no mapa inteiro.
 	TArray<FUnderwaterLink> Passagens;
 
-	// Cada gruta de cachoeira vira BOCA de passagem, ligada à gruta mais
-	// próxima que ainda não tem par. Ligar todas a todas faria um queijo; uma
-	// por gruta faz uma rede.
 	const TArray<IslandFeatureLayout::FFeaturePlacement> Grutas = PlanGrottoes();
-
-	TArray<bool> JaLigada;
-	JaLigada.Init(false, Grutas.Num());
-
-	for (int32 Daqui = 0; Daqui < Grutas.Num(); ++Daqui)
+	if (Grutas.Num() == 0)
 	{
-		if (JaLigada[Daqui])
+		return Passagens;
+	}
+
+	const float Raio = IslandGeography::LandRadiusUnits();
+	const float Alcance = Raio * AlcanceDoAtratorNoSubsolo;
+	const float Morte = Raio * MorreAPertoNoSubsolo;
+	const float Passo = Raio * PassoDaGaleria;
+
+	// Os atratores do subsolo ficam ENTRE as grutas, não espalhados pela ilha:
+	// a rede existe para LIGAR bocas, e atrator solto faz galeria que não vai
+	// a lugar nenhum.
+	// Em GRADE SACUDIDA sobre a ilha inteira, e não na linha entre as grutas.
+	//
+	// Pô-los na linha entre duas bocas foi o erro mais direto que cometi aqui:
+	// o algoritmo devolve exatamente a reta que ele veio substituir, só que
+	// arqueada. Espalhados por área, a galeria vagueia e as bocas se encontram
+	// porque a rede cresceu, não porque eu apontei uma para a outra.
+	TArray<FVector2D> Atratores = AtratoresEmGrade(
+		AtratoresDoSubsolo, 0.0f, Raio * 0.94f, TEXT("subsolo"));
+
+	TArray<FVector2D> Nos;
+	TArray<int32> Pai;
+	for (const IslandFeatureLayout::FFeaturePlacement& Gruta : Grutas)
+	{
+		Nos.Add(Gruta.CenterUnits());
+		Pai.Add(INDEX_NONE);
+	}
+
+	for (int32 Volta = 0; Volta < VoltasNoSubsolo && Atratores.Num() > 0; ++Volta)
+	{
+		TMap<int32, FVector2D> Puxao;
+
+		for (const FVector2D& Atrator : Atratores)
 		{
-			continue;
+			int32 MaisPerto = INDEX_NONE;
+			float Menor = Alcance * Alcance;
+
+			for (int32 No = 0; No < Nos.Num(); ++No)
+			{
+				const float Ate = FVector2D::DistSquared(Atrator, Nos[No]);
+				if (Ate < Menor)
+				{
+					Menor = Ate;
+					MaisPerto = No;
+				}
+			}
+
+			if (MaisPerto != INDEX_NONE)
+			{
+				Puxao.FindOrAdd(MaisPerto) += (Atrator - Nos[MaisPerto]).GetSafeNormal();
+			}
 		}
 
-		int32 Escolhida = INDEX_NONE;
-		float Menor = TNumericLimits<float>::Max();
-
-		for (int32 Prali = 0; Prali < Grutas.Num(); ++Prali)
+		if (Puxao.Num() == 0)
 		{
-			if (Prali == Daqui || JaLigada[Prali])
+			break;
+		}
+
+		const int32 QuantosAntes = Nos.Num();
+		for (const TPair<int32, FVector2D>& Quem : Puxao)
+		{
+			const FVector2D Rumo = (Quem.Value.GetSafeNormal()
+				+ EmpurraoOrganico(Nos[Quem.Key], TorceAGaleria)).GetSafeNormal();
+			if (Rumo.IsNearlyZero())
 			{
 				continue;
 			}
 
-			const float Ate = FVector2D::DistSquared(
-				Grutas[Daqui].CenterUnits(), Grutas[Prali].CenterUnits());
-			if (Ate < Menor)
+			const FVector2D Novo = Nos[Quem.Key] + Rumo * Passo;
+			if (Novo.Size() > Raio)
 			{
-				Menor = Ate;
-				Escolhida = Prali;
+				continue;
 			}
+
+			Nos.Add(Novo);
+			Pai.Add(Quem.Key);
 		}
 
-		if (Escolhida == INDEX_NONE)
+		if (Nos.Num() == QuantosAntes)
+		{
+			break;
+		}
+
+		Atratores.RemoveAll([&Nos, QuantosAntes, Morte](const FVector2D& Atrator)
+		{
+			for (int32 No = QuantosAntes; No < Nos.Num(); ++No)
+			{
+				if (FVector2D::DistSquared(Atrator, Nos[No]) < Morte * Morte)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		});
+	}
+
+	TArray<int32> Filhos;
+	Filhos.Init(0, Nos.Num());
+	for (int32 No = 0; No < Nos.Num(); ++No)
+	{
+		if (Pai[No] != INDEX_NONE)
+		{
+			++Filhos[Pai[No]];
+		}
+	}
+
+	// DE QUE BOCA cada nó veio. Sem isto não dá para saber se duas galerias que
+	// se encontram no desenho pertencem a cavernas diferentes.
+	TArray<int32> DeQueBoca;
+	DeQueBoca.Init(INDEX_NONE, Nos.Num());
+	for (int32 No = 0; No < Nos.Num(); ++No)
+	{
+		DeQueBoca[No] = (Pai[No] == INDEX_NONE) ? No : DeQueBoca[Pai[No]];
+	}
+
+	// AS EMENDAS ENTRE CAVERNAS.
+	//
+	// Este é o ponto que engana: no space colonization cada nó tem UM pai, e
+	// duas árvores nunca se fundem. As galerias de duas cavernas chegam a se
+	// encostar no desenho e continuam sendo dois sistemas separados — quem
+	// entrasse numa não sairia na outra.
+	//
+	// A emenda é explícita, e é o que transforma "parece ligado" em "está
+	// ligado". Uma por par de cavernas, na aproximação mais curta entre elas.
+	TMap<uint64, TPair<int32, int32>> MaisPerto;
+	TMap<uint64, float> Menor;
+
+	for (int32 Um = 0; Um < Nos.Num(); ++Um)
+	{
+		for (int32 Outro = Um + 1; Outro < Nos.Num(); ++Outro)
+		{
+			if (DeQueBoca[Um] == DeQueBoca[Outro])
+			{
+				continue;
+			}
+
+			const float Ate = FVector2D::DistSquared(Nos[Um], Nos[Outro]);
+			if (Ate > FMath::Square(Raio * EmendaNoMaximo))
+			{
+				continue;
+			}
+
+			const int32 Menorzinha = FMath::Min(DeQueBoca[Um], DeQueBoca[Outro]);
+			const int32 Maiorzinha = FMath::Max(DeQueBoca[Um], DeQueBoca[Outro]);
+			const uint64 Chave = (static_cast<uint64>(Menorzinha) << 32) | Maiorzinha;
+
+			float& Guardado = Menor.FindOrAdd(Chave, TNumericLimits<float>::Max());
+			if (Ate < Guardado)
+			{
+				Guardado = Ate;
+				MaisPerto.Add(Chave, TPair<int32, int32>(Um, Outro));
+			}
+		}
+	}
+
+	for (const TPair<uint64, TPair<int32, int32>>& Emenda : MaisPerto)
+	{
+		// A emenda CAVA, não risca.
+		//
+		// Ligar dois pontos com um segmento é exatamente o desenho reto que
+		// esta rede veio substituir — eu consertei o gerador e recriei o
+		// defeito na costura. Galeria de calcário não vai em linha: ela segue
+		// fratura, e o que sai é caminho torto.
+		//
+		// É a caminhada aleatória com ruído COERENTE: cada passo mira o destino
+		// mas é empurrado pelo ruído da posição. Sorteio independente daria
+		// tremor; ruído da posição dá curva, e a mesma pedra dá sempre a mesma
+		// curva.
+		const FVector2D DaBoca = Nos[Emenda.Value.Key];
+		const FVector2D ParaABoca = Nos[Emenda.Value.Value];
+
+		const float Distancia = static_cast<float>(FVector2D::Distance(DaBoca, ParaABoca));
+		const int32 Passos = FMath::Max(3,
+			FMath::CeilToInt(Distancia / (Raio * PassoDaGaleria)));
+
+		FUnderwaterLink Passagem;
+		Passagem.Navigability = ENavigability::BarcoPequeno;
+		Passagem.PointsUnits.Add(DaBoca);
+
+		FVector2D NaGaleria = DaBoca;
+		for (int32 Avanco = 1; Avanco < Passos; ++Avanco)
+		{
+			const FVector2D ParaOAlvo = (ParaABoca - NaGaleria).GetSafeNormal();
+
+			// A mira APERTA no fim: perto do destino o ruído perde peso, senão
+			// a galeria passa do ponto e volta.
+			const float Quanto = static_cast<float>(Avanco) / static_cast<float>(Passos);
+			const FVector2D Rumo = (ParaOAlvo
+				+ EmpurraoOrganico(NaGaleria, TorceAGaleria * (1.0f - Quanto))).GetSafeNormal();
+
+			NaGaleria += Rumo * (Distancia / static_cast<float>(Passos));
+			Passagem.PointsUnits.Add(NaGaleria);
+		}
+
+		Passagem.PointsUnits.Add(ParaABoca);
+		Passagens.Add(MoveTemp(Passagem));
+	}
+
+	for (int32 Ponta = 0; Ponta < Nos.Num(); ++Ponta)
+	{
+		const bool bComecaAqui = (Filhos[Ponta] != 1)
+			|| (Pai[Ponta] != INDEX_NONE && Filhos[Pai[Ponta]] > 1);
+
+		if (!bComecaAqui)
 		{
 			continue;
 		}
 
 		FUnderwaterLink Passagem;
-		Passagem.FromUnits = Grutas[Daqui].CenterUnits();
-		Passagem.ToUnits = Grutas[Escolhida].CenterUnits();
+		Passagem.PointsUnits.Add(Nos[Ponta]);
 
-		// Passagem de pedra é apertada, sempre: se ela coubesse barco grande,
-		// o atalho de baixo tornaria o rio de cima decorativo.
+		int32 Onde = Ponta;
+		while (Pai[Onde] != INDEX_NONE)
+		{
+			Onde = Pai[Onde];
+			Passagem.PointsUnits.Add(Nos[Onde]);
+
+			if (Filhos[Onde] > 1 && Onde != Ponta)
+			{
+				break;
+			}
+		}
+
+		if (Passagem.PointsUnits.Num() < 2)
+		{
+			continue;
+		}
+
+		// Passagem de pedra é apertada, sempre: se coubesse barco grande, o
+		// atalho de baixo tornaria o rio de cima decorativo.
 		Passagem.Navigability = ENavigability::BarcoPequeno;
-
-		Passagens.Add(Passagem);
-		JaLigada[Daqui] = true;
-		JaLigada[Escolhida] = true;
+		Passagens.Add(MoveTemp(Passagem));
 	}
 
 	return Passagens;
@@ -837,18 +1405,12 @@ bool FreshWater::IsWaterNetworkConnected()
 
 		for (int32 Indice = 0; Indice < Rios.Num(); ++Indice)
 		{
-			const float Passo =
-				(Rios[Indice].MouthRadiusUnits - Rios[Indice].SourceRadiusUnits) / 40.0f;
-
-			for (float Raio = Rios[Indice].SourceRadiusUnits;
-				Raio <= Rios[Indice].MouthRadiusUnits; Raio += Passo)
+			float Aonde = 0.0f;
+			const float Ate = NearestOn(Rios[Indice], Onde, Aonde);
+			if (Ate < Menor)
 			{
-				const float Ate = FVector2D::DistSquared(Onde, PointAt(Rios[Indice], Raio));
-				if (Ate < Menor)
-				{
-					Menor = Ate;
-					Melhor = Indice;
-				}
+				Menor = Ate;
+				Melhor = Indice;
 			}
 		}
 
@@ -869,7 +1431,11 @@ bool FreshWater::IsWaterNetworkConnected()
 	// E as PASSAGENS ligam por baixo.
 	for (const FUnderwaterLink& Passagem : PlanUnderwaterLinks())
 	{
-		Juntar(RioDoPonto(Passagem.FromUnits), RioDoPonto(Passagem.ToUnits));
+		// A galeria liga o rio mais perto de UMA ponta ao mais perto da outra.
+		// Ela é uma linha agora, não um segmento — e as duas pontas dela são o
+		// que importa para a conta de conectividade.
+		Juntar(RioDoPonto(Passagem.PointsUnits[0]),
+			RioDoPonto(Passagem.PointsUnits.Last()));
 	}
 
 	for (int32 Indice = 1; Indice < Rios.Num(); ++Indice)
@@ -883,15 +1449,16 @@ bool FreshWater::IsWaterNetworkConnected()
 	return true;
 }
 
-float FreshWater::BedGradientAt(const FRiverCourse& Course, float RadiusUnits)
+float FreshWater::BedGradientAtProgress(const FRiverCourse& Course, float Progress)
 {
 	// Medido ao longo do CURSO, não em linha reta: o rio serpenteia, e a mesma
 	// queda de altura repartida por um percurso maior é um leito mais manso.
 	// Foi por serpentear que ele ficou manso.
 	const float Passo = MeiaCalhaDoRio() * 2.0f;
 
-	const FVector2D Antes = PointAt(Course, RadiusUnits - Passo * 0.5f);
-	const FVector2D Depois = PointAt(Course, RadiusUnits + Passo * 0.5f);
+	const float Meio = Passo / FMath::Max(1.0f, CourseLengthUnits(Course)) * 0.5f;
+	const FVector2D Antes = PointAtProgress(Course, Progress - Meio);
+	const FVector2D Depois = PointAtProgress(Course, Progress + Meio);
 
 	const float Andado = FVector2D::Distance(Antes, Depois);
 	if (Andado <= KINDA_SMALL_NUMBER)
@@ -915,9 +1482,9 @@ float FreshWater::RapidsGradient()
 	return 0.04f;
 }
 
-bool FreshWater::IsRapidsAt(const FRiverCourse& Course, float RadiusUnits)
+bool FreshWater::IsRapidsAtProgress(const FRiverCourse& Course, float Progress)
 {
-	if (RadiusUnits < Course.SourceRadiusUnits || RadiusUnits > Course.MouthRadiusUnits)
+	if (Progress < 0.0f || Progress > 1.0f)
 	{
 		return false;
 	}
@@ -929,13 +1496,13 @@ bool FreshWater::IsRapidsAt(const FRiverCourse& Course, float RadiusUnits)
 	// com a base, todo tronco parecia lago — ele é 2,9 vezes mais largo que a
 	// calha base só por ser de ordem 3, e nenhuma corredeira existia na ilha.
 	// É o mesmo erro de escalar pela coisa errada que já custou a gruta.
-	const float DaCalha = HalfWidthAt(Course, Course.SourceRadiusUnits);
-	if (HalfWidthAt(Course, RadiusUnits) > DaCalha * 1.6f)
+	const float DaCalha = HalfWidthAtProgress(Course, 0.0f);
+	if (HalfWidthAtProgress(Course, Progress) > DaCalha * 1.6f)
 	{
 		return false;
 	}
 
-	return BedGradientAt(Course, RadiusUnits) >= RapidsGradient();
+	return BedGradientAtProgress(Course, Progress) >= RapidsGradient();
 }
 
 float FreshWater::PlungePoolDepthUnits(const FRiverCourse& Course)
@@ -946,8 +1513,9 @@ float FreshWater::PlungePoolDepthUnits(const FRiverCourse& Course)
 	}
 
 	// A profundidade sai da ALTURA da queda, que é o que a morfologia mede.
-	const FVector2D NoAlto = PointAt(Course, Course.FallRadiusUnits - MeiaQueda());
-	const FVector2D LaEmbaixo = PointAt(Course, Course.FallRadiusUnits + MeiaQueda());
+	const float EmProgresso = MeiaQueda() / FMath::Max(1.0f, CourseLengthUnits(Course));
+	const FVector2D NoAlto = PointAtProgress(Course, Course.FallAtProgress - EmProgresso);
+	const FVector2D LaEmbaixo = PointAtProgress(Course, Course.FallAtProgress + EmProgresso);
 
 	const float Caiu = FMath::Max(0.0f,
 		IslandGeography::GroundHeightAt(NoAlto) - IslandGeography::GroundHeightAt(LaEmbaixo));
@@ -970,4 +1538,162 @@ float FreshWater::PlungePoolHalfWidthUnits(const FRiverCourse& Course)
 	// do jato. O piso é a calha do rio — poço mais estreito que o rio que o
 	// alimenta seria um estrangulamento, não um poço.
 	return FMath::Max(MeiaCalhaDoRio() * 1.15f, Fundo * AlargaSobreAprofunda);
+}
+
+float FreshWater::DistanceToFreshWater(const FVector2D& PositionUnits)
+{
+	float Menor = TNumericLimits<float>::Max();
+
+	for (const FRiverCourse& Curso : Plan())
+	{
+		float Onde = 0.0f;
+		const float Ate = NearestOn(Curso, PositionUnits, Onde);
+		Menor = FMath::Min(Menor, Ate - HalfWidthAtProgress(Curso, Onde));
+	}
+
+	// Os CÓRREGOS contam: eles são água, e uma trilha que os ignore atravessa
+	// molhada sem dizer nada. Fonte também — ela é uma poça de verdade.
+	for (const FBrook& Corrego : PlanBrooks())
+	{
+		for (int32 Ponto = 1; Ponto < Corrego.PointsUnits.Num(); ++Ponto)
+		{
+			const FVector2D Trecho = Corrego.PointsUnits[Ponto] - Corrego.PointsUnits[Ponto - 1];
+			const float Comprimento = static_cast<float>(Trecho.SizeSquared());
+			if (Comprimento <= KINDA_SMALL_NUMBER)
+			{
+				continue;
+			}
+
+			const float Onde = FMath::Clamp(static_cast<float>(FVector2D::DotProduct(
+				PositionUnits - Corrego.PointsUnits[Ponto - 1], Trecho)) / Comprimento, 0.0f, 1.0f);
+
+			const FVector2D MaisPerto = Corrego.PointsUnits[Ponto - 1] + Trecho * Onde;
+			Menor = FMath::Min(Menor, static_cast<float>(
+				FVector2D::Distance(PositionUnits, MaisPerto)) - Corrego.HalfWidthUnits);
+		}
+	}
+
+	for (const FSpring& Fonte : PlanSprings())
+	{
+		Menor = FMath::Min(Menor, static_cast<float>(
+			FVector2D::Distance(PositionUnits, Fonte.CenterUnits)) - Fonte.PoolHalfWidthUnits);
+	}
+
+	return Menor;
+}
+
+namespace MascaraDaAgua
+{
+	/**
+	 * Quantas casas por lado. Ela precisa ser mais FINA que o rio mais estreito
+	 * — grade grossa não vê o que é fino, e este projeto já pagou por isso três
+	 * vezes (a ponte que não nascia, o barranco que não se subia, a corredeira
+	 * que não existia).
+	 */
+	constexpr int32 Lado = 700;
+
+	const TArray<bool>& Grade()
+	{
+		static TArray<bool> Molhado = []()
+		{
+			const float Raio = IslandGeography::LandRadiusUnits();
+			const float Casa = (Raio * 2.0f) / static_cast<float>(Lado - 1);
+
+			TArray<bool> Tudo;
+			Tudo.Init(false, Lado * Lado);
+
+			// RASTERIZA: cada trecho de água carimba as casas em volta dele.
+			// Percorrer a água é barato; percorrer a grade perguntando à água
+			// seria o custo ao contrário, e é o que travou.
+			auto Carimbar = [&Tudo, Raio, Casa](const FVector2D& Onde, float MeiaLargura)
+			{
+				const int32 Alcance = FMath::CeilToInt(MeiaLargura / Casa);
+				const int32 Coluna = FMath::RoundToInt((Onde.X + Raio) / Casa);
+				const int32 Linha = FMath::RoundToInt((Onde.Y + Raio) / Casa);
+
+				for (int32 dY = -Alcance; dY <= Alcance; ++dY)
+				{
+					for (int32 dX = -Alcance; dX <= Alcance; ++dX)
+					{
+						const int32 C = Coluna + dX;
+						const int32 L = Linha + dY;
+						if (C < 0 || L < 0 || C >= Lado || L >= Lado)
+						{
+							continue;
+						}
+
+						if (FMath::Square(dX * Casa) + FMath::Square(dY * Casa)
+							<= MeiaLargura * MeiaLargura)
+						{
+							Tudo[L * Lado + C] = true;
+						}
+					}
+				}
+			};
+
+			auto CarimbarTrecho = [&Carimbar, Casa](const FVector2D& Daqui,
+				const FVector2D& Prali, float MeiaLargura)
+			{
+				const float Comprimento = static_cast<float>(FVector2D::Distance(Daqui, Prali));
+				const int32 Quantos = FMath::Max(1, FMath::CeilToInt(Comprimento / (Casa * 0.5f)));
+
+				for (int32 Passo = 0; Passo <= Quantos; ++Passo)
+				{
+					Carimbar(FMath::Lerp(Daqui, Prali,
+						static_cast<float>(Passo) / Quantos), MeiaLargura);
+				}
+			};
+
+			for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
+			{
+				const int32 Pontos = Curso.PointsUnits.Num();
+				const float Comprimento = FMath::Max(1.0f, FreshWater::CourseLengthUnits(Curso));
+				float Andado = 0.0f;
+
+				for (int32 Ponto = 1; Ponto < Pontos; ++Ponto)
+				{
+					Andado += static_cast<float>(FVector2D::Distance(
+						Curso.PointsUnits[Ponto - 1], Curso.PointsUnits[Ponto]));
+
+					CarimbarTrecho(Curso.PointsUnits[Ponto - 1], Curso.PointsUnits[Ponto],
+						FreshWater::HalfWidthAtProgress(Curso, Andado / Comprimento));
+				}
+			}
+
+			for (const FreshWater::FBrook& Corrego : FreshWater::PlanBrooks())
+			{
+				for (int32 Ponto = 1; Ponto < Corrego.PointsUnits.Num(); ++Ponto)
+				{
+					CarimbarTrecho(Corrego.PointsUnits[Ponto - 1], Corrego.PointsUnits[Ponto],
+						Corrego.HalfWidthUnits);
+				}
+			}
+
+			for (const FreshWater::FSpring& Fonte : FreshWater::PlanSprings())
+			{
+				Carimbar(Fonte.CenterUnits, Fonte.PoolHalfWidthUnits);
+			}
+
+			return Tudo;
+		}();
+
+		return Molhado;
+	}
+}
+
+bool FreshWater::IsFreshWaterAt(const FVector2D& PositionUnits)
+{
+	const float Raio = IslandGeography::LandRadiusUnits();
+	const float Casa = (Raio * 2.0f) / static_cast<float>(MascaraDaAgua::Lado - 1);
+
+	const int32 Coluna = FMath::RoundToInt((PositionUnits.X + Raio) / Casa);
+	const int32 Linha = FMath::RoundToInt((PositionUnits.Y + Raio) / Casa);
+
+	if (Coluna < 0 || Linha < 0
+		|| Coluna >= MascaraDaAgua::Lado || Linha >= MascaraDaAgua::Lado)
+	{
+		return false;
+	}
+
+	return MascaraDaAgua::Grade()[Linha * MascaraDaAgua::Lado + Coluna];
 }

@@ -219,15 +219,14 @@ bool FTrailLayoutOsMarcosNaturaisTemCaminhoTest::RunTest(const FString& Paramete
 
 		for (const FreshWater::FRiverCourse& Rio : FreshWater::PlanTrunks())
 		{
-			const float Raio = Trilha.PointsUnits.Last().Size();
-			if (Raio < Rio.SourceRadiusUnits || Raio > Rio.MouthRadiusUnits)
-			{
-				continue;
-			}
+			// A pergunta é de DISTÂNCIA À MARGEM, e ela tem função própria
+			// agora. Perguntar por raio pulava justamente os trechos que
+			// correm de lado.
+			float Onde = 0.0f;
+			const float Ate = FreshWater::NearestOn(Rio, Trilha.PointsUnits.Last(), Onde);
 
 			TestTrue(TEXT("a trilha para na margem, não dentro da água"),
-				FVector2D::Distance(Trilha.PointsUnits.Last(), FreshWater::PointAt(Rio, Raio))
-					> FreshWater::HalfWidthAt(Rio, Raio));
+				Ate > FreshWater::HalfWidthAtProgress(Rio, Onde));
 		}
 	}
 

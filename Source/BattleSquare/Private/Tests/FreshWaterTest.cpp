@@ -56,22 +56,22 @@ bool FFreshWaterRiverRunsFromMountainToSeaTest::RunTest(const FString& Parameter
 	{
 		// A nascente sai da SAIA do monte, não do cume nem da planície.
 		TestTrue(TEXT("a nascente fica alem do miolo da ilha"),
-			Curso.SourceRadiusUnits > IslandGeography::HomeRadiusUnits());
+			0.0f > IslandGeography::HomeRadiusUnits());
 		TestTrue(TEXT("a nascente fica antes da foz"),
-			Curso.SourceRadiusUnits < Curso.MouthRadiusUnits);
+			0.0f < 1.0f);
 
 		// A foz é a costa. Rio que para antes vira poça no meio do mato.
 		TestEqual(TEXT("o rio morre na linha da costa"),
-			Curso.MouthRadiusUnits, Costa, 1.0f);
+			1.0f, Costa, 1.0f);
 
 		// Descer é afastar-se do centro, e é o percurso inteiro que precisa
 		// fazer isso: um trecho que volta para dentro é água subindo o morro.
-		float RaioAnterior = Curso.SourceRadiusUnits;
-		FVector2D Anterior = FreshWater::PointAt(Curso, RaioAnterior);
-		for (float Raio = Curso.SourceRadiusUnits + 200.0f; Raio <= Curso.MouthRadiusUnits;
+		float RaioAnterior = 0.0f;
+		FVector2D Anterior = FreshWater::PointAtProgress(Curso, RaioAnterior);
+		for (float Raio = 0.0f + 200.0f; Raio <= 1.0f;
 			Raio += 200.0f)
 		{
-			const FVector2D Aqui = FreshWater::PointAt(Curso, Raio);
+			const FVector2D Aqui = FreshWater::PointAtProgress(Curso, Raio);
 			TestTrue(TEXT("cada passo do rio se afasta mais do centro"),
 				Aqui.Size() > Anterior.Size());
 			Anterior = Aqui;
@@ -95,10 +95,10 @@ bool FFreshWaterRiverMeandersInsteadOfGoingStraightTest::RunTest(const FString& 
 		float MenorRumo = TNumericLimits<float>::Max();
 		float MaiorRumo = TNumericLimits<float>::Lowest();
 
-		for (float Raio = Curso.SourceRadiusUnits; Raio <= Curso.MouthRadiusUnits;
+		for (float Raio = 0.0f; Raio <= 1.0f;
 			Raio += 200.0f)
 		{
-			const FVector2D Aqui = FreshWater::PointAt(Curso, Raio);
+			const FVector2D Aqui = FreshWater::PointAtProgress(Curso, Raio);
 			const float Rumo = FMath::Atan2(Aqui.Y, Aqui.X);
 			MenorRumo = FMath::Min(MenorRumo, Rumo);
 			MaiorRumo = FMath::Max(MaiorRumo, Rumo);
@@ -123,34 +123,34 @@ bool FFreshWaterLakeIsTheRiverGoingWideTest::RunTest(const FString& Parameters)
 	for (const FreshWater::FRiverCourse& Curso : FreshWater::PlanTrunks())
 	{
 		// No raio do lago a calha chega ao máximo — é ali que ele existe.
-		const float NoLago = FreshWater::HalfWidthAt(Curso, Curso.LakeRadiusUnits);
+		const float NoLago = FreshWater::HalfWidthAtProgress(Curso, Curso.LakeAtProgress);
 		TestEqual(TEXT("no raio do lago a calha chega a largura de lago"),
 			NoLago, FreshWater::LakeHalfWidthUnits(), 1.0f);
 
 		// Na nascente e na foz ela é calha, não lago — e a foz é MAIS LARGA
 		// que a nascente, que é o que um rio faz.
 		TestTrue(TEXT("a foz e mais larga que a nascente"),
-			FreshWater::HalfWidthAt(Curso, Curso.MouthRadiusUnits)
-				> FreshWater::HalfWidthAt(Curso, Curso.SourceRadiusUnits));
+			FreshWater::HalfWidthAtProgress(Curso, 1.0f)
+				> FreshWater::HalfWidthAtProgress(Curso, 0.0f));
 		TestTrue(TEXT("e nenhuma das duas e lago"),
-			FreshWater::HalfWidthAt(Curso, Curso.MouthRadiusUnits)
+			FreshWater::HalfWidthAtProgress(Curso, 1.0f)
 				< FreshWater::LakeHalfWidthUnits() * 0.5f);
 
 
 		// E cresce de forma monótona até lá: alargamento que oscila lê como
 		// remendo, não como água parando.
-		float Anterior = FreshWater::HalfWidthAt(Curso, Curso.SourceRadiusUnits);
-		for (float Raio = Curso.SourceRadiusUnits + 100.0f; Raio <= Curso.LakeRadiusUnits;
+		float Anterior = FreshWater::HalfWidthAtProgress(Curso, 0.0f);
+		for (float Raio = 0.0f + 100.0f; Raio <= Curso.LakeAtProgress;
 			Raio += 100.0f)
 		{
-			const float Agora = FreshWater::HalfWidthAt(Curso, Raio);
+			const float Agora = FreshWater::HalfWidthAtProgress(Curso, Raio);
 			TestTrue(TEXT("a calha so engorda ate o lago"), Agora >= Anterior - 0.01f);
 			Anterior = Agora;
 		}
 
 		TestTrue(TEXT("o lago fica dentro do percurso do rio"),
-			Curso.LakeRadiusUnits > Curso.SourceRadiusUnits
-			&& Curso.LakeRadiusUnits < Curso.MouthRadiusUnits);
+			Curso.LakeAtProgress > 0.0f
+			&& Curso.LakeAtProgress < 1.0f);
 	}
 
 	return true;
@@ -166,27 +166,27 @@ bool FFreshWaterFallNeverLandsInTheLakeTest::RunTest(const FString& Parameters)
 	{
 		// Cachoeira dentro do lago é água caindo dentro de água parada.
 		TestTrue(TEXT("a queda vem depois do lago"),
-			Curso.FallRadiusUnits > Curso.LakeRadiusUnits);
+			Curso.FallAtProgress > Curso.LakeAtProgress);
 		// "Voltou a ser rio" quer dizer que ela saiu do lago, e não que ela tem
 		// a largura da nascente: a calha ENGROSSA rio abaixo, porque a chuva
 		// da bacia entra pela margem o percurso inteiro. A asserção de
 		// igualdade valia quando o rio tinha a mesma calha do começo ao fim.
 		TestTrue(TEXT("no raio da queda a calha ja saiu do lago"),
-			FreshWater::HalfWidthAt(Curso, Curso.FallRadiusUnits)
+			FreshWater::HalfWidthAtProgress(Curso, Curso.FallAtProgress)
 				< FreshWater::LakeHalfWidthUnits() * 0.5f);
 
 		// E antes do mar: cachoeira despejando na arrebentação seria o rio
 		// terminando duas vezes.
 		TestTrue(TEXT("a queda acontece em terra, nao na foz"),
-			Curso.FallRadiusUnits + FreshWater::FallHalfLengthUnits()
-			< Curso.MouthRadiusUnits);
+			Curso.FallAtProgress + FreshWater::FallHalfLengthUnits()
+			< 1.0f);
 
 		TestTrue(TEXT("no raio da queda a agua esta caindo"),
-			FreshWater::IsFallAt(Curso, Curso.FallRadiusUnits));
+			FreshWater::IsFallAtProgress(Curso, Curso.FallAtProgress));
 		TestFalse(TEXT("na nascente a agua nao esta caindo"),
-			FreshWater::IsFallAt(Curso, Curso.SourceRadiusUnits));
+			FreshWater::IsFallAtProgress(Curso, 0.0f));
 		TestFalse(TEXT("no lago a agua nao esta caindo"),
-			FreshWater::IsFallAt(Curso, Curso.LakeRadiusUnits));
+			FreshWater::IsFallAtProgress(Curso, Curso.LakeAtProgress));
 	}
 
 	return true;
@@ -209,9 +209,15 @@ bool FFreshWaterCourseIsTheSameEveryTimeTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("a mesma nascente"),
 			Primeira[Indice].SourceRadiusUnits, Segunda[Indice].SourceRadiusUnits, 0.01f);
 		TestEqual(TEXT("o mesmo lago"),
-			Primeira[Indice].LakeRadiusUnits, Segunda[Indice].LakeRadiusUnits, 0.01f);
+			Primeira[Indice].LakeAtProgress, Segunda[Indice].LakeAtProgress, 0.001f);
 		TestEqual(TEXT("a mesma queda"),
-			Primeira[Indice].FallRadiusUnits, Segunda[Indice].FallRadiusUnits, 0.01f);
+			Primeira[Indice].FallAtProgress, Segunda[Indice].FallAtProgress, 0.001f);
+
+		// E o mesmo CURSO DESENHADO, ponto a ponto. Sem isto, o determinismo
+		// afirmaria só os marcos e deixaria a linha inteira livre — que é
+		// justamente o que passou a ser gerado, e o que se vê na tela.
+		TestEqual(TEXT("o mesmo numero de pontos"),
+			Primeira[Indice].PointsUnits.Num(), Segunda[Indice].PointsUnits.Num());
 	}
 
 	// E dois rios não têm a mesma cara: sementes por índice existem para isso.
@@ -243,10 +249,10 @@ bool FFreshWaterRiversDoNotShareACourseTest::RunTest(const FString& Parameters)
 		{
 			for (float Raio = 13500.0f; Raio <= 19500.0f; Raio += 500.0f)
 			{
-				const FVector2D Aqui = FreshWater::PointAt(Cursos[Um], Raio);
-				const FVector2D La = FreshWater::PointAt(Cursos[Outro], Raio);
-				const float Folga = FreshWater::HalfWidthAt(Cursos[Um], Raio)
-					+ FreshWater::HalfWidthAt(Cursos[Outro], Raio);
+				const FVector2D Aqui = FreshWater::PointAtProgress(Cursos[Um], Raio);
+				const FVector2D La = FreshWater::PointAtProgress(Cursos[Outro], Raio);
+				const float Folga = FreshWater::HalfWidthAtProgress(Cursos[Um], Raio)
+					+ FreshWater::HalfWidthAtProgress(Cursos[Outro], Raio);
 
 				TestTrue(TEXT("dois rios nunca se tocam"),
 					FVector2D::Distance(Aqui, La) > Folga);
@@ -328,11 +334,11 @@ bool FFreshWaterKeepsTheGrottoOutOfTheWaterTest::RunTest(const FString& Paramete
 
 		for (const FreshWater::FRiverCourse& Curso : Cursos)
 		{
-			for (float Raio = Curso.SourceRadiusUnits; Raio <= Curso.MouthRadiusUnits;
+			for (float Raio = 0.0f; Raio <= 1.0f;
 				Raio += 60.0f)
 			{
-				const FVector2D NaAgua = FreshWater::PointAt(Curso, Raio);
-				const float Folga = FreshWater::HalfWidthAt(Curso, Raio) + Gruta.ClearanceUnits;
+				const FVector2D NaAgua = FreshWater::PointAtProgress(Curso, Raio);
+				const float Folga = FreshWater::HalfWidthAtProgress(Curso, Raio) + Gruta.ClearanceUnits;
 
 				TestTrue(TEXT("nenhuma quina da gruta cai dentro da agua"),
 					FVector2D::Distance(Centro, NaAgua) > Folga);
@@ -364,11 +370,11 @@ bool FFreshWaterGrottoWatchesTheFallTest::RunTest(const FString& Parameters)
 	for (int32 Indice = 0; Indice < Grutas.Num(); ++Indice)
 	{
 		const FVector2D Centro = Grutas[Indice].CenterUnits();
-		const FVector2D NaQueda = FreshWater::PointAt(Cursos[Indice],
-			Cursos[Indice].FallRadiusUnits);
+		const FVector2D NaQueda = FreshWater::PointAtProgress(Cursos[Indice],
+			Cursos[Indice].FallAtProgress);
 
-		const FVector2D NoLago = FreshWater::PointAt(Cursos[Indice],
-			Cursos[Indice].LakeRadiusUnits);
+		const FVector2D NoLago = FreshWater::PointAtProgress(Cursos[Indice],
+			Cursos[Indice].LakeAtProgress);
 
 		// O teto vem do próprio rio, não de um múltiplo escolhido a dedo: a
 		// gruta é da CACHOEIRA, então ela tem de estar mais perto da queda do
@@ -391,8 +397,8 @@ bool FFreshWaterGrottoWatchesTheFallTest::RunTest(const FString& Parameters)
 				continue;
 			}
 
-			const FVector2D QuedaAlheia = FreshWater::PointAt(Cursos[Outro],
-				Cursos[Outro].FallRadiusUnits);
+			const FVector2D QuedaAlheia = FreshWater::PointAtProgress(Cursos[Outro],
+				Cursos[Outro].FallAtProgress);
 			TestTrue(TEXT("e nao a de outro rio"),
 				FVector2D::Distance(Centro, QuedaAlheia) > Daqui);
 		}

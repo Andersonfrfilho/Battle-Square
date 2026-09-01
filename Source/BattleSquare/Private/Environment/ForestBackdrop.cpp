@@ -573,12 +573,19 @@ namespace MataDoCenario
 
 		for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
 		{
-			for (float Raio = Curso.SourceRadiusUnits; Raio <= Curso.MouthRadiusUnits;
-				Raio += PassoDoRio)
+			// Passeia pelo COMPRIMENTO do curso, não pelo raio. Numa árvore de
+			// verdade o galho corre de lado, e uma varredura por raio pula
+			// justamente esses trechos — o rio nascia com buracos.
+			const float Comprimento = FMath::Max(1.0f, FreshWater::CourseLengthUnits(Curso));
+			const int32 Passos = FMath::Max(2, FMath::CeilToInt(Comprimento / PassoDoRio));
+
+			for (int32 Passo = 0; Passo < Passos; ++Passo)
 			{
-				const FVector2D Aqui = FreshWater::PointAt(Curso, Raio);
-				const FVector2D Adiante = FreshWater::PointAt(Curso,
-					FMath::Min(Raio + PassoDoRio, Curso.MouthRadiusUnits));
+				const float Onde = static_cast<float>(Passo) / static_cast<float>(Passos);
+				const float Adiantado = static_cast<float>(Passo + 1) / static_cast<float>(Passos);
+
+				const FVector2D Aqui = FreshWater::PointAtProgress(Curso, Onde);
+				const FVector2D Adiante = FreshWater::PointAtProgress(Curso, Adiantado);
 
 				const FVector2D Correnteza = (Adiante - Aqui).GetSafeNormal();
 				if (Correnteza.IsNearlyZero())
@@ -588,7 +595,7 @@ namespace MataDoCenario
 
 				const float Graus = FMath::RadiansToDegrees(
 					FMath::Atan2(Correnteza.Y, Correnteza.X));
-				const float MeiaLargura = FreshWater::HalfWidthAt(Curso, Raio);
+				const float MeiaLargura = FreshWater::HalfWidthAtProgress(Curso, Onde);
 
 				FVector2D Local;
 				if (PontoNoPedaco(Aqui, CentroDoPedaco, Meio, Local))
@@ -596,7 +603,7 @@ namespace MataDoCenario
 					DeitarLajeDoRio(Lamina, Local, Graus, MeiaLargura * 2.0f,
 						TopoDoChao + AlturaDaLaminaDoRio, EspessuraDaLamina);
 
-					if (FreshWater::IsFallAt(Curso, Raio))
+					if (FreshWater::IsFallAtProgress(Curso, Onde))
 					{
 						DeitarLajeDoRio(Queda, Local, Graus,
 							MeiaLargura * 2.0f * AlargamentoDaEspuma,
@@ -604,7 +611,7 @@ namespace MataDoCenario
 					}
 				}
 
-				if (Raio >= FimDaTrilha)
+				if (Aqui.Size() >= FimDaTrilha)
 				{
 					continue;
 				}

@@ -276,3 +276,67 @@ Milhões de arestas, uma montagem de mundo em cada. Hoje são cálculo único.
 
 **O que continua faltando:** "uma vez por processo" ainda leva minutos. Para um
 mapa fixo, o certo é **assar** — calcular fora e embarcar o resultado.
+
+---
+
+## 8. Adendo de 01/09/2026 — por que a água desenhava círculos
+
+A pergunta foi feita três vezes e eu respondi errado duas. A causa nunca esteve
+onde eu procurei.
+
+### Os ATRATORES é que eram circulares
+
+Espalhei os pontos de atração em coordenada polar — sorteia ângulo, sorteia raio,
+dentro de uma coroa. É o jeito natural de encher um anel, a fórmula parece certa,
+e **o viés não existe nela: ele existe só no resultado.** Uma rede que cresce
+para dentro de atratores em coroa herda a coroa, porque os galhos param onde os
+atratores acabam — e onde eles acabam é um círculo.
+
+A correção é distribuição em **grade sacudida**: uma casa, um ponto no centro
+dela, mais um empurrão de até meia casa. Uniforme por área, sem estrutura
+angular nenhuma para copiar. Sorteio puro faz grumo; grade pura faz fileira; a
+sacudida não faz nem um nem outro.
+
+| | antes | depois |
+|---|---|---|
+| troncos chegando ao mar | 3 | **14** |
+| cursos que são arco de círculo | — | 61 de 371 |
+| galerias subterrâneas | 3 riscos retos | **333** |
+
+### E o agravante foi meu: eu olhei em vez de medir
+
+Formei impressão olhando o desenho três vezes seguidas. A conta que resolveu —
+*"quantos cursos quase não mudam de raio"* — tem dez linhas e levou dez segundos.
+
+Ela está no arquivo de regras junto com as outras duas que faltavam:
+circularidade, sinuosidade e cobertura.
+
+### O parâmetro por RAIO era a outra metade
+
+`ponto = f(raio)` obriga todo traço a correr do centro para fora, e limita a
+ramificação a abrir em ângulo — desenha espinha de peixe por mais galhos que se
+acrescente. O curso virou polilinha, parametrizada por progresso medido em
+comprimento andado.
+
+E a pergunta que o mundo realmente faz é **"qual ponto do traço está mais perto
+daqui"**, nunca "que ponto está no raio X". Toda a mata, as grutas, as trilhas e
+o uso do solo perguntavam a segunda porque a primeira não existia.
+
+### A emenda reta desfez o gerador
+
+Depois de gerar a rede orgânica, costurei as cavernas com **segmentos de dois
+pontos**. Consertei o gerador e recriei o defeito na costura — e ela chama mais
+atenção que tudo, por ser a única coisa reta na tela.
+
+Emenda virou caminhada com ruído coerente: cada passo mira o destino e é
+empurrado pelo ruído da POSIÇÃO. Sorteio por passo daria tremor, e tremor não é
+curva.
+
+### E duas redes não se fundem sozinhas
+
+Em colonização espacial cada nó tem UM pai. As galerias de duas cavernas chegam
+a se encostar no desenho e continuam sendo dois sistemas separados — quem
+entrasse numa não sairia na outra. A ligação é explícita, e é pergunta de grafo
+conexo, que se afirma em teste.
+
+**As regras gerais disto viraram `~/.claude/rules/rules/geracao-procedural-de-mapas.md`.**

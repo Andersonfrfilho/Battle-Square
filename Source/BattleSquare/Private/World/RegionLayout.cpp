@@ -89,8 +89,8 @@ namespace
 		// de sobreposição pega se um dia colidir.
 		const FreshWater::FRiverCourse& Escolhido = Rios[Rios.Num() / 2];
 
-		const FVector2D NoLago = FreshWater::PointAt(Escolhido, Escolhido.LakeRadiusUnits);
-		const float Afastar = FreshWater::HalfWidthAt(Escolhido, Escolhido.LakeRadiusUnits)
+		const FVector2D NoLago = FreshWater::PointAtProgress(Escolhido, Escolhido.LakeAtProgress);
+		const float Afastar = FreshWater::HalfWidthAtProgress(Escolhido, Escolhido.LakeAtProgress)
 			+ VillageLayout::ClearingHalfExtentUnitsFor(ESettlementKind::VilaDoMercado);
 
 		// Para FORA do centro da ilha: a margem de fora é a que dá para o mar,

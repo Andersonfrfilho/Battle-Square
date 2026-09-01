@@ -107,22 +107,10 @@ namespace
 	/** Perto de um rio, e por isso caro: só se atravessa onde há ponte. */
 	bool NaAgua(const FVector2D& Onde)
 	{
-		for (const FreshWater::FRiverCourse& Rio : FreshWater::Plan())
-		{
-			const float Raio = Onde.Size();
-			if (Raio < Rio.SourceRadiusUnits || Raio > Rio.MouthRadiusUnits)
-			{
-				continue;
-			}
-
-			const FVector2D NoCurso = FreshWater::PointAt(Rio, Raio);
-			if (FVector2D::Distance(Onde, NoCurso) <= FreshWater::HalfWidthAt(Rio, Raio))
-			{
-				return true;
-			}
-		}
-
-		return false;
+		// Uma pergunta só, e é a certa: a que distância da margem este ponto
+		// está. A varredura por raio que estava aqui pulava os trechos que
+		// correm de lado — e numa bacia de verdade quase todos correm.
+		return FreshWater::IsFreshWaterAt(Onde);
 	}
 
 	/**
@@ -537,8 +525,8 @@ namespace
 		// ninguém lê o valor. Três lugares leram.
 		for (const FreshWater::FRiverCourse& Rio : FreshWater::PlanTrunks())
 		{
-			const FVector2D NaQueda = FreshWater::PointAt(Rio, Rio.FallRadiusUnits);
-			const float Afastar = FreshWater::HalfWidthAt(Rio, Rio.FallRadiusUnits)
+			const FVector2D NaQueda = FreshWater::PointAtProgress(Rio, Rio.FallAtProgress);
+			const float Afastar = FreshWater::HalfWidthAtProgress(Rio, Rio.FallAtProgress)
 				+ TrailLayout::HalfWidthUnits() * 2.0f;
 
 			const FSettlementPlacement Parte = MaisPertoDe(NaQueda);
@@ -552,8 +540,9 @@ namespace
 			//
 			// O lado escolhido é o da vila — das duas margens, a trilha para na
 			// que fica do lado de quem chega.
-			const FVector2D UmPoucoAcima = FreshWater::PointAt(Rio,
-				Rio.FallRadiusUnits + FreshWater::FallHalfLengthUnits());
+			const FVector2D UmPoucoAcima = FreshWater::PointAtProgress(Rio,
+				Rio.FallAtProgress + FreshWater::FallHalfLengthUnits()
+					/ FMath::Max(1.0f, FreshWater::CourseLengthUnits(Rio)));
 			const FVector2D AoLongo = (UmPoucoAcima - NaQueda).GetSafeNormal();
 			const FVector2D DeLado(-AoLongo.Y, AoLongo.X);
 

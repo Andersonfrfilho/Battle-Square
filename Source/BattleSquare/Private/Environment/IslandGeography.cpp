@@ -240,7 +240,7 @@ namespace Relevo
 
 		for (const FreshWater::FRiverCourse& Curso : FreshWater::PlanTrunks())
 		{
-			const FVector2D NaQueda = FreshWater::PointAt(Curso, Curso.FallRadiusUnits);
+			const FVector2D NaQueda = FreshWater::PointAtProgress(Curso, Curso.FallAtProgress);
 			const float Alcance = FreshWater::LakeHalfWidthUnits();
 
 			if (FVector2D::Distance(Onde, NaQueda) > Alcance)
@@ -248,12 +248,20 @@ namespace Relevo
 				continue;
 			}
 
-			// Quanto o ponto está ACIMA da queda, medido no raio: é o raio que
-			// diz onde é montante e onde é jusante, porque o rio corre para
-			// fora.
-			const float Descida = FreshWater::RiverHalfWidthUnits() * 2.0f * CalhasDeDescida;
+			// Quanto o ponto está ACIMA da queda, medido ao LONGO DO CURSO.
+			//
+			// Era medido no raio, e raio não diz mais o que é montante: numa
+			// bacia de verdade o galho corre de lado, e dois pontos no mesmo
+			// raio podem estar um acima e outro abaixo da mesma queda.
+			float NoCurso = 0.0f;
+			FreshWater::NearestOn(Curso, Onde, NoCurso);
+
+			const float Comprimento = FMath::Max(1.0f, FreshWater::CourseLengthUnits(Curso));
+			const float Descida =
+				FreshWater::RiverHalfWidthUnits() * 2.0f * CalhasDeDescida / Comprimento;
+
 			const float Acima = FMath::Clamp(
-				(Curso.FallRadiusUnits + Descida * 0.5f - Onde.Size()) / Descida, 0.0f, 1.0f);
+				(Curso.FallAtProgress + Descida * 0.5f - NoCurso) / Descida, 0.0f, 1.0f);
 
 			Total += IslandGeography::LandRadiusUnits() * FracaoDoDegrauDaQueda * Acima;
 		}

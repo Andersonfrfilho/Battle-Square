@@ -290,7 +290,7 @@ bool FLandUseNemTodoTrechoAceitaBarcoGrandeTest::RunTest(const FString& Paramete
 	// a navegação seria uniforme e a largura não significaria nada.
 	TestEqual(TEXT("o lago aceita barco grande"),
 		static_cast<int32>(FreshWater::NavigabilityForHalfWidth(
-			FreshWater::HalfWidthAt(Rios[0], Rios[0].LakeRadiusUnits))),
+			FreshWater::HalfWidthAtProgress(Rios[0], Rios[0].LakeAtProgress))),
 		static_cast<int32>(FreshWater::ENavigability::BarcoGrande));
 
 	// E o córrego é fio de água: atravessa-se a pé, e é por isso que ele não
@@ -349,7 +349,7 @@ bool FLandUseABaciaEhUmaArvoreTest::RunTest(const FString& Parameters)
 	float DoTronco = 0.0f;
 	for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
 	{
-		const float NaNascente = FreshWater::HalfWidthAt(Curso, Curso.SourceRadiusUnits);
+		const float NaNascente = FreshWater::HalfWidthAtProgress(Curso, 0.0f);
 		if (Curso.Order == 1) { DoFiapo = NaNascente; }
 		if (Curso.Order == 3) { DoTronco = NaNascente; }
 	}
@@ -373,12 +373,10 @@ bool FLandUseACorredeiraSaiDoRelevoTest::RunTest(const FString& Parameters)
 
 	for (const FreshWater::FRiverCourse& Curso : FreshWater::PlanTrunks())
 	{
-		const float Passo =
-			(Curso.MouthRadiusUnits - Curso.SourceRadiusUnits) / 120.0f;
-
-		for (float Raio = Curso.SourceRadiusUnits; Raio <= Curso.MouthRadiusUnits; Raio += Passo)
+		for (int32 Passo = 0; Passo <= 120; ++Passo)
 		{
-			if (FreshWater::IsRapidsAt(Curso, Raio)) { ++Corredeiras; } else { ++Mansos; }
+			const float Onde = static_cast<float>(Passo) / 120.0f;
+			if (FreshWater::IsRapidsAtProgress(Curso, Onde)) { ++Corredeiras; } else { ++Mansos; }
 		}
 	}
 
@@ -390,7 +388,7 @@ bool FLandUseACorredeiraSaiDoRelevoTest::RunTest(const FString& Parameters)
 	for (const FreshWater::FRiverCourse& Curso : FreshWater::PlanTrunks())
 	{
 		TestFalse(TEXT("não há corredeira dentro do lago"),
-			FreshWater::IsRapidsAt(Curso, Curso.LakeRadiusUnits));
+			FreshWater::IsRapidsAtProgress(Curso, Curso.LakeAtProgress));
 	}
 
 	return true;

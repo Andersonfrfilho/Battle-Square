@@ -56,11 +56,19 @@ namespace FreshWater
 		/** Quantas curvas completas ele faz da nascente à foz. */
 		float MeanderTurns = 0.0f;
 
-		/** Em que raio ele alaga e vira lago. */
-		float LakeRadiusUnits = 0.0f;
-
-		/** Em que raio ele despenca. */
-		float FallRadiusUnits = 0.0f;
+		/**
+		 * Onde ele alaga e onde ele despenca, em PROGRESSO do curso (0 a 1).
+		 *
+		 * Era raio, e raio deixou de servir: a bacia virou uma árvore de
+		 * verdade, e um galho que corre para o lado passa duas vezes pelo mesmo
+		 * raio. A pergunta "que ponto do rio está no raio X" perdeu a resposta
+		 * única — e o sintoma foi nenhum curso achar a própria foz.
+		 *
+		 * Progresso é o parâmetro natural de uma linha desenhada, e sobrevive a
+		 * qualquer forma que a árvore tome.
+		 */
+		float LakeAtProgress = 0.0f;
+		float FallAtProgress = 0.0f;
 
 		/**
 		 * A ORDEM do curso, no sentido de Strahler.
@@ -83,6 +91,22 @@ namespace FreshWater
 
 		/** O rumo do tronco em que ele entra, para onde a curva converge. */
 		float JoinBearingRadians = 0.0f;
+
+		/**
+		 * O CURSO DESENHADO, ponto a ponto.
+		 *
+		 * Ele existe porque a parametrização por raio não consegue desenhar uma
+		 * raiz. Com `ponto = f(raio)`, todo curso corre do centro para fora e
+		 * os galhos só podem se abrir em ÂNGULO — o que desenha espinha de
+		 * peixe, sempre, por mais galhos que se acrescente.
+		 *
+		 * A árvore agora é gerada crescendo da FOZ para dentro, ramificando; o
+		 * curso guarda os pontos, e `PointAt` procura neles. O raio continua
+		 * sendo o parâmetro de consulta porque meio mundo já pergunta assim, e
+		 * ele funciona porque cada passo é obrigado a entrar — um curso que
+		 * voltasse para fora teria dois pontos no mesmo raio.
+		 */
+		TArray<FVector2D> PointsUnits;
 
 		bool FlowsToTheSea() const { return JoinRadiusUnits <= 0.0f; }
 	};
@@ -136,10 +160,10 @@ namespace FreshWater
 	 * água que sai de um lago e cai vinte metros adiante não vai mansa até a
 	 * borda.
 	 */
-	BATTLESQUARE_API bool IsRapidsAt(const FRiverCourse& Course, float RadiusUnits);
+	BATTLESQUARE_API bool IsRapidsAtProgress(const FRiverCourse& Course, float Progress);
 
 	/** O declive do leito num ponto, em altura por unidade andada. */
-	BATTLESQUARE_API float BedGradientAt(const FRiverCourse& Course, float RadiusUnits);
+	BATTLESQUARE_API float BedGradientAtProgress(const FRiverCourse& Course, float Progress);
 
 	/** A partir de que declive o trecho é corredeira. */
 	BATTLESQUARE_API float RapidsGradient();
@@ -223,8 +247,15 @@ namespace FreshWater
 	 */
 	struct BATTLESQUARE_API FUnderwaterLink
 	{
-		FVector2D FromUnits = FVector2D::ZeroVector;
-		FVector2D ToUnits = FVector2D::ZeroVector;
+		/**
+		 * O curso da passagem, ponto a ponto.
+		 *
+		 * Era um segmento reto entre duas grutas — três riscos no mapa, e a
+		 * coisa mais fora de lugar nele. Rede de água subterrânea de calcário
+		 * é DENDRÍTICA: ela dissolve a pedra seguindo fratura, e o desenho que
+		 * sai é raiz. É aqui que esse padrão pertence de verdade.
+		 */
+		TArray<FVector2D> PointsUnits;
 
 		/** Passagem de pedra é apertada: barco grande não entra. */
 		ENavigability Navigability = ENavigability::BarcoPequeno;
@@ -242,7 +273,10 @@ namespace FreshWater
 	BATTLESQUARE_API bool IsWaterNetworkConnected();
 
 	/** Onde, no plano do mundo, o rio cruza este raio. */
-	BATTLESQUARE_API FVector2D PointAt(const FRiverCourse& Course, float RadiusUnits);
+	BATTLESQUARE_API FVector2D PointAtProgress(const FRiverCourse& Course, float Progress);
+
+	/** O comprimento do curso, para quem precisa converter distância em progresso. */
+	BATTLESQUARE_API float CourseLengthUnits(const FRiverCourse& Course);
 
 	/**
 	 * Quão largo o rio está neste raio.
@@ -250,10 +284,43 @@ namespace FreshWater
 	 * É AQUI que o lago existe: perto de `LakeRadiusUnits` a função sobe até
 	 * `LakeHalfWidthUnits()` e volta, com transição suave. Lago é largura.
 	 */
-	BATTLESQUARE_API float HalfWidthAt(const FRiverCourse& Course, float RadiusUnits);
+	BATTLESQUARE_API float HalfWidthAtProgress(const FRiverCourse& Course, float Progress);
 
 	/** Se neste raio a água está despencando. */
-	BATTLESQUARE_API bool IsFallAt(const FRiverCourse& Course, float RadiusUnits);
+	BATTLESQUARE_API bool IsFallAtProgress(const FRiverCourse& Course, float Progress);
+
+	/**
+	 * O ponto do curso mais perto de uma posição, e a que distância ele está.
+	 *
+	 * **É esta a pergunta que o mundo sempre quis fazer.** Quem planta uma
+	 * árvore, quem traça uma trilha e quem decide se um ponto está molhado
+	 * perguntam "estou perto da água?", e estavam sendo obrigados a traduzir
+	 * isso para "que raio é esse?" — uma tradução que deixou de valer no dia em
+	 * que a água passou a correr para os lados.
+	 */
+	BATTLESQUARE_API float NearestOn(const FRiverCourse& Course, const FVector2D& PositionUnits,
+		float& OutProgress);
+
+	/**
+	 * A que distância da MARGEM de qualquer água doce este ponto está.
+	 *
+	 * Negativo quer dizer dentro da água. Percorre todos os cursos e todos os
+	 * córregos: é a única pergunta que basta para plantar, traçar e molhar.
+	 */
+	BATTLESQUARE_API float DistanceToFreshWater(const FVector2D& PositionUnits);
+
+	/**
+	 * Este ponto está molhado — respondido por uma GRADE, em tempo constante.
+	 *
+	 * A pergunta é feita milhões de vezes: uma por aresta do traçado de
+	 * trilhas, uma por árvore plantada. Respondê-la percorrendo os cursos custa
+	 * o mundo inteiro a cada vez, e foi o que fez a bateria estourar o tempo.
+	 *
+	 * O mapa é FIXO, então a água é desenhada uma vez numa grade e depois só se
+	 * consulta. É a mesma troca que a tabela de alturas do traçado fez, e pelo
+	 * mesmo motivo.
+	 */
+	BATTLESQUARE_API bool IsFreshWaterAt(const FVector2D& PositionUnits);
 
 	/**
 	 * As grutas das cachoeiras — uma ao lado de cada queda.

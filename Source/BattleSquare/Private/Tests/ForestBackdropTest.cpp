@@ -1213,9 +1213,7 @@ namespace
 		}
 
 		const FreshWater::FRiverCourse& Curso = Cursos[0];
-		const float Raio = FMath::Lerp(Curso.SourceRadiusUnits, Curso.MouthRadiusUnits,
-			FracaoDoPercurso);
-		const FVector2D Ponto = FreshWater::PointAt(Curso, Raio);
+		const FVector2D Ponto = FreshWater::PointAtProgress(Curso, FracaoDoPercurso);
 		return FVector(Ponto.X, Ponto.Y, 0.0f);
 	}
 
@@ -1236,23 +1234,23 @@ namespace
 		// que um, e o pedaço inteiro cai dentro da água.
 		//
 		// O ombro é achado PROCURANDO, não por um deslocamento escrito à mão:
-		// é o primeiro raio em que a calha passa do dobro da largura do rio.
+		// é o primeiro ponto em que a calha passa do dobro da largura do rio.
 		// Assim ele acompanha quando o lago mudar de tamanho de novo.
-		const float DoRio = FreshWater::HalfWidthAt(Cursos[0], Cursos[0].SourceRadiusUnits);
-		const float Passo = (Cursos[0].LakeRadiusUnits - Cursos[0].SourceRadiusUnits) / 200.0f;
+		const FreshWater::FRiverCourse& Tronco = Cursos[0];
+		const float DoRio = FreshWater::HalfWidthAtProgress(Tronco, 0.0f);
 
-		float NoOmbro = Cursos[0].LakeRadiusUnits;
-		for (float Raio = Cursos[0].SourceRadiusUnits; Raio <= Cursos[0].LakeRadiusUnits;
-			Raio += Passo)
+		float NoOmbro = Tronco.LakeAtProgress;
+		for (int32 Passo = 0; Passo <= 200; ++Passo)
 		{
-			if (FreshWater::HalfWidthAt(Cursos[0], Raio) > DoRio * 2.0f)
+			const float Onde = Tronco.LakeAtProgress * static_cast<float>(Passo) / 200.0f;
+			if (FreshWater::HalfWidthAtProgress(Tronco, Onde) > DoRio * 2.0f)
 			{
-				NoOmbro = Raio;
+				NoOmbro = Onde;
 				break;
 			}
 		}
 
-		const FVector2D Ponto = FreshWater::PointAt(Cursos[0], NoOmbro);
+		const FVector2D Ponto = FreshWater::PointAtProgress(Cursos[0], NoOmbro);
 		return FVector(Ponto.X, Ponto.Y, 0.0f);
 	}
 
@@ -1265,7 +1263,7 @@ namespace
 			return FVector::ZeroVector;
 		}
 
-		const FVector2D Ponto = FreshWater::PointAt(Cursos[0], Cursos[0].FallRadiusUnits);
+		const FVector2D Ponto = FreshWater::PointAtProgress(Cursos[0], Cursos[0].FallAtProgress);
 		return FVector(Ponto.X, Ponto.Y, 0.0f);
 	}
 
@@ -1391,7 +1389,10 @@ bool FForestRiverWidensIntoALakeTest::RunTest(const FString& Parameters)
 		}
 	}
 
-	const float RaioDoLago = Cursos[0].LakeRadiusUnits;
+	// O lago é medido em PROGRESSO agora; para comparar com o raio das lajes,
+	// pergunta-se o ponto e mede-se dele.
+	const float RaioDoLago = static_cast<float>(
+		FreshWater::PointAtProgress(Cursos[0], Cursos[0].LakeAtProgress).Size());
 	TestTrue(TEXT("a calha mais larga é bem mais larga que a mais estreita"),
 		MaiorLargura > MenorLargura * 2.0f);
 	TestTrue(TEXT("e ela está do lado do lago, não num trecho qualquer"),
@@ -1442,7 +1443,12 @@ bool FForestRiverFoamsOnlyWhereItFallsTest::RunTest(const FString& Parameters)
 		bool bNumDegrau = false;
 		for (const FreshWater::FRiverCourse& Curso : Cursos)
 		{
-			bNumDegrau = bNumDegrau || FreshWater::IsFallAt(Curso, Raio);
+			// Qual PONTO do curso está mais perto desta laje — e ele é quem diz
+			// se aqui é degrau. Perguntar por raio pulava os trechos que
+			// correm de lado.
+			float NoCurso = 0.0f;
+			FreshWater::NearestOn(Curso, FVector2D(Mundo.X, Mundo.Y), NoCurso);
+			bNumDegrau = bNumDegrau || FreshWater::IsFallAtProgress(Curso, NoCurso);
 		}
 
 		TestTrue(TEXT("toda espuma está num degrau, e água parada não espuma"),
@@ -1520,10 +1526,10 @@ bool FForestRiverTrailWalksTheBankTest::RunTest(const FString& Parameters)
 				continue;
 			}
 
-			const FVector2D NoCurso = FreshWater::PointAt(Curso, Raio);
+			float NoCurso = 0.0f;
+			const float Ate = FreshWater::NearestOn(Curso, Plano, NoCurso);
 			TestTrue(TEXT("nenhum trecho de trilha cai dentro da água"),
-				FVector2D::Distance(Plano, NoCurso)
-				> FreshWater::HalfWidthAt(Curso, Raio));
+				Ate > FreshWater::HalfWidthAtProgress(Curso, NoCurso));
 		}
 	}
 

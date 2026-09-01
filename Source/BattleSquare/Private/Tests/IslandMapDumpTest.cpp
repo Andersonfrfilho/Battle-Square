@@ -105,25 +105,25 @@ bool FIslandMapDumpTest::RunTest(const FString& Parameters)
 		const int32 Passos = 40;
 		for (int32 Passo = 0; Passo <= Passos; ++Passo)
 		{
-			const float Raio = FMath::Lerp(Rios[Indice].SourceRadiusUnits,
-				Rios[Indice].MouthRadiusUnits, static_cast<float>(Passo) / Passos);
-			const FVector2D Onde = FreshWater::PointAt(Rios[Indice], Raio);
+			const float Onde2 = static_cast<float>(Passo) / Passos;
+			const FVector2D Onde = FreshWater::PointAtProgress(Rios[Indice], Onde2);
 			Json += FString::Printf(TEXT("%s[%.0f,%.0f,%.0f]"),
 				Passo == 0 ? TEXT("") : TEXT(","), Onde.X, Onde.Y,
-				FreshWater::HalfWidthAt(Rios[Indice], Raio));
+				FreshWater::HalfWidthAtProgress(Rios[Indice], Onde2));
 		}
 
-		const FVector2D NoLago = FreshWater::PointAt(Rios[Indice], Rios[Indice].LakeRadiusUnits);
-		const FVector2D NaQueda = FreshWater::PointAt(Rios[Indice], Rios[Indice].FallRadiusUnits);
+		const FVector2D NoLago =
+			FreshWater::PointAtProgress(Rios[Indice], Rios[Indice].LakeAtProgress);
+		const FVector2D NaQueda =
+			FreshWater::PointAtProgress(Rios[Indice], Rios[Indice].FallAtProgress);
 		// A CORREDEIRA vai como marca por ponto do curso, e não como faixa: ela
 		// é derivada do relevo, e o relevo muda por ponto.
 		Json += TEXT("],\"corredeira\":[");
 		for (int32 Passo = 0; Passo <= Passos; ++Passo)
 		{
-			const float Raio = FMath::Lerp(Rios[Indice].SourceRadiusUnits,
-				Rios[Indice].MouthRadiusUnits, static_cast<float>(Passo) / Passos);
 			Json += FString::Printf(TEXT("%s%d"), Passo == 0 ? TEXT("") : TEXT(","),
-				FreshWater::IsRapidsAt(Rios[Indice], Raio) ? 1 : 0);
+				FreshWater::IsRapidsAtProgress(Rios[Indice],
+					static_cast<float>(Passo) / Passos) ? 1 : 0);
 		}
 
 		Json += FString::Printf(
@@ -252,16 +252,19 @@ bool FIslandMapDumpTest::RunTest(const FString& Parameters)
 	Json += TEXT("  ],\n");
 
 	// As passagens subterrâneas: a ligação que não cabe na superfície.
-	Json += TEXT("  \"passagens\": [");
+	Json += TEXT("  \"passagens\": [\n");
 	const TArray<FreshWater::FUnderwaterLink> Passagens = FreshWater::PlanUnderwaterLinks();
 	for (int32 Indice = 0; Indice < Passagens.Num(); ++Indice)
 	{
-		Json += FString::Printf(TEXT("%s[%.0f,%.0f,%.0f,%.0f]"),
-			Indice == 0 ? TEXT("") : TEXT(","),
-			Passagens[Indice].FromUnits.X, Passagens[Indice].FromUnits.Y,
-			Passagens[Indice].ToUnits.X, Passagens[Indice].ToUnits.Y);
+		Json += TEXT("    [");
+		for (int32 Ponto = 0; Ponto < Passagens[Indice].PointsUnits.Num(); ++Ponto)
+		{
+			Json += FString::Printf(TEXT("%s[%.0f,%.0f]"), Ponto == 0 ? TEXT("") : TEXT(","),
+				Passagens[Indice].PointsUnits[Ponto].X, Passagens[Indice].PointsUnits[Ponto].Y);
+		}
+		Json += FString::Printf(TEXT("]%s\n"), Indice + 1 < Passagens.Num() ? TEXT(",") : TEXT(""));
 	}
-	Json += TEXT("],\n");
+	Json += TEXT("  ],\n");
 
 	// Os campos de treino, no anel que o GameMode usa.
 	{

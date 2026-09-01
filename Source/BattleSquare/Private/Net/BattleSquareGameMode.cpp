@@ -1691,8 +1691,10 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 			if (Caverna)
 			{
 				FCaveRecipe Receita;
+				// Retangular: `CaveOtherSide` zero quer dizer "igual ao primeiro",
+				// que é o que as cavernas postas à mão continuam sendo.
 				Receita.Columns = Peca.CaveSide;
-				Receita.Rows = Peca.CaveSide;
+				Receita.Rows = (Peca.CaveOtherSide > 0) ? Peca.CaveOtherSide : Peca.CaveSide;
 				Receita.Seed = SementeDaPeca;
 				Receita.Flavor = Peca.CaveFlavor;
 				Caverna->BuildCave(Receita);

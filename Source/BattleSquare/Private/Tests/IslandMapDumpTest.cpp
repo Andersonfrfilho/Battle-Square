@@ -231,13 +231,18 @@ bool FIslandMapDumpTest::RunTest(const FString& Parameters)
 		for (int32 Indice = 0; Indice < Cavernas.Num(); ++Indice)
 		{
 			const int32 Lado = Cavernas[Indice].CaveSide;
-			const CaveLabyrinth::FCaveGrid Planta = CaveLabyrinth::Carve(Lado, Lado,
+			const int32 Outro = (Cavernas[Indice].CaveOtherSide > 0)
+				? Cavernas[Indice].CaveOtherSide : Lado;
+
+			const CaveLabyrinth::FCaveGrid Planta = CaveLabyrinth::Carve(Lado, Outro,
 				IslandFeatureLayout::SeedForPlacement(SementeDoMundo, Cavernas[Indice]));
 
 			Json += FString::Printf(
-				TEXT("    {\"x\":%.0f,\"y\":%.0f,\"lado\":%d,\"entrada\":%d,\"paredes\":["),
+				TEXT("    {\"x\":%.0f,\"y\":%.0f,\"lado\":%d,\"linhas\":%d,")
+				TEXT("\"entrada\":%d,\"bocas\":%d,\"paredes\":["),
 				Cavernas[Indice].CenterUnits().X, Cavernas[Indice].CenterUnits().Y,
-				Planta.Columns, Planta.EntranceColumn);
+				Planta.Columns, Planta.Rows, Planta.EntranceColumn,
+				Planta.ExtraMouths.Num() + 1);
 
 			for (int32 Casa = 0; Casa < Planta.Walls.Num(); ++Casa)
 			{

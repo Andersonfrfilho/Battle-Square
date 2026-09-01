@@ -73,6 +73,15 @@ namespace IslandFeatureLayout
 		int32 CaveSide = 0;
 
 		/**
+		 * O outro lado, quando a caverna não é quadrada.
+		 *
+		 * Zero quer dizer "igual ao primeiro". Caverna sempre quadrada é
+		 * assinatura de gerador: a rocha não faz quadrados, e cinco quadrados
+		 * de tamanhos diferentes leem como cinco versões da mesma caverna.
+		 */
+		int32 CaveOtherSide = 0;
+
+		/**
 		 * O que a caverna tem dentro. Ignorado pelas outras peças.
 		 *
 		 * Mora AQUI porque é o planejador quem sabe onde o vulcão e o mar ficam.

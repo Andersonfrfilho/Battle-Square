@@ -67,6 +67,10 @@ namespace
 	constexpr int32 TentativasDeTorcao = 6;
 	constexpr float PassoDaTorcao = 1.6f;
 
+	/** Quantos passos tem uma perna de ziguezague em encosta mansa, e o teto. */
+	constexpr float PassosPorPerna = 9.0f;
+	constexpr float MaiorPerna = 5.0f;
+
 	/**
 	 * O declive que uma trilha aguenta, e o que ela paga por passar dele.
 	 *
@@ -380,6 +384,85 @@ namespace
 		return Torto;
 	}
 
+	/**
+	 * ZIGUEZAGUEIA os trechos íngremes. É o que uma trilha de serra é.
+	 *
+	 * E não é enfeite: é a única forma de subir dentro do declive sustentável.
+	 * Para vencer uma altura H a dez por cento o caminho precisa de dez vezes H
+	 * de percurso, e esse percurso só cabe na encosta indo DE LADO.
+	 *
+	 * A geometria sai da regra, não de um desenho: numa encosta de declive G,
+	 * atravessá-la num ângulo θ com a curva de nível dá declive G·sen(θ). Para
+	 * o resultado ser o sustentável S, sen(θ) = S/G — quanto mais íngreme a
+	 * encosta, mais rasante a perna, e mais fechado o zigue.
+	 *
+	 * O lado ALTERNA a cada volta. Ziguezague que não alterna é uma diagonal.
+	 */
+	TArray<FVector2D> Ziguezaguear(const TArray<FVector2D>& Caminho)
+	{
+		if (Caminho.Num() < 3)
+		{
+			return Caminho;
+		}
+
+		TArray<FVector2D> Torto;
+		Torto.Reserve(Caminho.Num());
+		Torto.Add(Caminho[0]);
+
+		float ParaQualLado = 1.0f;
+		int32 DesdeAVirada = 0;
+
+		for (int32 Ponto = 1; Ponto + 1 < Caminho.Num(); ++Ponto)
+		{
+			const float DaEncosta = IslandGeography::GroundSlopeAt(Caminho[Ponto]);
+
+			if (DaEncosta <= DeclivelSustentavel)
+			{
+				// Chão manso não pede ziguezague: a trilha vai reta e quem sobe
+				// nem percebe. Zigzaguear no plano é rodeio sem motivo.
+				Torto.Add(Caminho[Ponto]);
+				DesdeAVirada = 0;
+				continue;
+			}
+
+			// O seno do ângulo com a curva de nível, e daí o quanto a perna se
+			// afasta da linha direta.
+			const float SenoDaPerna =
+				FMath::Clamp(DeclivelSustentavel / DaEncosta, 0.05f, 1.0f);
+			const float Afastar = Passo() * (1.0f / SenoDaPerna - 1.0f);
+
+			const FVector2D AoLongo =
+				(Caminho[Ponto + 1] - Caminho[Ponto - 1]).GetSafeNormal();
+			const FVector2D DeLado(-AoLongo.Y, AoLongo.X);
+
+			const FVector2D Candidato = Caminho[Ponto]
+				+ DeLado * (ParaQualLado * FMath::Min(Afastar, Passo() * MaiorPerna));
+
+			// Entortar não pode desfazer o que o traçado garantiu.
+			const bool bServe = IslandGeography::IsOnLand(Candidato)
+				&& FVector2D::Distance(Candidato, IslandGeography::VolcanoCenterUnits())
+					> IslandGeography::VolcanoScorchedRadiusUnits();
+
+			Torto.Add(bServe ? Candidato : Caminho[Ponto]);
+
+			// Vira o lado a cada perna cumprida. A perna é mais longa em
+			// encosta mansa e mais curta em encosta brava, que é o que faz o
+			// ziguezague apertar onde precisa.
+			++DesdeAVirada;
+			const int32 PernaEmPassos = FMath::Max(2,
+				FMath::RoundToInt(PassosPorPerna * SenoDaPerna));
+
+			if (DesdeAVirada >= PernaEmPassos)
+			{
+				ParaQualLado = -ParaQualLado;
+				DesdeAVirada = 0;
+			}
+		}
+
+		Torto.Add(Caminho.Last());
+		return Torto;
+	}
+
 	/** Menor custo entre dois pontos, por Dijkstra sobre a grade. */
 	TArray<FVector2D> CaminhoBarato(const FVector2D& Daqui, const FVector2D& Prali, bool& bOutDesistiu)
 	{
@@ -538,7 +621,27 @@ namespace
 			Trilha.PointsUnits = CaminhoBarato(Origem, Destino,
 				Trilha.bFellBackToStraightLine);
 
-			// IDENTIFICA a trilha que saiu reta e a entorta.
+			// PRIMEIRO o ziguezague das encostas: onde a subida é brava, a
+			// trilha vai de lado, e isso muda o comprimento dela.
+			if (!Trilha.bFellBackToStraightLine)
+			{
+				const TArray<FVector2D> Direto = Trilha.PointsUnits;
+				Trilha.PointsUnits = Ziguezaguear(Direto);
+
+				// E o TETO. Sem ele o ziguezague deu 8,7 vezes a linha reta —
+				// escada de caracol, não trilha. Passando do teto, volta-se ao
+				// caminho direto: melhor uma subida franca que um rodeio que
+				// ninguém percorre.
+				if (SinuosidadeDe(Trilha.PointsUnits) > TrailLayout::MaximumSinuosity())
+				{
+					Trilha.PointsUnits = Direto;
+				}
+			}
+
+			// DEPOIS identifica a trilha que saiu reta e a entorta.
+			//
+			// Nesta ordem porque o ziguezague já pode ter dado sinuosidade de
+			// sobra — serpentear em cima dele seria curva sobre curva.
 			//
 			// A amplitude cresce até a sinuosidade passar do mínimo, e para no
 			// primeiro valor que serve — mais que isso vira serpentina, e
@@ -690,6 +793,11 @@ float TrailLayout::MinimumSinuosity()
 	// reta. Uma trilha de mil metros com 1,06 anda sessenta a mais que a reta,
 	// o que é uma curva por quilômetro — que é o que uma trilha real faz.
 	return 1.06f;
+}
+
+float TrailLayout::MaximumSinuosity()
+{
+	return 4.0f;
 }
 
 bool TrailLayout::AllowsStraightTrails()

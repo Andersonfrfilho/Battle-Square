@@ -35,8 +35,29 @@ namespace CaveLabyrinth
 		/** Paredes que SOBRARAM em cada casa, indexadas por `Index`. */
 		TArray<uint8> Walls;
 
-		/** Por qual coluna da borda sul se entra. */
+		/** Por qual coluna da borda sul se entra. A boca principal. */
 		int32 EntranceColumn = 0;
+
+		/**
+		 * As OUTRAS bocas, uma por borda que tiver.
+		 *
+		 * Caverna com uma saída só é beco: entra-se, anda-se o labirinto
+		 * inteiro e volta-se pelo mesmo caminho. Com duas, ela vira PASSAGEM —
+		 * e é o que dá sentido às galerias que ligam uma caverna à outra.
+		 *
+		 * Guardadas por borda e posição, porque quem constrói precisa saber
+		 * onde abrir a muralha.
+		 */
+		struct FMouth
+		{
+			/** 0 sul, 1 norte, 2 oeste, 3 leste. */
+			int32 Edge = 0;
+
+			/** Coluna, para sul e norte; linha, para oeste e leste. */
+			int32 Along = 0;
+		};
+
+		TArray<FMouth> ExtraMouths;
 
 		bool IsValid() const { return Columns > 0 && Rows > 0 && Walls.Num() == Columns * Rows; }
 		int32 CellCount() const { return Columns * Rows; }

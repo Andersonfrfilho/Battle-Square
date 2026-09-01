@@ -133,6 +133,14 @@ namespace TrailLayout
 	BATTLESQUARE_API float MinimumSinuosity();
 
 	/**
+	 * E o TETO, que o ziguezague precisa tanto quanto o piso.
+	 *
+	 * Trilha de serra real anda duas a quatro vezes a linha reta. Oito é
+	 * caricatura: vira escada de caracol, e quem sobe desiste antes.
+	 */
+	BATTLESQUARE_API float MaximumSinuosity();
+
+	/**
 	 * Se linha reta é aceitável. Configurável em `DefaultGame.ini`, chave
 	 * `WorldAllowStraightTrails`.
 	 *

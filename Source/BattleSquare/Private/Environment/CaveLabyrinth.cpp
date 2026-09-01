@@ -162,6 +162,36 @@ CaveLabyrinth::FCaveGrid CaveLabyrinth::Carve(int32 Columns, int32 Rows, uint32 
 
 	Planta.EntranceColumn = BattleSpread::Below(Seed, Decisao, Columns);
 	Planta.Walls[Planta.Index(Planta.EntranceColumn, 0)] &= ~WallSouth;
+	++Decisao;
+
+	// AS OUTRAS BOCAS. Caverna com uma saída só é beco: entra-se, anda-se o
+	// labirinto inteiro e volta-se pelo mesmo caminho.
+	//
+	// Quantas depende do TAMANHO — uma caverna de três casas com quatro bocas
+	// é um alpendre, não uma caverna. A conta é o lado dividido por quatro,
+	// entre uma e três.
+	const int32 QuantasMais = FMath::Clamp(FMath::Max(Columns, Rows) / 4, 1, 3);
+
+	for (int32 Qual = 0; Qual < QuantasMais; ++Qual)
+	{
+		// A borda é sorteada entre as TRÊS que sobraram: repetir a do sul faria
+		// duas bocas na mesma parede, que de fora lê como uma entrada larga.
+		const int32 Borda = 1 + BattleSpread::Below(Seed, Decisao++, 3);
+		const int32 AoLongo = BattleSpread::Below(Seed, Decisao++,
+			(Borda <= 1) ? Columns : Rows);
+
+		FCaveGrid::FMouth Boca;
+		Boca.Edge = Borda;
+		Boca.Along = AoLongo;
+		Planta.ExtraMouths.Add(Boca);
+
+		switch (Borda)
+		{
+		case 1: Planta.Walls[Planta.Index(AoLongo, Rows - 1)] &= ~WallNorth; break;
+		case 2: Planta.Walls[Planta.Index(0, AoLongo)] &= ~WallWest; break;
+		default: Planta.Walls[Planta.Index(Columns - 1, AoLongo)] &= ~WallEast; break;
+		}
+	}
 
 	return Planta;
 }

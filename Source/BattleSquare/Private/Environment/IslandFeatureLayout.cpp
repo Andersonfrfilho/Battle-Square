@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Environment/IslandFeatureLayout.h"
+#include "Battle/DeterministicSpread.h"
 
 #include "Environment/CaveSystem.h"
 #include "Environment/Volcano.h"
@@ -125,6 +126,23 @@ namespace IslandFeatureLayout
 			return Peca;
 		}
 
+		/**
+		 * O outro lado da caverna, derivado do primeiro e do rumo.
+		 *
+		 * Entre 60% e 100% do lado maior: retângulo, nunca quadrado, e nunca
+		 * tão comprido que vire corredor. A rocha não faz quadrados, e cinco
+		 * quadrados de tamanhos diferentes leem como cinco versões da mesma
+		 * caverna.
+		 */
+		int32 OutroLadoDaCaverna(int32 Lado, float AnguloEmGraus)
+		{
+			const uint32 Semente = BattleSpread::SeedFromText(
+				FString::Printf(TEXT("forma-da-caverna-%d"), FMath::RoundToInt(AnguloEmGraus)));
+
+			return FMath::Max(3, FMath::RoundToInt(Lado * BattleSpread::Between(
+				0.60f, 1.0f, BattleSpread::Fraction(Semente, 0))));
+		}
+
 		FFeaturePlacement Caverna(float AnguloEmGraus, float RaioDoAnel, int32 Lado)
 		{
 			FFeaturePlacement Peca;
@@ -133,6 +151,7 @@ namespace IslandFeatureLayout
 			Peca.RadiusUnits = RaioDoAnel;
 			Peca.ClearanceUnits = CaveClearanceUnits(Lado);
 			Peca.CaveSide = Lado;
+			Peca.CaveOtherSide = OutroLadoDaCaverna(Lado, AnguloEmGraus);
 			return Peca;
 		}
 	}

@@ -3,7 +3,9 @@
 #include "Misc/AutomationTest.h"
 #include "World/RegionLayout.h"
 #include "World/VillageLayout.h"
+#include "World/AqueductLayout.h"
 #include "Environment/IslandGeography.h"
+#include "Environment/FreshWater.h"
 
 namespace TracadoDaRegiao
 {
@@ -177,15 +179,98 @@ bool FRegionLayoutTudoCabeNoLoteDoSeuTipoTest::RunTest(const FString& Parameters
 
 		for (int32 Primeiro = 0; Primeiro < Pecas.Num(); ++Primeiro)
 		{
+			// O QUE FICA SOBRE A ÁGUA está fora do lote de propósito.
+			//
+			// O lote é chão achatado, e chinampa e palafita não pedem chão —
+			// a estaca resolve o desnível, e é para isso que ela existe.
+			// Exigir que caibam no lote seria exigir que a vila secasse o lago
+			// para caber, que é o avesso da ideia.
+			if (Pecas[Primeiro].bOverWater)
+			{
+				continue;
+			}
+
 			TestTrue(TEXT("o prédio cabe no lote do seu tipo"),
 				VillageLayout::FitsInPlotFor(Tipo, Pecas[Primeiro]));
 
 			for (int32 Segundo = Primeiro + 1; Segundo < Pecas.Num(); ++Segundo)
 			{
+				if (Pecas[Segundo].bOverWater)
+				{
+					continue;
+				}
+
 				TestFalse(TEXT("nenhum prédio invade o outro"),
 					VillageLayout::Overlaps(Pecas[Primeiro], Pecas[Segundo]));
 			}
 		}
+	}
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FRegionLayoutTodaVilaCaptaAguaTest,
+	"BattleSquare.RegionLayout.TodaVilaCaptaAgua",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FRegionLayoutTodaVilaCaptaAguaTest::RunTest(const FString& Parameters)
+{
+	// Toda cidade capta água de algum lugar. É a primeira coisa que se procura
+	// ao fundar uma, e as nossas estavam sendo postas por ÂNGULO — sem ninguém
+	// perguntar se havia de beber.
+	//
+	// O cais fica de fora: ele é uma porta na praia, não um lugar de morar.
+	for (const FSettlementPlacement& Assentamento : RegionLayout::Plan())
+	{
+		if (Assentamento.Kind == ESettlementKind::PostoDeFronteira)
+		{
+			continue;
+		}
+
+		float MaisPerto = TNumericLimits<float>::Max();
+
+		for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
+		{
+			float Aonde = 0.0f;
+			MaisPerto = FMath::Min(MaisPerto,
+				FreshWater::NearestOn(Curso, Assentamento.CenterUnits, Aonde));
+		}
+
+		for (const FreshWater::FSpring& Fonte : FreshWater::PlanSprings())
+		{
+			MaisPerto = FMath::Min(MaisPerto, static_cast<float>(
+				FVector2D::Distance(Assentamento.CenterUnits, Fonte.CenterUnits)));
+		}
+
+		// Duas clareiras: perto o bastante para carregar água todo dia.
+		if (MaisPerto < AqueductLayout::ThirstyBeyondUnits(Assentamento.Kind))
+		{
+			continue;
+		}
+
+		// E QUEM NÃO TEM PERTO, TEM AQUEDUTO.
+		//
+		// A Vila do Bloco Zero fica a 288 metros de qualquer gota, e não é
+		// descuido: ela nasce no centro, e o miolo é seco de propósito — um rio
+		// cortando a praça inicial seria obstáculo no primeiro passo do jogo.
+		//
+		// Mover a vila desfaria a decisão; cavar um rio até ela, também. O que
+		// uma cidade real faz é TRAZER a água.
+		bool bTemAqueduto = false;
+		for (const AqueductLayout::FAqueduct& Aqueduto : AqueductLayout::Plan())
+		{
+			if (Aqueduto.Serves == Assentamento.Kind)
+			{
+				bTemAqueduto = true;
+
+				// E ele DESCE. Aqueduto não bombeia: sem desnível é um cano
+				// cheio de água parada.
+				TestTrue(TEXT("o aqueduto desce da captação até a vila"),
+					Aqueduto.DropUnits > 0.0f);
+			}
+		}
+
+		TestTrue(TEXT("o assentamento tem água perto ou aqueduto"), bTemAqueduto);
 	}
 
 	return true;

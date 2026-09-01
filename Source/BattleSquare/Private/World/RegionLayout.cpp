@@ -50,6 +50,10 @@ namespace
 	constexpr float RumoDaCidade = 150.0f;
 
 	constexpr int32 QuantidadeDePostos = 3;
+
+	/** Quantos rumos tentar atrás de água, e de quanto em quanto. */
+	constexpr int32 VoltasAtrasDeAgua = 36;
+	constexpr float GrausPorTentativa = 9.0f;
 	constexpr float PrimeiroRumoDePosto = 15.0f;
 
 	FVector2D PontoDaIlha(float Graus, float Distancia)
@@ -138,6 +142,74 @@ namespace
 		return NoLago + ParaDentro * Afastar;
 	}
 
+	/**
+	 * A que distância da água doce um ponto está.
+	 *
+	 * Toda cidade capta água de algum lugar — é a primeira coisa que se procura
+	 * ao fundar uma. Vila longe de água é vila que não existe, e a nossa estava
+	 * sendo posta por ÂNGULO, sem ninguém perguntar se havia de beber.
+	 */
+	float AteAAguaDoce(const FVector2D& Onde)
+	{
+		float Menor = TNumericLimits<float>::Max();
+
+		for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
+		{
+			float Aonde = 0.0f;
+			Menor = FMath::Min(Menor, FreshWater::NearestOn(Curso, Onde, Aonde)
+				- FreshWater::HalfWidthAtProgress(Curso, Aonde));
+		}
+
+		for (const FreshWater::FSpring& Fonte : FreshWater::PlanSprings())
+		{
+			Menor = FMath::Min(Menor, static_cast<float>(
+				FVector2D::Distance(Onde, Fonte.CenterUnits)) - Fonte.PoolHalfWidthUnits);
+		}
+
+		return Menor;
+	}
+
+	/**
+	 * Gira o assentamento até achar água, sem sair do anel dele.
+	 *
+	 * A distância do centro é decisão de RITMO — quatro minutos de caminhada de
+	 * casa — e ela não se negocia. O rumo é livre, e é ele que se ajusta: a
+	 * vila anda pelo anel até encontrar de beber.
+	 *
+	 * Fica com o MELHOR rumo tentado mesmo que nenhum sirva. Devolver o rumo
+	 * pedido quando nada serve seria fingir que a busca não aconteceu.
+	 */
+	FSettlementPlacement AssentamentoComAgua(ESettlementKind Tipo, float Graus)
+	{
+		const float Distancia = RegionLayout::DistanceFromCenterUnits(Tipo);
+		const float Longe = VillageLayout::ClearingHalfExtentUnitsFor(Tipo) * 2.0f;
+
+		FSettlementPlacement Melhor;
+		Melhor.Kind = Tipo;
+		Melhor.CenterUnits = PontoDaIlha(Graus, Distancia);
+
+		float MaisPerto = AteAAguaDoce(Melhor.CenterUnits);
+
+		for (int32 Passo = 1; Passo <= VoltasAtrasDeAgua && MaisPerto > Longe; ++Passo)
+		{
+			// Alterna para os dois lados, abrindo: assim a vila fica no rumo
+			// pedido quando dá, e só se afasta o necessário quando não dá.
+			const float Desvio = GrausPorTentativa * ((Passo + 1) / 2)
+				* ((Passo % 2 == 0) ? 1.0f : -1.0f);
+
+			const FVector2D Onde = PontoDaIlha(Graus + Desvio, Distancia);
+			const float Ate = AteAAguaDoce(Onde);
+
+			if (Ate < MaisPerto)
+			{
+				MaisPerto = Ate;
+				Melhor.CenterUnits = Onde;
+			}
+		}
+
+		return Melhor;
+	}
+
 	FSettlementPlacement Assentamento(ESettlementKind Tipo, float Graus)
 	{
 		FSettlementPlacement Peca;
@@ -191,7 +263,7 @@ TArray<FSettlementPlacement> RegionLayout::Plan()
 
 	// Academia e mercado em rumos OPOSTOS: a quatro minutos de casa, e uma da
 	// outra. Postas lado a lado, a segunda viagem seria a mesma viagem.
-	Pecas.Add(Assentamento(ESettlementKind::VilaDaAcademia, RumoDaAcademia));
+	Pecas.Add(AssentamentoComAgua(ESettlementKind::VilaDaAcademia, RumoDaAcademia));
 	{
 		FSettlementPlacement Mercado;
 		Mercado.Kind = ESettlementKind::VilaDoMercado;
@@ -199,7 +271,7 @@ TArray<FSettlementPlacement> RegionLayout::Plan()
 		Pecas.Add(Mercado);
 	}
 
-	Pecas.Add(Assentamento(ESettlementKind::CidadeGrande, RumoDaCidade));
+	Pecas.Add(AssentamentoComAgua(ESettlementKind::CidadeGrande, RumoDaCidade));
 
 	// Os postos ESPALHADOS pela borda. Um só posto faria a fronteira ser um
 	// lugar; três fazem dela uma borda, que é o que ela é.

@@ -10,6 +10,7 @@
 #include "Environment/FreshWater.h"
 #include "World/TrailLayout.h"
 #include "World/LandUseLayout.h"
+#include "World/AqueductLayout.h"
 #include "Environment/CaveLabyrinth.h"
 #include "Net/BattleSquareGameMode.h"
 
@@ -213,6 +214,9 @@ bool FIslandMapDumpTest::RunTest(const FString& Parameters)
 		case EGroundUse::Pomar:           Nome = TEXT("pomar"); break;
 		case EGroundUse::PomarSelvagem:   Nome = TEXT("pomar-selvagem"); break;
 		case EGroundUse::Deck:            Nome = TEXT("deck"); break;
+		case EGroundUse::Poco:
+			Nome = Manchas[Indice].bYieldsWater ? TEXT("poco-cheio") : TEXT("poco-seco");
+			break;
 		default: break;
 		}
 
@@ -286,6 +290,21 @@ bool FIslandMapDumpTest::RunTest(const FString& Parameters)
 	{
 		const ABattleSquareGameMode* Padrao = GetDefault<ABattleSquareGameMode>();
 		// AS TRAVESSIAS com o tipo, para o mapa distinguir vau de ponte.
+	// OS AQUEDUTOS: a água que vem de longe porque a vila não tem perto.
+	Json += TEXT("  \"aquedutos\": [\n");
+	const TArray<AqueductLayout::FAqueduct>& Aquedutos = AqueductLayout::Plan();
+	for (int32 Indice = 0; Indice < Aquedutos.Num(); ++Indice)
+	{
+		Json += TEXT("    [");
+		for (int32 Ponto = 0; Ponto < Aquedutos[Indice].PointsUnits.Num(); ++Ponto)
+		{
+			Json += FString::Printf(TEXT("%s[%.0f,%.0f]"), Ponto == 0 ? TEXT("") : TEXT(","),
+				Aquedutos[Indice].PointsUnits[Ponto].X, Aquedutos[Indice].PointsUnits[Ponto].Y);
+		}
+		Json += FString::Printf(TEXT("]%s\n"), Indice + 1 < Aquedutos.Num() ? TEXT(",") : TEXT(""));
+	}
+	Json += TEXT("  ],\n");
+
 	Json += TEXT("  \"travessias\": [\n");
 	const TArray<TrailLayout::FCrossing> Travessias = TrailLayout::Crossings();
 	for (int32 Indice = 0; Indice < Travessias.Num(); ++Indice)

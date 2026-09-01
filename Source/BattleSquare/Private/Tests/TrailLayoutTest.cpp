@@ -202,8 +202,15 @@ bool FTrailLayoutOsMarcosNaturaisTemCaminhoTest::RunTest(const FString& Paramete
 
 	// Uma por TRONCO: a cachoeira mora no tronco, porque galho de cabeceira
 	// morre na junção e não despenca em lugar nenhum.
-	TestEqual(TEXT("toda cachoeira tem caminho"),
-		ParaCachoeira, FreshWater::PlanTrunks().Num());
+	// Uma por CACHOEIRA, e a cachoeira deixou de morar no tronco: ela nasce
+	// onde o leito despenca, que é rio acima.
+	int32 ComQueda = 0;
+	for (const FreshWater::FRiverCourse& Rio : FreshWater::Plan())
+	{
+		ComQueda += Rio.HasFall() ? 1 : 0;
+	}
+
+	TestEqual(TEXT("toda cachoeira tem caminho"), ParaCachoeira, ComQueda);
 	TestTrue(TEXT("e há menos troncos que cursos — a bacia é uma árvore"),
 		FreshWater::PlanTrunks().Num() < FreshWater::Plan().Num());
 	TestTrue(TEXT("e todo monte também"), ParaMonte > 0);
@@ -257,12 +264,14 @@ bool FTrailLayoutOPostoFicaNaCostaTest::RunTest(const FString& Parameters)
 		++Postos;
 		const float Distancia = Assentamento.CenterUnits.Size();
 
-		TestTrue(TEXT("o posto está na orla, não no meio do mato"),
-			Distancia > Raio - Praia * 2.5f);
-
-		// Mas ATRÁS da areia: em cima dela, a rampa da orla o deixaria meio
-		// enterrado — a mesma família de defeito do pet afundando no tabuleiro.
-		TestTrue(TEXT("e atrás da faixa de areia"), Distancia < Raio - Praia);
+		// NA AREIA, e não atrás dela.
+		//
+		// Eu o tinha posto atrás da praia com medo da rampa da orla, e cais
+		// atrás da praia é galpão: quem embarca precisa alcançar a água. No
+		// meio da faixa o chão já está na metade da altura da terra, e a rampa
+		// não é problema.
+		TestTrue(TEXT("o cais está na areia"), Distancia > Raio - Praia);
+		TestTrue(TEXT("e não no mar"), Distancia < Raio);
 	}
 
 	TestEqual(TEXT("todos os postos foram medidos"), Postos, RegionLayout::BorderPostCount());

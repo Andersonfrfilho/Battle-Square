@@ -30,6 +30,11 @@ namespace
 	constexpr int32 QuantosDecks = 7;
 	constexpr float DeckEmLotes = 0.22f;
 
+	/** Quantos poços artesianos, o tamanho, e até onde o lençol acompanha o rio. */
+	constexpr int32 QuantosPocos = 12;
+	constexpr float PocoEmLotes = 0.12f;
+	constexpr float AlcanceDoLencol = 0.16f;
+
 	/** Quantos bosques e quantas clareiras a ilha tem. */
 
 
@@ -403,6 +408,67 @@ namespace
 			}
 		}
 
+		// OS POÇOS ARTESIANOS, e a chance de cada um dar água.
+		//
+		// A chance NÃO é um sorteio no vácuo: ela sai de quão fundo está o
+		// lençol, e o lençol acompanha duas coisas que já existem — a distância
+		// da água de superfície e a altura do chão. Baixio perto do rio quase
+		// sempre dá; alto e longe quase nunca.
+		//
+		// O sorteio decide só o caso duvidoso, e é determinístico: o mesmo poço
+		// dá o mesmo resultado sempre. Poço que muda de resposta entre visitas
+		// não é aposta, é bug.
+		{
+			const int32 Quantos = QuantosPocos;
+
+			for (int32 Indice = 0; Indice < Quantos; ++Indice)
+			{
+				const uint32 Semente = BattleSpread::SeedFromText(
+					FString::Printf(TEXT("poco-artesiano-%d"), Indice));
+
+				const float Rumo = BattleSpread::Between(0.0f, 360.0f,
+					BattleSpread::Fraction(Semente, 0));
+				const float Anel = IslandGeography::LandRadiusUnits() * BattleSpread::Between(
+					0.10f, 0.80f, BattleSpread::Fraction(Semente, 1));
+
+				const FVector2D Onde = DoRumo(Rumo, Anel);
+				if (!IslandGeography::IsOnLand(Onde))
+				{
+					continue;
+				}
+
+				float AteAAgua = TNumericLimits<float>::Max();
+				for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
+				{
+					float Aonde = 0.0f;
+					AteAAgua = FMath::Min(AteAAgua,
+						FreshWater::NearestOn(Curso, Onde, Aonde));
+				}
+
+				// Duas parcelas, e as duas contam contra: longe da água o
+				// lençol é fundo, e alto do chão ele é mais fundo ainda.
+				const float PelaDistancia = FMath::Clamp(
+					1.0f - AteAAgua / (IslandGeography::LandRadiusUnits() * AlcanceDoLencol),
+					0.0f, 1.0f);
+
+				const float PelaAltura = FMath::Clamp(
+					1.0f - IslandGeography::BedrockHeightAt(Onde)
+						/ FMath::Max(1.0f, IslandGeography::LandRadiusUnits() * 0.03f),
+					0.0f, 1.0f);
+
+				const float Chance = FMath::Clamp(
+					PelaDistancia * 0.65f + PelaAltura * 0.35f, 0.05f, 0.95f);
+
+				FGroundUsePatch Poco;
+				Poco.Use = EGroundUse::Poco;
+				Poco.CenterUnits = Onde;
+				Poco.HalfExtentUnits = Lote * PocoEmLotes;
+				Poco.bYieldsWater = BattleSpread::Fraction(Semente, 2) < Chance;
+
+				Manchas.Add(Poco);
+			}
+		}
+
 		// OS BOSQUES, espalhados pelo anel habitável.
 		const int32 QuantosBosques = WorldBudget::GroveCount(IslandGeography::IslandBiome());
 		for (int32 Indice = 0; Indice < QuantosBosques; ++Indice)
@@ -530,7 +596,7 @@ bool LandUseLayout::BlocksPlanting(const FVector2D& PositionUnits)
 	const EGroundUse Uso = UseAt(PositionUnits);
 	return Uso == EGroundUse::Fazenda || Uso == EGroundUse::Criadouro
 		|| Uso == EGroundUse::ClareiraFechada || Uso == EGroundUse::Loja
-		|| Uso == EGroundUse::Acampamento || Uso == EGroundUse::Deck;
+		|| Uso == EGroundUse::Acampamento || Uso == EGroundUse::Deck || Uso == EGroundUse::Poco;
 }
 
 float LandUseLayout::PlantingDensityAt(const FVector2D& PositionUnits)
@@ -543,6 +609,7 @@ float LandUseLayout::PlantingDensityAt(const FVector2D& PositionUnits)
 		case EGroundUse::Loja:
 		case EGroundUse::Acampamento:
 		case EGroundUse::Deck:
+		case EGroundUse::Poco:
 			return 0.0f;
 
 		// POMAR é mata PLANTADA: densidade alta, e é o que o distingue do

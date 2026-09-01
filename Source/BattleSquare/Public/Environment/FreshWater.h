@@ -119,6 +119,14 @@ namespace FreshWater
 		 * ler o valor sem checar que pôs uma trilha mirando o mar aberto.
 		 */
 		bool HasFall() const { return FallAtProgress >= 0.0f; }
+
+		/**
+		 * Este curso alaga em lago.
+		 *
+		 * Nem todo tem: lago é água PARADA, e ela precisa de um trecho manso
+		 * para existir. Fio de cabeceira que desce o tempo todo não alaga nada.
+		 */
+		bool HasLake() const { return LakeAtProgress >= 0.0f; }
 	};
 
 	/** Largura de meia calha do rio comum. */

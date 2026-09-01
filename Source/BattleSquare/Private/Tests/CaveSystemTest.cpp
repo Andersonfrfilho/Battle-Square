@@ -242,12 +242,16 @@ bool FCaveSystemMatchesThePlanTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Há um chão por casa"),
 		Caverna->GetFloor()->GetInstanceCount(), Planta.CellCount());
 
-	// A verga da boca é a única laje que não corresponde a um segmento da
-	// planta — por isso o mais um.
+	// A verga é a única laje que não corresponde a um segmento da planta, e há
+	// UMA POR BOCA — a do sul mais as extras.
+	//
+	// Era "mais um" quando a caverna tinha uma saída só. A conta mudou junto
+	// com a caverna, e a diferença de duas lajes foi o que revelou que as bocas
+	// extras abriam a parede interna e não a muralha.
 	const int32 Lajes = Caverna->GetWalls()->GetInstanceCount()
 		+ Caverna->GetShell()->GetInstanceCount();
-	TestEqual(TEXT("Há uma laje por parede que sobrou, mais a verga"),
-		Lajes, LajesQueAPlantaExige(Planta) + 1);
+	TestEqual(TEXT("Há uma laje por parede que sobrou, mais uma verga por boca"),
+		Lajes, LajesQueAPlantaExige(Planta) + 1 + Planta.ExtraMouths.Num());
 
 	DestroyCaveSystemTestWorld(World);
 	return true;

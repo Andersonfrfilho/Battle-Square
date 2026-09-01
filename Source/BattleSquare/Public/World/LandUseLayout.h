@@ -101,7 +101,23 @@ enum class EGroundUse : uint8
 	 * deck que ninguém alcança por terra é deck que só serve a quem já está
 	 * navegando.
 	 */
-	Deck
+	Deck,
+
+	/**
+	 * POÇO ARTESIANO: a aposta de quem cavou.
+	 *
+	 * Ele é o outro jeito de a vila beber, ao lado do aqueduto — e o barato:
+	 * aqueduto é obra de cidade, poço é obra de quem tem uma pá.
+	 *
+	 * E ele pode dar SECO. Isso não é crueldade nem sorteio no vácuo: a chance
+	 * sai de quão fundo está o lençol, e o lençol acompanha a água de
+	 * superfície e a altura do chão. Poço no baixio perto do rio quase sempre
+	 * dá; poço no alto e longe quase nunca.
+	 *
+	 * O jogador pode aprender isso olhando o mapa, e é o que separa uma aposta
+	 * de um dado.
+	 */
+	Poco
 };
 
 struct BATTLESQUARE_API FGroundUsePatch
@@ -109,6 +125,14 @@ struct BATTLESQUARE_API FGroundUsePatch
 	EGroundUse Use = EGroundUse::Nenhum;
 	FVector2D CenterUnits = FVector2D::ZeroVector;
 	float HalfExtentUnits = 0.0f;
+
+	/**
+	 * O poço deu água. Só faz sentido para `Poco`, e é falso no resto.
+	 *
+	 * Fica no traçado e não no ator porque o mapa precisa saber: um poço seco
+	 * desenhado igual a um cheio é uma promessa que a carta não cumpre.
+	 */
+	bool bYieldsWater = false;
 };
 
 /**

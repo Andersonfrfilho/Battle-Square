@@ -228,8 +228,16 @@ bool FLandUseAsFontesMolhamOMioloTest::RunTest(const FString& Parameters)
 
 	// Água que corre lado a lado sem nunca se encontrar não é bacia, é listras.
 	const TArray<FreshWater::FBrook> Corregos = FreshWater::PlanBrooks();
-	TestTrue(TEXT("há mais córregos que fontes — os que ligam rio a rio"),
-		Corregos.Num() > Fontes.Num());
+	// UM por fonte, e mais nenhum.
+	//
+	// Havia também um córrego ligando o curso i ao i+1, e a regra nasceu quando
+	// a ilha tinha três rios paralelos que precisavam se encontrar. Com
+	// centenas de cursos ela cavava centenas de canais retos atravessando a
+	// ilha — mais água inventada que todos os rios juntos.
+	//
+	// A bacia dendrítica já é conexa por construção; quem liga bacia a bacia é
+	// a rede subterrânea.
+	TestEqual(TEXT("um córrego por fonte, e mais nenhum"), Corregos.Num(), Fontes.Num());
 
 	for (const FreshWater::FBrook& Corrego : Corregos)
 	{
@@ -385,8 +393,9 @@ bool FLandUseACorredeiraSaiDoRelevoTest::RunTest(const FString& Parameters)
 
 	// Dentro do lago não há corredeira, por mais inclinada que esteja a encosta
 	// em volta: lago é água PARADA.
-	for (const FreshWater::FRiverCourse& Curso : FreshWater::PlanTrunks())
+	for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
 	{
+		if (!Curso.HasLake()) { continue; }
 		TestFalse(TEXT("não há corredeira dentro do lago"),
 			FreshWater::IsRapidsAtProgress(Curso, Curso.LakeAtProgress));
 	}
@@ -413,7 +422,7 @@ bool FLandUseOPocoEhFuroNaoBaciaTest::RunTest(const FString& Parameters)
 	// está verde no dia em que é escrita.
 	int32 Pocos = 0;
 
-	for (const FreshWater::FRiverCourse& Curso : FreshWater::PlanTrunks())
+	for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
 	{
 		const float Fundo = FreshWater::PlungePoolDepthUnits(Curso);
 		const float Meia = FreshWater::PlungePoolHalfWidthUnits(Curso);
@@ -436,12 +445,17 @@ bool FLandUseOPocoEhFuroNaoBaciaTest::RunTest(const FString& Parameters)
 
 	TestTrue(TEXT("toda queda tem poço"), Pocos > 0);
 
-	// Galho não tem queda, e por isso não tem poço: a foz dele é a junção.
+	// POÇO existe onde existe QUEDA, e mais em lugar nenhum.
+	//
+	// A afirmação era "galho não tem poço", e ela valia quando a cachoeira
+	// morava no tronco. Ela deixou de morar lá: a queda nasce onde o leito
+	// despenca, e isso acontece rio acima — em galho, quase sempre. Amarrar o
+	// poço ao tronco passou a afirmar o modelo antigo.
 	for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
 	{
-		if (!Curso.FlowsToTheSea())
+		if (!Curso.HasFall())
 		{
-			TestEqual(TEXT("galho não tem poço"),
+			TestEqual(TEXT("curso sem queda não tem poço"),
 				FreshWater::PlungePoolDepthUnits(Curso), 0.0f);
 		}
 	}
@@ -460,7 +474,9 @@ bool FLandUseACachoeiraSeSobeTest::RunTest(const FString& Parameters)
 	// transforma a cachoeira de parede em lugar.
 	int32 ComEscada = 0;
 
-	for (const FreshWater::FRiverCourse& Curso : FreshWater::PlanTrunks())
+	// TODOS os cursos: a cachoeira deixou de morar no tronco quando passou a
+	// ser escolhida pelo leito.
+	for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
 	{
 		const TArray<FreshWater::FFallStep> Degraus = FreshWater::PlanFallSteps(Curso);
 		if (Degraus.Num() == 0)

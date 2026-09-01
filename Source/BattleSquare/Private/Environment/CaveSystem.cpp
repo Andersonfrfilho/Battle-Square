@@ -317,14 +317,50 @@ void ACaveSystem::BuildCave(const FCaveRecipe& Recipe)
 		}
 	}
 
-	// A verga da boca: fecha por cima o vão que a entrada abriu na muralha, para
+	// A verga de CADA boca: fecha por cima o vão que ela abriu na muralha, para
 	// se passar POR BAIXO da pedra em vez de por um entalhe nela.
+	//
+	// Uma por boca, e não só na entrada do sul. As bocas extras abriam a parede
+	// INTERNA e a muralha continuava inteira por cima delas — a caverna
+	// continuava com uma saída só no mundo, e as outras eram buraco em parede
+	// que ninguém alcança. O teste de contagem de lajes foi quem mostrou.
+	const float AlturaDaVerga = ShellHeightUnits - WallHeightUnits;
+
 	const FVector Boca = CellCenterLocal(Grid.EntranceColumn, 0)
 		- FVector(0.0f, Meia, 0.0f);
-	const float AlturaDaVerga = ShellHeightUnits - WallHeightUnits;
 	AddSlab(Shell,
 		Boca + FVector(0.0f, 0.0f, WallHeightUnits + 0.5f * AlturaDaVerga),
 		FVector(CellSizeUnits + ShellThicknessUnits, ShellThicknessUnits, AlturaDaVerga));
+
+	for (const CaveLabyrinth::FCaveGrid::FMouth& Outra : Grid.ExtraMouths)
+	{
+		FVector Onde = FVector::ZeroVector;
+		FVector Tamanho = FVector::ZeroVector;
+
+		switch (Outra.Edge)
+		{
+		case 1:
+			Onde = CellCenterLocal(Outra.Along, Grid.Rows - 1) + FVector(0.0f, Meia, 0.0f);
+			Tamanho = FVector(CellSizeUnits + ShellThicknessUnits,
+				ShellThicknessUnits, AlturaDaVerga);
+			break;
+
+		case 2:
+			Onde = CellCenterLocal(0, Outra.Along) - FVector(Meia, 0.0f, 0.0f);
+			Tamanho = FVector(ShellThicknessUnits,
+				CellSizeUnits + ShellThicknessUnits, AlturaDaVerga);
+			break;
+
+		default:
+			Onde = CellCenterLocal(Grid.Columns - 1, Outra.Along) + FVector(Meia, 0.0f, 0.0f);
+			Tamanho = FVector(ShellThicknessUnits,
+				CellSizeUnits + ShellThicknessUnits, AlturaDaVerga);
+			break;
+		}
+
+		AddSlab(Shell, Onde + FVector(0.0f, 0.0f, WallHeightUnits + 0.5f * AlturaDaVerga),
+			Tamanho);
+	}
 
 	HangMouthStalactites(Boca, Semente);
 

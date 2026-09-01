@@ -349,6 +349,9 @@ namespace FreshWater
 		/** Quanto os atratores se espalham em volta da linha entre duas grutas. */
 		/** Quanto o ruído torce o rumo do passo. Acima disso vira nó, não curva. */
 		constexpr float TorceOGalho = 0.42f;
+
+		/** Quanto o galho segue a subida ao crescer rio acima. */
+		constexpr float SegueAEncosta = 0.55f;
 		constexpr float TorceAGaleria = 0.55f;
 
 		/** Até onde duas galerias de cavernas diferentes se emendam. */
@@ -623,6 +626,23 @@ namespace FreshWater
 		 * posição, não sorteio por passo: sorteio independente dá tremor, e
 		 * tremor não é curva.
 		 */
+		/**
+		 * Para onde a ROCHA sobe, num ponto.
+		 *
+		 * Medida por diferença nas quatro vizinhas, na rocha e não no relevo
+		 * acabado: o leito é anterior à vila, e perguntar a altura com os lotes
+		 * e a mesa já postos fecha o ciclo que já abortou o processo.
+		 */
+		FVector2D SubidaDaRocha(const FVector2D& Onde, float Passo)
+		{
+			const float Leste = IslandGeography::BedrockHeightAt(Onde + FVector2D(Passo, 0.0f));
+			const float Oeste = IslandGeography::BedrockHeightAt(Onde - FVector2D(Passo, 0.0f));
+			const float Norte = IslandGeography::BedrockHeightAt(Onde + FVector2D(0.0f, Passo));
+			const float Sul = IslandGeography::BedrockHeightAt(Onde - FVector2D(0.0f, Passo));
+
+			return FVector2D(Leste - Oeste, Norte - Sul).GetSafeNormal();
+		}
+
 		FVector2D EmpurraoOrganico(const FVector2D& Onde, float Amplitude)
 		{
 			const float Escala = IslandGeography::LandRadiusUnits() * 0.06f;
@@ -879,7 +899,14 @@ namespace FreshWater
 				float MaisIngreme = 0.0f;
 				float Aonde = -1.0f;
 
-				for (int32 Passo = 2; Passo <= 18; ++Passo)
+				// DEPOIS do lago, sempre. Os dois eram escolhidos de forma
+				// independente, e num curso a queda saiu antes — água caindo
+				// para dentro de um lago que ela ainda vai formar.
+				const int32 Comeca = Curso.HasLake()
+					? FMath::Max(2, FMath::CeilToInt(Curso.LakeAtProgress * 20.0f) + 1)
+					: 2;
+
+				for (int32 Passo = Comeca; Passo <= 18; ++Passo)
 				{
 					const float Onde = static_cast<float>(Passo) / 20.0f;
 					if (PointAtProgress(Curso, Onde).Size() > Limite)
@@ -992,8 +1019,22 @@ namespace FreshWater
 						continue;
 					}
 
+					// E O EMPURRÃO MORRO ACIMA.
+					//
+					// A árvore cresce da foz para DENTRO, ou seja, rio acima —
+					// e rio acima é subida. Sem este termo o galho seguia só o
+					// atrator, e quinze cursos acabaram perdendo altura da
+					// nascente para a foz: água correndo morro acima.
+					//
+					// O peso é pequeno de propósito: ele CORRIGE o rumo, não o
+					// manda. Grande, a bacia vira um leque radial subindo o
+					// morro pelo caminho mais curto, e some a ramificação.
+					const FVector2D ParaCima =
+						SubidaDaRocha(Nos[Quem.Key], Passo) * SegueAEncosta;
+
 					const FVector2D Rumo = (Quem.Value.GetSafeNormal()
-						+ EmpurraoOrganico(Nos[Quem.Key], TorceOGalho)).GetSafeNormal();
+						+ EmpurraoOrganico(Nos[Quem.Key], TorceOGalho)
+						+ ParaCima).GetSafeNormal();
 					if (Rumo.IsNearlyZero())
 					{
 						continue;
@@ -1111,6 +1152,27 @@ namespace FreshWater
 				if (Curso.PointsUnits.Num() < 2)
 				{
 					continue;
+				}
+
+				// APARA a ponta que sobe.
+				//
+				// O empurrão morro acima corrige o RUMO, mas a última perna do
+				// galho ainda pode cair num vale — e aí o curso "nasceria" mais
+				// baixo que o ponto seguinte, ou seja, correria morro acima.
+				//
+				// Aparar é honesto e mínimo: a nascente recua até o primeiro
+				// ponto que de fato domina o seguinte. Rio não nasce num
+				// buraco.
+				// Duas condições, e a segunda é a que importa: a nascente tem de
+				// DOMINAR A FOZ. Aparar só o primeiro passo consertava o começo
+				// e deixava o curso inteiro subindo.
+				while (Curso.PointsUnits.Num() > 2
+					&& (IslandGeography::BedrockHeightAt(Curso.PointsUnits[0])
+							< IslandGeography::BedrockHeightAt(Curso.PointsUnits[1])
+						|| IslandGeography::BedrockHeightAt(Curso.PointsUnits[0])
+							< IslandGeography::BedrockHeightAt(Curso.PointsUnits.Last())))
+				{
+					Curso.PointsUnits.RemoveAt(0);
 				}
 
 				Curso.SourceRadiusUnits = static_cast<float>(Curso.PointsUnits[0].Size());

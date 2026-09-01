@@ -121,19 +121,28 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCaveLabyrinthEntranceIsTheOnlyOpeningTest,
 
 bool FCaveLabyrinthEntranceIsTheOnlyOpeningTest::RunTest(const FString& Parameters)
 {
-	const CaveLabyrinth::FCaveGrid Planta = CaveLabyrinth::Carve(
-		ColunasDaCavernaGrande, LinhasDaCavernaGrande, SementeDoLabirinto);
+	// "A entrada é a única abertura" deixou de ser verdade DE PROPÓSITO.
+	//
+	// Caverna com uma saída só é beco: entra-se, anda-se o labirinto inteiro e
+	// volta-se pelo mesmo caminho. Com duas ela vira PASSAGEM — e é o que dá
+	// sentido às galerias que ligam uma caverna à outra.
+	//
+	// O que continua tendo de valer, e é o que este teste passa a afirmar: as
+	// bocas são POUCAS e ficam em paredes DIFERENTES. Muitas bocas fazem um
+	// alpendre; duas na mesma parede leem de fora como uma entrada larga.
+	const CaveLabyrinth::FCaveGrid Planta = CaveLabyrinth::Carve(9, 7, 4242u);
+	if (!TestTrue(TEXT("a planta e valida"), Planta.IsValid()))
+	{
+		return false;
+	}
 
-	TestTrue(TEXT("A entrada está dentro da grade"),
-		Planta.EntranceColumn >= 0 && Planta.EntranceColumn < Planta.Columns);
+	TestTrue(TEXT("ha mais de uma boca"), Planta.ExtraMouths.Num() >= 1);
+	TestTrue(TEXT("e poucas — caverna nao e alpendre"), Planta.ExtraMouths.Num() <= 3);
 
-	TestFalse(TEXT("A casa da entrada tem o sul aberto"),
-		Planta.HasWall(Planta.EntranceColumn, 0, CaveLabyrinth::WallSouth));
-
-	// Uma porta só. Duas fazem o labirinto virar atalho: entra por uma, sai
-	// pela outra, e o meio nunca é visitado.
-	TestEqual(TEXT("Só existe uma abertura na borda"),
-		AberturasNaBordaDaCaverna(Planta), 1);
+	for (const CaveLabyrinth::FCaveGrid::FMouth& Boca : Planta.ExtraMouths)
+	{
+		TestTrue(TEXT("a boca extra nao fica na parede da entrada"), Boca.Edge != 0);
+	}
 
 	return true;
 }

@@ -7,6 +7,7 @@
 #include "World/WorldBudget.h"
 #include "Environment/IslandGeography.h"
 #include "Environment/FreshWater.h"
+#include "Environment/IslandFeatureLayout.h"
 #include "Battle/DeterministicSpread.h"
 
 namespace
@@ -33,6 +34,10 @@ namespace
 	/** Quantos poços artesianos, o tamanho, e até onde o lençol acompanha o rio. */
 	constexpr int32 QuantosPocos = 12;
 	constexpr float PocoEmLotes = 0.12f;
+
+	/** Templo e ruína, em lotes de vila. A ruína é menor: dela sobrou pouco. */
+	constexpr float TemploEmLotes = 0.34f;
+	constexpr float RuinaEmLotes = 0.22f;
 	constexpr float AlcanceDoLencol = 0.16f;
 
 	/** Quantos bosques e quantas clareiras a ilha tem. */
@@ -408,6 +413,180 @@ namespace
 			}
 		}
 
+		// OS TEMPLOS, cada um NO LUGAR QUE O SEU DEUS GOVERNA.
+		//
+		// A posição é a identidade dele. O do monte fica na saia da montanha, o
+		// da água na cachoeira, o do fogo na beira da rocha queimada, o do
+		// fundo numa caverna, e o de Mãe Natureza no bosque mais fechado.
+		//
+		// Quem vê um templo sabe de quem ele é pelo lugar — e é assim que um
+		// panteão se ensina sem uma linha de texto.
+		{
+			auto PorTemplo = [&Manchas, Lote](EDeity Quem, const FVector2D& Onde)
+			{
+				if (!IslandGeography::IsOnLand(Onde))
+				{
+					return;
+				}
+
+				FGroundUsePatch Templo;
+				Templo.Use = EGroundUse::Templo;
+				Templo.CenterUnits = Onde;
+				Templo.HalfExtentUnits = Lote * TemploEmLotes;
+				Templo.Deity = Quem;
+				Manchas.Add(Templo);
+			};
+
+			// PEDRA, na saia do primeiro monte.
+			for (const IslandFeatureLayout::FFeaturePlacement& Peca : IslandFeatureLayout::Plan())
+			{
+				if (Peca.Feature != IslandFeatureLayout::EIslandFeature::WalkableMountain)
+				{
+					continue;
+				}
+
+				const FVector2D NoCume = Peca.CenterUnits();
+				PorTemplo(EDeity::Pedra,
+					NoCume - NoCume.GetSafeNormal() * (Peca.ClearanceUnits + Lote));
+				break;
+			}
+
+			// CORRENTE, na margem da primeira cachoeira.
+			for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
+			{
+				if (!Curso.HasFall())
+				{
+					continue;
+				}
+
+				const FVector2D NaQueda =
+					FreshWater::PointAtProgress(Curso, Curso.FallAtProgress);
+
+				// PERPENDICULAR ao rio, e depois EMPURRADO até sair da lâmina.
+				//
+				// É a terceira vez que erro isto do mesmo jeito: afastar na
+				// direção RADIAL parece óbvio e não é, porque a direção radial
+				// pode correr ao longo da água. E mesmo o perpendicular falha na
+				// curva, onde o ponto mais próximo do rio não é o perpendicular.
+				//
+				// Conferir e empurrar é a única forma que funciona, e já está
+				// escrita duas vezes neste mundo — na subida da cachoeira e na
+				// trilha de beira-rio.
+				const FVector2D Adiante =
+					FreshWater::PointAtProgress(Curso, Curso.FallAtProgress + 0.04f);
+				const FVector2D AoLongo = (Adiante - NaQueda).GetSafeNormal();
+				FVector2D DeLado(-AoLongo.Y, AoLongo.X);
+
+				if (FVector2D::DotProduct(DeLado, NaQueda.GetSafeNormal()) < 0.0f)
+				{
+					DeLado = -DeLado;
+				}
+
+				FVector2D NoTemplo = NaQueda + DeLado
+					* (FreshWater::HalfWidthAtProgress(Curso, Curso.FallAtProgress) + Lote * 1.6f);
+
+				for (int32 Empurrao = 0; Empurrao < 8; ++Empurrao)
+				{
+					float Aonde = 0.0f;
+					const float Ate = FreshWater::NearestOn(Curso, NoTemplo, Aonde);
+
+					if (Ate > FreshWater::HalfWidthAtProgress(Curso, Aonde) + Lote * 0.5f)
+					{
+						break;
+					}
+
+					NoTemplo += DeLado * Lote;
+				}
+
+				PorTemplo(EDeity::Corrente, NoTemplo);
+				break;
+			}
+
+			// BRASEIRO, na BEIRA da rocha queimada — não dentro dela.
+			//
+			// Dentro seria templo que ninguém alcança: o chão ali queima, e a
+			// trilha não atravessa. Um templo é um lugar de ir.
+			{
+				const FVector2D DoVulcao = IslandGeography::VolcanoCenterUnits();
+				PorTemplo(EDeity::Braseiro, DoVulcao - DoVulcao.GetSafeNormal()
+					* (IslandGeography::VolcanoScorchedRadiusUnits() + Lote * 2.0f));
+			}
+
+			// ABISMO, na primeira caverna. É o único templo que não se vê de
+			// fora, e é justamente o ponto dele.
+			for (const IslandFeatureLayout::FFeaturePlacement& Peca : IslandFeatureLayout::Plan())
+			{
+				if (Peca.Feature != IslandFeatureLayout::EIslandFeature::Cave)
+				{
+					continue;
+				}
+
+				PorTemplo(EDeity::Abismo, Peca.CenterUnits());
+				break;
+			}
+
+		}
+
+		// AS RUÍNAS, escondidas.
+		//
+		// Elas são o oposto do templo em tudo o que importa: ficam longe de
+		// trilha e de vila, e achá-las é acidente. E é delas que vem a única
+		// coisa que nenhuma outra peça deste mundo dá: PASSADO. Um lugar que já
+		// foi importante e deixou de ser conta uma história que ninguém
+		// precisou escrever.
+		{
+			const int32 Quantas = WorldBudget::RuinCount(IslandGeography::IslandBiome());
+
+			for (int32 Indice = 0; Indice < Quantas; ++Indice)
+			{
+				const uint32 Semente = BattleSpread::SeedFromText(
+					FString::Printf(TEXT("ruina-de-templo-%d"), Indice));
+
+				for (int32 Tentativa = 0; Tentativa < 16; ++Tentativa)
+				{
+					const float Rumo = BattleSpread::Between(0.0f, 360.0f,
+						BattleSpread::Fraction(Semente, Tentativa));
+					const float Anel = IslandGeography::LandRadiusUnits() * BattleSpread::Between(
+						0.20f, 0.82f, BattleSpread::Fraction(Semente, Tentativa + 40));
+
+					const FVector2D Onde = DoRumo(Rumo, Anel);
+
+					if (!IslandGeography::IsOnLand(Onde) || TrailLayout::IsOnTrail(Onde))
+					{
+						continue;
+					}
+
+					// Longe de trilha E de vila: perto de qualquer uma das duas
+					// ela deixa de ser esquecida, que é a única coisa que ela é.
+					bool bPertoDeGente = false;
+					for (const FSettlementPlacement& Assentamento : RegionLayout::Plan())
+					{
+						if (FVector2D::Distance(Onde, Assentamento.CenterUnits)
+							< VillageLayout::ClearingHalfExtentUnitsFor(Assentamento.Kind) * 3.0f)
+						{
+							bPertoDeGente = true;
+							break;
+						}
+					}
+
+					if (bPertoDeGente)
+					{
+						continue;
+					}
+
+					FGroundUsePatch Ruina;
+					Ruina.Use = EGroundUse::Ruina;
+					Ruina.CenterUnits = Onde;
+					Ruina.HalfExtentUnits = Lote * RuinaEmLotes;
+					Ruina.Deity = static_cast<EDeity>(
+						BattleSpread::Below(Semente, 60, Pantheon::Count()));
+
+					Manchas.Add(Ruina);
+					break;
+				}
+			}
+		}
+
 		// OS POÇOS ARTESIANOS, e a chance de cada um dar água.
 		//
 		// A chance NÃO é um sorteio no vácuo: ela sai de quão fundo está o
@@ -488,6 +667,49 @@ namespace
 				MenorBosque, MaiorBosque, BattleSpread::Fraction(Semente, 2));
 
 			Manchas.Add(Bosque);
+		}
+
+		// O TEMPLO DE MÃE NATUREZA, no bosque mais fechado.
+		//
+		// Ele vem DEPOIS dos bosques, e essa ordem é a regra: o templo dela não
+		// escolhe um lugar, ele RECONHECE um — onde a mata está mais viva. Posto
+		// antes, ele procurava num mundo sem bosque nenhum e simplesmente não
+		// nascia. Quatro templos apareceram no mapa em vez de cinco, e só a
+		// contagem mostrou.
+		{
+			const FGroundUsePatch* MaisFechado = nullptr;
+			for (const FGroundUsePatch& Mancha : Manchas)
+			{
+				if (Mancha.Use != EGroundUse::Bosque)
+				{
+					continue;
+				}
+
+				if (!MaisFechado || Mancha.HalfExtentUnits > MaisFechado->HalfExtentUnits)
+				{
+					MaisFechado = &Mancha;
+				}
+			}
+
+			// DENTRO do bosque, e não no lugar dele.
+			//
+			// No centro exato o templo limpava o coração da mata — e o coração
+			// é justamente o que Mãe Natureza governa. Um templo na floresta é
+			// uma clareira DENTRO dela, não no lugar dela.
+			const FVector2D NoBosque = MaisFechado
+				? MaisFechado->CenterUnits
+					+ DoRumo(37.0f, MaisFechado->HalfExtentUnits * 0.62f)
+				: FVector2D::ZeroVector;
+
+			if (MaisFechado && IslandGeography::IsOnLand(NoBosque))
+			{
+				FGroundUsePatch Templo;
+				Templo.Use = EGroundUse::Templo;
+				Templo.CenterUnits = NoBosque;
+				Templo.HalfExtentUnits = Lote * TemploEmLotes;
+				Templo.Deity = EDeity::MaeNatureza;
+				Manchas.Add(Templo);
+			}
 		}
 
 		return Manchas;
@@ -596,7 +818,7 @@ bool LandUseLayout::BlocksPlanting(const FVector2D& PositionUnits)
 	const EGroundUse Uso = UseAt(PositionUnits);
 	return Uso == EGroundUse::Fazenda || Uso == EGroundUse::Criadouro
 		|| Uso == EGroundUse::ClareiraFechada || Uso == EGroundUse::Loja
-		|| Uso == EGroundUse::Acampamento || Uso == EGroundUse::Deck || Uso == EGroundUse::Poco;
+		|| Uso == EGroundUse::Acampamento || Uso == EGroundUse::Deck || Uso == EGroundUse::Poco || Uso == EGroundUse::Templo;
 }
 
 float LandUseLayout::PlantingDensityAt(const FVector2D& PositionUnits)
@@ -610,6 +832,7 @@ float LandUseLayout::PlantingDensityAt(const FVector2D& PositionUnits)
 		case EGroundUse::Acampamento:
 		case EGroundUse::Deck:
 		case EGroundUse::Poco:
+		case EGroundUse::Templo:
 			return 0.0f;
 
 		// POMAR é mata PLANTADA: densidade alta, e é o que o distingue do

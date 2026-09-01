@@ -235,12 +235,16 @@ bool FIslandMapDumpTest::RunTest(const FString& Parameters)
 		case EGroundUse::Poco:
 			Nome = Manchas[Indice].bYieldsWater ? TEXT("poco-cheio") : TEXT("poco-seco");
 			break;
+		case EGroundUse::Templo:          Nome = TEXT("templo"); break;
+		case EGroundUse::Ruina:           Nome = TEXT("ruina"); break;
 		default: break;
 		}
 
-		Json += FString::Printf(TEXT("    {\"uso\":\"%s\",\"x\":%.0f,\"y\":%.0f,\"meio\":%.0f}%s\n"),
+		Json += FString::Printf(
+			TEXT("    {\"uso\":\"%s\",\"x\":%.0f,\"y\":%.0f,\"meio\":%.0f,\"deus\":\"%s\"}%s\n"),
 			Nome, Manchas[Indice].CenterUnits.X, Manchas[Indice].CenterUnits.Y,
-			Manchas[Indice].HalfExtentUnits, Indice + 1 < Manchas.Num() ? TEXT(",") : TEXT(""));
+			Manchas[Indice].HalfExtentUnits, Pantheon::DebugName(Manchas[Indice].Deity),
+			Indice + 1 < Manchas.Num() ? TEXT(",") : TEXT(""));
 	}
 	Json += TEXT("  ],\n");
 

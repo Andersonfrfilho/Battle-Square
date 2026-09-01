@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "World/Pantheon.h"
 
 /**
  * O que ocupa o chão entre as trilhas.
@@ -117,7 +118,30 @@ enum class EGroundUse : uint8
 	 * O jogador pode aprender isso olhando o mapa, e é o que separa uma aposta
 	 * de um dado.
 	 */
-	Poco
+	Poco,
+
+	/**
+	 * TEMPLO: a casa de um deus, no lugar que ele governa.
+	 *
+	 * A posição não é decoração, é a identidade dele: o do monte fica no monte,
+	 * o da água na cachoeira, o do fogo na beira da rocha queimada. Quem vê um
+	 * templo sabe de quem ele é pelo lugar — e é assim que um panteão se ensina
+	 * sem texto.
+	 */
+	Templo,
+
+	/**
+	 * TEMPLO EM RUÍNAS: a casa de um deus que ninguém visita mais.
+	 *
+	 * Ele é o oposto do outro em tudo o que importa: fica ESCONDIDO — dentro de
+	 * bosque fechado, em clareira que trilha nenhuma toca, ou em caverna — e
+	 * achá-lo é acidente.
+	 *
+	 * E é ele que dá ao mundo uma coisa que nenhuma outra peça dá: passado.
+	 * Um lugar que já foi importante e deixou de ser conta uma história que
+	 * ninguém precisou escrever.
+	 */
+	Ruina
 };
 
 struct BATTLESQUARE_API FGroundUsePatch
@@ -133,6 +157,9 @@ struct BATTLESQUARE_API FGroundUsePatch
 	 * desenhado igual a um cheio é uma promessa que a carta não cumpre.
 	 */
 	bool bYieldsWater = false;
+
+	/** De que deus, quando é templo ou ruína. */
+	EDeity Deity = EDeity::MaeNatureza;
 };
 
 /**

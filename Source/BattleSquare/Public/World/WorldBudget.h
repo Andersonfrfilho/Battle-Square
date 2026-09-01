@@ -49,6 +49,15 @@ namespace WorldBudget
 	BATTLESQUARE_API int32 CampCount(EIslandBiome Biome);
 
 	/**
+	 * Templos em pé e templos em ruínas.
+	 *
+	 * Os em pé saem do PANTEÃO — um por deus que tenha lugar neste bioma — e
+	 * por isso não têm número próprio. As ruínas têm: elas falam do passado, e
+	 * quanto passado um lugar tem é decisão de mundo.
+	 */
+	BATTLESQUARE_API int32 RuinCount(EIslandBiome Biome);
+
+	/**
 	 * Quanto a mata é densa, como multiplicador da densidade base.
 	 *
 	 * Zero é bioma sem árvore: o deserto e a geleira não têm mata para adensar,

@@ -26,6 +26,7 @@ namespace
 
 		int32 Lojas = 4;
 		int32 Acampamentos = 6;
+		int32 Ruinas = 4;
 	};
 
 	FOrcamento Do(EIslandBiome Biome)
@@ -42,6 +43,7 @@ namespace
 			Orcamento.PomaresCuidados = 1;
 			Orcamento.PomaresSelvagens = 7;
 			Orcamento.Acampamentos = 3;
+			Orcamento.Ruinas = 6;
 			break;
 
 		case EIslandBiome::Desert:
@@ -56,7 +58,9 @@ namespace
 			Orcamento.FazendasPorVila = 1;
 			Orcamento.PomaresCuidados = 1;
 			Orcamento.PomaresSelvagens = 0;
+			// Deserto guarda ruína: a areia cobre e devolve, e nada apodrece.
 			Orcamento.Acampamentos = 9;
+			Orcamento.Ruinas = 7;
 			break;
 
 		case EIslandBiome::Glacier:
@@ -72,6 +76,7 @@ namespace
 			Orcamento.PomaresSelvagens = 0;
 			Orcamento.Lojas = 2;
 			Orcamento.Acampamentos = 7;
+			Orcamento.Ruinas = 2;
 			break;
 
 		case EIslandBiome::Volcano:
@@ -110,3 +115,4 @@ int32 WorldBudget::WildOrchardCount(EIslandBiome Biome) { return Do(Biome).Pomar
 
 int32 WorldBudget::RoadsideShopCount(EIslandBiome Biome) { return Do(Biome).Lojas; }
 int32 WorldBudget::CampCount(EIslandBiome Biome) { return Do(Biome).Acampamentos; }
+int32 WorldBudget::RuinCount(EIslandBiome Biome) { return Do(Biome).Ruinas; }

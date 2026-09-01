@@ -564,3 +564,112 @@ bool FLandUseACachoeiraSeSobeTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FLandUseOTemploFicaOndeSeuDeusMandaTest,
+	"BattleSquare.LandUse.OTemploFicaOndeSeuDeusManda",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FLandUseOTemploFicaOndeSeuDeusMandaTest::RunTest(const FString& Parameters)
+{
+	// A posição do templo é a IDENTIDADE do deus, e não decoração: quem vê um
+	// templo sabe de quem ele é pelo lugar onde está. É assim que um panteão se
+	// ensina sem uma linha de texto — e é a única coisa que este teste protege.
+	TMap<int32, FVector2D> Onde;
+
+	for (const FGroundUsePatch& Mancha : LandUseLayout::Plan())
+	{
+		if (Mancha.Use == EGroundUse::Templo)
+		{
+			Onde.Add(static_cast<int32>(Mancha.Deity), Mancha.CenterUnits);
+		}
+	}
+
+	TestTrue(TEXT("há templos"), Onde.Num() > 0);
+
+	// BRASEIRO na beira da rocha queimada — e do lado de FORA dela. Dentro
+	// seria templo que ninguém alcança: o chão ali queima, e a trilha não
+	// atravessa. Um templo é um lugar de ir.
+	if (const FVector2D* DoFogo = Onde.Find(static_cast<int32>(EDeity::Braseiro)))
+	{
+		const float AteAsBrasas =
+			FVector2D::Distance(*DoFogo, IslandGeography::VolcanoCenterUnits());
+
+		TestTrue(TEXT("o templo do fogo fica fora da rocha queimada"),
+			AteAsBrasas > IslandGeography::VolcanoScorchedRadiusUnits());
+		TestTrue(TEXT("mas encostado nela"),
+			AteAsBrasas < IslandGeography::VolcanoScorchedRadiusUnits() * 2.0f);
+	}
+
+	// CORRENTE encostada numa cachoeira, e fora da lâmina: templo dentro do rio
+	// é templo submerso.
+	if (const FVector2D* DaAgua = Onde.Find(static_cast<int32>(EDeity::Corrente)))
+	{
+		float MaisPerto = TNumericLimits<float>::Max();
+		for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
+		{
+			if (!Curso.HasFall())
+			{
+				continue;
+			}
+
+			MaisPerto = FMath::Min(MaisPerto, static_cast<float>(FVector2D::Distance(
+				*DaAgua, FreshWater::PointAtProgress(Curso, Curso.FallAtProgress))));
+		}
+
+		TestTrue(TEXT("o templo da água fica junto de uma cachoeira"),
+			MaisPerto < FreshWater::LakeHalfWidthUnits() * 3.0f);
+
+		float Aonde = 0.0f;
+		float ForaDaAgua = TNumericLimits<float>::Max();
+		for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
+		{
+			ForaDaAgua = FMath::Min(ForaDaAgua,
+				FreshWater::NearestOn(Curso, *DaAgua, Aonde)
+					- FreshWater::HalfWidthAtProgress(Curso, Aonde));
+		}
+
+		TestTrue(TEXT("e fora da lâmina"), ForaDaAgua > 0.0f);
+	}
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FLandUseARuinaEstaEsquecidaTest,
+	"BattleSquare.LandUse.ARuinaEstaEsquecida",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FLandUseARuinaEstaEsquecidaTest::RunTest(const FString& Parameters)
+{
+	// "Esquecida" é a única coisa que a ruína é, e por isso é o que se afirma.
+	//
+	// Ela é o oposto do templo em tudo o que importa: perto de trilha ou de
+	// vila ela deixa de ser esquecida, e vira mais um prédio. E é dela que vem
+	// a única coisa que nenhuma outra peça deste mundo dá — passado: um lugar
+	// que já foi importante e deixou de ser conta uma história que ninguém
+	// precisou escrever.
+	int32 Quantas = 0;
+
+	for (const FGroundUsePatch& Mancha : LandUseLayout::Plan())
+	{
+		if (Mancha.Use != EGroundUse::Ruina)
+		{
+			continue;
+		}
+
+		++Quantas;
+
+		TestFalse(TEXT("nenhuma trilha passa pela ruína"),
+			TrailLayout::IsOnTrail(Mancha.CenterUnits));
+
+		for (const FSettlementPlacement& Assentamento : RegionLayout::Plan())
+		{
+			TestTrue(TEXT("e ela fica longe de qualquer vila"),
+				FVector2D::Distance(Mancha.CenterUnits, Assentamento.CenterUnits)
+					> VillageLayout::ClearingHalfExtentUnitsFor(Assentamento.Kind) * 2.5f);
+		}
+	}
+
+	TestTrue(TEXT("há ruína"), Quantas > 0);
+
+	return true;
+}

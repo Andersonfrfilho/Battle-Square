@@ -32,15 +32,34 @@ namespace FreshWater
 		float MeiaCalhaDoLago() { return IslandGeography::LandRadiusUnits() * FracaoDaCalhaDoLago; }
 
 		/**
-		 * Quantos rios desce cada monte.
+		 * Quantos cursos desce cada monte.
 		 *
-		 * Dois, em flancos opostos: a montanha derrama para os dois lados, e
-		 * um rio só por monte deixava a ilha inteira com três fios de água.
+		 * Um TRONCO por monte, e dois galhos entrando nele. Três cursos por
+		 * monte, e não três rios — os galhos morrem no tronco.
 		 */
-		constexpr int32 RiosPorMonte = 2;
+		constexpr int32 TroncosPorMonte = 1;
+		constexpr int32 GalhosPorTronco = 2;
+		constexpr int32 CursosPorMonte = TroncosPorMonte + GalhosPorTronco;
 
-		/** Quanto os dois rios de um monte se afastam, em graus. */
-		constexpr float AberturaEntreIrmaos = 26.0f;
+		/** Onde o galho encontra o tronco, em fração do percurso do tronco. */
+		constexpr float EncontroDoGalho = 0.34f;
+
+		/** O galho nasce afastado do tronco, e converge. */
+		constexpr float AberturaDoGalho = 30.0f;
+
+		/** Quanto a calha engrossa a cada ordem. */
+		constexpr float EngrossaPorOrdem = 1.7f;
+
+		/**
+		 * E quanto ela engrossa da nascente à foz, mesmo sem galho entrando.
+		 *
+		 * Rio real ganha água o percurso inteiro, não só nas junções: a chuva
+		 * que cai na bacia entra pela margem. Sem isto a calha era um degrau em
+		 * cada junção e reta entre elas.
+		 */
+		constexpr float EngrossaAteAFoz = 1.6f;
+
+
 
 
 
@@ -176,7 +195,21 @@ namespace FreshWater
 	float TrailOffsetUnits() { return AfastamentoDaTrilha; }
 	float TrailHalfWidthUnits() { return MeiaTrilha; }
 
-	int32 RiversPerMountain() { return RiosPorMonte; }
+	TArray<FRiverCourse> PlanTrunks()
+	{
+		TArray<FRiverCourse> Troncos;
+		for (const FRiverCourse& Curso : Plan())
+		{
+			if (Curso.FlowsToTheSea())
+			{
+				Troncos.Add(Curso);
+			}
+		}
+
+		return Troncos;
+	}
+
+	int32 RiversPerMountain() { return CursosPorMonte; }
 
 	namespace
 	{
@@ -324,6 +357,10 @@ namespace FreshWater
 
 	TArray<FRiverCourse> Plan()
 	{
+		// Guardado pelo mesmo motivo da região: o mapa é fixo, e este plano era
+		// remontado dentro do laço do traçado de trilha.
+		static const TArray<FRiverCourse> Guardado = []()
+		{
 		TArray<FRiverCourse> Cursos;
 		const float Foz = IslandGeography::LandRadiusUnits();
 
@@ -335,48 +372,89 @@ namespace FreshWater
 				continue;
 			}
 
-			// DOIS rios por monte, em flancos opostos: a montanha derrama para
-			// os dois lados, e um por monte deixava a ilha com três fios de
-			// água que nenhuma trilha jamais cruzava.
-			for (int32 Irmao = 0; Irmao < RiosPorMonte; ++Irmao)
+			// UM TRONCO e DOIS GALHOS por monte, e não três rios paralelos.
+			//
+			// Rio de verdade é dendrítico: galhos finos convergindo num tronco
+			// que engrossa. Sem isso a ilha tinha um pente — água correndo lado
+			// a lado sem nunca se encontrar, que não é bacia.
+			const float DaSaia = Peca.RadiusUnits + Peca.ClearanceUnits * SaiaDaNascente;
+			const float Percurso = FMath::Max(0.0f, Foz - DaSaia);
+
+			auto Semear = [&](FRiverCourse& Curso, int32 Qual)
 			{
-				FRiverCourse Curso;
-				Curso.SourceRadiusUnits = Peca.RadiusUnits + Peca.ClearanceUnits * SaiaDaNascente;
-				Curso.MouthRadiusUnits = Foz;
-
-				const float Desvio = (static_cast<float>(Irmao)
-					- (RiosPorMonte - 1) * 0.5f) * AberturaEntreIrmaos;
-				Curso.BearingRadians =
-					FMath::DegreesToRadians(Peca.AngleDegrees + Desvio);
-
-				// A semente sai do ÍNDICE, não do ângulo: ângulo é float, e
-				// float virando semente é a receita de o rio mudar de curva
-				// porque alguém mexeu na terceira casa decimal do anel.
 				const uint32 Semente = BattleSpread::SeedFromText(
-					FString::Printf(TEXT("rio-da-montanha-%d"), Indice));
+					FString::Printf(TEXT("rio-da-montanha-%d"), Qual));
 
 				Curso.MeanderRadians = BattleSpread::Between(MenorSerpente, MaiorSerpente,
 					BattleSpread::Fraction(Semente, 0));
-				// Pela onda de Leopold, e não por um sorteio de curvas. O
-				// sorteio sobrou como VARIAÇÃO em torno dela: rios iguais em
-				// tudo menos no rumo leem como o mesmo rio copiado.
-				const float Percurso11 =
+
+				const float SeuPercurso =
 					FMath::Max(0.0f, Curso.MouthRadiusUnits - Curso.SourceRadiusUnits);
 				const float Onda = MeiaCalhaDoRio() * 2.0f * LargurasPorOnda;
-				Curso.MeanderTurns = (Onda > KINDA_SMALL_NUMBER ? Percurso11 / Onda : 1.0f)
+				Curso.MeanderTurns = (Onda > KINDA_SMALL_NUMBER ? SeuPercurso / Onda : 1.0f)
 					* BattleSpread::Between(MenosCurvas, MaisCurvas,
 						BattleSpread::Fraction(Semente, 1));
+			};
 
-				const float Percurso =
-					FMath::Max(0.0f, Curso.MouthRadiusUnits - Curso.SourceRadiusUnits);
-				Curso.LakeRadiusUnits = Curso.SourceRadiusUnits + Percurso * BattleSpread::Between(
+			// O tronco: nasce na saia, vai ao mar, e é ordem 2 porque dois
+			// galhos entram nele.
+			FRiverCourse Tronco;
+			Tronco.SourceRadiusUnits = DaSaia;
+			Tronco.MouthRadiusUnits = Foz;
+			Tronco.BearingRadians = FMath::DegreesToRadians(Peca.AngleDegrees);
+			Tronco.Order = 2;
+			Semear(Tronco, Indice);
+
+			const float NoEncontro = DaSaia + Percurso * EncontroDoGalho;
+
+			// O LAGO e a QUEDA moram no tronco, e depois do encontro: o lago é
+			// água parada, e água parada precisa de volume — pô-lo num galho de
+			// cabeceira seria um lago maior que o rio que o alimenta.
+			{
+				const uint32 Semente = BattleSpread::SeedFromText(
+					FString::Printf(TEXT("rio-da-montanha-%d"), Indice));
+				const float Depois = FMath::Max(0.0f, Foz - NoEncontro);
+
+				Tronco.LakeRadiusUnits = NoEncontro + Depois * BattleSpread::Between(
 					PrimeiroLago, UltimoLago, BattleSpread::Fraction(Semente, 2));
 
 				// A queda vem SEMPRE depois do lago, e por soma em vez de
 				// sorteio independente: sorteados à parte, um dia sairia uma
 				// cachoeira no meio do lago — água caindo dentro de água parada.
-				Curso.FallRadiusUnits = Curso.LakeRadiusUnits + AlcanceDoLago() + BattleSpread::Between(
-					MenorDegrau(), MaiorDegrau(), BattleSpread::Fraction(Semente, 3));
+				Tronco.FallRadiusUnits = Tronco.LakeRadiusUnits + AlcanceDoLago()
+					+ BattleSpread::Between(MenorDegrau(), MaiorDegrau(),
+						BattleSpread::Fraction(Semente, 3));
+			}
+
+			Cursos.Add(Tronco);
+			++Indice;
+
+			// Os galhos: nascem afastados, entram no tronco, e MORREM ali. Eles
+			// não têm lago nem queda — a foz deles é a junção.
+			for (int32 Galho = 0; Galho < GalhosPorTronco; ++Galho)
+			{
+				const float ParaOnde = (Galho == 0) ? 1.0f : -1.0f;
+
+				FRiverCourse Curso;
+				Curso.SourceRadiusUnits = DaSaia;
+				Curso.MouthRadiusUnits = NoEncontro;
+				Curso.BearingRadians = FMath::DegreesToRadians(
+					Peca.AngleDegrees + ParaOnde * AberturaDoGalho);
+				Curso.Order = 1;
+				Curso.JoinRadiusUnits = NoEncontro;
+				Curso.JoinBearingRadians = Tronco.BearingRadians;
+
+				Semear(Curso, Indice);
+
+				// Sem lago e sem queda: pôr o raio do lago FORA do percurso é o
+				// jeito de dizer "não tem" sem inventar um sinalizador que
+				// alguém esqueceria de checar.
+				// A queda continua DEPOIS do lago mesmo aqui, onde os dois estão
+				// fora do percurso: o invariante vale para todo curso, e um
+				// caso especial que o quebra é o caso que ninguém lembra de
+				// filtrar.
+				Curso.LakeRadiusUnits = Curso.MouthRadiusUnits * 2.0f;
+				Curso.FallRadiusUnits = Curso.MouthRadiusUnits * 2.2f;
 
 				Cursos.Add(Curso);
 				++Indice;
@@ -384,6 +462,9 @@ namespace FreshWater
 		}
 
 		return Cursos;
+		}();
+
+		return Guardado;
 	}
 
 	FVector2D PointAt(const FRiverCourse& Course, float RadiusUnits)
@@ -393,7 +474,28 @@ namespace FreshWater
 			? (RadiusUnits - Course.SourceRadiusUnits) / Percurso
 			: 0.0f;
 
-		const float Rumo = Course.BearingRadians + Course.MeanderRadians
+		// O galho CONVERGE para o rumo do tronco à medida que chega na junção.
+		//
+		// Sem isto o galho terminava paralelo ao tronco e "entrar nele" seria
+		// duas linhas encostando de lado. A convergência é o que faz o desenho
+		// ler como raiz: os fios se fecham num ponto.
+		float Base = Course.BearingRadians;
+		if (!Course.FlowsToTheSea())
+		{
+			// Ao quadrado: o galho fica no rumo dele quase todo o percurso e só
+			// vira perto do fim. Linear faria a "junção" ser uma curva longa e
+			// suave, que lê como dois rios paralelos se aproximando.
+			Base = FMath::Lerp(Course.BearingRadians, Course.JoinBearingRadians,
+				FMath::Clamp(Andado, 0.0f, 1.0f) * FMath::Clamp(Andado, 0.0f, 1.0f));
+		}
+
+		// E o meandro se APAGA na junção, pelo mesmo motivo: rio serpenteando
+		// no instante em que encontra outro erra o encontro.
+		const float Serpente = Course.FlowsToTheSea()
+			? 1.0f
+			: (1.0f - FMath::Clamp(Andado, 0.0f, 1.0f));
+
+		const float Rumo = Base + Course.MeanderRadians * Serpente
 			* FMath::Sin(2.0f * PI * Course.MeanderTurns * Andado);
 
 		return FVector2D(FMath::Cos(Rumo) * RadiusUnits, FMath::Sin(Rumo) * RadiusUnits);
@@ -402,14 +504,28 @@ namespace FreshWater
 	float HalfWidthAt(const FRiverCourse& Course, float RadiusUnits)
 	{
 		const float Distancia = FMath::Abs(RadiusUnits - Course.LakeRadiusUnits);
+		// A calha sai da ORDEM do curso e de quanto ele já andou. Galho de
+		// cabeceira é fio; tronco é rio; e todo curso engrossa rio abaixo,
+		// porque a chuva da bacia entra pela margem o percurso inteiro — não
+		// só nas junções.
+		const float Percurso = Course.MouthRadiusUnits - Course.SourceRadiusUnits;
+		const float Andado = (Percurso > KINDA_SMALL_NUMBER)
+			? FMath::Clamp((RadiusUnits - Course.SourceRadiusUnits) / Percurso, 0.0f, 1.0f)
+			: 0.0f;
+
+		const float PorOrdem =
+			FMath::Pow(EngrossaPorOrdem, static_cast<float>(Course.Order - 1));
+		const float DaCalha = MeiaCalhaDoRio() * PorOrdem
+			* FMath::Lerp(1.0f / EngrossaAteAFoz, 1.0f, Andado);
+
 		if (Distancia >= AlcanceDoLago())
 		{
-			return MeiaCalhaDoRio();
+			return DaCalha;
 		}
 
 		const float Subida = 1.0f - Distancia / AlcanceDoLago();
 		const float Suave = Subida * Subida * (3.0f - 2.0f * Subida);
-		return MeiaCalhaDoRio() + (MeiaCalhaDoLago() - MeiaCalhaDoRio()) * Suave;
+		return DaCalha + (MeiaCalhaDoLago() - DaCalha) * Suave;
 	}
 
 	bool IsFallAt(const FRiverCourse& Course, float RadiusUnits)
@@ -448,6 +564,14 @@ namespace FreshWater
 
 		for (int32 Indice = 0; Indice < Cursos.Num(); ++Indice)
 		{
+			// A gruta é da CACHOEIRA, e a cachoeira mora no tronco. Galho de
+			// cabeceira não tem queda: a foz dele é a junção, e uma gruta ali
+			// prometeria uma cachoeira que não existe.
+			if (!Cursos[Indice].FlowsToTheSea())
+			{
+				continue;
+			}
+
 			const FVector2D NaQueda = PointAt(Cursos[Indice], Cursos[Indice].FallRadiusUnits);
 
 			IslandFeatureLayout::FFeaturePlacement Gruta;

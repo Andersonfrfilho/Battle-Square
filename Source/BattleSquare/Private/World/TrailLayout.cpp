@@ -14,8 +14,17 @@ namespace
 	 * Ele decide duas coisas ao mesmo tempo: a resolução do caminho e o custo
 	 * de calculá-lo. Passo grande dá trilha angulosa; passo pequeno dá uma
 	 * grade que não cabe no tempo de um teste.
+	 *
+	 * Ele foi de 0.012 para 0.0055 — de 1.680 unidades para 770.
+	 *
+	 * O passo grosso era o motivo real de a trilha subir o barranco de frente:
+	 * a faixa tinha uma casa e meia, e não cabe ziguezague em uma casa e meia.
+	 * Não adiantava encarecer o declive; o traçado não tinha onde zigzaguear.
+	 *
+	 * Custa: a grade quadruplica de casas. É o que a tabela de alturas paga —
+	 * sem ela, isto não terminaria.
 	 */
-	constexpr float FracaoDoPasso = 0.012f;
+	constexpr float FracaoDoPasso = 0.0055f;
 
 	/** Quanto a trilha limpa para cada lado. */
 	constexpr float FracaoDaLargura = 0.55f;
@@ -510,7 +519,13 @@ namespace
 		// A trilha para na MARGEM, afastada pela largura da água mais a folga
 		// da faixa limpa. Mirar o ponto exato da queda mandaria o traçado para
 		// dentro do rio, e ele pagaria a penalidade da água até o fim.
-		for (const FreshWater::FRiverCourse& Rio : FreshWater::Plan())
+		// TRONCOS, e não todo curso. O galho de cabeceira não tem queda, e o
+		// raio que eu escolhi para dizer "não tem" é uma posição FORA da ilha
+		// — a trilha foi mirar o mar aberto a 740 metros da costa.
+		//
+		// Sinalizar ausência com um valor fora de faixa só funciona enquanto
+		// ninguém lê o valor. Três lugares leram.
+		for (const FreshWater::FRiverCourse& Rio : FreshWater::PlanTrunks())
 		{
 			const FVector2D NaQueda = FreshWater::PointAt(Rio, Rio.FallRadiusUnits);
 			const float Afastar = FreshWater::HalfWidthAt(Rio, Rio.FallRadiusUnits)

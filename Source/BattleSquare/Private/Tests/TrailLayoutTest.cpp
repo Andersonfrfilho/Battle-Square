@@ -200,8 +200,12 @@ bool FTrailLayoutOsMarcosNaturaisTemCaminhoTest::RunTest(const FString& Paramete
 		if (Trilha.Destination == ETrailDestination::Monte) { ++ParaMonte; }
 	}
 
+	// Uma por TRONCO: a cachoeira mora no tronco, porque galho de cabeceira
+	// morre na junção e não despenca em lugar nenhum.
 	TestEqual(TEXT("toda cachoeira tem caminho"),
-		ParaCachoeira, FreshWater::Plan().Num());
+		ParaCachoeira, FreshWater::PlanTrunks().Num());
+	TestTrue(TEXT("e há menos troncos que cursos — a bacia é uma árvore"),
+		FreshWater::PlanTrunks().Num() < FreshWater::Plan().Num());
 	TestTrue(TEXT("e todo monte também"), ParaMonte > 0);
 
 	// A trilha para na MARGEM. Mirando o ponto exato da queda, o traçado
@@ -213,7 +217,7 @@ bool FTrailLayoutOsMarcosNaturaisTemCaminhoTest::RunTest(const FString& Paramete
 			continue;
 		}
 
-		for (const FreshWater::FRiverCourse& Rio : FreshWater::Plan())
+		for (const FreshWater::FRiverCourse& Rio : FreshWater::PlanTrunks())
 		{
 			const float Raio = Trilha.PointsUnits.Last().Size();
 			if (Raio < Rio.SourceRadiusUnits || Raio > Rio.MouthRadiusUnits)

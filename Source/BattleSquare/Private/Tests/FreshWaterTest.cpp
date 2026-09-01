@@ -52,7 +52,7 @@ bool FFreshWaterRiverRunsFromMountainToSeaTest::RunTest(const FString& Parameter
 {
 	const float Costa = IslandGeography::LandRadiusUnits();
 
-	for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
+	for (const FreshWater::FRiverCourse& Curso : FreshWater::PlanTrunks())
 	{
 		// A nascente sai da SAIA do monte, não do cume nem da planície.
 		TestTrue(TEXT("a nascente fica alem do miolo da ilha"),
@@ -120,20 +120,22 @@ bool FFreshWaterLakeIsTheRiverGoingWideTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("o lago e mais largo que o rio"),
 		FreshWater::LakeHalfWidthUnits() > FreshWater::RiverHalfWidthUnits());
 
-	for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
+	for (const FreshWater::FRiverCourse& Curso : FreshWater::PlanTrunks())
 	{
 		// No raio do lago a calha chega ao máximo — é ali que ele existe.
 		const float NoLago = FreshWater::HalfWidthAt(Curso, Curso.LakeRadiusUnits);
 		TestEqual(TEXT("no raio do lago a calha chega a largura de lago"),
 			NoLago, FreshWater::LakeHalfWidthUnits(), 1.0f);
 
-		// Na nascente e na foz ela volta a ser rio.
-		TestEqual(TEXT("na nascente a calha e de rio"),
-			FreshWater::HalfWidthAt(Curso, Curso.SourceRadiusUnits),
-			FreshWater::RiverHalfWidthUnits(), 1.0f);
-		TestEqual(TEXT("na foz a calha e de rio"),
-			FreshWater::HalfWidthAt(Curso, Curso.MouthRadiusUnits),
-			FreshWater::RiverHalfWidthUnits(), 1.0f);
+		// Na nascente e na foz ela é calha, não lago — e a foz é MAIS LARGA
+		// que a nascente, que é o que um rio faz.
+		TestTrue(TEXT("a foz e mais larga que a nascente"),
+			FreshWater::HalfWidthAt(Curso, Curso.MouthRadiusUnits)
+				> FreshWater::HalfWidthAt(Curso, Curso.SourceRadiusUnits));
+		TestTrue(TEXT("e nenhuma das duas e lago"),
+			FreshWater::HalfWidthAt(Curso, Curso.MouthRadiusUnits)
+				< FreshWater::LakeHalfWidthUnits() * 0.5f);
+
 
 		// E cresce de forma monótona até lá: alargamento que oscila lê como
 		// remendo, não como água parando.
@@ -160,14 +162,18 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FFreshWaterFallNeverLandsInTheLakeTest,
 
 bool FFreshWaterFallNeverLandsInTheLakeTest::RunTest(const FString& Parameters)
 {
-	for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
+	for (const FreshWater::FRiverCourse& Curso : FreshWater::PlanTrunks())
 	{
 		// Cachoeira dentro do lago é água caindo dentro de água parada.
 		TestTrue(TEXT("a queda vem depois do lago"),
 			Curso.FallRadiusUnits > Curso.LakeRadiusUnits);
-		TestEqual(TEXT("no raio da queda a calha ja voltou a ser rio"),
-			FreshWater::HalfWidthAt(Curso, Curso.FallRadiusUnits),
-			FreshWater::RiverHalfWidthUnits(), 1.0f);
+		// "Voltou a ser rio" quer dizer que ela saiu do lago, e não que ela tem
+		// a largura da nascente: a calha ENGROSSA rio abaixo, porque a chuva
+		// da bacia entra pela margem o percurso inteiro. A asserção de
+		// igualdade valia quando o rio tinha a mesma calha do começo ao fim.
+		TestTrue(TEXT("no raio da queda a calha ja saiu do lago"),
+			FreshWater::HalfWidthAt(Curso, Curso.FallRadiusUnits)
+				< FreshWater::LakeHalfWidthUnits() * 0.5f);
 
 		// E antes do mar: cachoeira despejando na arrebentação seria o rio
 		// terminando duas vezes.
@@ -254,7 +260,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FFreshWaterOpensAGrottoBesideEveryFallTest,
 
 bool FFreshWaterOpensAGrottoBesideEveryFallTest::RunTest(const FString& Parameters)
 {
-	const TArray<FreshWater::FRiverCourse> Cursos = FreshWater::Plan();
+	const TArray<FreshWater::FRiverCourse> Cursos = FreshWater::PlanTrunks();
 	const TArray<IslandFeatureLayout::FFeaturePlacement> Grutas = FreshWater::PlanGrottoes();
 
 	// A busca pode vir com menos grutas do que quedas — é resposta válida
@@ -301,7 +307,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FFreshWaterKeepsTheGrottoOutOfTheWaterTest,
 
 bool FFreshWaterKeepsTheGrottoOutOfTheWaterTest::RunTest(const FString& Parameters)
 {
-	const TArray<FreshWater::FRiverCourse> Cursos = FreshWater::Plan();
+	const TArray<FreshWater::FRiverCourse> Cursos = FreshWater::PlanTrunks();
 	const TArray<IslandFeatureLayout::FFeaturePlacement> Grutas = FreshWater::PlanGrottoes();
 
 	if (Cursos.Num() == 0 || Grutas.Num() != Cursos.Num())
@@ -340,7 +346,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FFreshWaterGrottoWatchesTheFallTest,
 
 bool FFreshWaterGrottoWatchesTheFallTest::RunTest(const FString& Parameters)
 {
-	const TArray<FreshWater::FRiverCourse> Cursos = FreshWater::Plan();
+	const TArray<FreshWater::FRiverCourse> Cursos = FreshWater::PlanTrunks();
 	const TArray<IslandFeatureLayout::FFeaturePlacement> Grutas = FreshWater::PlanGrottoes();
 
 	if (Cursos.Num() == 0 || Grutas.Num() != Cursos.Num())

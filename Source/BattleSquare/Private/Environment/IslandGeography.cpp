@@ -108,10 +108,21 @@ namespace Relevo
 	 * vez, e o despejo do mapa mostrou: planalto centrado na ilha separava o
 	 * interior da fronteira, que o ranking já separa. Portão duplo não barra
 	 * duas vezes; ele só faz o primeiro portão não significar nada.
+	 *
+	 * A faixa do barranco é LARGA porque a trilha tem de subir por ela.
+	 *
+	 * Era 2.520 unidades para 2.800 de altura: 111% de declive médio, e ~590%
+	 * no degrau. O sustentável é 10%, o que exige 28.000 unidades de percurso
+	 * — e não cabe ziguezague numa faixa de 2.520 com passo de traçado de
+	 * 1.680. Não era o custo que estava errado: era a geometria.
+	 *
+	 * A faixa foi para 0.13 do raio (18.200 unidades). Com o ziguezague dentro
+	 * dela o percurso passa dos 28.000, e o barranco continua sendo barranco:
+	 * ele ainda é a subida que separa a cidade do resto.
 	 */
 	constexpr float FracaoDoPlanalto = 0.020f;
-	constexpr float FracaoDaBordaInterna = 0.025f;
-	constexpr float FracaoDaBordaExterna = 0.043f;
+	constexpr float FracaoDaBordaInterna = 0.030f;
+	constexpr float FracaoDaBordaExterna = 0.160f;
 
 	constexpr float MeiaLarguraDaRampa = 16.0f;
 

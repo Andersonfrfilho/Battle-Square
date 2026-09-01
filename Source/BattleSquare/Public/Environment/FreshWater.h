@@ -61,6 +61,30 @@ namespace FreshWater
 
 		/** Em que raio ele despenca. */
 		float FallRadiusUnits = 0.0f;
+
+		/**
+		 * A ORDEM do curso, no sentido de Strahler.
+		 *
+		 * 1 é galho de cabeceira; 2 é o tronco em que dois galhos entram. A
+		 * largura sai daqui, e é o que faz a água ENGROSSAR rio abaixo em vez
+		 * de ter a mesma calha do nascedouro até o mar.
+		 */
+		int32 Order = 1;
+
+		/**
+		 * Onde este curso ENTRA em outro. Zero quer dizer que ele vai ao mar.
+		 *
+		 * É o que transforma seis linhas paralelas numa RAIZ. Rio de verdade é
+		 * dendrítico: galhos finos convergindo num tronco. Sem isto a ilha
+		 * tinha um pente, não uma bacia — e a água corria lado a lado sem
+		 * nunca se encontrar.
+		 */
+		float JoinRadiusUnits = 0.0f;
+
+		/** O rumo do tronco em que ele entra, para onde a curva converge. */
+		float JoinBearingRadians = 0.0f;
+
+		bool FlowsToTheSea() const { return JoinRadiusUnits <= 0.0f; }
 	};
 
 	/** Largura de meia calha do rio comum. */
@@ -88,6 +112,18 @@ namespace FreshWater
 	 * para os dois flancos, e um rio por monte deixava a ilha com três fios
 	 * de água que nenhuma trilha jamais cruzava.
 	 */
+	/**
+	 * Só os TRONCOS: os cursos que chegam ao mar.
+	 *
+	 * Existe porque a bacia virou uma árvore, e quase toda pergunta antiga —
+	 * "onde é o lago", "onde é a queda", "o rio desce até o mar" — é sobre o
+	 * tronco. Galho de cabeceira morre na junção e não tem nada disso.
+	 *
+	 * Sem esta função, cada pergunta dessas teria de filtrar por conta própria,
+	 * e a primeira que esquecesse afirmaria uma coisa falsa em silêncio.
+	 */
+	BATTLESQUARE_API TArray<FRiverCourse> PlanTrunks();
+
 	BATTLESQUARE_API int32 RiversPerMountain();
 
 	/**

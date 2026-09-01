@@ -72,7 +72,10 @@ namespace
 	 */
 	FVector2D CentroDoMercado()
 	{
-		const TArray<FreshWater::FRiverCourse> Rios = FreshWater::Plan();
+		// TRONCOS: só eles têm lago. O galho de cabeceira morre na junção, e o
+		// raio de lago dele é um valor fora de faixa — o mercado foi nascer
+		// fora da ilha.
+		const TArray<FreshWater::FRiverCourse> Rios = FreshWater::PlanTrunks();
 		if (Rios.Num() == 0)
 		{
 			const float Radianos = FMath::DegreesToRadians(235.0f);
@@ -129,6 +132,15 @@ int32 RegionLayout::BorderPostCount()
 
 TArray<FSettlementPlacement> RegionLayout::Plan()
 {
+	// TRAÇADO UMA VEZ. O mapa é fixo — nada aqui depende de partida, de jogador
+	// nem de relógio — e refazê-lo a cada pergunta era o que travava o traçado
+	// das trilhas: o custo de um passo pergunta se o ponto está na rampa, a
+	// rampa pergunta onde é a cidade, e a cidade estava sendo recalculada
+	// (com os RIOS junto, por causa do Mercado do Lago) uma vez por aresta.
+	//
+	// Milhões de arestas, uma montagem de região em cada.
+	static const TArray<FSettlementPlacement> Guardado = []()
+	{
 	TArray<FSettlementPlacement> Pecas;
 
 	// A vila inicial no CENTRO, debaixo de onde o jogador nasce. Sair de casa é
@@ -158,4 +170,7 @@ TArray<FSettlementPlacement> RegionLayout::Plan()
 	}
 
 	return Pecas;
+	}();
+
+	return Guardado;
 }

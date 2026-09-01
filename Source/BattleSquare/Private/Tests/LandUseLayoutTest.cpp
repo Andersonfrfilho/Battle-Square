@@ -305,3 +305,148 @@ bool FLandUseNemTodoTrechoAceitaBarcoGrandeTest::RunTest(const FString& Paramete
 
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FLandUseABaciaEhUmaArvoreTest,
+	"BattleSquare.LandUse.ABaciaEhUmaArvore",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FLandUseABaciaEhUmaArvoreTest::RunTest(const FString& Parameters)
+{
+	// "Parece raiz" vira contagem: precisa haver TRÊS ordens, e mais fiapos
+	// que galhos e mais galhos que troncos. Um tronco com dois galhos entrando
+	// no mesmo ponto desenha um Y, e Y não é raiz.
+	int32 PorOrdem[4] = { 0, 0, 0, 0 };
+
+	for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
+	{
+		if (Curso.Order >= 1 && Curso.Order <= 3)
+		{
+			++PorOrdem[Curso.Order];
+		}
+	}
+
+	TestTrue(TEXT("há fiapo de cabeceira"), PorOrdem[1] > 0);
+	TestTrue(TEXT("há galho"), PorOrdem[2] > 0);
+	TestTrue(TEXT("há tronco"), PorOrdem[3] > 0);
+	TestTrue(TEXT("há mais fiapos que galhos"), PorOrdem[1] > PorOrdem[2]);
+	TestTrue(TEXT("e mais galhos que troncos"), PorOrdem[2] > PorOrdem[3]);
+
+	// As junções em ALTURAS diferentes: dois galhos entrando no mesmo raio
+	// desenham uma flecha, não uma bacia.
+	TSet<int32> Encontros;
+	for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
+	{
+		if (!Curso.FlowsToTheSea())
+		{
+			Encontros.Add(FMath::RoundToInt(Curso.JoinRadiusUnits / 100.0f));
+		}
+	}
+
+	TestTrue(TEXT("as junções ficam em raios diferentes"), Encontros.Num() > PorOrdem[3]);
+
+	// E a calha cresce com a ordem: fiapo é fio, tronco é rio.
+	float DoFiapo = 0.0f;
+	float DoTronco = 0.0f;
+	for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
+	{
+		const float NaNascente = FreshWater::HalfWidthAt(Curso, Curso.SourceRadiusUnits);
+		if (Curso.Order == 1) { DoFiapo = NaNascente; }
+		if (Curso.Order == 3) { DoTronco = NaNascente; }
+	}
+
+	TestTrue(TEXT("o tronco nasce mais largo que o fiapo"), DoTronco > DoFiapo);
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FLandUseACorredeiraSaiDoRelevoTest,
+	"BattleSquare.LandUse.ACorredeiraSaiDoRelevo",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FLandUseACorredeiraSaiDoRelevoTest::RunTest(const FString& Parameters)
+{
+	// A corredeira não é uma faixa escolhida a dedo: ela é derivada do relevo.
+	// Onde o chão desce depressa, a água quebra. Sem este teste, `IsRapidsAt`
+	// poderia devolver sempre falso e nada acusaria.
+	int32 Corredeiras = 0;
+	int32 Mansos = 0;
+
+	for (const FreshWater::FRiverCourse& Curso : FreshWater::PlanTrunks())
+	{
+		const float Passo =
+			(Curso.MouthRadiusUnits - Curso.SourceRadiusUnits) / 120.0f;
+
+		for (float Raio = Curso.SourceRadiusUnits; Raio <= Curso.MouthRadiusUnits; Raio += Passo)
+		{
+			if (FreshWater::IsRapidsAt(Curso, Raio)) { ++Corredeiras; } else { ++Mansos; }
+		}
+	}
+
+	TestTrue(TEXT("há corredeira em algum trecho"), Corredeiras > 0);
+	TestTrue(TEXT("e trecho manso também — senão o rio inteiro seria corredeira"), Mansos > 0);
+
+	// Dentro do lago não há corredeira, por mais inclinada que esteja a encosta
+	// em volta: lago é água PARADA.
+	for (const FreshWater::FRiverCourse& Curso : FreshWater::PlanTrunks())
+	{
+		TestFalse(TEXT("não há corredeira dentro do lago"),
+			FreshWater::IsRapidsAt(Curso, Curso.LakeRadiusUnits));
+	}
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FLandUseOPocoEhFuroNaoBaciaTest,
+	"BattleSquare.LandUse.OPocoEhFuroNaoBacia",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FLandUseOPocoEhFuroNaoBaciaTest::RunTest(const FString& Parameters)
+{
+	// A morfologia de poço de queda diz que a profundidade sai da ALTURA da
+	// queda: queda alta cava poço fundo.
+	//
+	// A primeira versão deste teste afirmava "mais fundo que largo", e estava
+	// errada: eu li o "dez vezes" da literatura como forma quando ele é uma
+	// razão de VELOCIDADE de erosão — a incisão vertical supera a lateral. Poço
+	// é mais largo que fundo, como qualquer poço.
+	//
+	// O teste reprovou o código, e quem estava errado era o teste. Vale
+	// registrar: asserção mal lida vira defeito que ninguém acha, porque ela
+	// está verde no dia em que é escrita.
+	int32 Pocos = 0;
+
+	for (const FreshWater::FRiverCourse& Curso : FreshWater::PlanTrunks())
+	{
+		const float Fundo = FreshWater::PlungePoolDepthUnits(Curso);
+		const float Meia = FreshWater::PlungePoolHalfWidthUnits(Curso);
+
+		if (Fundo <= 0.0f)
+		{
+			continue;
+		}
+
+		++Pocos;
+		TestTrue(TEXT("o poço é mais largo que fundo"), Meia > Fundo);
+		TestTrue(TEXT("e mais largo que a calha que o alimenta"),
+			Meia > FreshWater::RiverHalfWidthUnits());
+
+		// Poço não é lago: o que os separa é o tamanho, e sem esta linha os
+		// dois seriam a mesma coisa com nomes diferentes.
+		TestTrue(TEXT("e bem menor que o lago"),
+			Meia < FreshWater::LakeHalfWidthUnits() * 0.5f);
+	}
+
+	TestTrue(TEXT("toda queda tem poço"), Pocos > 0);
+
+	// Galho não tem queda, e por isso não tem poço: a foz dele é a junção.
+	for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
+	{
+		if (!Curso.FlowsToTheSea())
+		{
+			TestEqual(TEXT("galho não tem poço"),
+				FreshWater::PlungePoolDepthUnits(Curso), 0.0f);
+		}
+	}
+
+	return true;
+}

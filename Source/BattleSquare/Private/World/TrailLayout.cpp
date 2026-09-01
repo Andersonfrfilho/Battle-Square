@@ -440,7 +440,17 @@ namespace
 		return FVector2D::ZeroVector;
 	}
 
-	TArray<FTrailRoute> Tracar()
+	/**
+	 * O nome é ESPECÍFICO de propósito.
+	 *
+	 * `Tracar` existia aqui e em `LandUseLayout.cpp`, os dois em namespace
+	 * anônimo — e o unity build junta os arquivos numa unidade só, onde os
+	 * dois viram sobrecarga que difere apenas no retorno. É a L-042, que a
+	 * gente conhecia de HELPER DE TESTE, aparecendo em código de produção.
+	 *
+	 * A sonda `audit_test_helper_names.sh` não pega isto: ela olha testes.
+	 */
+	TArray<FTrailRoute> TracarTrilhas()
 	{
 		TArray<FTrailRoute> Trilhas;
 
@@ -590,7 +600,7 @@ const TArray<FTrailRoute>& TrailLayout::Plan()
 {
 	// Traçado uma vez. Dijkstra sobre a ilha inteira não é conta para se
 	// refazer a cada árvore plantada — e `BlocksPlanting` pergunta por ponto.
-	static TArray<FTrailRoute> Trilhas = Tracar();
+	static TArray<FTrailRoute> Trilhas = TracarTrilhas();
 	return Trilhas;
 }
 

@@ -124,6 +124,37 @@ namespace FreshWater
 	 */
 	BATTLESQUARE_API TArray<FRiverCourse> PlanTrunks();
 
+	/**
+	 * CORREDEIRA: o trecho em que o leito é íngreme demais para correr manso.
+	 *
+	 * Não é uma faixa escolhida a dedo — ela é DERIVADA do relevo. Onde o chão
+	 * desce depressa, a água acelera e quebra; onde ele achata, ela alarga e
+	 * acalma. Perguntar ao terreno é o que faz a corredeira aparecer no lugar
+	 * certo mesmo quando alguém mexer no relevo.
+	 *
+	 * Isso também dá função ao trecho entre o lago e a queda, que hoje é liso:
+	 * água que sai de um lago e cai vinte metros adiante não vai mansa até a
+	 * borda.
+	 */
+	BATTLESQUARE_API bool IsRapidsAt(const FRiverCourse& Course, float RadiusUnits);
+
+	/** O declive do leito num ponto, em altura por unidade andada. */
+	BATTLESQUARE_API float BedGradientAt(const FRiverCourse& Course, float RadiusUnits);
+
+	/** A partir de que declive o trecho é corredeira. */
+	BATTLESQUARE_API float RapidsGradient();
+
+	/**
+	 * O POÇO da cachoeira: fundo e estreito, nunca uma bacia.
+	 *
+	 * A morfologia diz duas coisas que decidem o desenho: a profundidade é
+	 * proporcional à ALTURA DA QUEDA, e o poço aprofunda cerca de dez vezes
+	 * mais rápido do que alarga. Poço de cachoeira é FURO — modelá-lo como um
+	 * lago redondo seria desenhar a coisa errada.
+	 */
+	BATTLESQUARE_API float PlungePoolHalfWidthUnits(const FRiverCourse& Course);
+	BATTLESQUARE_API float PlungePoolDepthUnits(const FRiverCourse& Course);
+
 	BATTLESQUARE_API int32 RiversPerMountain();
 
 	/**

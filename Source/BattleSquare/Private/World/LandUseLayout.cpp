@@ -75,7 +75,8 @@ namespace
 		return Melhor;
 	}
 
-	TArray<FGroundUsePatch> Tracar()
+	/** Nome específico: `Tracar` colidia com o de `TrailLayout` no unity build. */
+	TArray<FGroundUsePatch> TracarUsoDoSolo()
 	{
 		TArray<FGroundUsePatch> Manchas;
 
@@ -149,7 +150,7 @@ TArray<FGroundUsePatch> LandUseLayout::Plan()
 	// ÁRVORE plantada.
 	static TArray<FGroundUsePatch> Manchas = []()
 	{
-		TArray<FGroundUsePatch> Tudo = Tracar();
+		TArray<FGroundUsePatch> Tudo = TracarUsoDoSolo();
 
 		// AS CLAREIRAS FECHADAS, por último e só onde nenhuma trilha passa
 		// perto. Elas dependem das trilhas, e as trilhas não dependem delas —

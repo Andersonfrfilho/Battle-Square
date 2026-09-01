@@ -228,9 +228,12 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FFreshWaterRiversDoNotShareACourseTest,
 	"BattleSquare.Environment.FreshWater.RiversStayApart",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
+// Entre TRONCOS. Os galhos e os fiapos se aproximam de propósito — eles
+// existem para CONVERGIR, e é isso que faz a bacia ler como raiz em vez de
+// pente. Exigir afastamento deles seria proibir a confluência.
 bool FFreshWaterRiversDoNotShareACourseTest::RunTest(const FString& Parameters)
 {
-	const TArray<FreshWater::FRiverCourse> Cursos = FreshWater::Plan();
+	const TArray<FreshWater::FRiverCourse> Cursos = FreshWater::PlanTrunks();
 
 	// Dois rios encostando um no outro seriam um rio só, largo e torto — e o
 	// jogador que seguisse um chegaria à nascente do outro.

@@ -34,18 +34,54 @@ namespace FreshWater
 		/**
 		 * Quantos cursos desce cada monte.
 		 *
-		 * Um TRONCO por monte, e dois galhos entrando nele. Três cursos por
-		 * monte, e não três rios — os galhos morrem no tronco.
+		 * Um TRONCO por monte, e os galhos morrem nele.
+		 *
+		 * TRÊS ordens, e é o que faz o desenho ler como raiz.
+		 *
+		 * Com um tronco e dois galhos entrando no MESMO ponto, o resultado era
+		 * um Y — e um Y não é uma raiz. Raiz tem muitos fiapos entrando em
+		 * ordens sucessivas, e as junções em alturas diferentes.
+		 *
+		 * Um tronco, dois galhos, e dois fiapos por galho: sete cursos por
+		 * monte, vinte e um na ilha.
 		 */
 		constexpr int32 TroncosPorMonte = 1;
 		constexpr int32 GalhosPorTronco = 2;
-		constexpr int32 CursosPorMonte = TroncosPorMonte + GalhosPorTronco;
+		constexpr int32 FiaposPorGalho = 2;
+		constexpr int32 CursosPorMonte =
+			TroncosPorMonte + GalhosPorTronco + GalhosPorTronco * FiaposPorGalho;
 
-		/** Onde o galho encontra o tronco, em fração do percurso do tronco. */
-		constexpr float EncontroDoGalho = 0.34f;
+		/**
+		 * Onde cada galho encontra o tronco, em fração do percurso.
+		 *
+		 * DIFERENTES de propósito: confluência real não é simétrica, e dois
+		 * galhos entrando no mesmo raio desenham uma flecha, não uma bacia.
+		 */
+		constexpr float PrimeiroEncontroDeGalho = 0.30f;
+		constexpr float SegundoEncontroDeGalho = 0.52f;
 
-		/** O galho nasce afastado do tronco, e converge. */
-		constexpr float AberturaDoGalho = 30.0f;
+		/** E o fiapo entra no galho bem antes disso. */
+		constexpr float EncontroDoFiapo = 0.14f;
+
+		/** Quanto cada ordem se abre do curso que a recebe. */
+		constexpr float AberturaDoGalho = 26.0f;
+		constexpr float AberturaDoFiapo = 24.0f;
+
+		/**
+		 * Quanto o poço da queda afunda por unidade de altura caída, e quantas
+		 * vezes ele aprofunda mais depressa do que alarga.
+		 *
+		 * O dez vem da medição de poços reais — e eu o li ERRADO da primeira
+		 * vez. A literatura diz que a incisão VERTICAL supera a lateral em uma
+		 * ordem de grandeza: isso é uma razão de VELOCIDADE de erosão, não a
+		 * forma do buraco. Poço de cachoeira é mais largo que fundo, como
+		 * qualquer poço; o que o dez explica é por que ele afunda tão rápido.
+		 *
+		 * Escrevi um teste afirmando "mais fundo que largo" e ele reprovou o
+		 * código — a asserção é que estava errada, não a conta.
+		 */
+		constexpr float ProfundidadePorAltura = 0.55f;
+		constexpr float AlargaSobreAprofunda = 1.6f;
 
 		/** Quanto a calha engrossa a cada ordem. */
 		constexpr float EngrossaPorOrdem = 1.7f;
@@ -372,11 +408,12 @@ namespace FreshWater
 				continue;
 			}
 
-			// UM TRONCO e DOIS GALHOS por monte, e não três rios paralelos.
+			// UMA RAIZ, e não um Y.
 			//
-			// Rio de verdade é dendrítico: galhos finos convergindo num tronco
-			// que engrossa. Sem isso a ilha tinha um pente — água correndo lado
-			// a lado sem nunca se encontrar, que não é bacia.
+			// Rio de verdade é dendrítico: muitos fiapos de cabeceira entrando
+			// em galhos, e galhos entrando num tronco — em ordens sucessivas e
+			// em alturas DIFERENTES. Dois galhos no mesmo ponto desenham uma
+			// flecha; é preciso escalonar as junções para virar bacia.
 			const float DaSaia = Peca.RadiusUnits + Peca.ClearanceUnits * SaiaDaNascente;
 			const float Percurso = FMath::Max(0.0f, Foz - DaSaia);
 
@@ -396,26 +433,26 @@ namespace FreshWater
 						BattleSpread::Fraction(Semente, 1));
 			};
 
-			// O tronco: nasce na saia, vai ao mar, e é ordem 2 porque dois
-			// galhos entram nele.
+			// O TRONCO: ordem 3, da saia ao mar.
 			FRiverCourse Tronco;
 			Tronco.SourceRadiusUnits = DaSaia;
 			Tronco.MouthRadiusUnits = Foz;
 			Tronco.BearingRadians = FMath::DegreesToRadians(Peca.AngleDegrees);
-			Tronco.Order = 2;
+			Tronco.Order = 3;
 			Semear(Tronco, Indice);
 
-			const float NoEncontro = DaSaia + Percurso * EncontroDoGalho;
+			const float EncontroMaisAlto = DaSaia + Percurso * PrimeiroEncontroDeGalho;
 
-			// O LAGO e a QUEDA moram no tronco, e depois do encontro: o lago é
-			// água parada, e água parada precisa de volume — pô-lo num galho de
-			// cabeceira seria um lago maior que o rio que o alimenta.
+			// O LAGO e a QUEDA moram no tronco, e depois do último encontro: o
+			// lago é água parada, e água parada precisa de volume — pô-lo antes
+			// das junções seria um lago maior que o rio que o alimenta.
 			{
 				const uint32 Semente = BattleSpread::SeedFromText(
 					FString::Printf(TEXT("rio-da-montanha-%d"), Indice));
-				const float Depois = FMath::Max(0.0f, Foz - NoEncontro);
+				const float DepoisDeTudo = DaSaia + Percurso * SegundoEncontroDeGalho;
+				const float Sobra = FMath::Max(0.0f, Foz - DepoisDeTudo);
 
-				Tronco.LakeRadiusUnits = NoEncontro + Depois * BattleSpread::Between(
+				Tronco.LakeRadiusUnits = DepoisDeTudo + Sobra * BattleSpread::Between(
 					PrimeiroLago, UltimoLago, BattleSpread::Fraction(Semente, 2));
 
 				// A queda vem SEMPRE depois do lago, e por soma em vez de
@@ -429,35 +466,60 @@ namespace FreshWater
 			Cursos.Add(Tronco);
 			++Indice;
 
-			// Os galhos: nascem afastados, entram no tronco, e MORREM ali. Eles
-			// não têm lago nem queda — a foz deles é a junção.
 			for (int32 Galho = 0; Galho < GalhosPorTronco; ++Galho)
 			{
 				const float ParaOnde = (Galho == 0) ? 1.0f : -1.0f;
+				const float OndeEncontra = DaSaia + Percurso
+					* ((Galho == 0) ? PrimeiroEncontroDeGalho : SegundoEncontroDeGalho);
 
+				// O GALHO: ordem 2, nasce na saia e morre no tronco.
 				FRiverCourse Curso;
 				Curso.SourceRadiusUnits = DaSaia;
-				Curso.MouthRadiusUnits = NoEncontro;
+				Curso.MouthRadiusUnits = OndeEncontra;
 				Curso.BearingRadians = FMath::DegreesToRadians(
 					Peca.AngleDegrees + ParaOnde * AberturaDoGalho);
-				Curso.Order = 1;
-				Curso.JoinRadiusUnits = NoEncontro;
+				Curso.Order = 2;
+				Curso.JoinRadiusUnits = OndeEncontra;
 				Curso.JoinBearingRadians = Tronco.BearingRadians;
-
 				Semear(Curso, Indice);
 
-				// Sem lago e sem queda: pôr o raio do lago FORA do percurso é o
-				// jeito de dizer "não tem" sem inventar um sinalizador que
-				// alguém esqueceria de checar.
-				// A queda continua DEPOIS do lago mesmo aqui, onde os dois estão
-				// fora do percurso: o invariante vale para todo curso, e um
-				// caso especial que o quebra é o caso que ninguém lembra de
-				// filtrar.
+				// Sem lago e sem queda. O raio fica FORA do percurso, e quem
+				// perguntar por lago tem de perguntar antes se o curso chega ao
+				// mar — foi ler este valor como posição que pôs o mercado fora
+				// da ilha.
 				Curso.LakeRadiusUnits = Curso.MouthRadiusUnits * 2.0f;
 				Curso.FallRadiusUnits = Curso.MouthRadiusUnits * 2.2f;
 
 				Cursos.Add(Curso);
 				++Indice;
+
+				const float PercursoDoGalho =
+					FMath::Max(0.0f, Curso.MouthRadiusUnits - Curso.SourceRadiusUnits);
+
+				for (int32 Fiapo = 0; Fiapo < FiaposPorGalho; ++Fiapo)
+				{
+					const float ParaLa = (Fiapo == 0) ? 1.0f : -1.0f;
+
+					// O FIAPO: ordem 1, o fio de cabeceira. Ele entra no galho
+					// bem antes de o galho entrar no tronco — é o escalonamento
+					// das junções que faz o desenho virar raiz.
+					FRiverCourse Fio;
+					Fio.SourceRadiusUnits = DaSaia;
+					Fio.MouthRadiusUnits = DaSaia + PercursoDoGalho * EncontroDoFiapo
+						+ PercursoDoGalho * 0.22f * static_cast<float>(Fiapo);
+					Fio.BearingRadians = Curso.BearingRadians
+						+ FMath::DegreesToRadians(ParaLa * AberturaDoFiapo);
+					Fio.Order = 1;
+					Fio.JoinRadiusUnits = Fio.MouthRadiusUnits;
+					Fio.JoinBearingRadians = Curso.BearingRadians;
+					Semear(Fio, Indice);
+
+					Fio.LakeRadiusUnits = Fio.MouthRadiusUnits * 2.0f;
+					Fio.FallRadiusUnits = Fio.MouthRadiusUnits * 2.2f;
+
+					Cursos.Add(Fio);
+					++Indice;
+				}
 			}
 		}
 
@@ -819,4 +881,93 @@ bool FreshWater::IsWaterNetworkConnected()
 	}
 
 	return true;
+}
+
+float FreshWater::BedGradientAt(const FRiverCourse& Course, float RadiusUnits)
+{
+	// Medido ao longo do CURSO, não em linha reta: o rio serpenteia, e a mesma
+	// queda de altura repartida por um percurso maior é um leito mais manso.
+	// Foi por serpentear que ele ficou manso.
+	const float Passo = MeiaCalhaDoRio() * 2.0f;
+
+	const FVector2D Antes = PointAt(Course, RadiusUnits - Passo * 0.5f);
+	const FVector2D Depois = PointAt(Course, RadiusUnits + Passo * 0.5f);
+
+	const float Andado = FVector2D::Distance(Antes, Depois);
+	if (Andado <= KINDA_SMALL_NUMBER)
+	{
+		return 0.0f;
+	}
+
+	const float Desceu =
+		IslandGeography::GroundHeightAt(Antes) - IslandGeography::GroundHeightAt(Depois);
+
+	// Só a DESCIDA conta. Um trecho em que o terreno sobe não é corredeira: é
+	// erro de amostragem do relevo, e tratá-lo como declive poria espuma onde
+	// a água estaria empoçando.
+	return FMath::Max(0.0f, Desceu) / Andado;
+}
+
+float FreshWater::RapidsGradient()
+{
+	// Quatro por cento. É o dobro do declive sustentável de uma trilha, e a
+	// água quebra bem antes de uma pessoa achar a subida difícil.
+	return 0.04f;
+}
+
+bool FreshWater::IsRapidsAt(const FRiverCourse& Course, float RadiusUnits)
+{
+	if (RadiusUnits < Course.SourceRadiusUnits || RadiusUnits > Course.MouthRadiusUnits)
+	{
+		return false;
+	}
+
+	// Dentro do lago não há corredeira, por mais inclinado que esteja o chão em
+	// volta: lago é água PARADA, e a inclinação ali é a da encosta que o cerca.
+	//
+	// A comparação é com a calha DESTE curso, não com a do rio base. Comparando
+	// com a base, todo tronco parecia lago — ele é 2,9 vezes mais largo que a
+	// calha base só por ser de ordem 3, e nenhuma corredeira existia na ilha.
+	// É o mesmo erro de escalar pela coisa errada que já custou a gruta.
+	const float DaCalha = HalfWidthAt(Course, Course.SourceRadiusUnits);
+	if (HalfWidthAt(Course, RadiusUnits) > DaCalha * 1.6f)
+	{
+		return false;
+	}
+
+	return BedGradientAt(Course, RadiusUnits) >= RapidsGradient();
+}
+
+float FreshWater::PlungePoolDepthUnits(const FRiverCourse& Course)
+{
+	if (!Course.FlowsToTheSea())
+	{
+		return 0.0f;
+	}
+
+	// A profundidade sai da ALTURA da queda, que é o que a morfologia mede.
+	const FVector2D NoAlto = PointAt(Course, Course.FallRadiusUnits - MeiaQueda());
+	const FVector2D LaEmbaixo = PointAt(Course, Course.FallRadiusUnits + MeiaQueda());
+
+	const float Caiu = FMath::Max(0.0f,
+		IslandGeography::GroundHeightAt(NoAlto) - IslandGeography::GroundHeightAt(LaEmbaixo));
+
+	return Caiu * ProfundidadePorAltura;
+}
+
+float FreshWater::PlungePoolHalfWidthUnits(const FRiverCourse& Course)
+{
+	// O poço aprofunda cerca de DEZ vezes mais rápido do que alarga. Poço de
+	// cachoeira é furo, não bacia — e é por isso que a largura sai da
+	// profundidade dividida, e não de um raio escolhido.
+	const float Fundo = PlungePoolDepthUnits(Course);
+	if (Fundo <= 0.0f)
+	{
+		return 0.0f;
+	}
+
+	// A largura sai da profundidade, e é MAIOR que ela: o poço se abre em volta
+	// do jato. O piso é a calha do rio — poço mais estreito que o rio que o
+	// alimenta seria um estrangulamento, não um poço.
+	return FMath::Max(MeiaCalhaDoRio() * 1.15f, Fundo * AlargaSobreAprofunda);
 }

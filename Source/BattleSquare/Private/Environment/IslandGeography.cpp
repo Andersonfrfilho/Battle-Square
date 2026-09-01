@@ -5,6 +5,7 @@
 #include "Misc/ConfigCacheIni.h"
 #include "World/RegionLayout.h"
 #include "World/VillageLayout.h"
+#include "Environment/FreshWater.h"
 
 namespace GeografiaDaIlha
 {
@@ -217,6 +218,47 @@ namespace Relevo
 
 		return FMath::Lerp(Baixo, Cima, FracaoY)
 			* IslandGeography::LandRadiusUnits() * FracaoDaOndulacao;
+	}
+
+	/** Altura do degrau de uma cachoeira, e o comprimento em que ele desce. */
+	constexpr float FracaoDoDegrauDaQueda = 0.012f;
+	constexpr float CalhasDeDescida = 2.2f;
+
+	/**
+	 * O degrau de cada cachoeira, somado ao relevo.
+	 *
+	 * Vale 1 antes da queda e 0 depois, com a descida no meio: quem está acima
+	 * fica no alto do degrau, quem está abaixo fica no pé dele.
+	 *
+	 * Ele consulta `FreshWater`, e isso não é ciclo: o plano dos rios não
+	 * pergunta a altura do chão. Se um dia perguntar, o mundo entra em
+	 * recursão — e é por isso que este comentário existe.
+	 */
+	float DegrauDasQuedas(const FVector2D& Onde)
+	{
+		float Total = 0.0f;
+
+		for (const FreshWater::FRiverCourse& Curso : FreshWater::PlanTrunks())
+		{
+			const FVector2D NaQueda = FreshWater::PointAt(Curso, Curso.FallRadiusUnits);
+			const float Alcance = FreshWater::LakeHalfWidthUnits();
+
+			if (FVector2D::Distance(Onde, NaQueda) > Alcance)
+			{
+				continue;
+			}
+
+			// Quanto o ponto está ACIMA da queda, medido no raio: é o raio que
+			// diz onde é montante e onde é jusante, porque o rio corre para
+			// fora.
+			const float Descida = FreshWater::RiverHalfWidthUnits() * 2.0f * CalhasDeDescida;
+			const float Acima = FMath::Clamp(
+				(Curso.FallRadiusUnits + Descida * 0.5f - Onde.Size()) / Descida, 0.0f, 1.0f);
+
+			Total += IslandGeography::LandRadiusUnits() * FracaoDoDegrauDaQueda * Acima;
+		}
+
+		return Total;
 	}
 
 	float ConeDoVulcao(const FVector2D& Centro, float RaioQueimado, const FVector2D& Onde)
@@ -564,6 +606,17 @@ namespace IslandGeography
 		//    marco mais alto: nada o achata.
 		Altura += Relevo::ConeDoVulcao(VolcanoCenterUnits(), VolcanoScorchedRadiusUnits(),
 			PositionUnits);
+
+		// 4b. O DEGRAU DA CACHOEIRA.
+		//
+		// Sem ele a queda era um rótulo em chão plano: a água "despencava" onde
+		// o terreno não descia nada, e o poço saía com meio metro de fundo. É a
+		// mesma família de defeito do ator sem malha — existe na lógica e não
+		// existe na tela.
+		//
+		// O degrau é local e estreito, medido em calhas de rio: cachoeira é uma
+		// quebra do leito, não uma encosta.
+		Altura += Relevo::DegrauDasQuedas(PositionUnits);
 
 		// 5. O PLANALTO da cidade grande, com o barranco por borda. É ele que
 		//    impede resolver a região correndo em linha reta: ou se sobe pela

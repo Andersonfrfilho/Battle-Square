@@ -204,3 +204,75 @@ malha anda 1.555 unidades por casa e o barranco tem 2.520 de largura.
   (2020).
 - *Edge effects in forest patches* (2020); Franklin & Forman, *Creating
   landscape patterns by forest cutting* (1987).
+
+---
+
+## 7. Adendo de 01/09/2026 — a bacia, a corredeira e o poço
+
+### A bacia precisa de TRÊS ordens para ler como raiz
+
+Um tronco com dois galhos entrando no MESMO ponto desenha um **Y**, e Y não é
+raiz. O que faz o desenho virar bacia são duas coisas juntas:
+
+1. **Ordens sucessivas** — fiapo entra em galho, galho entra em tronco.
+2. **Junções escalonadas** — cada galho encontra o tronco num raio diferente.
+   Dois galhos no mesmo raio desenham uma flecha.
+
+Hoje: 21 cursos, 7 por monte (1 tronco + 2 galhos + 4 fiapos), calha de
+962 / 1.636 / 2.782 por ordem.
+
+E o galho quase não serpenteia, o que está **certo**: cabeceira de rio real é
+reta — o meandro nasce no curso baixo, onde a inclinação cai.
+
+### A corredeira sai do RELEVO, não de uma faixa escolhida
+
+Onde o leito desce mais de 4%, a água quebra. Perguntar ao terreno é o que faz
+a corredeira aparecer no lugar certo mesmo quando alguém mexer no relevo.
+
+**O defeito que isso expôs, e é o de sempre:** comparei a largura do trecho com
+a calha do rio BASE para decidir "isto é lago". Um tronco é 2,9 vezes mais
+largo que a base só por ser de ordem 3 — então todo tronco parecia lago, e a
+ilha inteira ficou sem uma corredeira. A comparação certa é com a calha DAQUELE
+curso.
+
+Terceira vez que escalo pela coisa errada. **Relativo não basta.**
+
+### A cachoeira precisava de um degrau no TERRENO
+
+O poço saía com meio metro de fundo, e a causa era que a queda não descia nada:
+ela existia no modelo de água e o relevo não sabia dela. **Rótulo em chão
+plano** — mesma família do ator sem malha, que passa em todo teste de lógica e
+não existe na tela.
+
+`GroundHeightAt` agora soma um degrau local em cada queda de tronco.
+
+### E eu li a fonte errado
+
+Escrevi um teste afirmando que **o poço é mais fundo que largo**, citando o
+"dez vezes" da literatura. O dez é uma razão de **velocidade de erosão** — a
+incisão vertical supera a lateral — e não a forma do buraco. Poço é mais largo
+que fundo, como qualquer poço.
+
+**O teste reprovou o código, e quem estava errado era o teste.** Vale registrar
+porque asserção mal lida é o defeito mais difícil de achar: ela nasce verde.
+
+### E L-042 apareceu em código de PRODUÇÃO
+
+`Tracar()` existia em `TrailLayout.cpp` e em `LandUseLayout.cpp`, os dois em
+namespace anônimo. O unity build junta os arquivos e os dois viram sobrecarga
+que difere apenas no retorno.
+
+**A sonda `audit_test_helper_names.sh` não pega isto: ela olha testes.** Nome de
+helper específico vale em todo lugar, não só em teste.
+
+### O mapa é fixo, e isso é uma otimização que não estava sendo usada
+
+`RegionLayout::Plan` e `FreshWater::Plan` eram remontados **uma vez por aresta**
+do Dijkstra das trilhas: o custo do passo pergunta se o ponto está na rampa, a
+rampa pergunta onde é a cidade, e a cidade recalculava a região inteira — com
+os rios junto, por causa do Mercado do Lago.
+
+Milhões de arestas, uma montagem de mundo em cada. Hoje são cálculo único.
+
+**O que continua faltando:** "uma vez por processo" ainda leva minutos. Para um
+mapa fixo, o certo é **assar** — calcular fora e embarcar o resultado.

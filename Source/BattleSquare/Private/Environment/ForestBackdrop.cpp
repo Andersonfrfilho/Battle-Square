@@ -620,8 +620,33 @@ namespace MataDoCenario
 				// trilha atravessaria o rio sem ponte — e quem a segue chegaria
 				// à água esperando continuar andando.
 				const FVector2D Margem(-Correnteza.Y, Correnteza.X);
-				const FVector2D NaTrilha = Aqui + Margem
+
+				// EMPURRA até sair da calha.
+				//
+				// A folga perpendicular basta em reta e falha na curva: por
+				// dentro de uma volta, o ponto mais próximo do rio não é o
+				// perpendicular, e a trilha cai dentro da água a poucos metros
+				// de onde foi medida.
+				//
+				// Conferir é a única forma de garantir. Perguntar "estou fora
+				// da calha?" e empurrar enquanto não estiver custa alguns
+				// passos e resolve a curva inteira.
+				FVector2D NaTrilha = Aqui + Margem
 					* (MeiaLargura + FreshWater::TrailOffsetUnits());
+
+				for (int32 Empurrao = 0; Empurrao < 8; ++Empurrao)
+				{
+					float NoCurso = 0.0f;
+					const float Ate = FreshWater::NearestOn(Curso, NaTrilha, NoCurso);
+
+					if (Ate > FreshWater::HalfWidthAtProgress(Curso, NoCurso)
+						+ FreshWater::TrailHalfWidthUnits())
+					{
+						break;
+					}
+
+					NaTrilha += Margem * FreshWater::TrailOffsetUnits();
+				}
 
 				FVector2D LocalDaTrilha;
 				if (PontoNoPedaco(NaTrilha, CentroDoPedaco, Meio, LocalDaTrilha))

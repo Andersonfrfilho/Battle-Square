@@ -139,6 +139,16 @@ namespace FreshWater
 	BATTLESQUARE_API float FallHalfLengthUnits();
 
 	/** A que distância da margem corre a trilha que acompanha o rio. */
+	/**
+	 * Da MARGEM até o meio da trilha de beira-rio.
+	 *
+	 * É a distância além da lâmina, e não a partir do eixo do rio. Ela era um
+	 * número absoluto — 260 — escolhido quando a calha tinha 170: hoje um
+	 * tronco tem 2.800, e a trilha andava dentro da água.
+	 *
+	 * Quem a usa soma esta folga à largura LOCAL do curso, que muda ao longo
+	 * dele e com a ordem.
+	 */
 	BATTLESQUARE_API float TrailOffsetUnits();
 
 	/** Largura de meia trilha. */

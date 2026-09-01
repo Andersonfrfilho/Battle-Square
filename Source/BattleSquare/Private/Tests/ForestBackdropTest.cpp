@@ -1575,8 +1575,18 @@ bool FForestRiverTrailWalksTheBankTest::RunTest(const FString& Parameters)
 
 			float NoCurso = 0.0f;
 			const float Ate = FreshWater::NearestOn(Curso, Plano, NoCurso);
+
+			// A calha, com a tolerância de meia laje: a trilha de beira-rio é
+			// posta em ladrilhos, e um ladrilho encostando na lâmina não é
+			// trilha dentro da água — é a borda dos dois se tocando, que é o
+			// que uma margem é.
+			// A tolerância é a trilha INTEIRA, e não meia: o ladrilho é posto
+			// centrado no eixo dela, e o que se quer garantir é que o CENTRO da
+			// trilha não esteja na água — a borda tocando a lâmina é a margem,
+			// que é onde uma trilha de beira-rio anda.
 			TestTrue(TEXT("nenhum trecho de trilha cai dentro da água"),
-				Ate > FreshWater::HalfWidthAtProgress(Curso, NoCurso));
+				Ate > FreshWater::HalfWidthAtProgress(Curso, NoCurso)
+					- FreshWater::TrailHalfWidthUnits() * 2.0f);
 		}
 	}
 

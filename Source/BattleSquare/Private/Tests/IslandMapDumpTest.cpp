@@ -58,6 +58,24 @@ bool FIslandMapDumpTest::RunTest(const FString& Parameters)
 {
 	FString Json = TEXT("{\n");
 	Json += FString::Printf(TEXT("  \"raio\": %.1f,\n"), IslandGeography::LandRadiusUnits());
+
+	// A COSTA por rumo: o mapa precisa dela para desenhar a ilha, que deixou de
+	// ser um círculo.
+	Json += TEXT("  \"costa\": [");
+	for (int32 Grau = 0; Grau < 360; ++Grau)
+	{
+		Json += FString::Printf(TEXT("%s%.0f"), Grau == 0 ? TEXT("") : TEXT(","),
+			IslandGeography::LandRadiusAt(FMath::DegreesToRadians(static_cast<float>(Grau))));
+	}
+	Json += TEXT("],\n");
+
+	Json += TEXT("  \"docas\": [");
+	for (int32 Qual = 0; Qual < IslandGeography::CoastDockCount(); ++Qual)
+	{
+		Json += FString::Printf(TEXT("%s%.1f"), Qual == 0 ? TEXT("") : TEXT(","),
+			IslandGeography::CoastDockBearingDegrees(Qual));
+	}
+	Json += TEXT("],\n");
 	Json += FString::Printf(TEXT("  \"praia\": %.1f,\n"), IslandGeography::BeachWidthUnits());
 	Json += FString::Printf(TEXT("  \"barrancoInterno\": %.1f,\n"),
 		IslandGeography::BluffInnerRadiusUnits());

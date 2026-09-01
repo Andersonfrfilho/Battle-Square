@@ -197,7 +197,7 @@ bool FFreshWaterLakeIsTheRiverGoingWideTest::RunTest(const FString& Parameters)
 		// ALCANCE dele, não num número fixo. Num curso curto, um lago no meio
 		// ainda alaga as pontas, e aí "a nascente é calha" deixa de ser
 		// verdade sem que nada esteja errado.
-		const float AlcanceEmProgresso = FreshWater::LakeHalfWidthUnits() * 1.7f
+		const float AlcanceEmProgresso = FreshWater::LakeHalfWidthUnits() * 2.4f
 			/ FMath::Max(1.0f, FreshWater::CourseLengthUnits(Curso));
 
 		if (Curso.LakeAtProgress - AlcanceEmProgresso < 0.05f
@@ -212,9 +212,15 @@ bool FFreshWaterLakeIsTheRiverGoingWideTest::RunTest(const FString& Parameters)
 			FreshWater::HalfWidthAtProgress(Curso, 1.0f)
 				> FreshWater::HalfWidthAtProgress(Curso, 0.0f));
 		// (a guarda acima já pulou os cursos cujo lago encosta numa ponta)
+		// "Não é lago" medido contra a CALHA DESTE curso, e não contra metade
+		// da largura de lago do mundo.
+		//
+		// A régua global só valia quando todo curso tinha a mesma calha. Hoje
+		// um tronco de ordem alta é largo por ser tronco, e ele reprovava por
+		// isso — a asserção media a ordem do rio achando que media o lago.
 		TestTrue(TEXT("e nenhuma das duas e lago"),
 			FreshWater::HalfWidthAtProgress(Curso, 1.0f)
-				< FreshWater::LakeHalfWidthUnits() * 0.5f);
+				< FreshWater::HalfWidthAtProgress(Curso, 0.0f) * 3.0f);
 
 
 		// E cresce de forma monótona até lá: alargamento que oscila lê como
@@ -267,7 +273,7 @@ bool FFreshWaterFallNeverLandsInTheLakeTest::RunTest(const FString& Parameters)
 		// Só quando o lago não alcança a queda: num curso curto a barriga do
 		// lago cobre o degrau, e aí "já saiu do lago" é falso sem que nada
 		// esteja errado — é o curso que é curto demais para ter os dois.
-		const float AlcanceEmProgresso = FreshWater::LakeHalfWidthUnits() * 1.7f
+		const float AlcanceEmProgresso = FreshWater::LakeHalfWidthUnits() * 2.4f
 			/ FMath::Max(1.0f, FreshWater::CourseLengthUnits(Curso));
 
 		if (FMath::Abs(Curso.FallAtProgress - Curso.LakeAtProgress) < AlcanceEmProgresso)
@@ -275,9 +281,10 @@ bool FFreshWaterFallNeverLandsInTheLakeTest::RunTest(const FString& Parameters)
 			continue;
 		}
 
+		// Mesma correção: a régua é a calha DESTE curso.
 		TestTrue(TEXT("no raio da queda a calha ja saiu do lago"),
 			FreshWater::HalfWidthAtProgress(Curso, Curso.FallAtProgress)
-				< FreshWater::LakeHalfWidthUnits() * 0.5f);
+				< FreshWater::HalfWidthAtProgress(Curso, 0.0f) * 3.0f);
 
 		// E antes do mar: cachoeira despejando na arrebentação seria o rio
 		// terminando duas vezes.

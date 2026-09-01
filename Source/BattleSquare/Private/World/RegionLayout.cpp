@@ -25,10 +25,14 @@ namespace
 	 * dela é embarcar. Um posto no meio do mato guardava uma linha que não
 	 * existe.
 	 *
-	 * Ele fica logo ATRÁS da faixa de praia: em cima da areia, a maré e a
-	 * rampa da orla o deixariam meio enterrado.
+	 * E ele fica NA AREIA, não atrás dela.
+	 *
+	 * Eu o tinha posto atrás da praia com medo da rampa da orla — e cais atrás
+	 * da praia é galpão: quem embarca precisa alcançar a água. A rampa não é
+	 * problema no meio da faixa, onde o chão já está na metade da altura da
+	 * terra.
 	 */
-	constexpr float FracaoDaOrlaDoPosto = 0.5f;
+	constexpr float FracaoDaOrlaDoPosto = -0.45f;
 
 	/**
 	 * Os rumos. Nenhum deles é 180°, e isso não é gosto: 180° é onde o vulcão
@@ -73,48 +77,65 @@ namespace
 	 */
 	FVector2D CentroDoMercado()
 	{
-		// TRONCOS: só eles têm lago. O galho de cabeceira morre na junção, e o
-		// raio de lago dele é um valor fora de faixa — o mercado foi nascer
-		// fora da ilha.
-		const TArray<FreshWater::FRiverCourse> Rios = FreshWater::PlanTrunks();
-		if (Rios.Num() == 0)
+		// TODOS os cursos, não só os troncos: o lago deixou de morar na foz
+		// quando passou a ser escolhido pelo trecho manso do leito.
+		const TArray<FreshWater::FRiverCourse> Rios = FreshWater::Plan();
+
+		const float Limite = IslandGeography::LandRadiusUnits()
+			- IslandGeography::BeachWidthUnits() * 1.6f;
+
+		// ESCOLHE um lago que já esteja no alcance, em vez de escolher qualquer
+		// um e empurrar depois.
+		//
+		// O clamp que eu tinha posto consertava a trilha e estragava a vila:
+		// ele arrastava o mercado para o raio limite, a 134 metros do lago. O
+		// nome "Mercado do Lago" virou mentira, e a medição foi o que mostrou —
+		// o mapa não deixava ver 134 metros.
+		//
+		// Prefere o lago mais LARGO entre os que servem: mercado é porto, e
+		// porto quer água que aguente barco.
+		const FreshWater::FRiverCourse* Escolhido = nullptr;
+		float MaisLargo = 0.0f;
+
+		for (const FreshWater::FRiverCourse& Rio : Rios)
 		{
+			if (Rio.LakeAtProgress < 0.0f)
+			{
+				continue;
+			}
+
+			const FVector2D NoLago = FreshWater::PointAtProgress(Rio, Rio.LakeAtProgress);
+			const float Largura = FreshWater::HalfWidthAtProgress(Rio, Rio.LakeAtProgress);
+
+			if (NoLago.Size() + Largura > Limite || Largura <= MaisLargo)
+			{
+				continue;
+			}
+
+			MaisLargo = Largura;
+			Escolhido = &Rio;
+		}
+
+		if (Escolhido == nullptr)
+		{
+			// Sem lago que sirva, a vila vai para o rumo antigo — e o nome
+			// deixa de prometer o que não existe.
 			const float Radianos = FMath::DegreesToRadians(235.0f);
 			return FVector2D(FMath::Cos(Radianos), FMath::Sin(Radianos))
 				* IslandGeography::LandRadiusUnits() * 0.29f;
 		}
 
-		// O rio cujo lago fica mais LONGE dos outros assentamentos seria o
-		// ideal, mas escolher por distância a coisas que ainda não existem
-		// seria conta circular. Escolho pelo índice, que é estável, e o teste
-		// de sobreposição pega se um dia colidir.
-		const FreshWater::FRiverCourse& Escolhido = Rios[Rios.Num() / 2];
+		const FVector2D NoLago = FreshWater::PointAtProgress(*Escolhido, Escolhido->LakeAtProgress);
 
-		const FVector2D NoLago = FreshWater::PointAtProgress(Escolhido, Escolhido.LakeAtProgress);
-		const float Afastar = FreshWater::HalfWidthAtProgress(Escolhido, Escolhido.LakeAtProgress)
-			+ VillageLayout::ClearingHalfExtentUnitsFor(ESettlementKind::VilaDoMercado);
-
-		// Para DENTRO, e não para fora.
-		//
-		// Empurrar para a margem de fora fazia sentido quando o lago ficava no
-		// miolo: era a margem que dá para o mar. Com a bacia dendrítica o lago
-		// desceu para perto da foz, e o mesmo empurrão pôs a vila a 935
-		// unidades do mar aberto — fora do alcance do traçado de trilhas, que
-		// para na praia.
-		//
-		// O sintoma foi mudo: nenhuma trilha chegava lá, e o traçado desenhava
-		// uma linha reta em vez de dizer que falhou.
+		// ENCOSTADA na água: o afastamento é a lâmina mais meio LOTE, e não
+		// mais a clareira inteira. A clareira é a folga para a mata não
+		// encostar na parede; usá-la aqui punha a vila longe da margem, que é
+		// justamente o que ela veio para tocar.
 		const FVector2D ParaDentro = -NoLago.GetSafeNormal();
-		const FVector2D NaMargem = NoLago + ParaDentro * Afastar;
+		const float Afastar = MaisLargo
+			+ VillageLayout::PlotHalfExtentUnitsFor(ESettlementKind::VilaDoMercado);
 
-		// E preso dentro da faixa que a trilha alcança: assentamento que
-		// nenhuma trilha atinge é assentamento que ninguém acha.
-		const float Limite = IslandGeography::LandRadiusUnits()
-			- IslandGeography::BeachWidthUnits() * 1.6f;
-
-		return (NaMargem.Size() > Limite)
-			? NaMargem.GetSafeNormal() * Limite
-			: NaMargem;
+		return NoLago + ParaDentro * Afastar;
 	}
 
 	FSettlementPlacement Assentamento(ESettlementKind Tipo, float Graus)

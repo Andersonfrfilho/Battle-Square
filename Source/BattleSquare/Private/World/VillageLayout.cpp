@@ -25,6 +25,9 @@ namespace
 	/** Meio-lado de um prédio comum. */
 	constexpr float MeioLadoDaCasa = 200.0f;
 
+	/** Quantas fileiras de palafita o Mercado do Lago avança sobre a água. */
+	constexpr int32 FileirasDePalafita = 3;
+
 	/** Os que importam são MAIORES: tamanho é hierarquia sem precisar de placa. */
 	constexpr float MeioLadoDoCentro = 260.0f;
 	constexpr float MeioLadoDaArena = 270.0f;
@@ -95,6 +98,8 @@ float VillageLayout::ClearingHalfExtentUnitsFor(ESettlementKind Kind)
 
 TArray<FVillagePlacement> VillageLayout::PlanFor(ESettlementKind Kind)
 {
+	const float Lote = PlotHalfExtentUnitsFor(Kind);
+
 	// A vila inicial É o traçado base: ela foi desenhada primeiro, e os outros
 	// tipos se descrevem como diferenças dela. Assim "o que muda de uma vila
 	// para a outra" fica legível no código em vez de espalhado em quatro
@@ -117,11 +122,68 @@ TArray<FVillagePlacement> VillageLayout::PlanFor(ESettlementKind Kind)
 			break;
 
 		case ESettlementKind::VilaDoMercado:
+		{
 			Pecas.RemoveAll([](const FVillagePlacement& Peca)
 				{ return Peca.Building == EVillageBuilding::Escola; });
+
+			// O mercado fica do lado da ÁGUA, e não no meio da praça: quem
+			// chega de barco encosta nele antes de pisar em terra.
 			Pecas.Add(Por(EVillageBuilding::Mercado,
 				700.0f, 0.0f, MeioLadoDoCentro, AlturaDoCentro));
+
+			// E METADE DA CIDADE FICA EM CIMA DO LAGO.
+			//
+			// +X é o lado da água — a vila é girada na hora de nascer para que
+			// isso seja verdade. Pôr o lado no traçado e a rotação no mundo é o
+			// que permite este plano ser puro e ainda assim saber onde é a
+			// margem.
+			//
+			// As palafitas avançam em FILEIRAS, com passarela entre elas: a rua
+			// da cidade é a água, e a ponte é o quarteirão. Sem as passarelas
+			// seriam casas ilhadas, e cidade em que não se anda de uma casa à
+			// outra não é cidade.
+			for (int32 Fileira = 0; Fileira < FileirasDePalafita; ++Fileira)
+			{
+				const float Avanca = Lote * (0.55f + 0.42f * Fileira);
+
+				for (int32 Qual = -1; Qual <= 1; ++Qual)
+				{
+					// A fileira de dentro é de CASAS; as de fora são CHINAMPAS.
+					//
+					// A referência é asteca e não veneziana: Veneza pôs palácio
+					// sobre a água, os astecas puseram roça. A cidade que planta
+					// no lago come do lago — e isso liga a parte flutuante à
+					// fazenda que a vila já tem.
+					const bool bEhCasa = (Fileira == 0);
+
+					FVillagePlacement Sobre = Por(
+						bEhCasa ? EVillageBuilding::Palafita : EVillageBuilding::Chinampa,
+						Avanca, Qual * MeioLadoDaCasa * 2.4f,
+						bEhCasa ? MeioLadoDaCasa * 0.78f : MeioLadoDaCasa * 1.15f,
+						bEhCasa ? AlturaDaCasa * 0.85f : AlturaDaPraca * 1.6f);
+
+					// Chinampa é CANTEIRO: larga no eixo da água e rasa, para
+					// ler como horta em faixas e não como praça flutuante.
+					if (!bEhCasa)
+					{
+						Sobre.HalfExtentUnits =
+							FVector2D(MeioLadoDaCasa * 0.62f, MeioLadoDaCasa * 1.5f);
+					}
+
+					Sobre.bOverWater = true;
+					Pecas.Add(Sobre);
+				}
+
+				// A passarela que liga a fileira à anterior, no eixo.
+				FVillagePlacement Rua = Por(EVillageBuilding::Passarela,
+					Avanca - Lote * 0.21f, 0.0f, MeioLadoDaCasa * 0.30f, AlturaDaPraca);
+				Rua.HalfExtentUnits = FVector2D(Lote * 0.21f, MeioLadoDaCasa * 0.30f);
+				Rua.bOverWater = true;
+				Pecas.Add(Rua);
+			}
+
 			break;
+		}
 
 		case ESettlementKind::CidadeGrande:
 			// A cidade tem TUDO — é o que a spec exige para a região ser

@@ -7,6 +7,7 @@
 #include "Environment/CaveSystem.h"
 #include "Environment/IslandFeatureLayout.h"
 #include "Environment/IslandGeography.h"
+#include "World/WorldBudget.h"
 
 namespace FreshWater
 {
@@ -807,6 +808,60 @@ namespace FreshWater
 		 * E em terra ALCANÇÁVEL: cachoeira que nenhuma trilha atinge é a
 		 * cachoeira que o relato de jogo disse nunca ter visto.
 		 */
+		/**
+		 * Põe o LAGO de cada curso no trecho mais MANSO do leito.
+		 *
+		 * Mesmo conserto que a cachoeira precisou, e pelo mesmo motivo: o lago
+		 * estava preso ao tronco, e tronco é o pedaço curto e costeiro entre a
+		 * última bifurcação e o mar. Todos os lagos nasciam na foz, e o Mercado
+		 * do Lago ficou a 84 metros de qualquer água.
+		 *
+		 * Água para onde o chão achata — é o que um lago É. E em curso de
+		 * ordem 2 para cima, porque fio de cabeceira não tem volume para
+		 * alagar nada.
+		 */
+		void ColocarOsLagos(TArray<FRiverCourse>& Cursos)
+		{
+			const float Limite = IslandGeography::LandRadiusUnits()
+				- IslandGeography::BeachWidthUnits() * 1.9f;
+
+			for (FRiverCourse& Curso : Cursos)
+			{
+				Curso.LakeAtProgress = -1.0f;
+
+				if (Curso.Order < 2 || Curso.PointsUnits.Num() < 3)
+				{
+					continue;
+				}
+
+				float MaisManso = TNumericLimits<float>::Max();
+				float Aonde = -1.0f;
+
+				for (int32 Passo = 3; Passo <= 17; ++Passo)
+				{
+					const float Onde = static_cast<float>(Passo) / 20.0f;
+					if (PointAtProgress(Curso, Onde).Size() > Limite)
+					{
+						continue;
+					}
+
+					const float Declive = BedGradientAtProgress(Curso, Onde);
+					if (Declive < MaisManso)
+					{
+						MaisManso = Declive;
+						Aonde = Onde;
+					}
+				}
+
+				// E só alaga se for manso DE VERDADE: num leito que despenca o
+				// tempo todo não há lago, há corredeira do começo ao fim.
+				if (Aonde > 0.0f && MaisManso <= RapidsGradient() * 0.5f)
+				{
+					Curso.LakeAtProgress = Aonde;
+				}
+			}
+		}
+
 		void ColocarAsQuedas(TArray<FRiverCourse>& Cursos)
 		{
 			const float Limite = IslandGeography::LandRadiusUnits()
@@ -1130,6 +1185,7 @@ namespace FreshWater
 			// onde o leito DESPENCA, que é rio acima, perto do monte. A conta
 			// já existia — `BedGradientAtProgress` — e não estava sendo usada
 			// para decidir nada.
+			ColocarOsLagos(Cursos);
 			ColocarAsQuedas(Cursos);
 
 			return Cursos;
@@ -2019,23 +2075,10 @@ bool FreshWater::IsFreshWaterAt(const FVector2D& PositionUnits)
 
 float FreshWater::WaterCoverageForBiome(EIslandBiome Biome)
 {
-	// Fração da área de TERRA coberta por água doce.
-	//
-	// Os valores não são gosto: eles seguem o que cada clima faz com a chuva.
-	// Pântano é terra que não drena; deserto perde a água antes de ela correr;
-	// geleira tem tanta quanto a mata, só que dura, e por isso a rede existe
-	// mas é curta.
-	switch (Biome)
-	{
-		case EIslandBiome::Swamp:   return 0.14f;
-		case EIslandBiome::Forest:  return 0.06f;
-		case EIslandBiome::Glacier: return 0.035f;
-		case EIslandBiome::Volcano: return 0.02f;
-		case EIslandBiome::Desert:  return 0.012f;
-		case EIslandBiome::Beach:   break;
-	}
-
-	return 0.06f;
+	// A tabela mora em `WorldBudget`, com os outros números do bioma. Ela
+	// estava aqui, e aqui era o lugar errado: fazer um deserto significaria
+	// caçar constante por constante em seis arquivos.
+	return WorldBudget::WaterCoverage(Biome);
 }
 
 float FreshWater::MeasuredWaterCoverage()
@@ -2245,4 +2288,30 @@ TArray<FVector2D> FreshWater::PlanFallClimb(const FRiverCourse& Course)
 	Subida.Add(NoTopo + DeLado * (-ParaQualLado * Afasta));
 
 	return Subida;
+}
+
+FVector2D FreshWater::FlowDirectionAtProgress(const FRiverCourse& Course, float Progress)
+{
+	// Da nascente para a foz: progresso crescente é o sentido da água. Medido
+	// no próprio traçado, com um passo curto para a direção acompanhar a curva
+	// em vez de apontar para a foz em linha reta.
+	const float Passo = 0.02f;
+
+	const FVector2D Aqui = PointAtProgress(Course, FMath::Clamp(Progress, 0.0f, 1.0f - Passo));
+	const FVector2D Adiante = PointAtProgress(Course, FMath::Clamp(Progress + Passo, 0.0f, 1.0f));
+
+	return (Adiante - Aqui).GetSafeNormal();
+}
+
+bool FreshWater::IsThermalAt(const FVector2D& PositionUnits)
+{
+	// O cruzamento de duas coisas que já existem: o alcance do calor do vulcão
+	// e a máscara de água. Nada aqui é escolhido — é consequência.
+	if (!IsFreshWaterAt(PositionUnits))
+	{
+		return false;
+	}
+
+	return FVector2D::Distance(PositionUnits, IslandGeography::VolcanoCenterUnits())
+		<= IslandGeography::VolcanoHeatRadiusUnits();
 }

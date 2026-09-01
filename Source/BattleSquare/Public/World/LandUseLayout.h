@@ -40,7 +40,68 @@ enum class EGroundUse : uint8
 	 * Ela é a razão pela qual a vila come, e é o primeiro sinal de que alguém
 	 * mora ali — quem chega vê roçado antes de telhado.
 	 */
-	Fazenda
+	Fazenda,
+
+	/**
+	 * CRIADOURO: a fazenda de pets, LONGE da vila.
+	 *
+	 * A distância é a razão de ser dela, não um detalhe: criar pet perto de
+	 * gente é criar pet manso, e quem cria para valer procura sossego e espaço.
+	 * Um criadouro na esquina da praça seria só mais um prédio.
+	 *
+	 * E ela dá ao mapa uma coisa que faltava: um destino que não é vila, não é
+	 * marco natural e não é fronteira. Um lugar onde mora alguém sozinho, e que
+	 * só existe porque alguém foi até lá.
+	 */
+	Criadouro,
+
+	/**
+	 * LOJA de beira de estrada, e ela mora no CRUZAMENTO.
+	 *
+	 * A posição não é enfeite, é a razão dela existir: comércio nasce onde dois
+	 * caminhos se encontram, porque é onde passa gente das duas direções. Loja
+	 * no meio de uma trilha é loja com metade dos fregueses.
+	 */
+	Loja,
+
+	/**
+	 * ACAMPAMENTO: parada de quem está no meio do caminho.
+	 *
+	 * Fica LONGE das vilas e PERTO da trilha — as duas coisas ao mesmo tempo,
+	 * e é a combinação que o define. Perto da vila ninguém acampa: dorme-se na
+	 * vila. Longe da trilha ninguém acha.
+	 */
+	Acampamento,
+
+	/**
+	 * POMAR CUIDADO: a fruta que alguém plantou, ao lado da fazenda.
+	 *
+	 * Pomar leva anos para dar, e por isso ele só existe onde alguém ficou. Ele
+	 * fica colado na lavoura porque é a mesma pessoa que cuida dos dois.
+	 */
+	Pomar,
+
+	/**
+	 * POMAR SELVAGEM: a fruta que ninguém plantou.
+	 *
+	 * Ele é o oposto do outro e vale pelo contraste: fica longe de tudo, e
+	 * achá-lo é sorte. É o que faz valer a pena sair da trilha.
+	 */
+	PomarSelvagem,
+
+	/**
+	 * DECK: o atracadouro com barcos, na margem.
+	 *
+	 * Ele existe porque a água virou CAMINHO neste mundo — há balsa, há barco
+	 * grande e pequeno, e há rio que liga tudo. Sem um lugar para atracar, o
+	 * barco não tem de onde sair, e a navegabilidade fica sendo uma tabela que
+	 * ninguém usa.
+	 *
+	 * Fica onde a água aceita barco grande, e de preferência perto de trilha:
+	 * deck que ninguém alcança por terra é deck que só serve a quem já está
+	 * navegando.
+	 */
+	Deck
 };
 
 struct BATTLESQUARE_API FGroundUsePatch

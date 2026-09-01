@@ -127,8 +127,9 @@ bool FIslandMapDumpTest::RunTest(const FString& Parameters)
 		}
 
 		Json += FString::Printf(
-			TEXT("],\"declive\":%.4f,\"comprimento\":%.0f,\"ordem\":%d,\"aoMar\":%d,\"lagoX\":%.0f,\"lagoY\":%.0f,")
+			TEXT("],\"termal\":%d,\"declive\":%.4f,\"comprimento\":%.0f,\"ordem\":%d,\"aoMar\":%d,\"lagoX\":%.0f,\"lagoY\":%.0f,")
 			TEXT("\"quedaX\":%.0f,\"quedaY\":%.0f,\"poco\":%.0f,\"fundo\":%.0f}%s\n"),
+			FreshWater::IsThermalAt(FreshWater::PointAtProgress(Rios[Indice], 0.5f)) ? 1 : 0,
 			[&]() { float M = 0.0f; for (int32 P = 2; P <= 18; ++P)
 				{ M = FMath::Max(M, FreshWater::BedGradientAtProgress(
 					Rios[Indice], static_cast<float>(P) / 20.0f)); } return M; }(),
@@ -206,6 +207,12 @@ bool FIslandMapDumpTest::RunTest(const FString& Parameters)
 		case EGroundUse::Bosque:          Nome = TEXT("bosque"); break;
 		case EGroundUse::ClareiraFechada: Nome = TEXT("clareira"); break;
 		case EGroundUse::Fazenda:         Nome = TEXT("fazenda"); break;
+		case EGroundUse::Criadouro:       Nome = TEXT("criadouro"); break;
+		case EGroundUse::Loja:            Nome = TEXT("loja"); break;
+		case EGroundUse::Acampamento:     Nome = TEXT("acampamento"); break;
+		case EGroundUse::Pomar:           Nome = TEXT("pomar"); break;
+		case EGroundUse::PomarSelvagem:   Nome = TEXT("pomar-selvagem"); break;
+		case EGroundUse::Deck:            Nome = TEXT("deck"); break;
 		default: break;
 		}
 
@@ -286,6 +293,7 @@ bool FIslandMapDumpTest::RunTest(const FString& Parameters)
 		const TCHAR* Tipo = TEXT("vau");
 		if (Travessias[Indice].Kind == TrailLayout::ECrossingKind::Ponte) { Tipo = TEXT("ponte"); }
 		if (Travessias[Indice].Kind == TrailLayout::ECrossingKind::Barranco) { Tipo = TEXT("barranco"); }
+		if (Travessias[Indice].Kind == TrailLayout::ECrossingKind::Balsa) { Tipo = TEXT("balsa"); }
 
 		Json += FString::Printf(
 			TEXT("    {\"tipo\":\"%s\",\"x\":%.0f,\"y\":%.0f,\"fundura\":%.0f}%s\n"),

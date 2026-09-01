@@ -60,7 +60,43 @@ enum class EVillageBuilding : uint8
 	Mercado,
 
 	/** O portão do posto de fronteira. Só abre para quem venceu o ranking. */
-	Portao
+	Portao,
+
+	/**
+	 * PALAFITA: casa sobre a água, em estacas.
+	 *
+	 * O Mercado do Lago não fica ao LADO do lago — metade dele fica em cima.
+	 * Comércio anda por água, e a cidade que vive disso põe a porta na margem
+	 * do canal, não na rua.
+	 *
+	 * Ela não pede chão plano, e é a única construção deste mundo que não pede:
+	 * a estaca resolve o desnível, e é para isso que ela existe.
+	 */
+	Palafita,
+
+	/**
+	 * PASSARELA: a rua da cidade sobre a água.
+	 *
+	 * Sem ela as palafitas são casas ilhadas, e uma cidade em que não se anda
+	 * de uma casa à outra não é cidade. Aqui a ponte não é exceção — é o
+	 * quarteirão.
+	 */
+	Passarela,
+
+	/**
+	 * CHINAMPA: a lavoura flutuante.
+	 *
+	 * A referência é asteca, e ela é melhor que a veneziana para este mundo:
+	 * Veneza pôs PALÁCIO sobre a água, os astecas puseram ROÇA. Uma cidade que
+	 * planta no lago é uma cidade que come do lago — e isso liga a coisa nova à
+	 * fazenda que a vila já tem, em vez de acrescentar um cenário bonito ao
+	 * lado dela.
+	 *
+	 * É larga e rasa, como canteiro: chinampa é chão feito de limo e estaca,
+	 * não casa. Vista de cima, o que se lê é horta em faixas com água entre
+	 * elas.
+	 */
+	Chinampa
 };
 
 struct BATTLESQUARE_API FVillagePlacement
@@ -75,6 +111,15 @@ struct BATTLESQUARE_API FVillagePlacement
 
 	/** Altura, para o telhado se ler de longe. */
 	float HeightUnits = 400.0f;
+
+	/**
+	 * Fica SOBRE A ÁGUA, e por isso não recebe o chão achatado.
+	 *
+	 * Todo o resto deste mundo assume terreno plano embaixo. Esta é a exceção,
+	 * e ela precisa ser declarada — senão o achatamento do lote seca o lago
+	 * para caber a casa, que é o avesso da ideia.
+	 */
+	bool bOverWater = false;
 };
 
 /**

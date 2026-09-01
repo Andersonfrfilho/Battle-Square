@@ -532,7 +532,13 @@ namespace
 
 					// Fora da terra não há trilha, e a praia é o limite: o
 					// caminho não passa pela água salgada.
-					if (Vizinho.Size() >= Raio - IslandGeography::BeachWidthUnits() + MeioPasso)
+					// A trilha ENTRA na areia, e para perto da água.
+					//
+					// Ela parava na linha da praia, e foi isso que deixou o
+					// cais inalcançável quando ele desceu para a areia — o
+					// mesmo defeito que produziu sete linhas retas.
+					if (Vizinho.Size()
+						>= Raio - IslandGeography::BeachWidthUnits() * 0.25f + MeioPasso)
 					{
 						const bool bEhOFim = (Indice(FIntPoint(Coluna + dX, Linha + dY)) == NoDestino);
 						if (!bEhOFim)
@@ -946,6 +952,35 @@ namespace
 
 	/** A partir de que inclinação a margem é degrau, e não beira. */
 	constexpr float MargemVirouBarranco = 0.35f;
+
+	/**
+	 * O maior vão que uma ponte deste mundo vence.
+	 *
+	 * Vinte e cinco metros. Acima disso a obra deixa de ser tronco atravessado
+	 * e vira engenharia — e engenharia é uma civilização que este mundo não
+	 * tem. O que se faz num rio largo é atravessar flutuando.
+	 */
+	float MaiorVaoDePonte() { return 2500.0f; }
+
+	/** A largura da água num ponto, para saber se a ponte alcança a outra margem. */
+	float LarguraDaAguaEm(const FVector2D& Onde)
+	{
+		float MaisLarga = 0.0f;
+
+		for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
+		{
+			float NoCurso = 0.0f;
+			const float Ate = FreshWater::NearestOn(Curso, Onde, NoCurso);
+			const float Meia = FreshWater::HalfWidthAtProgress(Curso, NoCurso);
+
+			if (Ate <= Meia)
+			{
+				MaisLarga = FMath::Max(MaisLarga, Meia * 2.0f);
+			}
+		}
+
+		return MaisLarga;
+	}
 }
 
 TArray<TrailLayout::FCrossing> TrailLayout::Crossings()
@@ -983,6 +1018,15 @@ TArray<TrailLayout::FCrossing> TrailLayout::Crossings()
 					//    ponte precisa de dois apoios no mesmo nível;
 					// 2. raso o bastante se atravessa andando;
 					// 3. o resto é ponte.
+					// A ORDEM decide, e é a regra inteira:
+					//
+					// 1. margem alta manda, por mais rasa que a água seja —
+					//    ponte precisa de dois apoios no mesmo nível;
+					// 2. raso o bastante se atravessa andando;
+					// 3. largo demais para ponte se atravessa FLUTUANDO;
+					// 4. o resto é ponte.
+					const float Largura = LarguraDaAguaEm(Aqui);
+
 					if (IslandGeography::GroundSlopeAt(Aqui) >= MargemVirouBarranco)
 					{
 						Travessia.Kind = ECrossingKind::Barranco;
@@ -990,6 +1034,12 @@ TArray<TrailLayout::FCrossing> TrailLayout::Crossings()
 					else if (Travessia.DepthUnits <= WadableDepthUnits())
 					{
 						Travessia.Kind = ECrossingKind::Vau;
+					}
+					else if (Largura >= MaiorVaoDePonte()
+						&& FreshWater::NavigabilityForHalfWidth(Largura * 0.5f)
+							== FreshWater::ENavigability::BarcoGrande)
+					{
+						Travessia.Kind = ECrossingKind::Balsa;
 					}
 					else
 					{

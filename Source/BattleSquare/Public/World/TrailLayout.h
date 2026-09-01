@@ -102,7 +102,18 @@ namespace TrailLayout
 		 * uma delas é um degrau, o que se faz é cavar a descida — e isso é uma
 		 * coisa diferente de construir, com outra silhueta.
 		 */
-		Barranco
+		Barranco,
+
+		/**
+		 * BALSA: a água é larga demais para ponte, e funda o bastante para
+		 * barco grande.
+		 *
+		 * Ela fecha a regra pelo alto. Ponte tem um vão máximo — acima dele a
+		 * obra vira outra coisa, e o que se faz num rio largo é atravessar
+		 * flutuando. E isso dá função ao rio como CAMINHO, não só obstáculo:
+		 * onde passa balsa, passa barco.
+		 */
+		Balsa
 	};
 
 	struct BATTLESQUARE_API FCrossing

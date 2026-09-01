@@ -390,6 +390,32 @@ namespace FreshWater
 	BATTLESQUARE_API float DistanceToFreshWater(const FVector2D& PositionUnits);
 
 	/**
+	 * PARA ONDE A CORRENTE LEVA, num ponto do curso.
+	 *
+	 * Rio tem sentido, e ele é o mesmo em toda parte deste mundo: da nascente
+	 * para a foz, morro abaixo. Quem cai na água não fica parado — vai para
+	 * onde a água vai, e é isso que torna o rio um caminho de mão única para
+	 * quem não rema.
+	 *
+	 * A direção sai do próprio traçado, e não de um campo à parte: uma segunda
+	 * fonte de "para onde a água corre" discordaria do desenho na primeira
+	 * curva editada.
+	 */
+	BATTLESQUARE_API FVector2D FlowDirectionAtProgress(const FRiverCourse& Course, float Progress);
+
+	/**
+	 * ÁGUA TERMAL: onde o calor do vulcão alcança a água.
+	 *
+	 * Ela não é decidida, é DERIVADA — o cruzamento de duas coisas que já
+	 * existem. Onde o alcance do calor do Monte Braseiro pega um trecho de
+	 * água, aquela água é quente. Onde não pega, é fria.
+	 *
+	 * Isso dá ao vulcão um efeito que se sente longe dele, e dá à água uma
+	 * propriedade que muda o que vive nela.
+	 */
+	BATTLESQUARE_API bool IsThermalAt(const FVector2D& PositionUnits);
+
+	/**
 	 * Este ponto está molhado — respondido por uma GRADE, em tempo constante.
 	 *
 	 * A pergunta é feita milhões de vezes: uma por aresta do traçado de

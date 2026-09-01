@@ -340,3 +340,74 @@ entrasse numa não sairia na outra. A ligação é explícita, e é pergunta de 
 conexo, que se afirma em teste.
 
 **As regras gerais disto viraram `~/.claude/rules/rules/geracao-procedural-de-mapas.md`.**
+
+---
+
+## 9. O gerador é UMA função parametrizada — `WorldBudget`
+
+**Decidido em 01/09/2026**, e é o que permite fazer o deserto sem reescrever
+nada.
+
+Cada número morava no módulo que o usava: quantos bosques em `LandUseLayout`,
+quanta água em `FreshWater`, quantas cavernas em `IslandFeatureLayout`. Fazer um
+segundo bioma significaria caçar constante por constante em seis arquivos.
+
+Agora é uma tabela só, por bioma:
+
+| | mata | pântano | deserto | geleira | vulcão |
+|---|---|---|---|---|---|
+| Água sobre a terra | 6% | 14% | 1,2% | 3,5% | 2% |
+| Densidade da mata | 1,0 | 1,35 | **0** | **0** | 0,35 |
+| Bosques | 9 | 9 | 0 | 0 | 2 |
+| Clareiras fechadas | 6 | 6 | 2 | 3 | 4 |
+| Criadouros de pet | 4 | 4 | 2 | 1 | 2 |
+| Fazendas por vila | 2 | 1 | 1 | **0** | 3 |
+| Pomares cuidados | 3 | 1 | 1 | 0 | 0 |
+| Pomares selvagens | 5 | 7 | 0 | 0 | 1 |
+| Lojas de cruzamento | 4 | 4 | 4 | 2 | 4 |
+| Acampamentos | 6 | 3 | 9 | 7 | 6 |
+
+### As três regras que a tabela protege
+
+1. **Porcentagem e contagem, nunca posição.** Onde as coisas ficam é decisão
+   dos geradores, olhando o terreno. Aqui só se diz QUANTO.
+2. **Fração de área, nunca unidades.** Número absoluto escolhido quando só
+   existia um tamanho apareceu, medido, em sete lugares diferentes.
+3. **Todo valor tem de ser verificável no despejo.** Orçamento que ninguém mede
+   é desejo — a água pedia 6% e entregava 35%, e só um número na tela mostrou.
+
+E a leitura de coluna conta a história do bioma. Se uma linha não faz sentido
+lida assim, o número está errado: foi assim que "bosque no deserto" apareceu
+antes de existir código para plantá-lo.
+
+## 10. O que o mundo tem hoje, medido
+
+| | |
+|---|---|
+| Água sobre a terra | 5,63% (pedido 6%) |
+| Cursos de água | 82 em 5 ordens de Strahler |
+| Cachoeiras | com escada de patamares, poço, pedras e subida |
+| Trechos termais | 4 — onde o calor do vulcão alcança a água |
+| Galerias subterrâneas | rede dendrítica ligando cavernas |
+| Trilhas | 26, **nenhuma reta**, ziguezague nas encostas |
+| Travessias | 29 vaus · 18 balsas · 2 pontes |
+| Uso do solo | 8 fazendas · 4 criadouros · 4 lojas · 5 acampamentos · 3 pomares · 5 pomares selvagens · 7 decks · 9 bosques · 6 clareiras |
+
+### Cada um deles é uma regra, não um enfeite
+
+- **Loja no CRUZAMENTO** — comércio nasce onde passa gente das duas direções.
+- **Acampamento perto da trilha e longe da vila** — as duas ao mesmo tempo:
+  perto da vila dorme-se na vila; longe da trilha ninguém acha.
+- **Pomar cuidado colado na fazenda** — é a mesma pessoa que cuida dos dois, e
+  pomar leva anos: ele só existe onde alguém ficou.
+- **Pomar selvagem longe de tudo** — achá-lo é sorte, e é o que faz valer a
+  pena sair da trilha.
+- **Criadouro longe da vila** — criar pet perto de gente é criar pet manso.
+- **Deck onde a água aceita barco grande** — sem lugar de atracar, a
+  navegabilidade é tabela que ninguém usa.
+- **Chinampa, não Veneza** — Veneza pôs palácio sobre a água; os astecas
+  puseram roça. A cidade que planta no lago come do lago.
+- **Balsa acima do vão máximo de ponte** — 25 m. Acima disso a obra vira
+  engenharia, e engenharia é uma civilização que este mundo não tem.
+- **Água termal derivada** — o cruzamento do alcance do calor do vulcão com a
+  máscara de água. Nada escolhido; consequência.

@@ -85,8 +85,11 @@ namespace
 		// quando passou a ser escolhido pelo trecho manso do leito.
 		const TArray<FreshWater::FRiverCourse> Rios = FreshWater::Plan();
 
-		const float Limite = IslandGeography::LandRadiusUnits()
-			- IslandGeography::BeachWidthUnits() * 1.6f;
+		auto AteOndeVale = [](const FVector2D& Onde)
+		{
+			return IslandGeography::LandRadiusAt(FMath::Atan2(Onde.Y, Onde.X))
+				- IslandGeography::BeachWidthUnits() * 1.6f;
+		};
 
 		// ESCOLHE um lago que já esteja no alcance, em vez de escolher qualquer
 		// um e empurrar depois.
@@ -111,7 +114,7 @@ namespace
 			const FVector2D NoLago = FreshWater::PointAtProgress(Rio, Rio.LakeAtProgress);
 			const float Largura = FreshWater::HalfWidthAtProgress(Rio, Rio.LakeAtProgress);
 
-			if (NoLago.Size() + Largura > Limite || Largura <= MaisLargo)
+			if (NoLago.Size() + Largura > AteOndeVale(NoLago) || Largura <= MaisLargo)
 			{
 				continue;
 			}
@@ -230,6 +233,8 @@ float RegionLayout::DistanceFromCenterUnits(ESettlementKind Kind)
 		case ESettlementKind::VilaDoMercado:   return CentroDoMercado().Size();
 		case ESettlementKind::CidadeGrande:    return Raio * FracaoDaCidade;
 		case ESettlementKind::PostoDeFronteira:
+			// Distância NOMINAL: o rumo é que decide a costa, e quem monta o
+			// cais ajusta pelo rumo dele. Aqui não se sabe o rumo ainda.
 			return Raio - IslandGeography::BeachWidthUnits() * (1.0f + FracaoDaOrlaDoPosto);
 	}
 

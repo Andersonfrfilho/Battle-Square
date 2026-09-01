@@ -52,15 +52,43 @@ bool RegionResidency::TouchesLand(const FIntPoint& Chunk)
 	const float Esquerda = static_cast<float>(Chunk.X) * Lado;
 	const float Baixo = static_cast<float>(Chunk.Y) * Lado;
 
-	// O ponto do retângulo MAIS PERTO do centro da ilha, e não uma amostragem
-	// de cantos. Amostrar erra justamente onde importa: a ponta da ilha que
-	// entra por um lado do pedaço sem alcançar canto nenhum sairia sem mata, e
-	// o jogador andaria até a praia por cima de nada.
+	// O ponto mais perto do centro DECIDIA sozinho, e isso valia enquanto a
+	// ilha era um círculo: ali, mais perto do centro é mais provável ser terra.
+	//
+	// Com a costa deformada deixou de valer. Um pedaço pode ter a ponta mais
+	// próxima no mar de uma enseada e ainda assim conter terra num rumo onde a
+	// costa avança — e três pedaços foram dados como mar contendo terra.
+	//
+	// Agora se AMOSTRA o retângulo, e o ponto mais perto continua entrando na
+	// conta: ele é a melhor aposta única, e sem ele a ponta fina que entra por
+	// um lado do pedaço escaparia entre as amostras.
 	const FVector2D MaisPerto(
 		FMath::Clamp(0.0f, Esquerda, Esquerda + Lado),
 		FMath::Clamp(0.0f, Baixo, Baixo + Lado));
 
-	return IslandGeography::IsOnLand(MaisPerto);
+	if (IslandGeography::IsOnLand(MaisPerto))
+	{
+		return true;
+	}
+
+	constexpr int32 AmostrasPorLado = 5;
+
+	for (int32 Linha = 0; Linha <= AmostrasPorLado; ++Linha)
+	{
+		for (int32 Coluna = 0; Coluna <= AmostrasPorLado; ++Coluna)
+		{
+			const FVector2D Onde(
+				Esquerda + Lado * Coluna / AmostrasPorLado,
+				Baixo + Lado * Linha / AmostrasPorLado);
+
+			if (IslandGeography::IsOnLand(Onde))
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
 }
 
 uint32 RegionResidency::ChunkSeed(uint32 WorldSeed, const FIntPoint& Chunk)

@@ -107,12 +107,19 @@ bool FIslandGeographyRimIsBeachTest::RunTest(const FString& Parameters)
 {
 	// Sem esta faixa, o deserto encostaria no mar sem areia molhada no meio —
 	// e a geleira encostaria nele sem nada explicando a passagem.
+	// A BORDA É POR RUMO, e não um raio só.
+	//
+	// A ilha deixou de ser um círculo: ela tem enseada e ponta, e num rumo a
+	// terra acaba antes. Amostrar todos os rumos no raio nominal mede o mar
+	// dentro da enseada e o meio do mato na ponta.
 	const float RaioDaTerra = IslandGeography::LandRadiusUnits();
 	int32 ForaDaPraia = 0;
 
 	for (int32 Grau = 0; Grau < AngulosDaIlha; ++Grau)
 	{
-		const FVector2D Ponto = PontoDaIlha(static_cast<float>(Grau), RaioDaTerra - TolerenciaDaIlha);
+		const float Radianos = FMath::DegreesToRadians(static_cast<float>(Grau));
+		const FVector2D Ponto = PontoDaIlha(static_cast<float>(Grau),
+			IslandGeography::LandRadiusAt(Radianos) - TolerenciaDaIlha);
 		if (IslandGeography::BiomeAt(Ponto) != EIslandBiome::Beach)
 		{
 			++ForaDaPraia;
@@ -259,10 +266,32 @@ bool FIslandGeographyWaterIsNotLandTest::RunTest(const FString& Parameters)
 	const float RaioDaTerra = IslandGeography::LandRadiusUnits();
 
 	TestTrue(TEXT("O centro é terra"), IslandGeography::IsOnLand(FVector2D::ZeroVector));
+	// A borda deste RUMO — a ilha não é mais um círculo, e "raio da terra"
+	// virou a escala do mundo, não a linha da costa.
+	const float DaCosta = IslandGeography::LandRadiusAt(0.0f);
+
 	TestTrue(TEXT("A borda ainda é terra"),
-		IslandGeography::IsOnLand(PontoDaIlha(0.0f, RaioDaTerra - TolerenciaDaIlha)));
+		IslandGeography::IsOnLand(PontoDaIlha(0.0f, DaCosta - TolerenciaDaIlha)));
 	TestFalse(TEXT("Depois da borda é água"),
-		IslandGeography::IsOnLand(PontoDaIlha(0.0f, RaioDaTerra + TolerenciaDaIlha)));
+		IslandGeography::IsOnLand(PontoDaIlha(0.0f, DaCosta + TolerenciaDaIlha)));
+
+	// E a costa VARIA: sem isto, `LandRadiusAt` poderia devolver a constante e
+	// a ilha continuaria redonda sem que nada acusasse.
+	float MaisPerto = TNumericLimits<float>::Max();
+	float MaisLonge = 0.0f;
+	for (int32 Grau = 0; Grau < 360; Grau += 5)
+	{
+		const float Aqui = IslandGeography::LandRadiusAt(
+			FMath::DegreesToRadians(static_cast<float>(Grau)));
+		MaisPerto = FMath::Min(MaisPerto, Aqui);
+		MaisLonge = FMath::Max(MaisLonge, Aqui);
+	}
+
+	if (IslandGeography::CoastShape() != IslandGeography::ECoastShape::Redonda)
+	{
+		TestTrue(TEXT("a costa tem enseada e ponta"),
+			MaisLonge - MaisPerto > RaioDaTerra * 0.05f);
+	}
 
 	return true;
 }

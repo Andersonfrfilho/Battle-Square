@@ -66,6 +66,47 @@ namespace IslandGeography
 	 */
 	BATTLESQUARE_API float LandRadiusUnits();
 
+	/**
+	 * A FORMA da costa. Configurável em `DefaultGame.ini`, `WorldCoastShape`.
+	 */
+	enum class ECoastShape : uint8
+	{
+		/** Círculo perfeito. É o que a ilha era, e nenhuma ilha real é. */
+		Redonda,
+
+		/** Enseadas e pontas: o raio varia com o rumo, por ruído coerente. */
+		Natural,
+
+		/**
+		 * Natural, mais SETORES DE ENCAIXE.
+		 *
+		 * Um trecho de costa aplainado num rumo escolhido, para a ilha vizinha
+		 * encostar ali. É o que transforma "vamos ter outros biomas" de
+		 * conceito em geometria: duas ilhas com docas no rumo uma da outra se
+		 * juntam sem remendo.
+		 */
+		ComEncaixe
+	};
+
+	BATTLESQUARE_API ECoastShape CoastShape();
+
+	/**
+	 * ONDE A TERRA ACABA, no rumo pedido. A linha da costa.
+	 *
+	 * `LandRadiusUnits` continua existindo e continua sendo a ESCALA do mundo:
+	 * as frações que dimensionam praia, anéis, calhas e lotes seguem saindo
+	 * dela. O que muda é quem responde "aqui ainda é terra?" — e essa pergunta
+	 * passa a ter uma resposta por rumo.
+	 *
+	 * Separar as duas coisas é o que permite deformar a ilha sem reescalar o
+	 * mundo inteiro junto.
+	 */
+	BATTLESQUARE_API float LandRadiusAt(float BearingRadians);
+
+	/** Quantas docas a costa tem, e em que rumo cada uma está. */
+	BATTLESQUARE_API int32 CoastDockCount();
+	BATTLESQUARE_API float CoastDockBearingDegrees(int32 Which);
+
 	/** Largura da faixa de praia, medida para dentro a partir da borda. */
 	BATTLESQUARE_API float BeachWidthUnits();
 

@@ -373,9 +373,16 @@ bool FLandUseABaciaEhUmaArvoreTest::RunTest(const FString& Parameters)
 	float DoTronco = 0.0f;
 	for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
 	{
+		// Fora do lago: com a barriga do lago encostando na nascente, um fiapo
+		// mede mais que um tronco e a comparação afirma o contrário do que quer.
+		if (Curso.HasLake() && Curso.LakeAtProgress < 0.25f)
+		{
+			continue;
+		}
+
 		const float NaNascente = FreshWater::HalfWidthAtProgress(Curso, 0.0f);
-		if (Curso.Order == 1) { DoFiapo = NaNascente; }
-		if (Curso.Order == 3) { DoTronco = NaNascente; }
+		if (Curso.Order == 1) { DoFiapo = FMath::Max(DoFiapo, NaNascente); }
+		if (Curso.Order >= 3) { DoTronco = FMath::Max(DoTronco, NaNascente); }
 	}
 
 	TestTrue(TEXT("o tronco nasce mais largo que o fiapo"), DoTronco > DoFiapo);

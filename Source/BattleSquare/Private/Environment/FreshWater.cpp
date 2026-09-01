@@ -606,7 +606,15 @@ namespace FreshWater
 							-Casa * 0.5f, Casa * 0.5f, BattleSpread::Fraction(Semente, 1)));
 
 					const float Distancia = static_cast<float>(Onde.Size());
-					if (Distancia < Dentro || Distancia > Fora)
+					if (Distancia < Dentro || !IslandGeography::IsOnLand(Onde))
+					{
+						continue;
+					}
+
+					// A borda seca acompanha a COSTA do rumo, não um raio fixo.
+					const float DaCosta = IslandGeography::LandRadiusAt(
+						FMath::Atan2(Onde.Y, Onde.X));
+					if (Distancia > DaCosta * (1.0f - BordaSemRio))
 					{
 						continue;
 					}
@@ -842,8 +850,12 @@ namespace FreshWater
 		 */
 		void ColocarOsLagos(TArray<FRiverCourse>& Cursos)
 		{
-			const float Limite = IslandGeography::LandRadiusUnits()
-				- IslandGeography::BeachWidthUnits() * 1.9f;
+			// Limite medido na COSTA daquele rumo.
+			auto AteOndeVale = [](const FVector2D& Onde)
+			{
+				return IslandGeography::LandRadiusAt(FMath::Atan2(Onde.Y, Onde.X))
+					- IslandGeography::BeachWidthUnits() * 1.9f;
+			};
 
 			for (FRiverCourse& Curso : Cursos)
 			{
@@ -860,7 +872,8 @@ namespace FreshWater
 				for (int32 Passo = 3; Passo <= 17; ++Passo)
 				{
 					const float Onde = static_cast<float>(Passo) / 20.0f;
-					if (PointAtProgress(Curso, Onde).Size() > Limite)
+					const FVector2D Aqui = PointAtProgress(Curso, Onde);
+					if (Aqui.Size() > AteOndeVale(Aqui))
 					{
 						continue;
 					}
@@ -884,8 +897,11 @@ namespace FreshWater
 
 		void ColocarAsQuedas(TArray<FRiverCourse>& Cursos)
 		{
-			const float Limite = IslandGeography::LandRadiusUnits()
-				- IslandGeography::BeachWidthUnits() * 1.6f;
+			auto AteOndeVale = [](const FVector2D& Onde)
+			{
+				return IslandGeography::LandRadiusAt(FMath::Atan2(Onde.Y, Onde.X))
+					- IslandGeography::BeachWidthUnits() * 1.6f;
+			};
 
 			for (FRiverCourse& Curso : Cursos)
 			{
@@ -909,7 +925,8 @@ namespace FreshWater
 				for (int32 Passo = Comeca; Passo <= 18; ++Passo)
 				{
 					const float Onde = static_cast<float>(Passo) / 20.0f;
-					if (PointAtProgress(Curso, Onde).Size() > Limite)
+					const FVector2D Aqui = PointAtProgress(Curso, Onde);
+					if (Aqui.Size() > AteOndeVale(Aqui))
 					{
 						continue;
 					}
@@ -1041,7 +1058,7 @@ namespace FreshWater
 					}
 
 					const FVector2D Novo = Nos[Quem.Key] + Rumo * Passo;
-					if (Novo.Size() > Raio)
+					if (!IslandGeography::IsOnLand(Novo))
 					{
 						continue;
 					}
@@ -1180,8 +1197,10 @@ namespace FreshWater
 				Curso.BearingRadians = FMath::Atan2(
 					Curso.PointsUnits.Last().Y, Curso.PointsUnits.Last().X);
 
-				const bool bChegaNoMar =
-					Curso.PointsUnits.Last().Size() >= Raio - Passo * 1.5f;
+				const FVector2D NaPonta = Curso.PointsUnits.Last();
+				const bool bChegaNoMar = NaPonta.Size()
+					>= IslandGeography::LandRadiusAt(FMath::Atan2(NaPonta.Y, NaPonta.X))
+						- Passo * 1.5f;
 
 				if (!bChegaNoMar)
 				{
@@ -1276,9 +1295,14 @@ namespace FreshWater
 			// Este monte contribui com UMA FOZ. A bacia inteira é gerada
 			// depois, de uma vez, porque o algoritmo precisa ver todos os
 			// atratores para repartir o espaço entre as bacias.
-			Bocas.Add(FVector2D(
-				FMath::Cos(FMath::DegreesToRadians(Peca.AngleDegrees)),
-				FMath::Sin(FMath::DegreesToRadians(Peca.AngleDegrees))) * Foz);
+			// A foz fica NA COSTA DAQUELE RUMO, e não no raio nominal.
+			//
+			// Com a ilha deformada os dois deixaram de ser a mesma coisa: uma
+			// foz no raio nominal cai no mar numa enseada e em terra firme numa
+			// ponta — e nos dois casos o rio termina no lugar errado.
+			const float Radianos = FMath::DegreesToRadians(Peca.AngleDegrees);
+			Bocas.Add(FVector2D(FMath::Cos(Radianos), FMath::Sin(Radianos))
+				* IslandGeography::LandRadiusAt(Radianos));
 			++Indice;
 		}
 
@@ -1556,6 +1580,21 @@ namespace FreshWater
 						static_cast<float>(FMath::Atan2(Centro.Y, Centro.X)));
 					Gruta.RadiusUnits = static_cast<float>(Centro.Size());
 
+					// AS QUINAS TAMBÉM, e não só o centro.
+					//
+					// A busca media a distância da água ao CENTRO da gruta, e a
+					// gruta é um quadrado: três delas ficaram com uma quina
+					// dentro do rio enquanto o centro estava seco.
+					// A PEGADA INTEIRA seca, e não só o centro.
+					//
+					// A busca media a distância da água ao CENTRO da gruta, e a
+					// gruta ocupa espaço: ela cabia com a folga inteira dentro
+					// do rio ao lado.
+					if (MargemDaAgua(Cursos, Centro) <= Gruta.ClearanceUnits)
+					{
+						continue;
+					}
+
 					// A folga entra ENGORDANDO a gruta para as perguntas, não
 					// afrouxando as perguntas: assim quem decide se duas coisas
 					// se tocam continua sendo o plano da ilha, uma vez só, e a
@@ -1712,7 +1751,7 @@ FMath::RoundToInt(Plan().Num() * SubsoloSobreSuperficie),
 			}
 
 			const FVector2D Novo = Nos[Quem.Key] + Rumo * Passo;
-			if (Novo.Size() > Raio)
+			if (!IslandGeography::IsOnLand(Novo))
 			{
 				continue;
 			}
@@ -2476,13 +2515,39 @@ TArray<FVector2D> FreshWater::PlanFallClimb(const FRiverCourse& Course)
 	const FVector2D NoPe = PointAtProgress(Course, Course.FallAtProgress + EmProgresso);
 	const FVector2D NoTopo = PointAtProgress(Course, Course.FallAtProgress - EmProgresso);
 
+	// EMPURRA para fora enquanto o ponto estiver molhado.
+	//
+	// A folga vem da maior lâmina da vizinhança, e ainda assim um ponto pode
+	// cair dentro: o curso serpenteia, e a distância medida ao longo dele não é
+	// a distância ao ponto. Conferir e empurrar é a única forma de garantir.
+	auto NaMargem = [&Course](const FVector2D& Onde, const FVector2D& ParaFora)
+	{
+		FVector2D Ajustado = Onde;
+
+		for (int32 Tentativa = 0; Tentativa < 8; ++Tentativa)
+		{
+			float Aonde = 0.0f;
+			const float Ate = NearestOn(Course, Ajustado, Aonde);
+
+			if (Ate > HalfWidthAtProgress(Course, Aonde))
+			{
+				break;
+			}
+
+			Ajustado += ParaFora * MeiaCalhaDoRio();
+		}
+
+		return Ajustado;
+	};
+
 	float ParaQualLado = 1.0f;
-	Subida.Add(NoPe + DeLado * (ParaQualLado * Afasta));
+	Subida.Add(NaMargem(NoPe + DeLado * (ParaQualLado * Afasta), DeLado * ParaQualLado));
 
 	for (int32 Qual = 0; Qual < Degraus.Num(); ++Qual)
 	{
 		ParaQualLado = -ParaQualLado;
-		Subida.Add(Degraus[Qual].CenterUnits + DeLado * (ParaQualLado * Afasta));
+		Subida.Add(NaMargem(Degraus[Qual].CenterUnits + DeLado * (ParaQualLado * Afasta),
+			DeLado * ParaQualLado));
 
 		// O ponto do meio do lance: é onde o pé precisa de apoio, e é onde a
 		// pedra de degrau vai.
@@ -2490,11 +2555,12 @@ TArray<FVector2D> FreshWater::PlanFallClimb(const FRiverCourse& Course)
 		{
 			const FVector2D EntreOsDois = FMath::Lerp(
 				Degraus[Qual].CenterUnits, Degraus[Qual + 1].CenterUnits, 0.5f);
-			Subida.Add(EntreOsDois + DeLado * (-ParaQualLado * Afasta * 1.35f));
+			Subida.Add(NaMargem(EntreOsDois + DeLado * (-ParaQualLado * Afasta * 1.35f),
+				DeLado * -ParaQualLado));
 		}
 	}
 
-	Subida.Add(NoTopo + DeLado * (-ParaQualLado * Afasta));
+	Subida.Add(NaMargem(NoTopo + DeLado * (-ParaQualLado * Afasta), DeLado * -ParaQualLado));
 
 	return Subida;
 }

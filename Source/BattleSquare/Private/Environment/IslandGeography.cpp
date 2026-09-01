@@ -85,6 +85,27 @@ namespace GeografiaDaIlha
  * numa ordem que é a regra. Separadas assim, "o lote é plano" e "a rampa sobe
  * o barranco" se leem uma de cada vez.
  */
+namespace Costa
+{
+	/**
+	 * O recorte da costa, em fração do raio.
+	 *
+	 * A enseada é funda e a ponta é curta: é a proporção que faz uma ilha
+	 * parecer ilha em vez de estrela do mar.
+	 */
+	constexpr float FundoDaEnseada = 0.085f;
+	constexpr float TamanhoDaPonta = 0.038f;
+
+	/** Quantas ondas por volta. Duas escalas, e por isso duas contas. */
+	constexpr float OndasLentas = 3.0f;
+	constexpr float OndasRapidas = 8.0f;
+
+	/** As docas: onde a ilha vizinha encosta. */
+	constexpr int32 QuantasDocas = 2;
+	constexpr float PrimeiroRumoDeDoca = 20.0f;
+	constexpr float MeiaLarguraDaDoca = 26.0f;
+}
+
 namespace Relevo
 {
 	/**
@@ -460,7 +481,11 @@ namespace IslandGeography
 		{
 			return IslandBiome();
 		}
-		if (Distancia >= LandRadiusUnits() - BeachWidthUnits())
+		const float DaCosta = PositionUnits.IsNearlyZero()
+			? LandRadiusUnits()
+			: LandRadiusAt(FMath::Atan2(PositionUnits.Y, PositionUnits.X));
+
+		if (Distancia >= DaCosta - BeachWidthUnits())
 		{
 			return EIslandBiome::Beach;
 		}
@@ -479,7 +504,7 @@ namespace IslandGeography
 		// baixa continua sendo o que o setor diz: encostar o deserto no mar
 		// dá salina, não pântano.
 		const bool bAtrasDaPraia = Distancia
-			>= LandRadiusUnits() - BeachWidthUnits() - SwampWidthUnits();
+			>= DaCosta - BeachWidthUnits() - SwampWidthUnits();
 		if (bAtrasDaPraia && DoSetor == EIslandBiome::Forest)
 		{
 			return EIslandBiome::Swamp;
@@ -516,9 +541,95 @@ namespace IslandGeography
 		return ClimateOf(BiomeOfSector(SectorAt(PositionUnits)));
 	}
 
+	ECoastShape CoastShape()
+	{
+		FString Escrito;
+		if (GConfig && GConfig->GetString(GeografiaDaIlha::SecaoDoMundo,
+			TEXT("WorldCoastShape"), Escrito, GGameIni))
+		{
+			const FName Nome(*Escrito);
+			if (Nome == TEXT("Redonda"))    { return ECoastShape::Redonda; }
+			if (Nome == TEXT("ComEncaixe")) { return ECoastShape::ComEncaixe; }
+		}
+
+		return ECoastShape::Natural;
+	}
+
+	int32 CoastDockCount()
+	{
+		return (CoastShape() == ECoastShape::ComEncaixe) ? Costa::QuantasDocas : 0;
+	}
+
+	float CoastDockBearingDegrees(int32 Which)
+	{
+		return Costa::PrimeiroRumoDeDoca
+			+ Which * 360.0f / FMath::Max(1, Costa::QuantasDocas);
+	}
+
+	float LandRadiusAt(float BearingRadians)
+	{
+		const float Nominal = LandRadiusUnits();
+		const ECoastShape Forma = CoastShape();
+
+		if (Forma == ECoastShape::Redonda)
+		{
+			return Nominal;
+		}
+
+		// ENSEADAS E PONTAS, por ruído coerente no RUMO.
+		//
+		// Coerente e no rumo — não sorteio por consulta — porque a costa é
+		// consultada de todo lado do código, e uma linha que muda de resposta
+		// entre perguntas não é uma linha.
+		//
+		// A soma de duas ondas dá o recorte: a lenta faz as grandes enseadas, a
+		// rápida faz as pontas. Uma só daria uma elipse ou uma serrilha.
+		const float Graus = FMath::RadiansToDegrees(BearingRadians);
+
+		float Recorte =
+			FMath::Sin(FMath::DegreesToRadians(Graus * Costa::OndasLentas + 37.0f))
+				* Costa::FundoDaEnseada
+			+ FMath::Sin(FMath::DegreesToRadians(Graus * Costa::OndasRapidas - 113.0f))
+				* Costa::TamanhoDaPonta;
+
+		// AS DOCAS aplainam o recorte no rumo delas.
+		//
+		// Aplainar, e não empurrar para fora: a doca é um trecho de costa RETO,
+		// e é isso que permite duas ilhas encostarem sem que uma ponta de uma
+		// entre na enseada da outra.
+		if (Forma == ECoastShape::ComEncaixe)
+		{
+			for (int32 Qual = 0; Qual < CoastDockCount(); ++Qual)
+			{
+				const float Ate = FMath::Abs(FMath::FindDeltaAngleDegrees(
+					Graus, CoastDockBearingDegrees(Qual)));
+
+				if (Ate >= Costa::MeiaLarguraDaDoca)
+				{
+					continue;
+				}
+
+				// Suave nas bordas: doca com degrau seria um corte de faca na
+				// costa, e a ilha vizinha encostaria numa quina.
+				const float Dentro = 1.0f - Ate / Costa::MeiaLarguraDaDoca;
+				Recorte *= 1.0f - Dentro * Dentro * (3.0f - 2.0f * Dentro);
+			}
+		}
+
+		return Nominal * (1.0f + Recorte);
+	}
+
 	bool IsOnLand(const FVector2D& PositionUnits)
 	{
-		return PositionUnits.Size() <= LandRadiusUnits();
+		// A pergunta é feita em toda parte, e é a ÚNICA que decide onde a terra
+		// acaba. Deformar a costa é mudar esta linha, e nenhuma outra.
+		if (PositionUnits.IsNearlyZero())
+		{
+			return true;
+		}
+
+		return PositionUnits.Size()
+			<= LandRadiusAt(FMath::Atan2(PositionUnits.Y, PositionUnits.X));
 	}
 
 	const TCHAR* BiomeDebugName(EIslandBiome Biome)
@@ -559,8 +670,17 @@ namespace IslandGeography
 		// põe morro dentro da praça.
 		const float Distancia = PositionUnits.Size();
 
+		// A COSTA DESTE RUMO, e não o raio nominal.
+		//
+		// O raio nominal continua sendo a ESCALA — praia, anéis e calhas saem
+		// dele. Quem responde "onde a terra acaba" é a costa, e ela varia com o
+		// rumo desde que a ilha deixou de ser um círculo.
+		const float DaCosta = PositionUnits.IsNearlyZero()
+			? LandRadiusUnits()
+			: LandRadiusAt(FMath::Atan2(PositionUnits.Y, PositionUnits.X));
+
 		// 1. Fora da terra é mar, e o mar é o zero de tudo.
-		if (Distancia >= LandRadiusUnits())
+		if (Distancia >= DaCosta)
 		{
 			return 0.0f;
 		}
@@ -568,9 +688,9 @@ namespace IslandGeography
 		// 2. A praia sobe do mar até o nível da terra. Sem esta rampa, a ilha
 		//    seria um prato com parede — que foi exatamente o relato de jogo:
 		//    "ao chegar na água eu afundo para sempre".
-		const float Borda = LandRadiusUnits() - BeachWidthUnits();
+		const float Borda = DaCosta - BeachWidthUnits();
 		const float DaOrla = (Distancia > Borda)
-			? FMath::Clamp((LandRadiusUnits() - Distancia) / BeachWidthUnits(), 0.0f, 1.0f)
+			? FMath::Clamp((DaCosta - Distancia) / BeachWidthUnits(), 0.0f, 1.0f)
 			: 1.0f;
 
 		float Altura = Relevo::AlturaDaTerra() * DaOrla;
@@ -614,8 +734,17 @@ namespace IslandGeography
 		// põe morro dentro da praça.
 		const float Distancia = PositionUnits.Size();
 
+		// A COSTA DESTE RUMO, e não o raio nominal.
+		//
+		// O raio nominal continua sendo a ESCALA — praia, anéis e calhas saem
+		// dele. Quem responde "onde a terra acaba" é a costa, e ela varia com o
+		// rumo desde que a ilha deixou de ser um círculo.
+		const float DaCosta = PositionUnits.IsNearlyZero()
+			? LandRadiusUnits()
+			: LandRadiusAt(FMath::Atan2(PositionUnits.Y, PositionUnits.X));
+
 		// 1. Fora da terra é mar, e o mar é o zero de tudo.
-		if (Distancia >= LandRadiusUnits())
+		if (Distancia >= DaCosta)
 		{
 			return 0.0f;
 		}
@@ -623,9 +752,9 @@ namespace IslandGeography
 		// 2. A praia sobe do mar até o nível da terra. Sem esta rampa, a ilha
 		//    seria um prato com parede — que foi exatamente o relato de jogo:
 		//    "ao chegar na água eu afundo para sempre".
-		const float Borda = LandRadiusUnits() - BeachWidthUnits();
+		const float Borda = DaCosta - BeachWidthUnits();
 		const float DaOrla = (Distancia > Borda)
-			? FMath::Clamp((LandRadiusUnits() - Distancia) / BeachWidthUnits(), 0.0f, 1.0f)
+			? FMath::Clamp((DaCosta - Distancia) / BeachWidthUnits(), 0.0f, 1.0f)
 			: 1.0f;
 
 		float Altura = Relevo::AlturaDaTerra() * DaOrla;

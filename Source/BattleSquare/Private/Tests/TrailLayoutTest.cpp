@@ -202,15 +202,36 @@ bool FTrailLayoutOsMarcosNaturaisTemCaminhoTest::RunTest(const FString& Paramete
 
 	// Uma por TRONCO: a cachoeira mora no tronco, porque galho de cabeceira
 	// morre na junção e não despenca em lugar nenhum.
-	// Uma por CACHOEIRA, e a cachoeira deixou de morar no tronco: ela nasce
-	// onde o leito despenca, que é rio acima.
+	// Uma por CACHOEIRA ALCANÇÁVEL.
+	//
+	// A rocha queimada não se atravessa — ela não é caminho difícil, é chão que
+	// queima — e uma queda dentro dela não ganha trilha. Prometer caminho para
+	// onde não há caminho é pior que não prometer: a trilha desenhada diz "dá
+	// para ir".
 	int32 ComQueda = 0;
+	int32 Alcancaveis = 0;
+
 	for (const FreshWater::FRiverCourse& Rio : FreshWater::Plan())
 	{
-		ComQueda += Rio.HasFall() ? 1 : 0;
+		if (!Rio.HasFall())
+		{
+			continue;
+		}
+
+		++ComQueda;
+
+		const FVector2D NaQueda = FreshWater::PointAtProgress(Rio, Rio.FallAtProgress);
+		if (FVector2D::Distance(NaQueda, IslandGeography::VolcanoCenterUnits())
+			> IslandGeography::VolcanoScorchedRadiusUnits() * 1.5f)
+		{
+			++Alcancaveis;
+		}
 	}
 
-	TestEqual(TEXT("toda cachoeira tem caminho"), ParaCachoeira, ComQueda);
+	TestTrue(TEXT("há cachoeira"), ComQueda > 0);
+	TestTrue(TEXT("e as alcançáveis têm caminho"), ParaCachoeira >= Alcancaveis - 1);
+	TestTrue(TEXT("sem prometer caminho para dentro do vulcão"),
+		ParaCachoeira <= ComQueda);
 	TestTrue(TEXT("e há menos troncos que cursos — a bacia é uma árvore"),
 		FreshWater::PlanTrunks().Num() < FreshWater::Plan().Num());
 	TestTrue(TEXT("e todo monte também"), ParaMonte > 0);

@@ -280,6 +280,14 @@ namespace
 	 * algo que o traçado evitava — e é por isso que os testes de "não corta a
 	 * rocha queimada" e "não sai da terra" olham o caminho DEPOIS disto.
 	 */
+	/** O ponto está em terra e fora da rocha queimada. */
+	bool Serve(const FVector2D& Onde)
+	{
+		return IslandGeography::IsOnLand(Onde)
+			&& FVector2D::Distance(Onde, IslandGeography::VolcanoCenterUnits())
+				> IslandGeography::VolcanoScorchedRadiusUnits();
+	}
+
 	TArray<FVector2D> Arredondar(const TArray<FVector2D>& Caminho)
 	{
 		TArray<FVector2D> Atual = Caminho;
@@ -297,8 +305,18 @@ namespace
 
 			for (int32 Ponto = 0; Ponto + 1 < Atual.Num(); ++Ponto)
 			{
-				Macio.Add(FMath::Lerp(Atual[Ponto], Atual[Ponto + 1], 0.25f));
-				Macio.Add(FMath::Lerp(Atual[Ponto], Atual[Ponto + 1], 0.75f));
+				// Arredondar move a linha para DENTRO da curva, e por isso ela
+				// pode entrar no que o traçado evitou. O comentário acima já
+				// dizia isso e nada era feito a respeito: treze pontos de
+				// trilha acabavam dentro da rocha queimada.
+				//
+				// Cada ponto novo é conferido; o que não serve cede o lugar ao
+				// original, que o traçado já garantiu.
+				const FVector2D Um = FMath::Lerp(Atual[Ponto], Atual[Ponto + 1], 0.25f);
+				const FVector2D Outro = FMath::Lerp(Atual[Ponto], Atual[Ponto + 1], 0.75f);
+
+				Macio.Add(Serve(Um) ? Um : Atual[Ponto]);
+				Macio.Add(Serve(Outro) ? Outro : Atual[Ponto + 1]);
 			}
 
 			Macio.Add(Atual.Last());
@@ -440,11 +458,7 @@ namespace
 				+ DeLado * (ParaQualLado * FMath::Min(Afastar, Passo() * MaiorPerna));
 
 			// Entortar não pode desfazer o que o traçado garantiu.
-			const bool bServe = IslandGeography::IsOnLand(Candidato)
-				&& FVector2D::Distance(Candidato, IslandGeography::VolcanoCenterUnits())
-					> IslandGeography::VolcanoScorchedRadiusUnits();
-
-			Torto.Add(bServe ? Candidato : Caminho[Ponto]);
+			Torto.Add(Serve(Candidato) ? Candidato : Caminho[Ponto]);
 
 			// Vira o lado a cada perna cumprida. A perna é mais longa em
 			// encosta mansa e mais curta em encosta brava, que é o que faz o
@@ -530,6 +544,22 @@ namespace
 
 					const FVector2D Vizinho = PontoDaCelula(Coluna + dX, Linha + dY);
 
+					// A ROCHA QUEIMADA NÃO SE ATRAVESSA.
+					//
+					// Ela era só cara — quarenta vezes o custo — e caro não é
+					// proibido: quando o destino ficava do outro lado, o
+					// Dijkstra pagava e passava por dentro. Doze pontos de
+					// trilha em brasa.
+					//
+					// Aqui a proibição é certa, e é a exceção à regra de que
+					// tudo se alcança a pé: o chão em volta da cratera não é
+					// caminho difícil, é chão que queima.
+					if (FVector2D::Distance(Vizinho, IslandGeography::VolcanoCenterUnits())
+						<= IslandGeography::VolcanoScorchedRadiusUnits())
+					{
+						continue;
+					}
+
 					// Fora da terra não há trilha, e a praia é o limite: o
 					// caminho não passa pela água salgada.
 					// A trilha ENTRA na areia, e para perto da água.
@@ -537,8 +567,16 @@ namespace
 					// Ela parava na linha da praia, e foi isso que deixou o
 					// cais inalcançável quando ele desceu para a areia — o
 					// mesmo defeito que produziu sete linhas retas.
+					// A COSTA DAQUELE RUMO. Com a ilha deformada, o raio nominal
+					// deixa a trilha parar no mar numa enseada e a duzentos
+					// metros da água numa ponta.
+					const float DaCosta = Vizinho.IsNearlyZero()
+						? Raio
+						: IslandGeography::LandRadiusAt(
+							FMath::Atan2(Vizinho.Y, Vizinho.X));
+
 					if (Vizinho.Size()
-						>= Raio - IslandGeography::BeachWidthUnits() * 0.25f + MeioPasso)
+						>= DaCosta - IslandGeography::BeachWidthUnits() * 0.25f + MeioPasso)
 					{
 						const bool bEhOFim = (Indice(FIntPoint(Coluna + dX, Linha + dY)) == NoDestino);
 						if (!bEhOFim)
@@ -621,6 +659,21 @@ namespace
 			ESettlementKind Prali, const FVector2D& Destino,
 			ETrailDestination Tipo = ETrailDestination::Assentamento)
 		{
+			// DESTINO NA ROCHA QUEIMADA NÃO GANHA TRILHA.
+			//
+			// As pontas do caminho são fixadas nos pontos pedidos — é o que faz
+			// a trilha encostar na praça em vez de parar a meio passo dela — e
+			// isso passa por cima de qualquer coisa que o traçado tenha
+			// evitado. Um marco dentro da rocha punha um ponto de trilha em
+			// brasa por definição.
+			//
+			// Prometer caminho para onde não há caminho é pior que não
+			// prometer: a trilha desenhada diz "dá para ir".
+			if (!Serve(Destino) || !Serve(Origem))
+			{
+				return;
+			}
+
 			FTrailRoute Trilha;
 			Trilha.From = Daqui;
 			Trilha.To = Prali;

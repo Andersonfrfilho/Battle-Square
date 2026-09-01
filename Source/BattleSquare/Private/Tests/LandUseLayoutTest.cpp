@@ -87,14 +87,33 @@ bool FLandUseAFazendaOlhaParaAAguaTest::RunTest(const FString& Parameters)
 			continue;
 		}
 
-		float MaisPertoDaVila = TNumericLimits<float>::Max();
-		float MaisPertoDaFazenda = TNumericLimits<float>::Max();
-
-		for (const FreshWater::FSpring& Fonte : FreshWater::PlanSprings())
+		// A conta olha FONTE E CÓRREGO, que é a mesma água que o traçado
+		// consulta. Antes ela olhava só as fontes, e quebrou no dia em que os
+		// rios mudaram de curva: a fazenda estava virada para um córrego, e o
+		// teste media contra uma fonte do outro lado. Meia fonte de verdade
+		// afirma meia coisa.
+		auto AteAAgua = [](const FVector2D& Daqui)
 		{
-			MaisPertoDaVila = FMath::Min(MaisPertoDaVila,
-				FVector2D::Distance(Assentamento.CenterUnits, Fonte.CenterUnits));
-		}
+			float Menor = TNumericLimits<float>::Max();
+
+			for (const FreshWater::FSpring& Fonte : FreshWater::PlanSprings())
+			{
+				Menor = FMath::Min(Menor, FVector2D::Distance(Daqui, Fonte.CenterUnits));
+			}
+
+			for (const FreshWater::FBrook& Corrego : FreshWater::PlanBrooks())
+			{
+				for (const FVector2D& Ponto : Corrego.PointsUnits)
+				{
+					Menor = FMath::Min(Menor, FVector2D::Distance(Daqui, Ponto));
+				}
+			}
+
+			return Menor;
+		};
+
+		const float MaisPertoDaVila = AteAAgua(Assentamento.CenterUnits);
+		float MaisPertoDaFazenda = TNumericLimits<float>::Max();
 
 		bool bAchouFazenda = false;
 		const float Perto = VillageLayout::ClearingHalfExtentUnitsFor(Assentamento.Kind) * 4.0f;
@@ -108,11 +127,7 @@ bool FLandUseAFazendaOlhaParaAAguaTest::RunTest(const FString& Parameters)
 			}
 
 			bAchouFazenda = true;
-			for (const FreshWater::FSpring& Fonte : FreshWater::PlanSprings())
-			{
-				MaisPertoDaFazenda = FMath::Min(MaisPertoDaFazenda,
-					FVector2D::Distance(Mancha.CenterUnits, Fonte.CenterUnits));
-			}
+			MaisPertoDaFazenda = FMath::Min(MaisPertoDaFazenda, AteAAgua(Mancha.CenterUnits));
 		}
 
 		if (bAchouFazenda)

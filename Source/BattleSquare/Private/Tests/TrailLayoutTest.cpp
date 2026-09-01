@@ -71,13 +71,20 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTrailLayoutNenhumaTrilhaEhRetaTest,
 bool FTrailLayoutNenhumaTrilhaEhRetaTest::RunTest(const FString& Parameters)
 {
 	// A trilha não é uma curva que alguém desenhou: ela curva porque o TERRENO
-	// a curva. Este teste afirma o resultado disso — o caminho traçado custa
-	// menos que a linha reta entre as mesmas pontas.
+	// a curva. Sem este teste, o traçador poderia devolver a reta e todos os
+	// outros continuariam verdes — a mesma armadilha do relevo que poderia ser
+	// uma constante.
 	//
-	// Sem ele, o traçador poderia devolver a reta e todos os outros testes
-	// continuariam verdes. É a mesma armadilha do relevo que poderia ser uma
-	// constante.
-	int32 MaisBaratas = 0;
+	// A medida é a SINUOSIDADE, e não "custa menos que a reta". Ela era isso, e
+	// deixou de valer quando a trilha passou a respeitar o declive
+	// sustentável: agora ela é mais LONGA e mais CANSATIVA que a reta de
+	// propósito, porque troca esforço por caminho que não vira valeta. Trilha
+	// de montanha real faz exatamente essa troca — quem sobe pelo ziguezague
+	// anda três vezes mais que quem sobe de frente.
+	//
+	// Manter a asserção antiga teria me feito desfazer a melhoria para o teste
+	// voltar ao verde.
+	int32 Sinuosas = 0;
 
 	for (const FTrailRoute& Trilha : TrailLayout::Plan())
 	{
@@ -86,14 +93,24 @@ bool FTrailLayoutNenhumaTrilhaEhRetaTest::RunTest(const FString& Parameters)
 			continue;
 		}
 
-		if (TracadoDaTrilha::CustoDe(Trilha) < TracadoDaTrilha::CustoEmLinhaReta(Trilha))
+		float Andado = 0.0f;
+		for (int32 Ponto = 1; Ponto < Trilha.PointsUnits.Num(); ++Ponto)
 		{
-			++MaisBaratas;
+			Andado += FVector2D::Distance(
+				Trilha.PointsUnits[Ponto - 1], Trilha.PointsUnits[Ponto]);
+		}
+
+		const float EmLinhaReta =
+			FVector2D::Distance(Trilha.PointsUnits[0], Trilha.PointsUnits.Last());
+
+		if (EmLinhaReta > KINDA_SMALL_NUMBER && (Andado / EmLinhaReta) > 1.05f)
+		{
+			++Sinuosas;
 		}
 	}
 
-	TestTrue(TEXT("as trilhas acham caminho mais barato que a reta"),
-		MaisBaratas >= TrailLayout::Plan().Num() / 2);
+	TestTrue(TEXT("as trilhas contornam em vez de ir em linha reta"),
+		Sinuosas >= TrailLayout::Plan().Num() / 2);
 
 	return true;
 }

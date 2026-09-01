@@ -78,13 +78,36 @@ namespace FreshWater
 		 */
 		constexpr float SaiaDaNascente = 0.6f;
 
-		/** Quanto o rumo abre para cada lado, no mínimo e no máximo. */
-		constexpr float MenorSerpente = 0.045f;
-		constexpr float MaiorSerpente = 0.085f;
+		/**
+		 * Quanto o rumo abre para cada lado, no mínimo e no máximo.
+		 *
+		 * Baixado depois de MEDIR: com a onda de Leopold no lugar, a amplitude
+		 * antiga deu sinuosidade 2,0 a 2,65. Pela mesma literatura, rio
+		 * meândrico fica entre 1,5 e 2,0 — acima disso é rio tortuoso, quase
+		 * um oxbow atrás do outro. Corrigi o comprimento de onda e a amplitude
+		 * ficou sobrando: são dois botões para o mesmo efeito, e mexer num sem
+		 * remedir o outro trocou um exagero por outro.
+		 */
+		constexpr float MenorSerpente = 0.030f;
+		constexpr float MaiorSerpente = 0.052f;
 
-		/** Quantas curvas completas da nascente à foz. */
-		constexpr float MenosCurvas = 1.15f;
-		constexpr float MaisCurvas = 1.85f;
+		/**
+		 * O comprimento de onda do meandro, em LARGURAS DE CALHA.
+		 *
+		 * Onze é o número de Leopold — rios reais meandram com onda de dez a
+		 * catorze larguras. O nosso fazia de uma a duas ondas no percurso
+		 * inteiro, e medindo deu sinuosidade 1,26: pela mesma literatura isso é
+		 * rio RETO, não meândrico (o corte é 1,5).
+		 *
+		 * Sai da largura e do comprimento, e não de um número de curvas: assim
+		 * um rio mais largo faz curvas mais abertas, que é o que a natureza
+		 * faz. Fixar as curvas dava o contrário — o rio largo curvava apertado.
+		 */
+		constexpr float LargurasPorOnda = 11.0f;
+
+		/** A variação em torno da onda de Leopold, não a contagem de curvas. */
+		constexpr float MenosCurvas = 0.85f;
+		constexpr float MaisCurvas = 1.20f;
 
 		/** Onde o lago alaga, em fração do percurso. */
 		constexpr float PrimeiroLago = 0.32f;
@@ -334,8 +357,15 @@ namespace FreshWater
 
 				Curso.MeanderRadians = BattleSpread::Between(MenorSerpente, MaiorSerpente,
 					BattleSpread::Fraction(Semente, 0));
-				Curso.MeanderTurns = BattleSpread::Between(MenosCurvas, MaisCurvas,
-					BattleSpread::Fraction(Semente, 1));
+				// Pela onda de Leopold, e não por um sorteio de curvas. O
+				// sorteio sobrou como VARIAÇÃO em torno dela: rios iguais em
+				// tudo menos no rumo leem como o mesmo rio copiado.
+				const float Percurso11 =
+					FMath::Max(0.0f, Curso.MouthRadiusUnits - Curso.SourceRadiusUnits);
+				const float Onda = MeiaCalhaDoRio() * 2.0f * LargurasPorOnda;
+				Curso.MeanderTurns = (Onda > KINDA_SMALL_NUMBER ? Percurso11 / Onda : 1.0f)
+					* BattleSpread::Between(MenosCurvas, MaisCurvas,
+						BattleSpread::Fraction(Semente, 1));
 
 				const float Percurso =
 					FMath::Max(0.0f, Curso.MouthRadiusUnits - Curso.SourceRadiusUnits);

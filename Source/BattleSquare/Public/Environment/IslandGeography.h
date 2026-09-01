@@ -157,6 +157,18 @@ namespace IslandGeography
 	BATTLESQUARE_API float TravelCostBetween(const FVector2D& FromUnits, const FVector2D& ToUnits);
 
 	/**
+	 * Os dois pesos de `TravelCostBetween`, expostos.
+	 *
+	 * Existem porque quem traça a trilha precisa da MESMA conta com as alturas
+	 * que ele já tem em tabela — chamar `TravelCostBetween` de novo faria o
+	 * traçado recalcular altura seis vezes por aresta, e foi isso que o deixou
+	 * lento demais para terminar. Expor os pesos mantém uma fonte só; copiá-los
+	 * criaria a segunda (L-032).
+	 */
+	BATTLESQUARE_API float UphillCostWeight();
+	BATTLESQUARE_API float DownhillCostWeight();
+
+	/**
 	 * Largura da faixa de pântano, medida para dentro a partir da praia.
 	 *
 	 * Fração do raio pelo mesmo motivo da praia: um número fixo que hoje é um

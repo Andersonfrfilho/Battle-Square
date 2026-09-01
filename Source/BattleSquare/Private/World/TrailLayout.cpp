@@ -52,6 +52,30 @@ namespace
 	 */
 	constexpr int32 PassadasDeArredondamento = 2;
 
+	/**
+	 * O declive que uma trilha aguenta, e o que ela paga por passar dele.
+	 *
+	 * Dez por cento é o limite sustentável de quem constrói trilha de verdade:
+	 * acima disso a água desce pelo caminho e o caminho vira valeta. Medi a
+	 * nossa e deu **607%** no barranco — a trilha subia a mesa de frente, como
+	 * ninguém sobe um morro.
+	 *
+	 * O limite não PROÍBE: ele encarece. Proibir criaria lugar inalcançável a
+	 * pé, e a regra da região é que todo destino se alcança andando. Encarecer
+	 * faz o traçado achar o ziguezague sozinho — que é o que a serra do mundo
+	 * real faz, e ninguém desenhou.
+	 */
+	constexpr float DeclivelSustentavel = 0.10f;
+	constexpr float PenalidadePorDeclive = 60.0f;
+
+	/**
+	 * A REGRA DA METADE: a trilha nunca passa de metade do declive da encosta
+	 * que ela contorna. É o que faz o caminho abraçar a curva de nível em vez
+	 * de cortá-la — e é o segundo motivo pelo qual trilha de montanha serpenteia.
+	 */
+	constexpr float FracaoDaEncosta = 0.5f;
+	constexpr float PenalidadeDaMetade = 8.0f;
+
 	float Passo() { return IslandGeography::LandRadiusUnits() * FracaoDoPasso; }
 
 	int32 LadoDaGrade()
@@ -118,9 +142,75 @@ namespace
 	 * A conta base é a MESMA que cobra o cansaço de quem anda — é isso que faz
 	 * a trilha ser um conselho honesto em vez de uma linha bonita.
 	 */
-	float CustoDoPasso(const FVector2D& Daqui, const FVector2D& Prali)
+	/**
+	 * A altura de cada casa da grade, calculada UMA vez.
+	 *
+	 * Sem isto o traçado ficou lento demais para terminar: o custo de um passo
+	 * pergunta a altura das duas pontas e a inclinação do destino — e a
+	 * inclinação são mais quatro alturas. Seis consultas por aresta, oito
+	 * arestas por casa, e cada consulta percorre os assentamentos da ilha.
+	 *
+	 * A tabela é do TAMANHO DA GRADE, não do mundo: ela existe enquanto o
+	 * caminho é traçado e some depois.
+	 */
+	const TArray<float>& AlturasDaGrade()
 	{
-		float Custo = IslandGeography::TravelCostBetween(Daqui, Prali);
+		static TArray<float> Alturas = []()
+		{
+			const int32 Lado = LadoDaGrade();
+			TArray<float> Tudo;
+			Tudo.Reserve(Lado * Lado);
+
+			for (int32 Linha = 0; Linha < Lado; ++Linha)
+			{
+				for (int32 Coluna = 0; Coluna < Lado; ++Coluna)
+				{
+					Tudo.Add(IslandGeography::GroundHeightAt(PontoDaCelula(Coluna, Linha)));
+				}
+			}
+
+			return Tudo;
+		}();
+
+		return Alturas;
+	}
+
+	float AlturaDaCelula(int32 Coluna, int32 Linha)
+	{
+		const int32 Lado = LadoDaGrade();
+		const int32 C = FMath::Clamp(Coluna, 0, Lado - 1);
+		const int32 L = FMath::Clamp(Linha, 0, Lado - 1);
+		return AlturasDaGrade()[L * Lado + C];
+	}
+
+	/** Inclinação lida da tabela, por diferença nas quatro vizinhas. */
+	float InclinacaoDaCelula(int32 Coluna, int32 Linha)
+	{
+		const float PorX =
+			(AlturaDaCelula(Coluna + 1, Linha) - AlturaDaCelula(Coluna - 1, Linha))
+				/ (2.0f * Passo());
+		const float PorY =
+			(AlturaDaCelula(Coluna, Linha + 1) - AlturaDaCelula(Coluna, Linha - 1))
+				/ (2.0f * Passo());
+
+		return FMath::Sqrt(PorX * PorX + PorY * PorY);
+	}
+
+	float CustoDoPasso(int32 ColunaDaqui, int32 LinhaDaqui, int32 ColunaPrali, int32 LinhaPrali)
+	{
+		const FVector2D Daqui = PontoDaCelula(ColunaDaqui, LinhaDaqui);
+		const FVector2D Prali = PontoDaCelula(ColunaPrali, LinhaPrali);
+
+		const float NoChao = FVector2D::Distance(Daqui, Prali);
+		const float Desnivel = AlturaDaCelula(ColunaPrali, LinhaPrali)
+			- AlturaDaCelula(ColunaDaqui, LinhaDaqui);
+
+		// A conta base é a MESMA de `TravelCostBetween`, lida da tabela: é isso
+		// que faz a trilha ser um conselho honesto em vez de uma linha bonita.
+		// Subir custa muito; descer custa pouco, e nunca nada.
+		float Custo = NoChao + ((Desnivel > 0.0f)
+			? Desnivel * IslandGeography::UphillCostWeight()
+			: (-Desnivel) * IslandGeography::DownhillCostWeight());
 
 		const float AteOVulcao =
 			FVector2D::Distance(Prali, IslandGeography::VolcanoCenterUnits());
@@ -129,24 +219,39 @@ namespace
 			Custo *= PenalidadeDaRochaQueimada;
 		}
 
-		// O barranco tem RAMPA, e a trilha deve achá-la sozinha. Penalizar a
-		// faixa inteira menos a rampa é o que faz o caminho contornar até
-		// encontrar a subida — em vez de eu apontar a rampa para ele.
-		const float AteACidade = FVector2D::Distance(Prali, IslandGeography::VolcanoCenterUnits());
-		(void)AteACidade;
+		const float DaEncosta = InclinacaoDaCelula(ColunaPrali, LinhaPrali);
 
-		if (!IslandGeography::IsOnBluffRamp(Prali))
+		// O barranco tem RAMPA, e a trilha deve achá-la sozinha. Penalizar a
+		// faixa íngreme menos a rampa é o que faz o caminho contornar até
+		// encontrar a subida — em vez de eu apontar a rampa para ele.
+		if (!IslandGeography::IsOnBluffRamp(Prali) && DaEncosta > 0.25f)
 		{
-			const float DaMesa = IslandGeography::GroundSlopeAt(Prali);
-			if (DaMesa > 0.25f)
-			{
-				Custo *= PenalidadeDoBarranco;
-			}
+			Custo *= PenalidadeDoBarranco;
 		}
 
 		if (TrechoCruzaAgua(Daqui, Prali))
 		{
 			Custo *= PenalidadeDaAgua;
+		}
+
+		// O DECLIVE DO PASSO, e não a inclinação do lugar: é subir que custa, e
+		// subir DE LADO numa encosta íngreme é justamente o que a trilha faz
+		// para não subir de frente. É daqui que sai o ziguezague.
+		if (NoChao > KINDA_SMALL_NUMBER)
+		{
+			const float Declive = FMath::Abs(Desnivel) / NoChao;
+
+			if (Declive > DeclivelSustentavel)
+			{
+				Custo *= 1.0f + (Declive / DeclivelSustentavel - 1.0f) * PenalidadePorDeclive;
+			}
+
+			// E a regra da metade, medida contra a encosta do próprio lugar.
+			if (DaEncosta > KINDA_SMALL_NUMBER && Declive > DaEncosta * FracaoDaEncosta)
+			{
+				Custo *= 1.0f + PenalidadeDaMetade
+					* (Declive / (DaEncosta * FracaoDaEncosta) - 1.0f);
+			}
 		}
 
 		return Custo;
@@ -249,7 +354,6 @@ namespace
 
 			const int32 Coluna = Atual.Onde % Lado;
 			const int32 Linha = Atual.Onde / Lado;
-			const FVector2D Aqui = PontoDaCelula(Coluna, Linha);
 
 			for (int32 dY = -1; dY <= 1; ++dY)
 			{
@@ -274,7 +378,8 @@ namespace
 					}
 
 					const int32 Ali = Indice(FIntPoint(Coluna + dX, Linha + dY));
-					const float Custo = Atual.Custo + CustoDoPasso(Aqui, Vizinho);
+					const float Custo = Atual.Custo
+						+ CustoDoPasso(Coluna, Linha, Coluna + dX, Linha + dY);
 
 					if (Custo < Melhor[Ali])
 					{

@@ -565,6 +565,10 @@ namespace IslandGeography
 		return Relevo::ComLotesPlanos(Altura, PositionUnits);
 	}
 
+	float UphillCostWeight() { return Relevo::PesoDaSubida; }
+
+	float DownhillCostWeight() { return Relevo::PesoDaDescida; }
+
 	float TravelCostBetween(const FVector2D& FromUnits, const FVector2D& ToUnits)
 	{
 		const float NoChao = FVector2D::Distance(FromUnits, ToUnits);

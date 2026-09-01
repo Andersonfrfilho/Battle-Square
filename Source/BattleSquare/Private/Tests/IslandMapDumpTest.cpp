@@ -131,9 +131,14 @@ bool FIslandMapDumpTest::RunTest(const FString& Parameters)
 		Json += TEXT("    [");
 		for (int32 Ponto = 0; Ponto < Trilhas[Indice].PointsUnits.Num(); ++Ponto)
 		{
-			Json += FString::Printf(TEXT("%s[%.0f,%.0f]"),
+			// A ALTURA vai junto, lida de `GroundHeightAt` — a fonte. Medir o
+			// declive da trilha reamostrando a malha grossa do mapa daria o
+			// declive da MALHA, não o da trilha: o barranco tem 2.520 unidades
+			// de largura e a malha anda 1.555 por casa.
+			Json += FString::Printf(TEXT("%s[%.0f,%.0f,%.0f]"),
 				Ponto == 0 ? TEXT("") : TEXT(","),
-				Trilhas[Indice].PointsUnits[Ponto].X, Trilhas[Indice].PointsUnits[Ponto].Y);
+				Trilhas[Indice].PointsUnits[Ponto].X, Trilhas[Indice].PointsUnits[Ponto].Y,
+				IslandGeography::GroundHeightAt(Trilhas[Indice].PointsUnits[Ponto]));
 		}
 		Json += FString::Printf(TEXT("]%s\n"), Indice + 1 < Trilhas.Num() ? TEXT(",") : TEXT(""));
 	}

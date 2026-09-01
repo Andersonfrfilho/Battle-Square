@@ -33,6 +33,18 @@ struct BATTLESQUARE_API FTrailRoute
 
 	/** O caminho, ponto a ponto. Nunca reto: o terreno é que o entorta. */
 	TArray<FVector2D> PointsUnits;
+
+	/**
+	 * O traçado FALHOU e isto é uma linha reta de emergência.
+	 *
+	 * Existe porque o silêncio custou caro: seis trilhas saíram com sinuosidade
+	 * exatamente 1,000 e eu só descobri medindo. Um caminho reto e um caminho
+	 * que não existe pareciam a mesma coisa no mapa.
+	 *
+	 * Quando isto é verdade, alguma coisa está fora do alcance do traçado — e
+	 * o certo é consertar o alcance ou o destino, nunca aceitar a reta.
+	 */
+	bool bFellBackToStraightLine = false;
 };
 
 /**
@@ -110,6 +122,25 @@ namespace TrailLayout
 
 	/** A fundura a partir da qual não se passa a pé. */
 	BATTLESQUARE_API float WadableDepthUnits();
+
+	/**
+	 * A sinuosidade mínima de uma trilha, abaixo da qual ela é reta demais.
+	 *
+	 * Caminho pisado por gente não sai reto nem em campo aberto: desvia-se de
+	 * uma pedra, de uma poça, do sol. Trilha reta num mapa é sempre obra — e
+	 * este mundo não tem obra.
+	 */
+	BATTLESQUARE_API float MinimumSinuosity();
+
+	/**
+	 * Se linha reta é aceitável. Configurável em `DefaultGame.ini`, chave
+	 * `WorldAllowStraightTrails`.
+	 *
+	 * Existe porque às vezes a reta é o certo — uma passarela, um trecho curto
+	 * entre duas praças, uma estrada de verdade quando o mundo tiver uma. O
+	 * padrão é NÃO, porque o padrão deste mundo é caminho pisado.
+	 */
+	BATTLESQUARE_API bool AllowsStraightTrails();
 
 	/** O tamanho do passo do traçado — também a distância entre pontos. */
 	BATTLESQUARE_API float StepUnits();

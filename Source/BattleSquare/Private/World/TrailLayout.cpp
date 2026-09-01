@@ -3,6 +3,8 @@
 #include "World/TrailLayout.h"
 #include "World/VillageLayout.h"
 #include "Environment/IslandGeography.h"
+#include "Battle/DeterministicSpread.h"
+#include "Misc/ConfigCacheIni.h"
 #include "Environment/FreshWater.h"
 #include "Environment/IslandFeatureLayout.h"
 
@@ -60,6 +62,10 @@ namespace
 	 * decidiu que ela deveria.
 	 */
 	constexpr int32 PassadasDeArredondamento = 2;
+
+	/** Quantas vezes tentar entortar, e quanto a amplitude cresce a cada vez. */
+	constexpr int32 TentativasDeTorcao = 6;
+	constexpr float PassoDaTorcao = 1.6f;
 
 	/**
 	 * O declive que uma trilha aguenta, e o que ela paga por passar dele.
@@ -297,8 +303,85 @@ namespace
 		return Atual;
 	}
 
+	/** A sinuosidade de um caminho: quanto ele anda dividido pela reta. */
+	float SinuosidadeDe(const TArray<FVector2D>& Caminho)
+	{
+		if (Caminho.Num() < 2)
+		{
+			return 1.0f;
+		}
+
+		float Andado = 0.0f;
+		for (int32 Ponto = 1; Ponto < Caminho.Num(); ++Ponto)
+		{
+			Andado += static_cast<float>(FVector2D::Distance(Caminho[Ponto - 1], Caminho[Ponto]));
+		}
+
+		const float EmLinhaReta =
+			static_cast<float>(FVector2D::Distance(Caminho[0], Caminho.Last()));
+
+		return (EmLinhaReta > KINDA_SMALL_NUMBER) ? Andado / EmLinhaReta : 1.0f;
+	}
+
+	/**
+	 * SERPENTEIA um caminho que saiu reto demais.
+	 *
+	 * O traçado devolve reta quando o terreno é plano — e está certo, é o
+	 * caminho mais barato. Mas caminho pisado por gente não sai reto nem em
+	 * campo aberto: desvia-se de uma pedra, de uma poça, do sol.
+	 *
+	 * O desvio é LATERAL e vem de ruído coerente na posição, com meia onda ao
+	 * longo do percurso para as pontas ficarem onde estavam — elas são a praça
+	 * e o destino, e mexer nelas seria mudar o caminho, não entortá-lo.
+	 *
+	 * As pontas ficam FIXAS e o meio nunca sai da terra nem entra na rocha
+	 * queimada: entortar não pode desfazer o que o traçado garantiu.
+	 */
+	TArray<FVector2D> Serpentear(const TArray<FVector2D>& Caminho, float Amplitude)
+	{
+		if (Caminho.Num() < 3)
+		{
+			return Caminho;
+		}
+
+		TArray<FVector2D> Torto;
+		Torto.Reserve(Caminho.Num());
+		Torto.Add(Caminho[0]);
+
+		const float Escala = IslandGeography::LandRadiusUnits() * 0.05f;
+
+		for (int32 Ponto = 1; Ponto + 1 < Caminho.Num(); ++Ponto)
+		{
+			const FVector2D AoLongo =
+				(Caminho[Ponto + 1] - Caminho[Ponto - 1]).GetSafeNormal();
+			const FVector2D DeLado(-AoLongo.Y, AoLongo.X);
+
+			const float Quanto = static_cast<float>(Ponto) / static_cast<float>(Caminho.Num() - 1);
+			const float Meia = FMath::Sin(Quanto * PI);
+
+			const uint32 Semente = BattleSpread::SeedFromText(FString::Printf(
+				TEXT("torce-trilha-%d-%d"),
+				FMath::FloorToInt(Caminho[Ponto].X / Escala),
+				FMath::FloorToInt(Caminho[Ponto].Y / Escala)));
+
+			const float Desvio = BattleSpread::Between(-1.0f, 1.0f,
+				BattleSpread::Fraction(Semente, 0)) * Amplitude * Meia;
+
+			const FVector2D Candidato = Caminho[Ponto] + DeLado * Desvio;
+
+			const bool bServe = IslandGeography::IsOnLand(Candidato)
+				&& FVector2D::Distance(Candidato, IslandGeography::VolcanoCenterUnits())
+					> IslandGeography::VolcanoScorchedRadiusUnits();
+
+			Torto.Add(bServe ? Candidato : Caminho[Ponto]);
+		}
+
+		Torto.Add(Caminho.Last());
+		return Torto;
+	}
+
 	/** Menor custo entre dois pontos, por Dijkstra sobre a grade. */
-	TArray<FVector2D> CaminhoBarato(const FVector2D& Daqui, const FVector2D& Prali)
+	TArray<FVector2D> CaminhoBarato(const FVector2D& Daqui, const FVector2D& Prali, bool& bOutDesistiu)
 	{
 		const int32 Lado = LadoDaGrade();
 		const float MeioPasso = Passo() * 0.5f;
@@ -391,8 +474,10 @@ namespace
 		TArray<FVector2D> Caminho;
 		if (Melhor[NoDestino] == TNumericLimits<float>::Max())
 		{
-			// Sem caminho barato, a linha reta. Nunca deve acontecer numa ilha
-			// conexa, e devolver vazio faria a trilha sumir sem dizer por quê.
+			// Sem caminho: a linha reta, E O AVISO. Devolver vazio faria a
+			// trilha sumir sem dizer por quê; devolver a reta calada faz pior,
+			// porque ela se parece com um caminho bom.
+			bOutDesistiu = true;
 			Caminho.Add(Daqui);
 			Caminho.Add(Prali);
 			return Caminho;
@@ -450,7 +535,31 @@ namespace
 			Trilha.From = Daqui;
 			Trilha.To = Prali;
 			Trilha.Destination = Tipo;
-			Trilha.PointsUnits = CaminhoBarato(Origem, Destino);
+			Trilha.PointsUnits = CaminhoBarato(Origem, Destino,
+				Trilha.bFellBackToStraightLine);
+
+			// IDENTIFICA a trilha que saiu reta e a entorta.
+			//
+			// A amplitude cresce até a sinuosidade passar do mínimo, e para no
+			// primeiro valor que serve — mais que isso vira serpentina, e
+			// serpentina é tão artificial quanto a reta.
+			//
+			// O caminho de EMERGÊNCIA não é entortado: ele não passou pelo
+			// terreno, e curvá-lo faria uma falha parecer um caminho bom.
+			if (!Trilha.bFellBackToStraightLine && !TrailLayout::AllowsStraightTrails())
+			{
+				for (int32 Tentativa = 1; Tentativa <= TentativasDeTorcao; ++Tentativa)
+				{
+					if (SinuosidadeDe(Trilha.PointsUnits) >= TrailLayout::MinimumSinuosity())
+					{
+						break;
+					}
+
+					Trilha.PointsUnits = Serpentear(Trilha.PointsUnits,
+						TrailLayout::HalfWidthUnits() * Tentativa * PassoDaTorcao);
+				}
+			}
+
 			Trilhas.Add(MoveTemp(Trilha));
 		};
 
@@ -573,6 +682,26 @@ namespace
 
 		return Trilhas;
 	}
+}
+
+float TrailLayout::MinimumSinuosity()
+{
+	// 1,06 é pouco e é de propósito: o alvo não é fazer serpentina, é tirar a
+	// reta. Uma trilha de mil metros com 1,06 anda sessenta a mais que a reta,
+	// o que é uma curva por quilômetro — que é o que uma trilha real faz.
+	return 1.06f;
+}
+
+bool TrailLayout::AllowsStraightTrails()
+{
+	bool bDeixa = false;
+	if (GConfig)
+	{
+		GConfig->GetBool(TEXT("/Script/BattleSquare.BattleArena"),
+			TEXT("WorldAllowStraightTrails"), bDeixa, GGameIni);
+	}
+
+	return bDeixa;
 }
 
 float TrailLayout::StepUnits()

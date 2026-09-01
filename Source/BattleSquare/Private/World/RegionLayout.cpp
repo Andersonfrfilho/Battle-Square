@@ -93,10 +93,27 @@ namespace
 		const float Afastar = FreshWater::HalfWidthAtProgress(Escolhido, Escolhido.LakeAtProgress)
 			+ VillageLayout::ClearingHalfExtentUnitsFor(ESettlementKind::VilaDoMercado);
 
-		// Para FORA do centro da ilha: a margem de fora é a que dá para o mar,
-		// e é por onde a mercadoria sai.
-		const FVector2D ParaFora = NoLago.GetSafeNormal();
-		return NoLago + ParaFora * Afastar;
+		// Para DENTRO, e não para fora.
+		//
+		// Empurrar para a margem de fora fazia sentido quando o lago ficava no
+		// miolo: era a margem que dá para o mar. Com a bacia dendrítica o lago
+		// desceu para perto da foz, e o mesmo empurrão pôs a vila a 935
+		// unidades do mar aberto — fora do alcance do traçado de trilhas, que
+		// para na praia.
+		//
+		// O sintoma foi mudo: nenhuma trilha chegava lá, e o traçado desenhava
+		// uma linha reta em vez de dizer que falhou.
+		const FVector2D ParaDentro = -NoLago.GetSafeNormal();
+		const FVector2D NaMargem = NoLago + ParaDentro * Afastar;
+
+		// E preso dentro da faixa que a trilha alcança: assentamento que
+		// nenhuma trilha atinge é assentamento que ninguém acha.
+		const float Limite = IslandGeography::LandRadiusUnits()
+			- IslandGeography::BeachWidthUnits() * 1.6f;
+
+		return (NaMargem.Size() > Limite)
+			? NaMargem.GetSafeNormal() * Limite
+			: NaMargem;
 	}
 
 	FSettlementPlacement Assentamento(ESettlementKind Tipo, float Graus)

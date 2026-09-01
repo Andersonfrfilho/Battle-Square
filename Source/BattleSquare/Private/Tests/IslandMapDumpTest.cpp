@@ -115,9 +115,24 @@ bool FIslandMapDumpTest::RunTest(const FString& Parameters)
 
 		const FVector2D NoLago = FreshWater::PointAt(Rios[Indice], Rios[Indice].LakeRadiusUnits);
 		const FVector2D NaQueda = FreshWater::PointAt(Rios[Indice], Rios[Indice].FallRadiusUnits);
+		// A CORREDEIRA vai como marca por ponto do curso, e não como faixa: ela
+		// é derivada do relevo, e o relevo muda por ponto.
+		Json += TEXT("],\"corredeira\":[");
+		for (int32 Passo = 0; Passo <= Passos; ++Passo)
+		{
+			const float Raio = FMath::Lerp(Rios[Indice].SourceRadiusUnits,
+				Rios[Indice].MouthRadiusUnits, static_cast<float>(Passo) / Passos);
+			Json += FString::Printf(TEXT("%s%d"), Passo == 0 ? TEXT("") : TEXT(","),
+				FreshWater::IsRapidsAt(Rios[Indice], Raio) ? 1 : 0);
+		}
+
 		Json += FString::Printf(
-			TEXT("],\"lagoX\":%.0f,\"lagoY\":%.0f,\"quedaX\":%.0f,\"quedaY\":%.0f}%s\n"),
+			TEXT("],\"ordem\":%d,\"aoMar\":%d,\"lagoX\":%.0f,\"lagoY\":%.0f,")
+			TEXT("\"quedaX\":%.0f,\"quedaY\":%.0f,\"poco\":%.0f,\"fundo\":%.0f}%s\n"),
+			Rios[Indice].Order, Rios[Indice].FlowsToTheSea() ? 1 : 0,
 			NoLago.X, NoLago.Y, NaQueda.X, NaQueda.Y,
+			FreshWater::PlungePoolHalfWidthUnits(Rios[Indice]),
+			FreshWater::PlungePoolDepthUnits(Rios[Indice]),
 			Indice + 1 < Rios.Num() ? TEXT(",") : TEXT(""));
 	}
 	Json += TEXT("  ],\n");

@@ -448,3 +448,70 @@ bool FLandUseOPocoEhFuroNaoBaciaTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FLandUseACachoeiraSeSobeTest,
+	"BattleSquare.LandUse.ACachoeiraSeSobe",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FLandUseACachoeiraSeSobeTest::RunTest(const FString& Parameters)
+{
+	// Um paredão de vinte metros não se sobe; uma escada de quatro degraus de
+	// cinco, sim. É a escada de poços que a morfologia descreve, e é ela que
+	// transforma a cachoeira de parede em lugar.
+	int32 ComEscada = 0;
+
+	for (const FreshWater::FRiverCourse& Curso : FreshWater::PlanTrunks())
+	{
+		const TArray<FreshWater::FFallStep> Degraus = FreshWater::PlanFallSteps(Curso);
+		if (Degraus.Num() == 0)
+		{
+			continue;
+		}
+
+		++ComEscada;
+
+		// Os patamares SOBEM: se dois tivessem a mesma altura não seria escada,
+		// seria uma laje partida.
+		for (int32 Qual = 1; Qual < Degraus.Num(); ++Qual)
+		{
+			TestTrue(TEXT("cada patamar é mais alto que o anterior"),
+				Degraus[Qual].HeightUnits > Degraus[Qual - 1].HeightUnits);
+		}
+
+		// E a subida existe, com um ponto por patamar no mínimo.
+		const TArray<FVector2D> Subida = FreshWater::PlanFallClimb(Curso);
+		TestTrue(TEXT("há caminho subindo a queda"), Subida.Num() >= Degraus.Num());
+
+		// A subida vai pela MARGEM, não pela lâmina: quem sobe pela água não
+		// sobe, cai.
+		const float DaCalha =
+			FreshWater::HalfWidthAtProgress(Curso, Curso.FallAtProgress);
+
+		for (const FVector2D& NoCaminho : Subida)
+		{
+			float Onde = 0.0f;
+			TestTrue(TEXT("a subida vai pela margem, fora da lâmina"),
+				FreshWater::NearestOn(Curso, NoCaminho, Onde) > DaCalha);
+		}
+
+		// AS PEDRAS, e as que viraram degrau.
+		const TArray<FreshWater::FFallStone> Pedras = FreshWater::PlanFallStones(Curso);
+		TestTrue(TEXT("a queda tem pedras"), Pedras.Num() > 0);
+
+		int32 Degrausinhos = 0;
+		for (const FreshWater::FFallStone& Pedra : Pedras)
+		{
+			TestTrue(TEXT("a pedra tem tamanho"), Pedra.RadiusUnits > 0.0f);
+			Degrausinhos += Pedra.bIsStep ? 1 : 0;
+		}
+
+		// Pedra no meio do poço é obstáculo; pedra na beira do caminho é apoio.
+		// Sem alguma das segundas, "escada improvisada" seria só "pedras
+		// espalhadas", que é outra coisa.
+		TestTrue(TEXT("e algumas delas servem de degrau"), Degrausinhos > 0);
+	}
+
+	TestTrue(TEXT("há cachoeira com escada"), ComEscada > 0);
+
+	return true;
+}

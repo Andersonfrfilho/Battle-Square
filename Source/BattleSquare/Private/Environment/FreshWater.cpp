@@ -133,12 +133,38 @@ namespace FreshWater
 		 * Precisa ser mais FINA que o rio mais estreito — grade grossa não vê o
 		 * que é fino, e este mundo já pagou por isso quatro vezes.
 		 */
-		constexpr int32 LadoDaGradeDeAgua = 700;
+	}
+
+	constexpr int32 LadoDaGradeDeAgua = 700;
+
+	namespace
+	{
 
 		/** Os limites e o esforço da busca. */
-		constexpr int32 MenosAtratores = 24;
-		constexpr int32 MaisAtratores = 700;
-		constexpr int32 TentativasDeCalibragem = 8;
+
+		/**
+		 * Fartos de propósito: eles não controlam a densidade, só marcam onde a
+		 * rede ainda pode crescer. Quem controla é a distância de morte.
+		 */
+		constexpr int32 AtratoresFartos = 1400;
+
+		/**
+		 * A faixa da distância de morte, em fração do raio.
+		 *
+		 * O teto era 0,090 e a busca encostava nele: mesmo na rede mais esparsa
+		 * que ela sabia fazer, o mundo dava 11,6% para 6% pedidos. Alvo fora do
+		 * alcance parece imprecisao e e outra coisa — a diferenca aparece
+		 * olhando se a busca terminou colada num extremo.
+		 */
+		constexpr float MorreMaisPerto = 0.016f;
+		constexpr float MorreMaisLonge = 0.26f;
+
+		/**
+		 * Doze, e não oito: com oito o intervalo final ainda tinha uns três
+		 * atratores de largura, e perto do trecho íngreme da curva três
+		 * atratores mexem na cobertura mais que o erro que se quer.
+		 */
+		constexpr int32 TentativasDeCalibragem = 12;
 
 		/**
 		 * A cobertura de uma lista de cursos, medida numa grade grossa.
@@ -147,133 +173,108 @@ namespace FreshWater
 		 * se quer dela é a PROPORÇÃO, não a borda exata. A máscara fina do jogo
 		 * é outra coisa e vem depois.
 		 */
-		float CoberturaDosCursos(const TArray<FRiverCourse>& Cursos)
-		{
-			// A MESMA resolução da máscara do jogo, e não uma própria.
-			//
-			// Grade mais grossa engorda o rio: o carimbo arredonda o centro
-			// para a casa e o raio cobre casas inteiras. A sonda dizia 6% onde
-			// a máscara lia 1,8%, e a busca convergia para um mundo seco.
-			//
-			// Duas resoluções da mesma verdade é o mesmo defeito de duas
-			// tabelas da mesma verdade (L-032), vestido de outra roupa.
-			const int32 LadoDaSonda = LadoDaGradeDeAgua;
+		/**
+		 * DESENHA a água numa grade. A ÚNICA rasterização que existe.
+		 *
+		 * Ela nasceu duplicada — uma para a máscara que o jogo consulta, outra
+		 * para a sonda que calibra a cobertura — e as duas discordaram por
+		 * quase o dobro, o que fez a busca acertar um alvo e o mundo entregar
+		 * outro. Eu escrevi o comentário sobre L-032 três vezes nesta sessão e
+		 * só na terceira extraí a função.
+		 */
+	}
 
+	TArray<bool> RasterizarAgua(const TArray<FRiverCourse>& Cursos,
+			const TArray<FBrook>& Corregos, const TArray<FSpring>& Fontes, int32 Lado)
+		{
 			const float Raio = IslandGeography::LandRadiusUnits();
-			const float Casa = (Raio * 2.0f) / static_cast<float>(LadoDaSonda - 1);
+			const float Casa = (Raio * 2.0f) / static_cast<float>(Lado - 1);
 
 			TArray<bool> Molhado;
-			Molhado.Init(false, LadoDaSonda * LadoDaSonda);
+			Molhado.Init(false, Lado * Lado);
+
+			auto Carimbar = [&Molhado, Raio, Casa, Lado](const FVector2D& Onde, float Meia)
+			{
+				const int32 Alcance = FMath::CeilToInt(Meia / Casa);
+				const int32 Coluna = FMath::RoundToInt((Onde.X + Raio) / Casa);
+				const int32 Linha = FMath::RoundToInt((Onde.Y + Raio) / Casa);
+
+				for (int32 dY = -Alcance; dY <= Alcance; ++dY)
+				{
+					for (int32 dX = -Alcance; dX <= Alcance; ++dX)
+					{
+						const int32 C = Coluna + dX;
+						const int32 L = Linha + dY;
+						if (C < 0 || L < 0 || C >= Lado || L >= Lado)
+						{
+							continue;
+						}
+
+						if (FMath::Square(dX * Casa) + FMath::Square(dY * Casa) <= Meia * Meia)
+						{
+							Molhado[L * Lado + C] = true;
+						}
+					}
+				}
+			};
+
+			auto CarimbarTrecho = [&Carimbar, Casa](const FVector2D& Daqui,
+				const FVector2D& Prali, float Meia)
+			{
+				const int32 Quantos = FMath::Max(1, FMath::CeilToInt(
+					FVector2D::Distance(Daqui, Prali) / (Casa * 0.5f)));
+
+				for (int32 Passo = 0; Passo <= Quantos; ++Passo)
+				{
+					Carimbar(FMath::Lerp(Daqui, Prali,
+						static_cast<float>(Passo) / Quantos), Meia);
+				}
+			};
 
 			for (const FRiverCourse& Curso : Cursos)
 			{
-				const float Comprimento = FMath::Max(1.0f, FreshWater::CourseLengthUnits(Curso));
+				const float Comprimento = FMath::Max(1.0f, CourseLengthUnits(Curso));
 				float Andado = 0.0f;
 
 				for (int32 Ponto = 1; Ponto < Curso.PointsUnits.Num(); ++Ponto)
 				{
-					const FVector2D Daqui = Curso.PointsUnits[Ponto - 1];
-					const FVector2D Prali = Curso.PointsUnits[Ponto];
-					Andado += static_cast<float>(FVector2D::Distance(Daqui, Prali));
+					Andado += static_cast<float>(FVector2D::Distance(
+						Curso.PointsUnits[Ponto - 1], Curso.PointsUnits[Ponto]));
 
-					const float Meia =
-						FreshWater::HalfWidthAtProgress(Curso, Andado / Comprimento);
-					const int32 Alcance = FMath::CeilToInt(Meia / Casa);
-
-					const int32 Quantos = FMath::Max(1, FMath::CeilToInt(
-						FVector2D::Distance(Daqui, Prali) / (Casa * 0.5f)));
-
-					for (int32 Passo = 0; Passo <= Quantos; ++Passo)
-					{
-						const FVector2D Onde = FMath::Lerp(Daqui, Prali,
-							static_cast<float>(Passo) / Quantos);
-
-						const int32 Coluna = FMath::RoundToInt((Onde.X + Raio) / Casa);
-						const int32 Linha = FMath::RoundToInt((Onde.Y + Raio) / Casa);
-
-						for (int32 dY = -Alcance; dY <= Alcance; ++dY)
-						{
-							for (int32 dX = -Alcance; dX <= Alcance; ++dX)
-							{
-								const int32 C = Coluna + dX;
-								const int32 L = Linha + dY;
-								if (C < 0 || L < 0 || C >= LadoDaSonda || L >= LadoDaSonda)
-								{
-									continue;
-								}
-
-								// CÍRCULO, igual à máscara do jogo. Carimbar o
-								// quadrado inteiro engorda o rio em até o dobro
-								// da área, e a busca binária, medindo demais,
-								// convergia para um mundo quase seco.
-								//
-								// Duas rasterizações da mesma verdade discordam
-								// na primeira diferença (L-032) — e discordaram.
-								if (FMath::Square(dX * Casa) + FMath::Square(dY * Casa)
-									> Meia * Meia)
-								{
-									continue;
-								}
-
-								Molhado[L * LadoDaSonda + C] = true;
-							}
-						}
-					}
+					CarimbarTrecho(Curso.PointsUnits[Ponto - 1], Curso.PointsUnits[Ponto],
+						HalfWidthAtProgress(Curso, Andado / Comprimento));
 				}
 			}
 
-			// OS CÓRREGOS entram na conta.
-			//
-			// Sem eles a busca regulava uma coisa e a máscara media outra: o
-			// botão pedia 6% de rio, e o mundo entregava 19% de água — porque
-			// há mais córrego do que rio, e ninguém os estava contando.
-			for (const FBrook& Corrego : MontarCorregos(Cursos))
+			for (const FBrook& Corrego : Corregos)
 			{
-				const int32 Alcance = FMath::CeilToInt(Corrego.HalfWidthUnits / Casa);
-
 				for (int32 Ponto = 1; Ponto < Corrego.PointsUnits.Num(); ++Ponto)
 				{
-					const FVector2D Daqui = Corrego.PointsUnits[Ponto - 1];
-					const FVector2D Prali = Corrego.PointsUnits[Ponto];
-					const int32 Quantos = FMath::Max(1, FMath::CeilToInt(
-						FVector2D::Distance(Daqui, Prali) / (Casa * 0.5f)));
-
-					for (int32 Passo = 0; Passo <= Quantos; ++Passo)
-					{
-						const FVector2D Onde = FMath::Lerp(Daqui, Prali,
-							static_cast<float>(Passo) / Quantos);
-						const int32 Coluna = FMath::RoundToInt((Onde.X + Raio) / Casa);
-						const int32 Linha = FMath::RoundToInt((Onde.Y + Raio) / Casa);
-
-						for (int32 dY = -Alcance; dY <= Alcance; ++dY)
-						{
-							for (int32 dX = -Alcance; dX <= Alcance; ++dX)
-							{
-								const int32 C = Coluna + dX;
-								const int32 L = Linha + dY;
-								if (C < 0 || L < 0 || C >= LadoDaSonda || L >= LadoDaSonda)
-								{
-									continue;
-								}
-
-								if (FMath::Square(dX * Casa) + FMath::Square(dY * Casa)
-									> Corrego.HalfWidthUnits * Corrego.HalfWidthUnits)
-								{
-									continue;
-								}
-
-								Molhado[L * LadoDaSonda + C] = true;
-							}
-						}
-					}
+					CarimbarTrecho(Corrego.PointsUnits[Ponto - 1], Corrego.PointsUnits[Ponto],
+						Corrego.HalfWidthUnits);
 				}
 			}
+
+			for (const FSpring& Fonte : Fontes)
+			{
+				Carimbar(Fonte.CenterUnits, Fonte.PoolHalfWidthUnits);
+			}
+
+			return Molhado;
+		}
+
+	/** Que fração da TERRA a grade diz estar molhada. */
+	float CoberturaDaGrade(const TArray<bool>& Molhado, int32 Lado)
+		{
+			const float Raio = IslandGeography::LandRadiusUnits();
+			const float Casa = (Raio * 2.0f) / static_cast<float>(Lado - 1);
 
 			int32 EmTerra = 0;
 			int32 Molhadas = 0;
-			for (int32 Linha = 0; Linha < LadoDaSonda; ++Linha)
+
+			for (int32 Linha = 0; Linha < Lado; ++Linha)
 			{
-				for (int32 Coluna = 0; Coluna < LadoDaSonda; ++Coluna)
+				for (int32 Coluna = 0; Coluna < Lado; ++Coluna)
 				{
 					const FVector2D Onde(-Raio + Coluna * Casa, -Raio + Linha * Casa);
 					if (Onde.Size() > Raio)
@@ -282,12 +283,24 @@ namespace FreshWater
 					}
 
 					++EmTerra;
-					Molhadas += Molhado[Linha * LadoDaSonda + Coluna] ? 1 : 0;
+					Molhadas += Molhado[Linha * Lado + Coluna] ? 1 : 0;
 				}
 			}
 
 			return (EmTerra > 0) ? static_cast<float>(Molhadas) / EmTerra : 0.0f;
 		}
+
+	float CoberturaDosCursos(const TArray<FRiverCourse>& Cursos)
+	{
+		return CoberturaDaGrade(
+			RasterizarAgua(Cursos, MontarCorregos(Cursos), PlanSprings(),
+				LadoDaGradeDeAgua),
+			LadoDaGradeDeAgua);
+	}
+
+	namespace
+	{
+
 
 		/** De onde até onde a bacia enche. O miolo fica seco: é onde a vila mora. */
 		constexpr float MioloSemRio = 0.16f;
@@ -769,7 +782,8 @@ namespace FreshWater
 		 * código de produção, quando `Tracar` existia em dois arquivos e o
 		 * unity build os juntou.
 		 */
-		static TArray<FRiverCourse> ColonizarBacia(const TArray<FVector2D>& Bocas, int32 Quantos)
+		static TArray<FRiverCourse> ColonizarBacia(const TArray<FVector2D>& Bocas,
+			int32 Quantos, float MorreA)
 		{
 			TArray<FRiverCourse> Cursos;
 			if (Bocas.Num() == 0)
@@ -779,7 +793,7 @@ namespace FreshWater
 
 			const float Raio = IslandGeography::LandRadiusUnits();
 			const float Alcance = Raio * AlcanceDoAtrator;
-			const float Morte = Raio * MorreAPerto;
+			const float Morte = Raio * MorreA;
 			const float Passo = Raio * PassoDoGalho;
 
 			// OS ATRATORES, espalhados na coroa que a bacia deve encher.
@@ -1064,8 +1078,18 @@ namespace FreshWater
 			const float Pedida =
 				FreshWater::WaterCoverageForBiome(IslandGeography::IslandBiome());
 
-			int32 Menos = MenosAtratores;
-			int32 Mais = MaisAtratores;
+			// A busca varia a DISTÂNCIA DE MORTE, não o número de atratores.
+			//
+			// Foi o erro de botão mais caro desta sequência: atrator que nasce
+			// mais perto de um nó do que essa distância morre na hora, então a
+			// rede satura e jogar mais atratores não molha mais nada. Eu subi o
+			// teto de 700 para 2600 e a cobertura não se mexeu um décimo.
+			//
+			// Quem controla densidade de rede é o quanto ela pode se aproximar
+			// de si mesma. Os atratores são abundantes de propósito: eles só
+			// precisam existir onde a rede ainda pode crescer.
+			float Menos = MorreMaisPerto;
+			float Mais = MorreMaisLonge;
 
 			// Guarda o MELHOR, não o último.
 			//
@@ -1078,8 +1102,8 @@ namespace FreshWater
 
 			for (int32 Tentativa = 0; Tentativa < TentativasDeCalibragem; ++Tentativa)
 			{
-				const int32 Meio = (Menos + Mais) / 2;
-				TArray<FRiverCourse> Tentada = ColonizarBacia(Bocas, Meio);
+				const float Meio = (Menos + Mais) * 0.5f;
+				TArray<FRiverCourse> Tentada = ColonizarBacia(Bocas, AtratoresFartos, Meio);
 
 				const float Deu = CoberturaDosCursos(Tentada);
 				const float Erro = FMath::Abs(Deu - Pedida);
@@ -1090,13 +1114,14 @@ namespace FreshWater
 					Melhor = Tentada;
 				}
 
+				// Distância MENOR dá rede mais densa: a comparação inverte.
 				if (Deu < Pedida)
 				{
-					Menos = Meio;
+					Mais = Meio;
 				}
 				else
 				{
-					Mais = Meio;
+					Menos = Meio;
 				}
 			}
 
@@ -1416,7 +1441,7 @@ TArray<FreshWater::FUnderwaterLink> FreshWater::PlanUnderwaterLinks()
 	TArray<FVector2D> Atratores = AtratoresEmGrade(
 		// O subsolo acompanha o tamanho da bacia que a busca achou, e não um
 		// número próprio: dois números soltos divergem na primeira edição.
-		FMath::RoundToInt(Plan().Num() * SubsoloSobreSuperficie),
+FMath::RoundToInt(Plan().Num() * SubsoloSobreSuperficie),
 		0.0f, Raio * 0.94f, TEXT("subsolo"));
 
 	TArray<FVector2D> Nos;
@@ -1852,98 +1877,16 @@ float FreshWater::DistanceToFreshWater(const FVector2D& PositionUnits)
 
 namespace MascaraDaAgua
 {
-	/**
-	 * Quantas casas por lado. Ela precisa ser mais FINA que o rio mais estreito
-	 * — grade grossa não vê o que é fino, e este projeto já pagou por isso três
-	 * vezes (a ponte que não nascia, o barranco que não se subia, a corredeira
-	 * que não existia).
-	 */
-	constexpr int32 Lado = 700;  // espelha `LadoDaGradeDeAgua`; ver a nota lá.
+	/** A mesma resolução da sonda de calibragem. Uma só, e é o ponto. */
+	const int32 Lado = FreshWater::LadoDaGradeDeAgua;
 
 	const TArray<bool>& Grade()
 	{
-		static TArray<bool> Molhado = []()
-		{
-			const float Raio = IslandGeography::LandRadiusUnits();
-			const float Casa = (Raio * 2.0f) / static_cast<float>(Lado - 1);
-
-			TArray<bool> Tudo;
-			Tudo.Init(false, Lado * Lado);
-
-			// RASTERIZA: cada trecho de água carimba as casas em volta dele.
-			// Percorrer a água é barato; percorrer a grade perguntando à água
-			// seria o custo ao contrário, e é o que travou.
-			auto Carimbar = [&Tudo, Raio, Casa](const FVector2D& Onde, float MeiaLargura)
-			{
-				const int32 Alcance = FMath::CeilToInt(MeiaLargura / Casa);
-				const int32 Coluna = FMath::RoundToInt((Onde.X + Raio) / Casa);
-				const int32 Linha = FMath::RoundToInt((Onde.Y + Raio) / Casa);
-
-				for (int32 dY = -Alcance; dY <= Alcance; ++dY)
-				{
-					for (int32 dX = -Alcance; dX <= Alcance; ++dX)
-					{
-						const int32 C = Coluna + dX;
-						const int32 L = Linha + dY;
-						if (C < 0 || L < 0 || C >= Lado || L >= Lado)
-						{
-							continue;
-						}
-
-						if (FMath::Square(dX * Casa) + FMath::Square(dY * Casa)
-							<= MeiaLargura * MeiaLargura)
-						{
-							Tudo[L * Lado + C] = true;
-						}
-					}
-				}
-			};
-
-			auto CarimbarTrecho = [&Carimbar, Casa](const FVector2D& Daqui,
-				const FVector2D& Prali, float MeiaLargura)
-			{
-				const float Comprimento = static_cast<float>(FVector2D::Distance(Daqui, Prali));
-				const int32 Quantos = FMath::Max(1, FMath::CeilToInt(Comprimento / (Casa * 0.5f)));
-
-				for (int32 Passo = 0; Passo <= Quantos; ++Passo)
-				{
-					Carimbar(FMath::Lerp(Daqui, Prali,
-						static_cast<float>(Passo) / Quantos), MeiaLargura);
-				}
-			};
-
-			for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
-			{
-				const int32 Pontos = Curso.PointsUnits.Num();
-				const float Comprimento = FMath::Max(1.0f, FreshWater::CourseLengthUnits(Curso));
-				float Andado = 0.0f;
-
-				for (int32 Ponto = 1; Ponto < Pontos; ++Ponto)
-				{
-					Andado += static_cast<float>(FVector2D::Distance(
-						Curso.PointsUnits[Ponto - 1], Curso.PointsUnits[Ponto]));
-
-					CarimbarTrecho(Curso.PointsUnits[Ponto - 1], Curso.PointsUnits[Ponto],
-						FreshWater::HalfWidthAtProgress(Curso, Andado / Comprimento));
-				}
-			}
-
-			for (const FreshWater::FBrook& Corrego : FreshWater::PlanBrooks())
-			{
-				for (int32 Ponto = 1; Ponto < Corrego.PointsUnits.Num(); ++Ponto)
-				{
-					CarimbarTrecho(Corrego.PointsUnits[Ponto - 1], Corrego.PointsUnits[Ponto],
-						Corrego.HalfWidthUnits);
-				}
-			}
-
-			for (const FreshWater::FSpring& Fonte : FreshWater::PlanSprings())
-			{
-				Carimbar(Fonte.CenterUnits, Fonte.PoolHalfWidthUnits);
-			}
-
-			return Tudo;
-		}();
+		// Desenhada pela MESMA função que a sonda usa. Quando eram duas, a
+		// máscara lia 11,6% onde a sonda lia 6% — a busca acertava um alvo e o
+		// mundo entregava outro.
+		static TArray<bool> Molhado = FreshWater::RasterizarAgua(
+			FreshWater::Plan(), FreshWater::PlanBrooks(), FreshWater::PlanSprings(), Lado);
 
 		return Molhado;
 	}
@@ -2014,4 +1957,184 @@ float FreshWater::MeasuredWaterCoverage()
 	}
 
 	return (EmTerra > 0) ? static_cast<float>(Molhadas) / static_cast<float>(EmTerra) : 0.0f;
+}
+
+namespace CachoeiraEmDegraus
+{
+	/**
+	 * Quantos patamares, e a altura mínima de um.
+	 *
+	 * A conta é a altura da queda dividida pelo degrau que uma pessoa vence —
+	 * e não um número de degraus escolhido. Queda baixa dá um tombo só; queda
+	 * alta vira escada, que é o que a rocha faz de verdade.
+	 */
+	constexpr float AlturaDeUmDegrau = 420.0f;
+	constexpr int32 MaisDegraus = 6;
+
+	/** Quantas pedras por patamar, e o tamanho delas em calhas de rio. */
+	constexpr int32 PedrasPorDegrau = 5;
+	constexpr float MenorPedra = 0.22f;
+	constexpr float MaiorPedra = 0.55f;
+
+	/** Quanto a subida se afasta da lâmina: a margem, não a água. */
+	constexpr float AfastaDaLamina = 1.9f;
+}
+
+TArray<FreshWater::FFallStep> FreshWater::PlanFallSteps(const FRiverCourse& Course)
+{
+	TArray<FFallStep> Degraus;
+	if (!Course.FlowsToTheSea())
+	{
+		return Degraus;
+	}
+
+	const float Caiu = PlungePoolDepthUnits(Course) / 0.55f;
+	if (Caiu <= 0.0f)
+	{
+		return Degraus;
+	}
+
+	const int32 Quantos = FMath::Clamp(
+		FMath::RoundToInt(Caiu / CachoeiraEmDegraus::AlturaDeUmDegrau),
+		1, CachoeiraEmDegraus::MaisDegraus);
+
+	const float EmProgresso = MeiaQueda() / FMath::Max(1.0f, CourseLengthUnits(Course));
+
+	for (int32 Qual = 0; Qual < Quantos; ++Qual)
+	{
+		// Do PÉ para o topo: o primeiro patamar é o que recebe a água, e é
+		// dele que a subida parte.
+		const float Quanto = static_cast<float>(Qual) / static_cast<float>(Quantos);
+
+		FFallStep Degrau;
+		Degrau.CenterUnits = PointAtProgress(Course,
+			Course.FallAtProgress + EmProgresso * (1.0f - 2.0f * Quanto));
+		Degrau.HeightUnits = Caiu * (static_cast<float>(Qual + 1) / Quantos);
+		Degrau.HalfWidthUnits = HalfWidthAtProgress(Course, Course.FallAtProgress);
+
+		Degraus.Add(Degrau);
+	}
+
+	return Degraus;
+}
+
+TArray<FreshWater::FFallStone> FreshWater::PlanFallStones(const FRiverCourse& Course)
+{
+	TArray<FFallStone> Pedras;
+
+	const TArray<FFallStep> Degraus = PlanFallSteps(Course);
+	const TArray<FVector2D> Subida = PlanFallClimb(Course);
+	if (Degraus.Num() == 0)
+	{
+		return Pedras;
+	}
+
+	const float DaCalha = HalfWidthAtProgress(Course, Course.FallAtProgress);
+
+	for (int32 Qual = 0; Qual < Degraus.Num(); ++Qual)
+	{
+		for (int32 Pedra = 0; Pedra < CachoeiraEmDegraus::PedrasPorDegrau; ++Pedra)
+		{
+			const uint32 Semente = BattleSpread::SeedFromText(
+				FString::Printf(TEXT("pedra-da-queda-%d-%d-%d"),
+					FMath::RoundToInt(Course.FallAtProgress * 1000.0f), Qual, Pedra));
+
+			const float Rumo = BattleSpread::Between(0.0f, 2.0f * PI,
+				BattleSpread::Fraction(Semente, 0));
+			const float Longe = DaCalha * BattleSpread::Between(0.4f, 2.2f,
+				BattleSpread::Fraction(Semente, 1));
+
+			FFallStone Bloco;
+			Bloco.CenterUnits = Degraus[Qual].CenterUnits
+				+ FVector2D(FMath::Cos(Rumo), FMath::Sin(Rumo)) * Longe;
+			Bloco.RadiusUnits = DaCalha * BattleSpread::Between(
+				CachoeiraEmDegraus::MenorPedra, CachoeiraEmDegraus::MaiorPedra,
+				BattleSpread::Fraction(Semente, 2));
+			Bloco.TopHeightUnits = Degraus[Qual].HeightUnits + Bloco.RadiusUnits;
+
+			Pedras.Add(Bloco);
+		}
+	}
+
+	// E AS PEDRAS DA ESCADA, POSTAS no caminho — não sorteadas na esperança de
+	// que alguma caia perto.
+	//
+	// A primeira versão espalhava tudo em volta do patamar e marcava como
+	// degrau o que por acaso encostasse na subida. Nenhuma encostava, e o teste
+	// pegou. Escada improvisada é pedra POSTA ali: quem sobe empilhou o que a
+	// água derrubou, e é essa intenção que faz dela uma escada.
+	for (int32 Onde = 0; Onde + 1 < Subida.Num(); ++Onde)
+	{
+		const uint32 Semente = BattleSpread::SeedFromText(
+			FString::Printf(TEXT("degrau-de-pedra-%d-%d"),
+				FMath::RoundToInt(Course.FallAtProgress * 1000.0f), Onde));
+
+		// No meio de cada lance, que é onde o pé precisa de apoio: nas pontas
+		// ele já está num patamar.
+		FFallStone Degrau;
+		Degrau.CenterUnits = FMath::Lerp(Subida[Onde], Subida[Onde + 1], 0.5f);
+		Degrau.RadiusUnits = DaCalha * BattleSpread::Between(0.30f, 0.48f,
+			BattleSpread::Fraction(Semente, 0));
+
+		const int32 QualPatamar = FMath::Min(Onde / 2, Degraus.Num() - 1);
+		Degrau.TopHeightUnits = Degraus[QualPatamar].HeightUnits * 0.5f + Degrau.RadiusUnits;
+		Degrau.bIsStep = true;
+
+		Pedras.Add(Degrau);
+	}
+
+	return Pedras;
+}
+
+TArray<FVector2D> FreshWater::PlanFallClimb(const FRiverCourse& Course)
+{
+	TArray<FVector2D> Subida;
+
+	const TArray<FFallStep> Degraus = PlanFallSteps(Course);
+	if (Degraus.Num() == 0)
+	{
+		return Subida;
+	}
+
+	const float DaCalha = HalfWidthAtProgress(Course, Course.FallAtProgress);
+	const float Afasta = DaCalha * CachoeiraEmDegraus::AfastaDaLamina;
+
+	// O rumo da água, para saber o que é "de lado".
+	const float EmProgresso = MeiaQueda() / FMath::Max(1.0f, CourseLengthUnits(Course));
+	const FVector2D AoLongo = (PointAtProgress(Course, Course.FallAtProgress + EmProgresso)
+		- PointAtProgress(Course, Course.FallAtProgress - EmProgresso)).GetSafeNormal();
+	const FVector2D DeLado(-AoLongo.Y, AoLongo.X);
+
+	// ZIGUEZAGUE pela margem, alternando o lado a cada patamar. É a mesma regra
+	// da trilha de serra, apertada: a margem de uma queda é estreita, e é por
+	// isso que as pedras precisam virar degrau.
+	// SEMPRE pé e topo, mesmo com um patamar só.
+	//
+	// A primeira versão punha um ponto por patamar, e a queda de um degrau
+	// ficava com um caminho de UM ponto — que não é caminho, e por isso não
+	// tinha lance nenhum onde pôr pedra. Um degrau ainda tem base e topo.
+	const FVector2D NoPe = PointAtProgress(Course, Course.FallAtProgress + EmProgresso);
+	const FVector2D NoTopo = PointAtProgress(Course, Course.FallAtProgress - EmProgresso);
+
+	float ParaQualLado = 1.0f;
+	Subida.Add(NoPe + DeLado * (ParaQualLado * Afasta));
+
+	for (int32 Qual = 0; Qual < Degraus.Num(); ++Qual)
+	{
+		ParaQualLado = -ParaQualLado;
+		Subida.Add(Degraus[Qual].CenterUnits + DeLado * (ParaQualLado * Afasta));
+
+		// O ponto do meio do lance: é onde o pé precisa de apoio, e é onde a
+		// pedra de degrau vai.
+		if (Qual + 1 < Degraus.Num())
+		{
+			const FVector2D EntreOsDois = FMath::Lerp(
+				Degraus[Qual].CenterUnits, Degraus[Qual + 1].CenterUnits, 0.5f);
+			Subida.Add(EntreOsDois + DeLado * (-ParaQualLado * Afasta * 1.35f));
+		}
+	}
+
+	Subida.Add(NoTopo + DeLado * (-ParaQualLado * Afasta));
+
+	return Subida;
 }

@@ -177,6 +177,60 @@ namespace FreshWater
 	 * mais rápido do que alarga. Poço de cachoeira é FURO — modelá-lo como um
 	 * lago redondo seria desenhar a coisa errada.
 	 */
+	/**
+	 * Um PATAMAR da cachoeira — um degrau da escada de poços.
+	 *
+	 * A morfologia diz que cachoeira alta raramente é um degrau só: a parede
+	 * recua cavando poços sucessivos em alturas diferentes, e o que sobra é
+	 * uma escada. Modelá-la como um tombo único é desenhar a exceção.
+	 *
+	 * E é o que torna a queda ESCALÁVEL: um paredão de vinte metros não se
+	 * sobe; uma escada de quatro degraus de cinco, sim.
+	 */
+	struct BATTLESQUARE_API FFallStep
+	{
+		FVector2D CenterUnits = FVector2D::ZeroVector;
+
+		/** Altura do topo deste patamar sobre o pé da queda. */
+		float HeightUnits = 0.0f;
+
+		/** A lâmina d'água que cai neste degrau. */
+		float HalfWidthUnits = 0.0f;
+	};
+
+	BATTLESQUARE_API TArray<FFallStep> PlanFallSteps(const FRiverCourse& Course);
+
+	/**
+	 * As PEDRAS da queda: os blocos que a água arrancou da parede.
+	 *
+	 * Elas não são enfeite. São o apoio — o que transforma "subir a cachoeira"
+	 * de escalada em degrau improvisado, e o que explica de onde vieram os
+	 * patamares: cada pedra no poço é um pedaço que faltou lá em cima.
+	 */
+	struct BATTLESQUARE_API FFallStone
+	{
+		FVector2D CenterUnits = FVector2D::ZeroVector;
+		float RadiusUnits = 0.0f;
+
+		/** Altura do topo dela, para o pé encontrar apoio. */
+		float TopHeightUnits = 0.0f;
+
+		/** Se ela serve de DEGRAU da subida, e não é só pedra no rio. */
+		bool bIsStep = false;
+	};
+
+	BATTLESQUARE_API TArray<FFallStone> PlanFallStones(const FRiverCourse& Course);
+
+	/**
+	 * O caminho que SOBE a cachoeira, pela margem, em ziguezague.
+	 *
+	 * Mesma regra da trilha de serra: para vencer uma altura dentro do declive
+	 * que uma pessoa aguenta, o caminho vai de lado. Aqui ele é mais apertado,
+	 * porque a margem de uma queda é estreita — e é por isso que as pedras
+	 * viram degrau: onde a perna não cabe, sobe-se um lance.
+	 */
+	BATTLESQUARE_API TArray<FVector2D> PlanFallClimb(const FRiverCourse& Course);
+
 	BATTLESQUARE_API float PlungePoolHalfWidthUnits(const FRiverCourse& Course);
 	BATTLESQUARE_API float PlungePoolDepthUnits(const FRiverCourse& Course);
 

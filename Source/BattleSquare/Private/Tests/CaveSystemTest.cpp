@@ -43,13 +43,19 @@ namespace
 	int32 LajesQueAPlantaExige(const CaveLabyrinth::FCaveGrid& Planta)
 	{
 		// Segmentos internos (2CR − C − R) mais a borda (2C + 2R), menos as
-		// passagens escavadas e menos a boca. Contar assim, e não repetindo a
-		// regra de desenho do ator, é o que faz o teste ser uma verificação e
-		// não um espelho (L-032).
+		// passagens escavadas e menos TODAS as bocas. Contar assim, e não
+		// repetindo a regra de desenho do ator, é o que faz o teste ser uma
+		// verificação e não um espelho (L-032).
+		//
+		// Eram "menos a boca", no singular, e valia quando a caverna tinha uma
+		// saída só. Cada boca extra também abre a muralha, e ninguém as estava
+		// descontando: a conta dava exatamente duas lajes a mais, com duas
+		// bocas extras.
 		const int32 C = Planta.Columns;
 		const int32 R = Planta.Rows;
 		const int32 Todos = (2 * C * R - C - R) + (2 * C + 2 * R);
-		return Todos - CaveLabyrinth::OpenPassageCount(Planta) - 1;
+		return Todos - CaveLabyrinth::OpenPassageCount(Planta)
+			- 1 - Planta.ExtraMouths.Num();
 	}
 
 	/** A caixa que uma instância ocupa, no espaço do ator. */

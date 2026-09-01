@@ -1204,6 +1204,45 @@ namespace
 	 * o rio passa é o `FreshWater`, e um ponto fixo aqui descolaria do curso na
 	 * primeira vez que alguém mexesse na serpente.
 	 */
+	/**
+	 * O primeiro curso que TEM lago, ou o primeiro de todos.
+	 *
+	 * `Cursos[0]` valia quando cada curso tinha lago e queda por construção.
+	 * Hoje o lago nasce onde o leito achata e a queda onde ele despenca, e a
+	 * maioria dos cursos não tem nenhum dos dois — pegar o índice zero era
+	 * pegar um rio manso e cobrar dele uma cachoeira.
+	 */
+	const FreshWater::FRiverCourse* CursoComLago()
+	{
+		static TArray<FreshWater::FRiverCourse> Cursos = FreshWater::Plan();
+
+		for (const FreshWater::FRiverCourse& Curso : Cursos)
+		{
+			if (Curso.HasLake() && Curso.PointsUnits.Num() > 8)
+			{
+				return &Curso;
+			}
+		}
+
+		return Cursos.Num() > 0 ? &Cursos[0] : nullptr;
+	}
+
+	/** O primeiro curso que TEM queda. */
+	const FreshWater::FRiverCourse* CursoComQueda()
+	{
+		static TArray<FreshWater::FRiverCourse> Cursos = FreshWater::Plan();
+
+		for (const FreshWater::FRiverCourse& Curso : Cursos)
+		{
+			if (Curso.HasFall() && Curso.PointsUnits.Num() > 8)
+			{
+				return &Curso;
+			}
+		}
+
+		return Cursos.Num() > 0 ? &Cursos[0] : nullptr;
+	}
+
 	FVector CentroDoPedacoDoRioDeTeste(float FracaoDoPercurso)
 	{
 		const TArray<FreshWater::FRiverCourse> Cursos = FreshWater::Plan();
@@ -1212,8 +1251,13 @@ namespace
 			return FVector::ZeroVector;
 		}
 
-		const FreshWater::FRiverCourse& Curso = Cursos[0];
-		const FVector2D Ponto = FreshWater::PointAtProgress(Curso, FracaoDoPercurso);
+		const FreshWater::FRiverCourse* Curso = CursoComLago();
+		if (!Curso)
+		{
+			return FVector::ZeroVector;
+		}
+
+		const FVector2D Ponto = FreshWater::PointAtProgress(*Curso, FracaoDoPercurso);
 		return FVector(Ponto.X, Ponto.Y, 0.0f);
 	}
 
@@ -1236,7 +1280,7 @@ namespace
 		// O ombro é achado PROCURANDO, não por um deslocamento escrito à mão:
 		// é o primeiro ponto em que a calha passa do dobro da largura do rio.
 		// Assim ele acompanha quando o lago mudar de tamanho de novo.
-		const FreshWater::FRiverCourse& Tronco = Cursos[0];
+		const FreshWater::FRiverCourse& Tronco = *CursoComLago();
 		const float DoRio = FreshWater::HalfWidthAtProgress(Tronco, 0.0f);
 
 		float NoOmbro = Tronco.LakeAtProgress;
@@ -1250,7 +1294,7 @@ namespace
 			}
 		}
 
-		const FVector2D Ponto = FreshWater::PointAtProgress(Cursos[0], NoOmbro);
+		const FVector2D Ponto = FreshWater::PointAtProgress(*CursoComLago(), NoOmbro);
 		return FVector(Ponto.X, Ponto.Y, 0.0f);
 	}
 
@@ -1263,7 +1307,10 @@ namespace
 			return FVector::ZeroVector;
 		}
 
-		const FVector2D Ponto = FreshWater::PointAtProgress(Cursos[0], Cursos[0].FallAtProgress);
+		const FreshWater::FRiverCourse* DaQueda = CursoComQueda();
+		const FVector2D Ponto = DaQueda
+			? FreshWater::PointAtProgress(*DaQueda, DaQueda->FallAtProgress)
+			: FVector2D::ZeroVector;
 		return FVector(Ponto.X, Ponto.Y, 0.0f);
 	}
 
@@ -1392,7 +1439,7 @@ bool FForestRiverWidensIntoALakeTest::RunTest(const FString& Parameters)
 	// O lago é medido em PROGRESSO agora; para comparar com o raio das lajes,
 	// pergunta-se o ponto e mede-se dele.
 	const float RaioDoLago = static_cast<float>(
-		FreshWater::PointAtProgress(Cursos[0], Cursos[0].LakeAtProgress).Size());
+		FreshWater::PointAtProgress(*CursoComLago(), CursoComLago()->LakeAtProgress).Size());
 	TestTrue(TEXT("a calha mais larga é bem mais larga que a mais estreita"),
 		MaiorLargura > MenorLargura * 2.0f);
 	TestTrue(TEXT("e ela está do lado do lago, não num trecho qualquer"),

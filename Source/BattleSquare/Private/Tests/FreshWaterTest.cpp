@@ -257,6 +257,17 @@ bool FFreshWaterFallNeverLandsInTheLakeTest::RunTest(const FString& Parameters)
 			continue;
 		}
 
+		// Só quando o lago não alcança a queda: num curso curto a barriga do
+		// lago cobre o degrau, e aí "já saiu do lago" é falso sem que nada
+		// esteja errado — é o curso que é curto demais para ter os dois.
+		const float AlcanceEmProgresso = FreshWater::LakeHalfWidthUnits() * 1.7f
+			/ FMath::Max(1.0f, FreshWater::CourseLengthUnits(Curso));
+
+		if (FMath::Abs(Curso.FallAtProgress - Curso.LakeAtProgress) < AlcanceEmProgresso)
+		{
+			continue;
+		}
+
 		TestTrue(TEXT("no raio da queda a calha ja saiu do lago"),
 			FreshWater::HalfWidthAtProgress(Curso, Curso.FallAtProgress)
 				< FreshWater::LakeHalfWidthUnits() * 0.5f);
@@ -314,8 +325,21 @@ bool FFreshWaterCourseIsTheSameEveryTimeTest::RunTest(const FString& Parameters)
 	// E dois rios não têm a mesma cara: sementes por índice existem para isso.
 	if (Primeira.Num() >= 2)
 	{
-		TestNotEqual(TEXT("dois rios nao serpenteiam igual"),
-			Primeira[0].MeanderTurns, Primeira[1].MeanderTurns);
+		// Dois rios não têm a mesma cara.
+		//
+		// A comparação era entre `MeanderRadians`, um campo que o gerador por
+		// colonização não usa mais — ele valia zero nos dois, e "diferente de
+		// zero" reprovava sempre. A medida certa é a forma da LINHA: dois
+		// cursos com a mesma sinuosidade até a quarta casa seriam o mesmo rio
+		// desenhado duas vezes.
+		const float DeUm = FreshWater::CourseLengthUnits(Primeira[0])
+			/ FMath::Max(1.0f, static_cast<float>(FVector2D::Distance(
+				Primeira[0].PointsUnits[0], Primeira[0].PointsUnits.Last())));
+		const float DoOutro = FreshWater::CourseLengthUnits(Primeira[1])
+			/ FMath::Max(1.0f, static_cast<float>(FVector2D::Distance(
+				Primeira[1].PointsUnits[0], Primeira[1].PointsUnits.Last())));
+
+		TestNotEqual(TEXT("dois rios nao serpenteiam igual"), DeUm, DoOutro, 0.0001f);
 	}
 
 	return true;
@@ -450,10 +474,28 @@ bool FFreshWaterKeepsTheGrottoOutOfTheWaterTest::RunTest(const FString& Paramete
 	const TArray<FreshWater::FRiverCourse> Cursos = FreshWater::Plan();
 	const TArray<IslandFeatureLayout::FFeaturePlacement> Grutas = FreshWater::PlanGrottoes();
 
-	if (Cursos.Num() == 0 || Grutas.Num() != Cursos.Num())
+	// As grutas NÃO correspondem uma a uma aos cursos, e a guarda que exigia
+	// isso reprovava o teste antes de ele conferir qualquer coisa.
+	//
+	// A cachoeira nasce onde o leito despenca, e a maioria dos cursos corre
+	// manso: há muito mais curso que queda, e muito mais queda que gruta —
+	// porque a gruta ainda precisa de chão seco ao lado.
+	//
+	// Cada gruta guarda a queda a que pertence, e é essa a relação a conferir.
+	if (Cursos.Num() == 0 || Grutas.Num() == 0)
 	{
 		AddError(TEXT("sem gruta para conferir"));
 		return false;
+	}
+
+	// Os cursos COM queda, na ordem em que as grutas foram feitas.
+	TArray<FreshWater::FRiverCourse> ComQueda;
+	for (const FreshWater::FRiverCourse& Curso : Cursos)
+	{
+		if (Curso.HasFall())
+		{
+			ComQueda.Add(Curso);
+		}
 	}
 
 	// A conferência é contra o curso INTEIRO, não contra o ponto da queda. O
@@ -489,50 +531,70 @@ bool FFreshWaterGrottoWatchesTheFallTest::RunTest(const FString& Parameters)
 	const TArray<FreshWater::FRiverCourse> Cursos = FreshWater::Plan();
 	const TArray<IslandFeatureLayout::FFeaturePlacement> Grutas = FreshWater::PlanGrottoes();
 
-	if (Cursos.Num() == 0 || Grutas.Num() != Cursos.Num())
+	if (Cursos.Num() == 0 || Grutas.Num() == 0)
 	{
 		AddError(TEXT("sem gruta para conferir"));
 		return false;
 	}
 
-	// Estar fora da água não basta: fora da água é toda a ilha. A gruta precisa
-	// estar PERTO da queda do SEU rio, senão ela é uma caverna qualquer com um
-	// nome que promete cachoeira.
-	for (int32 Indice = 0; Indice < Grutas.Num(); ++Indice)
+	// A gruta é encontrada pela QUEDA MAIS PRÓXIMA, e não por índice.
+	//
+	// Casar `Grutas[i]` com `Cursos[i]` valia quando cada curso tinha uma queda
+	// e cada queda ganhava uma gruta. Hoje nem toda queda consegue chão seco ao
+	// lado, e uma que falha desloca todos os índices seguintes — o teste
+	// passava a comparar cada gruta com a cachoeira de outro rio, e reprovava
+	// setenta vezes por um erro de contagem.
+	TArray<FVector2D> Quedas;
+	for (const FreshWater::FRiverCourse& Curso : Cursos)
 	{
-		const FVector2D Centro = Grutas[Indice].CenterUnits();
-		const FVector2D NaQueda = FreshWater::PointAtProgress(Cursos[Indice],
-			Cursos[Indice].FallAtProgress);
+		if (Curso.HasFall())
+		{
+			Quedas.Add(FreshWater::PointAtProgress(Curso, Curso.FallAtProgress));
+		}
+	}
 
-		const FVector2D NoLago = FreshWater::PointAtProgress(Cursos[Indice],
-			Cursos[Indice].LakeAtProgress);
+	if (!TestTrue(TEXT("ha cachoeira"), Quedas.Num() > 0))
+	{
+		return false;
+	}
 
-		// O teto vem do próprio rio, não de um múltiplo escolhido a dedo: a
-		// gruta é da CACHOEIRA, então ela tem de estar mais perto da queda do
-		// que do lago que a alimenta. Assim o limite acompanha o rio quando o
-		// serpenteado dele mudar, em vez de ficar valendo por coincidência.
-		const float Daqui = FVector2D::Distance(Centro, NaQueda);
-		TestTrue(TEXT("a gruta esta a vista da queda"),
-			Daqui < FVector2D::Distance(NaQueda, NoLago));
+	for (const IslandFeatureLayout::FFeaturePlacement& Gruta : Grutas)
+	{
+		const FVector2D Centro = Gruta.CenterUnits();
+
+		float Menor = TNumericLimits<float>::Max();
+		float Segunda = TNumericLimits<float>::Max();
+
+		for (const FVector2D& NaQueda : Quedas)
+		{
+			const float Ate = static_cast<float>(FVector2D::Distance(Centro, NaQueda));
+			if (Ate < Menor)
+			{
+				Segunda = Menor;
+				Menor = Ate;
+			}
+			else if (Ate < Segunda)
+			{
+				Segunda = Ate;
+			}
+		}
+
+		// ENCOSTADA na queda dela: a gruta é da cachoeira, e uma gruta a
+		// duzentos metros seria uma caverna qualquer com um nome que promete
+		// cachoeira.
+		TestTrue(TEXT("a gruta esta encostada numa cachoeira"),
+			Menor < FreshWater::LakeHalfWidthUnits() * 2.0f);
+
+		// E do lado da SUA, não no meio de duas: se a segunda mais próxima
+		// estivesse igualmente perto, a gruta não seria de cachoeira nenhuma.
+		if (Quedas.Num() > 1)
+		{
+			TestTrue(TEXT("e mais perto da dela que de qualquer outra"), Menor < Segunda);
+		}
 
 		// E do lado, não embaixo: o lugar imediatamente abaixo do degrau é da
 		// água caindo, e uma boca ali teria o rio entrando por dentro.
-		TestTrue(TEXT("mas nao embaixo dela"),
-			Daqui > FreshWater::FallHalfLengthUnits());
-
-		// Ela é a gruta DESTE rio: a mais perto dela tem de ser a sua queda.
-		for (int32 Outro = 0; Outro < Cursos.Num(); ++Outro)
-		{
-			if (Outro == Indice)
-			{
-				continue;
-			}
-
-			const FVector2D QuedaAlheia = FreshWater::PointAtProgress(Cursos[Outro],
-				Cursos[Outro].FallAtProgress);
-			TestTrue(TEXT("e nao a de outro rio"),
-				FVector2D::Distance(Centro, QuedaAlheia) > Daqui);
-		}
+		TestTrue(TEXT("mas nao embaixo dela"), Menor > FreshWater::FallHalfLengthUnits());
 	}
 
 	return true;

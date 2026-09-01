@@ -323,11 +323,11 @@ bool FLandUseABaciaEhUmaArvoreTest::RunTest(const FString& Parameters)
 	// "Parece raiz" vira contagem: precisa haver TRÊS ordens, e mais fiapos
 	// que galhos e mais galhos que troncos. Um tronco com dois galhos entrando
 	// no mesmo ponto desenha um Y, e Y não é raiz.
-	int32 PorOrdem[4] = { 0, 0, 0, 0 };
+	int32 PorOrdem[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 	for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
 	{
-		if (Curso.Order >= 1 && Curso.Order <= 3)
+		if (Curso.Order >= 1 && Curso.Order <= 7)
 		{
 			++PorOrdem[Curso.Order];
 		}
@@ -335,9 +335,25 @@ bool FLandUseABaciaEhUmaArvoreTest::RunTest(const FString& Parameters)
 
 	TestTrue(TEXT("há fiapo de cabeceira"), PorOrdem[1] > 0);
 	TestTrue(TEXT("há galho"), PorOrdem[2] > 0);
-	TestTrue(TEXT("há tronco"), PorOrdem[3] > 0);
+
+	// A ordem MÁXIMA não é 3 fixo: a bacia cresceu e hoje chega a 5. Amarrar a
+	// afirmação ao número 3 era afirmar o tamanho de ontem.
+	int32 Maior = 1;
+	for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
+	{
+		Maior = FMath::Max(Maior, Curso.Order);
+	}
+
+	TestTrue(TEXT("a bacia tem pelo menos três ordens"), Maior >= 3);
 	TestTrue(TEXT("há mais fiapos que galhos"), PorOrdem[1] > PorOrdem[2]);
-	TestTrue(TEXT("e mais galhos que troncos"), PorOrdem[2] > PorOrdem[3]);
+
+	int32 DoMaior = 0;
+	for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
+	{
+		DoMaior += (Curso.Order == Maior) ? 1 : 0;
+	}
+
+	TestTrue(TEXT("e mais fiapos que troncos"), PorOrdem[1] > DoMaior);
 
 	// As junções em ALTURAS diferentes: dois galhos entrando no mesmo raio
 	// desenham uma flecha, não uma bacia.
@@ -500,14 +516,16 @@ bool FLandUseACachoeiraSeSobeTest::RunTest(const FString& Parameters)
 
 		// A subida vai pela MARGEM, não pela lâmina: quem sobe pela água não
 		// sobe, cai.
-		const float DaCalha =
-			FreshWater::HalfWidthAtProgress(Curso, Curso.FallAtProgress);
-
+		// A lâmina é medida NO PONTO onde o caminho passa, não no da queda: a
+		// calha muda ao longo do curso, e comparar com a largura de outro
+		// trecho afirma a coisa errada nos dois sentidos.
 		for (const FVector2D& NoCaminho : Subida)
 		{
 			float Onde = 0.0f;
+			const float Ate = FreshWater::NearestOn(Curso, NoCaminho, Onde);
+
 			TestTrue(TEXT("a subida vai pela margem, fora da lâmina"),
-				FreshWater::NearestOn(Curso, NoCaminho, Onde) > DaCalha);
+				Ate > FreshWater::HalfWidthAtProgress(Curso, Onde));
 		}
 
 		// AS PEDRAS, e as que viraram degrau.

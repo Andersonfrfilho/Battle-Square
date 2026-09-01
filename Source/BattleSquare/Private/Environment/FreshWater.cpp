@@ -1799,6 +1799,99 @@ FMath::RoundToInt(Plan().Num() * SubsoloSobreSuperficie),
 		}
 	}
 
+	// E AS EMENDAS QUE FALTAM PARA A REDE SER CONEXA.
+	//
+	// As galerias ligam gruta a gruta, e isso deixa de fora a bacia que não tem
+	// gruta nenhuma — e uma bacia isolada é água que não se alcança de barco
+	// por caminho nenhum.
+	//
+	// Aqui a rede subterrânea assume o papel que ela já tinha na intenção: ela
+	// é o que liga BACIA a BACIA. Cada componente ainda solto ganha uma
+	// passagem até o mais próximo.
+	{
+		const TArray<FRiverCourse> Rios = Plan();
+
+		TArray<int32> Dono;
+		Dono.Reserve(Rios.Num());
+		for (int32 Indice = 0; Indice < Rios.Num(); ++Indice)
+		{
+			Dono.Add(Indice);
+		}
+
+		TFunction<int32(int32)> Raiz = [&Dono, &Raiz](int32 Qual)
+		{
+			return Dono[Qual] == Qual ? Qual : (Dono[Qual] = Raiz(Dono[Qual]));
+		};
+
+		// Junta o que já está junto: confluência e galeria existente.
+		for (int32 Qual = 0; Qual < Rios.Num(); ++Qual)
+		{
+			if (Rios[Qual].PointsUnits.Num() < 2)
+			{
+				continue;
+			}
+
+			for (int32 Outro = 0; Outro < Rios.Num(); ++Outro)
+			{
+				if (Outro == Qual)
+				{
+					continue;
+				}
+
+				float Aonde = 0.0f;
+				if (NearestOn(Rios[Outro], Rios[Qual].PointsUnits.Last(), Aonde)
+					<= Raio * PassoDoGalho * 1.5f)
+				{
+					Dono[Raiz(Qual)] = Raiz(Outro);
+				}
+			}
+		}
+
+		// E liga o que sobrou, um componente de cada vez.
+		for (int32 Qual = 1; Qual < Rios.Num(); ++Qual)
+		{
+			if (Raiz(Qual) == Raiz(0) || Rios[Qual].PointsUnits.Num() < 2)
+			{
+				continue;
+			}
+
+			int32 Vizinho = INDEX_NONE;
+			float MaisCurta = TNumericLimits<float>::Max();
+
+			for (int32 Outro = 0; Outro < Rios.Num(); ++Outro)
+			{
+				if (Raiz(Outro) == Raiz(Qual) || Rios[Outro].PointsUnits.Num() < 2)
+				{
+					continue;
+				}
+
+				float Aonde = 0.0f;
+				const float Ate = NearestOn(Rios[Outro], Rios[Qual].PointsUnits[0], Aonde);
+				if (Ate < MaisCurta)
+				{
+					MaisCurta = Ate;
+					Vizinho = Outro;
+				}
+			}
+
+			if (Vizinho == INDEX_NONE)
+			{
+				continue;
+			}
+
+			float Aonde = 0.0f;
+			NearestOn(Rios[Vizinho], Rios[Qual].PointsUnits[0], Aonde);
+
+			FUnderwaterLink Passagem;
+			Passagem.Navigability = ENavigability::BarcoPequeno;
+			Passagem.PointsUnits.Add(Rios[Qual].PointsUnits[0]);
+			Passagem.PointsUnits.Add(PointAtProgress(Rios[Vizinho], Aonde));
+			Passagens.Add(MoveTemp(Passagem));
+
+			Dono[Raiz(Qual)] = Raiz(Vizinho);
+		}
+	}
+
 	for (const TPair<uint64, TPair<int32, int32>>& Emenda : MaisPerto)
 	{
 		// A emenda CAVA, não risca.
@@ -1928,6 +2021,46 @@ bool FreshWater::IsWaterNetworkConnected()
 
 		return Melhor;
 	};
+
+	// PRIMEIRO a bacia consigo mesma.
+	//
+	// Faltava isto, e era o buraco mais óbvio: um galho DESEMBOCA no tronco —
+	// eles se tocam por construção — e a conta de conectividade só considerava
+	// córrego e galeria. A bacia inteira aparecia como dezenas de pedaços
+	// soltos, e a resposta "dá para ir de barco a todo lugar" era não por um
+	// motivo que não existia.
+	//
+	// Dois cursos estão ligados quando a FOZ de um encosta no outro: é o que
+	// uma confluência é.
+	for (int32 Qual = 0; Qual < Rios.Num(); ++Qual)
+	{
+		if (Rios[Qual].PointsUnits.Num() < 2)
+		{
+			continue;
+		}
+
+		const FVector2D NaFoz = Rios[Qual].PointsUnits.Last();
+
+		for (int32 Outro = 0; Outro < Rios.Num(); ++Outro)
+		{
+			if (Outro == Qual)
+			{
+				continue;
+			}
+
+			float Aonde = 0.0f;
+			const float Ate = NearestOn(Rios[Outro], NaFoz, Aonde);
+
+			// A tolerância é o PASSO do gerador, e não a calha: a foz de um
+			// curso é o nó onde ele nasceu no outro, e os dois foram amostrados
+			// em passos discretos — dois nós vizinhos ficam um passo apart.
+			// Medir pela calha reprovava confluências verdadeiras num fio fino.
+			if (Ate <= IslandGeography::LandRadiusUnits() * PassoDoGalho * 1.5f)
+			{
+				Juntar(Qual, Outro);
+			}
+		}
+	}
 
 	// Os CÓRREGOS ligam por cima.
 	for (const FBrook& Corrego : PlanBrooks())
@@ -2309,8 +2442,22 @@ TArray<FVector2D> FreshWater::PlanFallClimb(const FRiverCourse& Course)
 		return Subida;
 	}
 
-	const float DaCalha = HalfWidthAtProgress(Course, Course.FallAtProgress);
-	const float Afasta = DaCalha * CachoeiraEmDegraus::AfastaDaLamina;
+	// A MAIOR lâmina da vizinhança da queda, não a do ponto exato dela.
+	//
+	// A calha muda ao longo do curso, e a subida percorre uma faixa: afastar-se
+	// pela largura de um ponto só põe metade do caminho dentro da água quando o
+	// trecho ao lado é mais largo.
+	float DaCalha = HalfWidthAtProgress(Course, Course.FallAtProgress);
+	for (int32 Passo = -4; Passo <= 4; ++Passo)
+	{
+		DaCalha = FMath::Max(DaCalha,
+			HalfWidthAtProgress(Course, Course.FallAtProgress + Passo * 0.03f));
+	}
+
+	// E a folga é generosa: a subida percorre uma faixa, e encostar na lâmina
+	// em um ponto já é caminho dentro da água.
+	const float Afasta = DaCalha * CachoeiraEmDegraus::AfastaDaLamina
+		+ MeiaCalhaDoRio() * 2.0f;
 
 	// O rumo da água, para saber o que é "de lado".
 	const float EmProgresso = MeiaQueda() / FMath::Max(1.0f, CourseLengthUnits(Course));

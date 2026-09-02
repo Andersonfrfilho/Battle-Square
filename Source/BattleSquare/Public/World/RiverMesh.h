@@ -44,6 +44,16 @@ public:
 	int32 GetBuiltCourseCount() const { return BuiltCourseCount; }
 
 	/**
+	 * Quantos lagos e quantos poços de queda subiram.
+	 *
+	 * Contados à parte da calha porque somem à parte: um lago que não vira
+	 * disco deixa o curso inteiro certo e o remanso invisível, e a contagem da
+	 * calha continuaria batendo com a carta.
+	 */
+	int32 GetBuiltLakeCount() const { return BuiltLakeCount; }
+	int32 GetBuiltPlungePoolCount() const { return BuiltPlungePoolCount; }
+
+	/**
 	 * A meia-largura com que o curso dado foi ERGUIDO, no ponto dado.
 	 *
 	 * É o que a malha tem, não o que o plano diz — e é a diferença entre os
@@ -76,4 +86,10 @@ private:
 
 	UPROPERTY()
 	int32 SamplesPerCourse = 0;
+
+	UPROPERTY()
+	int32 BuiltLakeCount = 0;
+
+	UPROPERTY()
+	int32 BuiltPlungePoolCount = 0;
 };

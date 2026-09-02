@@ -3,6 +3,7 @@
 #include "World/RiverMesh.h"
 
 #include "Debug/BattleDebugScreen.h"
+#include "Environment/FreshWater.h"
 #include "Environment/ScenaryPalette.h"
 #include "ProceduralMeshComponent.h"
 
@@ -18,6 +19,50 @@ namespace AguaCorrente
 	 * leito. Uma unidade a mais e a água lê como um tapete.
 	 */
 	constexpr float ElevacaoDaLamina = 20.0f;
+
+	/**
+	 * Quantos lados tem o disco de água parada.
+	 *
+	 * Doze: abaixo disso o lago lê como polígono, acima é geometria gasta num
+	 * remanso que ninguém mede de perto.
+	 */
+	constexpr int32 LadosDoDisco = 12;
+
+	/**
+	 * Monta um disco de água parada, deitado sobre o chão.
+	 *
+	 * Lago e poço de queda são a mesma forma em tamanhos diferentes — um
+	 * remanso. Duas funções para isso divergiriam na primeira edição.
+	 */
+	void MontarDisco(const UIslandBakedPlan& Assado, const FVector2D& Centro, float Meia,
+		TArray<FVector>& Vertices, TArray<int32>& Triangulos, TArray<FVector2D>& Uvs)
+	{
+		const int32 NoCentro = Vertices.Num();
+		Vertices.Add(FVector(Centro.X, Centro.Y,
+			Assado.HeightAt(Centro) + ElevacaoDaLamina));
+		Uvs.Add(FVector2D(0.5f, 0.5f));
+
+		for (int32 Lado = 0; Lado < LadosDoDisco; ++Lado)
+		{
+			const float Angulo = (2.0f * PI * Lado) / LadosDoDisco;
+			const FVector2D NaBorda = Centro
+				+ FVector2D(FMath::Cos(Angulo), FMath::Sin(Angulo)) * Meia;
+
+			// A borda acompanha o CHÃO dela, não o do centro: um disco plano
+			// num remanso encostado na encosta enterraria metade dele.
+			Vertices.Add(FVector(NaBorda.X, NaBorda.Y,
+				Assado.HeightAt(NaBorda) + ElevacaoDaLamina));
+			Uvs.Add(FVector2D(0.5f + 0.5f * FMath::Cos(Angulo),
+				0.5f + 0.5f * FMath::Sin(Angulo)));
+		}
+
+		for (int32 Lado = 0; Lado < LadosDoDisco; ++Lado)
+		{
+			Triangulos.Add(NoCentro);
+			Triangulos.Add(NoCentro + 1 + Lado);
+			Triangulos.Add(NoCentro + 1 + (Lado + 1) % LadosDoDisco);
+		}
+	}
 }
 
 float ARiverMesh::SurfaceLiftUnits()
@@ -63,6 +108,8 @@ int32 ARiverMesh::BuildFrom(const UIslandBakedPlan& Assado)
 	Water->ClearAllMeshSections();
 	BuiltHalfWidths.Reset();
 	BuiltCourseCount = 0;
+	BuiltLakeCount = 0;
+	BuiltPlungePoolCount = 0;
 	SamplesPerCourse = IslandBakedPlan::RiverSampleCount();
 
 	int32 Secao = 0;
@@ -134,6 +181,27 @@ int32 ARiverMesh::BuildFrom(const UIslandBakedPlan& Assado)
 			Triangulos.Add(DireitaAdiante);
 		}
 
+		// O LAGO e o POÇO DA QUEDA entram na mesma seção do curso a que
+		// pertencem. Seção própria por remanso multiplicaria as seções por
+		// três para desenhar água da mesma cor no mesmo lugar.
+		//
+		// O booleano é perguntado ANTES da posição: nem todo curso alaga nem
+		// despenca, e ler a posição sem checar já pôs uma trilha mirando o mar
+		// aberto neste projeto.
+		if (Curso.bHasLake)
+		{
+			AguaCorrente::MontarDisco(Assado, Curso.LakeCenterUnits,
+				FreshWater::LakeHalfWidthUnits(), Vertices, Triangulos, Uvs);
+			++BuiltLakeCount;
+		}
+
+		if (Curso.bHasFall && Curso.PlungePoolHalfWidthUnits > 0.0f)
+		{
+			AguaCorrente::MontarDisco(Assado, Curso.FallCenterUnits,
+				Curso.PlungePoolHalfWidthUnits, Vertices, Triangulos, Uvs);
+			++BuiltPlungePoolCount;
+		}
+
 		Water->CreateMeshSection(Secao, Vertices, Triangulos, TArray<FVector>(), Uvs,
 			TArray<FColor>(), TArray<FProcMeshTangent>(), false);
 		++Secao;
@@ -152,7 +220,9 @@ int32 ARiverMesh::BuildFrom(const UIslandBakedPlan& Assado)
 	}
 
 	FBattleDebugScreen::Show(
-		FString::Printf(TEXT("MUNDO: %d cursos d'agua assentados no relevo"), BuiltCourseCount),
+		FString::Printf(
+			TEXT("MUNDO: %d cursos d'agua, %d lagos, %d pocos de queda"),
+			BuiltCourseCount, BuiltLakeCount, BuiltPlungePoolCount),
 		30.0f, FColor(120, 180, 255), AguaCorrente::ChaveDoPainel);
 
 	return BuiltCourseCount;

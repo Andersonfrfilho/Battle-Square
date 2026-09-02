@@ -5,6 +5,7 @@
 #include "Debug/BattleDebugScreen.h"
 #include "Environment/ScenaryPalette.h"
 #include "ProceduralMeshComponent.h"
+#include "World/FerryActor.h"
 #include "World/RiverMesh.h"
 #include "World/TrailLayout.h"
 
@@ -165,6 +166,10 @@ int32 ACrossingMesh::BuildFrom(const UIslandBakedPlan& Assado)
 	BuiltByKind.SetNumZeroed(Travessia::Tipos);
 	Built.Reset();
 
+	// O plano da montagem anterior sai: remontar sem isto planejaria duas
+	// frotas no mesmo rio.
+	FerryPlacements.Reset();
+
 	const float MeiaLargura = TrailLayout::HalfWidthUnits() * Travessia::LarguraEmTrilhas;
 
 	TArray<FVector> Vertices;
@@ -241,10 +246,35 @@ int32 ACrossingMesh::BuildFrom(const UIslandBakedPlan& Assado)
 		}
 		else if (Onde.Kind == Travessia::Balsa)
 		{
-			// A balsa FLUTUA: logo acima da lâmina, não acima do vão. Ela não
-			// vence a água por altura, vence atravessando por cima dela.
-			Travessia::MontarLaje(Onde.CenterUnits, Rumo, MeioComprimento, MeiaLargura,
-				NaLamina + Travessia::BordaLivreDaBalsa, Vertices, Triangulos, Uvs);
+			// A BALSA NÃO É LAJE: ela é ATOR, porque é INTERAÇÃO.
+			//
+			// A ponte resolve o rio ficando parada; a balsa resolve indo e
+			// voltando, e esperar por ela é o que torna a travessia uma coisa
+			// que se faz em vez de uma que se atravessa. Desenhada como laje,
+			// ela era um deck no meio do rio — altura certa, contagem certa, e
+			// a distinção que o traçado fez entre os dois tipos apagada.
+			// Ela é PLANEJADA aqui e instanciada pelo `GameMode`. Um ator que
+			// monta malha nascendo outros atores por dentro mistura duas
+			// responsabilidades — e derrubou o processo com uma asserção de
+			// thread ao erguer as 25 de uma vez.
+			FFerryPlacement Onde2;
+			Onde2.CenterUnits = Onde.CenterUnits;
+			Onde2.AxisUnits = Rumo;
+			Onde2.SpanUnits = MeioComprimento * 2.0f;
+			Onde2.WaterZ = NaLamina;
+			FerryPlacements.Add(Onde2);
+
+			// Ela entra na conta pelo PLANO, não pelos vértices: a obra dela não
+			// vive nesta malha.
+			FBuiltCrossing Feita;
+			Feita.Kind = Onde.Kind;
+			Feita.WaterZ = NaLamina;
+			Feita.TopZ = NaLamina + AFerryActor::FreeboardUnits();
+			Feita.BottomZ = Feita.TopZ;
+			Built.Add(Feita);
+
+			++BuiltByKind[Onde.Kind];
+			continue;
 		}
 		else
 		{

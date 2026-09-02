@@ -54,6 +54,7 @@
 #include "World/GroundUseActor.h"
 #include "World/Pantheon.h"
 #include "World/CrossingMesh.h"
+#include "World/FerryActor.h"
 #include "World/RiverMesh.h"
 #include "World/WaterFooting.h"
 #include "World/TerrainMesh.h"
@@ -1653,6 +1654,22 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 			if (Travessias)
 			{
 				Travessias->BuildFrom(*Assado);
+
+				// AS BALSAS: a travessia planeja, o GameMode instancia. Balsa
+				// e INTERACAO — ela anda, flutua e esbarra —, e por isso e ator
+				// e nao laje parada acima da lamina.
+				for (const ACrossingMesh::FFerryPlacement& Plano
+					: Travessias->GetFerryPlacements())
+				{
+					AFerryActor* Embarcacao = World->SpawnActor<AFerryActor>(
+						AFerryActor::StaticClass(), FVector::ZeroVector,
+						FRotator::ZeroRotator, Parametros);
+					if (Embarcacao)
+					{
+						Embarcacao->ConfigureFor(Plano.CenterUnits, Plano.AxisUnits,
+							Plano.SpanUnits, Plano.WaterZ);
+					}
+				}
 			}
 
 			// OS AQUEDUTOS: a obra que leva agua a vila sem agua perto.

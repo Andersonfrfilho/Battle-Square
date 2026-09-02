@@ -34,24 +34,36 @@ Cada uma dessas é **uma tarefa com teste próprio**, não um ajuste de passagem
 A #8 e a #14 mexem no traçado (altura do personagem contra fundura; fundura de
 poço), e por invariante isso é feature separada.
 
-## A pergunta que ficou aberta
+## A #9, esclarecida — e era LACUNA MINHA, não escopo novo
 
-**#9: "ela bate na ponte pois é um sólido no jogo que o fluido é mais leve que
-a água".**
+**"A balsa é geometria sólida que flui sobre a água e bate em outras
+geometrias que tiverem no caminho."**
 
-Isto não fecha, e não vou adivinhar: **esta ilha não tem ponte nenhuma** — 0 de
-56 travessias, medido, e a carta concorda. Então "bate na ponte" não pode estar
-descrevendo o que está na tela.
+A T13 dizia, com todas as letras: *"vau se atravessa a pé, ponte é geometria,
+barranco exige subida, **balsa é interação**"*. Eu entreguei uma laje parada
+acima da lâmina e testei a ALTURA dela. Altura certa, contagem certa, material
+certo — e 25 decks no meio dos rios. Plataforma que não leva ninguém a lugar
+nenhum não é balsa, e a distinção que o traçado fez entre "largo demais para
+ponte" e "ponte" tinha sumido.
 
-Duas leituras possíveis, e elas levam a consertos opostos:
+Fechado em `AFerryActor`: ela **anda** entre as margens e volta, **flutua** na
+lâmina, e é **sólida** — esbarra no que houver e inverte, em vez de atravessar
+por dentro. Quatro provas, e a que importa aqui é `BumpsIntoWhatIsInTheWay`:
+planta-se um obstáculo no meio do vão e cobra-se que ela não chegue do outro
+lado.
 
-1. **É defeito visto agora:** a plataforma da balsa está colidindo com alguma
-   outra geometria (a rampa do barranco? o aqueduto?). Se for isso, é T20 de
-   verdade, e vira teste antes de conserto.
-2. **É design futuro:** a balsa deveria flutuar por empuxo em vez de ser
-   geometria estática. Aí é escopo novo, como as outras seis.
+E um defeito de arquitetura veio junto: eu tinha posto a balsa a NASCER dentro
+da montagem da travessia. Um ator que monta malha instanciando outros atores
+por dentro mistura duas responsabilidades — e derrubou o processo com uma
+asserção de thread ao erguer as 25 de uma vez (SIGSEGV, e a bateria perdeu
+todos os testes seguintes em silêncio). Agora a travessia PLANEJA e o
+`GameMode` INSTANCIA, que é como todo o resto deste projeto funciona.
 
-O que existe hoje, medido e testado: a plataforma fica logo acima da lâmina
-(30 unidades), nunca na altura de um tabuleiro de ponte (120), e a prova disso
-lê a altura de CADA obra pelo ator — não por proximidade, que foi o erro que
-fez a rampa do barranco passar por balsa.
+## O que segue em aberto
+
+As seis da tabela acima continuam sendo escopo novo, e nenhuma foi implementada.
+
+Uma delas ganhou vizinhança com o que acabou de ser feito: a balsa agora anda e
+esbarra, mas **ainda não é empuxo** — a altura dela vem da lâmina, não de
+densidade. Se o que se quer é flutuação física de verdade, isso segue como
+tarefa própria.

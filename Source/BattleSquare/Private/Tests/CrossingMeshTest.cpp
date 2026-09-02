@@ -316,39 +316,29 @@ bool FCrossingMeshTheFerryFloatsOnTheWaterTest::RunTest(const FString& Parameter
 		return false;
 	}
 
-	// Nenhuma plataforma de balsa pode estar tão alta quanto um tabuleiro.
+	// A TRAVESSIA PLANEJA a balsa; quem a instancia e o `GameMode`.
 	//
-	// A altura vem do ATOR, obra por obra — não de procurar vértices perto do
-	// centro da travessia. Eu tinha escrito por proximidade, e o teste reprovou
-	// construção certa: a janela pegou a rampa do barranco vizinho, que é alta
-	// por definição. Atribuir geometria por distância elege um dono, e o
-	// vizinho ganha a peça — é o desempate se disfarçando de regra.
-	int32 BalsasConferidas = 0;
-	for (const ACrossingMesh::FBuiltCrossing& Feita : Obras->GetBuilt())
+	// Aqui se cobra o PLANO: uma balsa por travessia de balsa, no lugar certo,
+	// com vao e lamina. Que ela anda, flutua e esbarra e provado no ator dela
+	// (`BattleSquare.FerryActor`) — separado, porque sao duas coisas.
+	TestEqual(TEXT("um plano de balsa por balsa vista"),
+		Obras->GetFerryPlacements().Num(), Obras->GetSeenCount(ProvaDaTravessia::Balsa));
+
+	for (const ACrossingMesh::FFerryPlacement& Plano : Obras->GetFerryPlacements())
 	{
-		if (Feita.Kind != ProvaDaTravessia::Balsa)
-		{
-			continue;
-		}
+		// Vao zero seria uma balsa que nao sai do lugar, e ela passaria em
+		// contagem sem levar ninguem a lugar nenhum.
+		TestTrue(TEXT("a balsa tem vao para vencer"), Plano.SpanUnits > 0.0f);
 
-		++BalsasConferidas;
+		// Rumo nulo poria toda balsa alinhada ao eixo X, e metade delas
+		// atravessaria o rio no sentido do comprimento.
+		TestTrue(TEXT("a balsa tem rumo"), !Plano.AxisUnits.IsNearlyZero());
 
-		if (Feita.TopZ >= Feita.WaterZ + ACrossingMesh::DeckClearanceUnits())
-		{
-			AddError(FString::Printf(
-				TEXT("uma balsa subiu a %.1f, altura de ponte (lamina %.1f, vao %.1f)"),
-				Feita.TopZ, Feita.WaterZ, ACrossingMesh::DeckClearanceUnits()));
-			Mundo->DestroyWorld(false);
-			return false;
-		}
-
-		// E ela flutua ACIMA da lâmina: uma plataforma na altura exata da água
-		// brigaria por profundidade com ela e sumiria em faixas.
-		TestTrue(TEXT("a balsa flutua acima da lamina"), Feita.TopZ > Feita.WaterZ);
+		// E ela nasce na LAMINA daquele ponto, nao numa altura qualquer.
+		TestEqual(TEXT("a lamina do plano e a do ponto"),
+			Plano.WaterZ,
+			Assado->HeightAt(Plano.CenterUnits) + ARiverMesh::SurfaceLiftUnits(), 1.0f);
 	}
-
-	TestEqual(TEXT("toda balsa construida foi conferida"),
-		BalsasConferidas, Obras->GetBuiltCount(ProvaDaTravessia::Balsa));
 
 	Mundo->DestroyWorld(false);
 	return true;

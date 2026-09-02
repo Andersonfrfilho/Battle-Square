@@ -84,4 +84,30 @@ private:
 
 	/** Não é `UPROPERTY`: é medição da construção, lida pela conferência. */
 	TArray<FBuiltCrossing> Built;
+
+public:
+	/**
+	 * ONDE VAI CADA BALSA — posição, rumo, vão e a altura da lâmina.
+	 *
+	 * A travessia CALCULA a balsa e não a instancia. Quem põe ator no mundo
+	 * neste projeto é o `GameMode`; um ator que monta malha nascendo outros
+	 * atores por dentro mistura duas responsabilidades, e foi o que derrubou o
+	 * processo com uma asserção de thread ao erguer as 25 de uma vez.
+	 *
+	 * Separado, cada lado se prova sozinho: aqui, que a balsa foi PLANEJADA no
+	 * lugar certo; no ator dela, que ela anda, flutua e esbarra.
+	 */
+	struct FFerryPlacement
+	{
+		FVector2D CenterUnits = FVector2D::ZeroVector;
+		FVector2D AxisUnits = FVector2D(1.0f, 0.0f);
+		float SpanUnits = 0.0f;
+		float WaterZ = 0.0f;
+	};
+
+	const TArray<FFerryPlacement>& GetFerryPlacements() const { return FerryPlacements; }
+
+private:
+	/** Não é `UPROPERTY`: é plano de construção, não estado de jogo. */
+	TArray<FFerryPlacement> FerryPlacements;
 };

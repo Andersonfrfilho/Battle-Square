@@ -51,6 +51,7 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "World/AqueductMesh.h"
+#include "World/GroundUseActor.h"
 #include "World/CrossingMesh.h"
 #include "World/RiverMesh.h"
 #include "World/WaterFooting.h"
@@ -1660,6 +1661,10 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 			{
 				Aquedutos->BuildFrom(*Assado);
 			}
+
+			// O USO DO SOLO por ultimo: e o que enche o mundo de MOTIVO para
+			// andar, e ele se apoia em tudo o que veio antes.
+			UsosDoSoloConstruidos = ConstruirUsosDoSolo(*Assado, Parametros);
 		}
 	}
 
@@ -1856,6 +1861,71 @@ void ABattleSquareGameMode::BuildResidentChunk(const FIntPoint& Pedaco)
 		RegionResidency::ChunkSideUnits());
 
 	ResidentChunks.Add(Pedaco, Mata);
+}
+
+int32 ABattleSquareGameMode::ConstruirUsosDoSolo(
+	const UIslandBakedPlan& Assado, const FActorSpawnParameters& Parametros)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return 0;
+	}
+
+	int32 Erguidos = 0;
+	TMap<EGroundUse, int32> PorUso;
+
+	for (const FBakedGroundUse& Mancha : Assado.GroundUses)
+	{
+		// Assenta no CHÃO que a superfície tem. Um uso do solo na altura zero
+		// ficaria enterrado no morro ou boiando sobre o vale, e a contagem
+		// continuaria certa.
+		const FVector Onde(Mancha.CenterUnits.X, Mancha.CenterUnits.Y,
+			Assado.HeightAt(Mancha.CenterUnits));
+
+		AGroundUseActor* Ator = World->SpawnActor<AGroundUseActor>(
+			AGroundUseActor::StaticClass(), Onde, FRotator::ZeroRotator, Parametros);
+		if (!Ator)
+		{
+			continue;
+		}
+
+		FGroundUsePatch Patch;
+		Patch.Use = Mancha.Use;
+		Patch.CenterUnits = Mancha.CenterUnits;
+		Patch.HalfExtentUnits = Mancha.HalfExtentUnits;
+		Patch.bYieldsWater = Mancha.bYieldsWater;
+		Patch.Deity = Mancha.Deity;
+
+		if (!Ator->ConfigureFor(Patch))
+		{
+			// Uso sem linha na tabela e mancha INVISIVEL no mapa. Some calada,
+			// e a contagem de atores continua batendo — o padrao exato que
+			// esta feature existe para nao repetir.
+			FBattleDebugScreen::Show(
+				FString::Printf(TEXT("MUNDO: uso do solo SEM FORMA: %s"),
+					AGroundUseActor::UseDebugName(Mancha.Use)),
+				30.0f, FColor::Red, /*Key=*/-1);
+			Ator->Destroy();
+			continue;
+		}
+
+		++Erguidos;
+		PorUso.FindOrAdd(Mancha.Use) += 1;
+	}
+
+	FString Resumo;
+	for (const TPair<EGroundUse, int32>& Par : PorUso)
+	{
+		Resumo += FString::Printf(TEXT("%s%s %d"), Resumo.IsEmpty() ? TEXT("") : TEXT(", "),
+			AGroundUseActor::UseDebugName(Par.Key), Par.Value);
+	}
+
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("MUNDO: %d usos do solo — %s"), Erguidos, *Resumo),
+		30.0f, FColor(180, 220, 150), /*Key=*/750);
+
+	return Erguidos;
 }
 
 void ABattleSquareGameMode::AplicarChaoMolhado(const APawn* Jogador, EWaterFooting Chao)

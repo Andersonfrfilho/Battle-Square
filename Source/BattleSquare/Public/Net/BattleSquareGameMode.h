@@ -337,6 +337,14 @@ private:
 	UPROPERTY()
 	float PassoEmTerraUnidades = 0.0f;
 
+	/** Quantos usos do solo o mundo ergueu. Zero é mundo sem motivo para andar. */
+	UPROPERTY()
+	int32 UsosDoSoloConstruidos = 0;
+
+	/** Ergue os usos do solo do assado. Devolve quantos. */
+	int32 ConstruirUsosDoSolo(const class UIslandBakedPlan& Assado,
+		const struct FActorSpawnParameters& Parametros);
+
 	/** Aplica ao movimento o que o pé encontrou. */
 	void AplicarChaoMolhado(const APawn* Jogador, EWaterFooting Chao);
 

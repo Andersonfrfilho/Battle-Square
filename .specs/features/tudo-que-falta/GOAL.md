@@ -17,8 +17,8 @@ os bloqueios fiquem escritos em vez de serem relembrados.
 
 ## PRONTO é isto, e nada menos
 
-- [ ] **Corrente fechada** — C4, C5, C6 em `.specs/features/corrente/`
-- [ ] **Pendências fechadas** — P4 a P10 em `.specs/features/pendencias/`
+- [ ] **Corrente fechada** — `.specs/features/corrente/`
+- [ ] **Pendências fechadas** — `.specs/features/pendencias/`
 - [ ] **T-ITENS** — o sistema de itens existe, e a bota de lava funciona
 - [ ] **T-ANATOMIA** — dois pets do mesmo elemento resistem diferente
 - [ ] Bateria completa verde (hoje **824**; o número só sobe)
@@ -26,6 +26,38 @@ os bloqueios fiquem escritos em vez de serem relembrados.
 - [ ] Um commit por task, cada um com o motivo — não só o quê
 
 Enquanto qualquer caixa estiver aberta, o objetivo **continua**.
+
+## Não pare entre tarefas
+
+**Ao fechar uma task, execute a próxima na mesma rodada.** Sem perguntar "sigo?",
+sem relatório intermediário, sem esperar confirmação: o objetivo foi aprovado
+quando foi aberto, e cada pausa custa uma rodada inteira só para receber de
+volta a palavra "pode".
+
+Qual é a próxima não se lembra — se pergunta:
+
+```bash
+./Tools/goal_status.sh
+```
+
+Ele LÊ os `GOAL.md` de cada feature e diz a primeira caixa aberta. É por isso
+que este objetivo não tem a própria lista de tasks: uma segunda lista de caixas
+concordaria com a primeira até a primeira edição, e depois estaria mentindo em
+silêncio sobre o que já foi feito — que é como uma task fechada volta a ser
+refeita depois de uma compactação.
+
+**Só existem três motivos para parar**, e todos os três se dizem com a
+medição junto:
+
+1. A task pede **decisão de conteúdo** que é do usuário (quantos slots, o que é
+   uma anatomia). Aí: fazer as outras, que são independentes, e perguntar.
+2. A task **encosta no traçado** ou **muda o gabarito de aceite** — as três
+   previstas abaixo.
+3. A bateria ficou **vermelha** e não é falha do teste novo.
+
+Acabar a lista inteira não é motivo para parar de conferir: rodar
+`goal_status.sh` de novo, porque uma task pode ter aberto caixa em outra
+feature.
 
 ## A ordem, e ela não é de valor
 

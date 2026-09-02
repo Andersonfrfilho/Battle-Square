@@ -1,5 +1,10 @@
 # OBJETIVO — Cidades do interior
 
+> **As decisões de conteúdo desta feature foram respondidas em 02/09/2026.**
+> Elas vivem em `.specs/project/DECISOES.md` — fonte única, não copiar para cá.
+> Onze itens seguem em aberto, e estão listados no fim daquele arquivo.
+
+
 **Spec escrita em 31/08/2026, sem `tasks.md` até agora.** Nesse intervalo a
 vila já foi construída no mundo por fora do processo de spec — ver "O que já
 existe, medido" no topo de `tasks.md`. Este objetivo nasce **bloqueado**: toda

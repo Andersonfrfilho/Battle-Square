@@ -1,5 +1,10 @@
 # OBJETIVO — Mãe Natureza
 
+> **As decisões de conteúdo desta feature foram respondidas em 02/09/2026.**
+> Elas vivem em `.specs/project/DECISOES.md` — fonte única, não copiar para cá.
+> Onze itens seguem em aberto, e estão listados no fim daquele arquivo.
+
+
 **Escrito em 02/09/2026, e NÃO ABERTO.** Vem de
 `.specs/features/mae-natureza/spec.md` (31/08/2026) — que tinha spec e nenhum
 `tasks.md`, e por isso era invisível para `./Tools/goal_status.sh`.

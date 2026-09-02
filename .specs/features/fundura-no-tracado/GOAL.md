@@ -1,5 +1,10 @@
 # OBJETIVO — Fundura no traçado
 
+> **As decisões de conteúdo desta feature foram respondidas em 02/09/2026.**
+> Elas vivem em `.specs/project/DECISOES.md` — fonte única, não copiar para cá.
+> Onze itens seguem em aberto, e estão listados no fim daquele arquivo.
+
+
 **Escrito em 02/09/2026, e nasce FECHADO.** Vem de `pendencias`, que mediu P7 e
 P8 e parou nas duas por elas mexerem no gerador — o que uma tarefa de construção
 não pode ter dentro.

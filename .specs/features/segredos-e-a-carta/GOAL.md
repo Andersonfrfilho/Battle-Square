@@ -1,5 +1,10 @@
 # OBJETIVO — Segredos e a carta
 
+> **As decisões de conteúdo desta feature foram respondidas em 02/09/2026.**
+> Elas vivem em `.specs/project/DECISOES.md` — fonte única, não copiar para cá.
+> Onze itens seguem em aberto, e estão listados no fim daquele arquivo.
+
+
 **Aberto em 02/09/2026.** Vem de **P10** em
 `.specs/features/pendencias/BLOQUEIO-P7-P8-P9-P10.md`, que a fechou como parada:
 o gabarito de aceite é a carta, e a carta hoje é promessa de **completude** —

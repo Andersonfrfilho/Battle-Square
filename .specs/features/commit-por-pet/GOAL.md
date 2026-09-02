@@ -1,5 +1,10 @@
 # OBJETIVO — Commit por pet
 
+> **As decisões de conteúdo desta feature foram respondidas em 02/09/2026.**
+> Elas vivem em `.specs/project/DECISOES.md` — fonte única, não copiar para cá.
+> Onze itens seguem em aberto, e estão listados no fim daquele arquivo.
+
+
 **Aberto em 02/09/2026.** Vem de **B-003**, registrado em 25/08/2026 e adiado
 "para M3, junto da expansão do contrato de rede para commit por pet". **M3
 fechou sem ela** — é por isso que este objetivo existe hoje, órfão, e não como

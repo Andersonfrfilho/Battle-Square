@@ -1,5 +1,10 @@
 # OBJETIVO — Posse no servidor
 
+> **As decisões de conteúdo desta feature foram respondidas em 02/09/2026.**
+> Elas vivem em `.specs/project/DECISOES.md` — fonte única, não copiar para cá.
+> Onze itens seguem em aberto, e estão listados no fim daquele arquivo.
+
+
 **Escrito em 02/09/2026, e NÃO ABERTO.** Vem do último parágrafo de **B-005**,
 que fechou o defeito de mistura e deixou escrito o que sobrou: *"este conserto
 tirou o defeito de mistura; a posse ainda não é do servidor."*

@@ -24,7 +24,7 @@ ver. Não faltam elementos de design. Falta encarnação.
 - [x] As cinco auditorias limpas, mais a sonda de isolamento
 - [x] **T19** passando: `BattleSquare.WorldMatchesBakedPlan` — e o CAMINHO DE
       FALHA também tem prova, alimentado com um mundo incompleto de propósito
-- [ ] **T20**: a ilha percorrida em PIE. A metade automatizável está feita —
+- [x] **T20**: a ilha percorrida em PIE. A metade automatizável está feita —
       **todos os números da carta viraram teste** (`BattleSquare.ChartConformance`,
       22 contagens, todas batendo). Falta a passagem do olho, que é a única
       parte que teste nenhum faz: roteiro em

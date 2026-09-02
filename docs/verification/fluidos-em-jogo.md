@@ -30,18 +30,18 @@ segundo plano não recebe teclado no PIE.
 
 | # | Onde | A pergunta |
 |---|---|---|
-| 1 | qualquer batalha na beira d'água | A etiqueta da casa diz a substância, e ela **só aparece** quando diverge do padrão? (Água doce não deve escrever nada.) |
-| 2 | batalha perto do vulcão | A casa sai marcada como **água termal**, e não como água comum? |
-| 3 | batalha longe do vulcão | A mesma beira de rio sai **sem etiqueta** — é a prova de que a #2 não está carimbando tudo |
-| 4 | uma casa de lava, se aparecer | Ela fica **VERMELHA** antes de alguém pisar? É o único aviso que existe hoje |
-| 5 | pisando na lava | A vida cai no fim do slot, e o painel narra o dano como qualquer outro? |
-| 6 | um pet de Fogo na lava | Ele perde **metade** do que o outro perdeu na mesma casa? |
-| 7 | voando sobre a lava | Não perde nada? |
-| 8 | camuflado na lava | **Perde igual** — camuflar não tira ninguém do chão |
-| 9 | pet de Raio atacando alguém na água | Um **terceiro** pet na mesma poça leva dano sem ter sido atacado? |
-| 10 | o mesmo, com o terceiro numa poça separada por chão seco | Ele **não** leva? |
-| 11 | dois pets de Raio na mesma poça | O mais fraco leva só a diferença, e o lançador não leva nada? |
-| 12 | pet de Fogo atacando na água | **Nada** conduz — a corrente é do Raio |
+| 1 | qualquer batalha na beira d'água | A etiqueta da casa diz a substância, e ela **só aparece** quando diverge do padrão? (Água doce não deve escrever nada.) | sim
+| 2 | batalha perto do vulcão | A casa sai marcada como **água termal**, e não como água comum? | sim
+| 3 | batalha longe do vulcão | A mesma beira de rio sai **sem etiqueta** — é a prova de que a #2 não está carimbando tudo | pode ser especifico com as propriedades daquele local [agua, doce, densidade, velocidade da corrente...,venenoso,condutor:[{elemento:...,potencia...}] sentido do movimento, eleemnto e se temos capacidade de pelo o tamanho do campo alguns ataques como eletricidade e nossos atribuitos conseguiriamos eletrizar todo o campo ou congelar entendeu ?]
+| 4 | uma casa de lava, se aparecer | Ela fica **VERMELHA** antes de alguém pisar? É o único aviso que existe hoje | não fica com o design de lava
+| 5 | pisando na lava | A vida cai no fim do slot, e o painel narra o dano como qualquer outro? | tanto quanto o rio ele tem seus atributos de dano e o elemento pois vamos ter pets que tem fraqueza a certos elementos e outros que são imune que se misturam com o ambiente
+| 6 | um pet de Fogo na lava | Ele perde **metade** do que o outro perdeu na mesma casa? | dependende da anatomia dele e da biologia da pele dele
+| 7 | voando sobre a lava | Não perde nada? | depende dos atributos da casa 
+| 8 | camuflado na lava | **Perde igual** — camuflar não tira ninguém do chão | perde igualmente ele esta lá e até se ativado golpes desse tipo deve ser desativados se o pet não tiver muito controle pois esta tomando dano.
+| 9 | pet de Raio atacando alguém na água | Um **terceiro** pet na mesma poça leva dano sem ter sido atacado? | depende dos atributos da casa com agua corrente
+| 10 | o mesmo, com o terceiro numa poça separada por chão seco | Ele **não** leva? | bom se não for condutor e ele for separado da area de agua que foi eletrocutada então não
+| 11 | dois pets de Raio na mesma poça | O mais fraco leva só a diferença, e o lançador não leva nada? | depende dos atributos do pet e que potencia do poder e que potencia eles são resitentes
+| 12 | pet de Fogo atacando na água | **Nada** conduz — a corrente é do Raio | foto na agua não vai ficar pegando fogo
 
 ## A limitação declarada
 

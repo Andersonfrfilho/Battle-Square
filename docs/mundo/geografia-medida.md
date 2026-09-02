@@ -332,6 +332,10 @@ Emenda virou caminhada com ruído coerente: cada passo mira o destino e é
 empurrado pelo ruído da POSIÇÃO. Sorteio por passo daria tremor, e tremor não é
 curva.
 
+> ⚠️ **Corrigido em 02/09/2026 — a caminhada com mira também não curvava.**
+> Ver §11. Este parágrafo ficou aqui porque ele foi a conclusão da época, e
+> apagá-lo esconderia que ela estava errada.
+
 ### E duas redes não se fundem sozinhas
 
 Em colonização espacial cada nó tem UM pai. As galerias de duas cavernas chegam
@@ -411,3 +415,126 @@ antes de existir código para plantá-lo.
   engenharia, e engenharia é uma civilização que este mundo não tem.
 - **Água termal derivada** — o cruzamento do alcance do calor do vulcão com a
   máscara de água. Nada escolhido; consequência.
+
+
+---
+
+## 11. Adendo de 02/09/2026 — a galeria reta, e por que a mira não curva
+
+A pergunta foi curta: *existem galerias subterrâneas retas?* A conta respondeu
+antes de qualquer opinião.
+
+### A medição
+
+| | antes | depois |
+|---|---|---|
+| Sinuosidade mediana das passagens | **1,000** | 1,091 |
+| Passagens retas (sin < 1,02) | **123 de 158 (78%)** | 18 de 85 (21%) |
+| Maior vão riscado em linha | **126.000 un.** (≈ o raio da ilha) | — |
+
+### A causa: duas fontes da mesma verdade, de novo
+
+A emenda **entre cavernas** cavava com ruído. A emenda **entre bacias** riscava
+dois pontos. E o comentário que explica por que uma galeria se cava estava
+escrito **quarenta linhas abaixo** do bloco que riscava.
+
+É L-032 pela enésima vez, e a forma dela aqui é a mais traiçoeira: não são duas
+tabelas divergindo, é uma regra documentada ao lado do código que não a segue.
+
+### E o erro que vale mais que o conserto
+
+Com as duas cavando, a medição continuou dando **25 retas**. Supus que fosse
+resolução — poucos passos no vão curto —, subi o mínimo de 3 para 7 passos e
+remedi: **0,294. Pior.** A hipótese estava errada e só a medição mostrou.
+
+O motivo real é estrutural: **caminhada com mira não curva.** Cada passo mira o
+destino, então a mira do passo seguinte desfaz o empurrão do anterior. Os
+desvios se cancelam e sobra a reta que a mira sempre apontou — e nenhuma
+quantidade de passos conserta o que não é falta de passo.
+
+O que curva é andar ao longo do eixo e sair **de lado**:
+
+```
+ponto = lerp(A, B, t) + perpendicular * ruído(ponto) * sin(t·π) * amplitude
+```
+
+O meio seno prende as duas pontas nas bocas sem precisar de mira nenhuma, e nada
+recorrige o desvio, então ele não pode se cancelar.
+
+### Reto virou parâmetro
+
+Fratura de calcário às vezes é reta mesmo, e uma rede em que nada é reto lê tão
+fabricada quanto uma em que tudo é. O defeito era a proporção, não a existência.
+
+| bioma | fração reta | por quê |
+|---|---|---|
+| mata | 0,15 | — |
+| pântano | 0,28 | rocha fraturada abre reta com frequência |
+| deserto | 0,20 | — |
+| geleira | 0,06 | basalto quase não abre |
+
+O sorteio sai da **geometria das duas pontas**, não do índice do laço. E o teste
+cobra o **teto**, nunca zero: cobrar zero congelaria uma decisão de arte num
+teste, e a decisão é do bioma.
+
+---
+
+## 12. Adendo de 02/09/2026 — templos, ruínas e cemitérios
+
+Três peças que não são enfeite: cada uma existe porque **a posição dela carrega
+uma informação que o jogo não precisa escrever**.
+
+### O templo se ensina pelo lugar
+
+São cinco deuses, e a posição é a identidade de cada um: o do monte na saia da
+montanha, o da água na cachoeira, o do fogo na beira da rocha queimada, o do
+fundo dentro de uma caverna, Mãe Natureza **dentro** do bosque mais fechado.
+Quem vê um templo sabe de quem ele é sem ler nada.
+
+Duas amarras que valem mais que a lista:
+
+- **O do fogo fica do lado de FORA da rocha queimada.** Dentro seria templo que
+  ninguém alcança — ali o chão queima e a trilha não atravessa. Templo é lugar
+  de ir (L-041).
+- **O de Mãe Natureza fica DENTRO do bosque, não no lugar dele.** No centro
+  exato ele limpava o coração da mata, e o coração é justamente o que ela
+  governa. Um templo na floresta é uma clareira dentro dela.
+
+E ele simplesmente não nascia: eu o colocava **antes de os bosques existirem**,
+então procurava num mundo sem bosque nenhum. Quatro templos apareceram em vez de
+cinco, e só a contagem mostrou.
+
+### A ruína é a única peça que dá PASSADO
+
+Longe de trilha e de vila; achá-la é acidente. Um lugar que já foi importante e
+deixou de ser conta uma história que ninguém precisou escrever.
+
+### O cemitério tem uma regra sanitária real
+
+**Fica na direção oposta à da água.** Ninguém enterra rio acima de onde bebe, e
+vilas fazem isso desde muito antes de saberem por quê. Aqui isso vira uma amarra
+que o gerador consegue verificar — é ela que dá ao cemitério um lugar em vez de
+um sorteio. Fora da clareira e perto dela: dentro seria praça, longe seria
+romaria.
+
+O **esquecido** não é o mesmo em tamanho menor: é vestígio, não serviço. Nasce
+encostado numa ruína — um templo caído com um cemitério ao lado conta que ali
+houve gente. Encostado, nunca em cima: mesmo chão apagaria os dois.
+
+### E a lição está no TESTE, que reprovou desenho certo duas vezes
+
+Ver a regra global §12. A forma curta: teste que reconstrói a decisão do gerador
+mede o **desempate**, não a regra. Afirme a propriedade, na forma existencial —
+"existe vila para a qual isto vale" —, e não há desempate para errar.
+
+---
+
+## 13. Estado em 02/09/2026
+
+| | |
+|---|---|
+| Testes | **679/679** |
+| Cobertura de água pedida / medida | 6,00% / 6,24% |
+| Sinuosidade mediana das galerias | 1,091 |
+| Templos · ruínas | 5 · 4 |
+| Cemitérios | 7 de vila · 1 esquecido |

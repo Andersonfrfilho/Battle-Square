@@ -241,6 +241,53 @@ carta diga a SOMA do que ela não mostra.
 
 ---
 
+## K — A POSSE MUDA DE MÃO POR TRÊS PORTAS
+
+**Levantado por você em 02/09, e é a coisa mais estrutural desta lista.**
+
+Suas respostas descrevem **três** caminhos pelos quais um pet troca de dono, e
+eles estavam espalhados por três features diferentes:
+
+| porta | onde estava | o que você decidiu |
+|---|---|---|
+| **TROCA** | H7, `posse-no-servidor` | só se as duas contas aceitarem |
+| **VENDA** | I8 + o Mercado de `cidades-do-interior` | pode vender; **roubado só no mercado-negro** |
+| **ROUBO** | I1, `crime-e-recompensa` | só de pet desmaiado, hipnotizado ou paralisado |
+
+### Por que isto é uma coisa só, e não três
+
+As três fazem **exatamente a mesma operação**: tirar o pet de um dono e dar a
+outro. Se cada feature implementar a sua, serão três transferências que
+concordam **até a primeira edição** — e uma delas vai esquecer a trilha de
+auditoria, ou a marca de roubado, ou a verificação de sessão.
+
+É o defeito que L-032 e L-033 já custaram a este projeto por duplicar fonte de
+verdade, e a `crime-e-recompensa` já o antecipa na invariante 18: *"posse é
+sempre lida de UMA fonte"*.
+
+**Uma transferência só, e as três portas entram por ela.** Cada porta traz a sua
+condição — a troca exige aceite dos dois, a venda exige preço, o roubo exige o
+pet indefeso —, mas quem move a posse é o mesmo código, com a mesma trilha.
+
+### O que decorre disso, e que você já respondeu
+
+- **A marca de roubado viaja com o pet** (I8): se ela morasse na transferência,
+  vender apagaria o roubo. Ela é do PET.
+- **A polícia segura o pet até resolver** (H7): a transferência precisa saber
+  ficar *pendente*, e não só acontecer ou falhar.
+- **Parte do confisco vai para o roubado** (I7): a transferência mexe em
+  dinheiro, não só em posse.
+
+### O que ainda falta decidir
+
+**K1. Vender para NPC, para jogador, ou os dois?** ⬜
+**K2. A venda tem preço livre ou tabelado?** ⬜ (o `SettlementEconomy` já tem
+tabela, e a regra da casa diz para não escrever preço à mão)
+**K3. O mercado-negro é lugar no mapa ou estado do vendedor?** ⬜ — se for
+lugar, ele entra na carta; se for estado, ele não aparece e é achado.
+
+---
+
 ## O que ficou sem par
 
 **Sem resposta na sua lista:** as de número 19, 23, 25, 28, 32, 38, 43, 49, 50 e

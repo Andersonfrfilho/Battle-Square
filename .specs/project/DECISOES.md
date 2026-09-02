@@ -35,13 +35,20 @@ atravessa — 0 a 40% da altura é o que se faz a pé.**
 do personagem: o limiar sai de `0,40 × altura DELE`. Um pet baixo atravessa
 menos fundo que o jogador, sem regra nova — só a mesma conta com outra altura.
 
-**5. A carta pode mudar de números.** *(Pergunta reformulada — ver "Ainda em
-aberto".)* O que ficou decidido: **o mundo é dinâmico, com âncoras fixas para
-equilíbrio de onde as coisas nascem**, e **existem catástrofes**.
+**5. O gabarito é SAGRADO — e alguns elementos mudam.** `ChartConformance`
+continua sendo a autoridade: o mundo não pode divergir dele por acidente.
+Mudar uma entrada é **ato deliberado e revisado**, entrada por entrada — nunca
+atualização automática do teste para "ficar verde". O mundo é dinâmico, com
+âncoras fixas para equilíbrio de onde as coisas nascem, e existem catástrofes.
 
-**6.** *(Ainda em aberto — ver abaixo.)*
+**6. O poço da cachoeira ganha ROCHA: degraus, e mais.** Além do degrau, o
+fundo recebe **outros itens e plantas aquáticas** — 🆕 **e vão existir PETS
+AQUÁTICOS**, que hoje não existem em lugar nenhum do projeto.
 
-**7.** *(Ainda em aberto — sugestão pedida.)*
+**7. A fundura passa a ter fonte ÚNICA** (sugestão aceita): vira campo do plano
+assado, e traçado, batalha, natação, pesca e bicho leem dali. **A estimativa
+`FunduraSobreLargura = 0.065f` morre no MESMO commit em que a leitura nasce** —
+duas fontes convivendo é o que causou L-032 e L-033 neste projeto.
 
 ---
 
@@ -49,9 +56,10 @@ equilíbrio de onde as coisas nascem**, e **existem catástrofes**.
 
 **8. Quantos segredos.** **Parametrizável**, número depois.
 
-**9. 🆕 ESCOPO NOVO — o mapa do jogador.** O mapa **abre conforme se anda**, e
-**partes do mapa podem ser COMPRADAS por região**. Isso é uma feature própria
+**9. 🆕 ESCOPO NOVO — o mapa do jogador (CONFIRMADO).** O mapa **abre conforme
+se anda**, e **partes do mapa podem ser COMPRADAS por região**. Feature própria
 (névoa de guerra + comércio de cartografia); a SC3 só previa revelar andando.
+Não confundir com o gabarito da decisão 5 — são coisas diferentes.
 
 **10. Contar não deixa de ser segredo.** Sim: a contagem pode existir sem
 entregar onde.
@@ -85,12 +93,17 @@ próprias e evolutivas.**
 
 **16. Curar é de graça.**
 
-**17.** *(Ainda em aberto.)*
+**17. NÃO EXISTE TELETRANSPORTE no jogo.** ⚠️ Isso **invalida a premissa** da
+task do "Marco de retorno" em `cidades-do-interior`: ela nasceu supondo viagem
+rápida. O Marco vira outra coisa, ou sai.
 
-**18. Toda cidade tem nome**, e **o mundo precisa de PLACAS sinalizando
-posições.** 🆕 (placas não existem hoje.)
+**18. Toda cidade tem nome.** As **placas** sinalizando posições ficaram
+ambíguas: a primeira resposta as pediu, a segunda disse "acredito que não".
+**Pendente de uma palavra** — ver o fim do arquivo.
 
-**19.** *(Ainda em aberto — sugestão pedida.)*
+**19. TERRA ganha "Atolar"** (sugestão aceita): prende o alvo na casa por um
+turno, sem dano. Reusa lama de casa, barrar movimento e postura — três
+mecânicas já provadas. **Mais skills de terra virão depois.**
 
 **20. Comprar e capturar coexistem.** Pets podem ser capturados e vendidos —
 **inclusive os roubados, mas roubado só se vende no MERCADO NEGRO.** 🆕
@@ -141,7 +154,9 @@ dentro.** 🆕
 **33. O tempo passa para o pet mesmo offline — a não ser que ele seja
 CRIOPRESERVADO.** 🆕 (criopreservação não existe hoje.)
 
-**34.** *(Ainda em aberto.)*
+**34. O cuidado é ATIVO, e conviver conta.** Dar atenção e **viver junto**
+reduz drasticamente o envelhecimento e **faz o pet viver mais**. Cuidar não é
+efeito passivo do tempo.
 
 **35. A plantação é do ASSENTAMENTO** — e **o assentamento pode ser comprado,
 inclusive em sociedade com outros.** 🆕
@@ -161,10 +176,16 @@ até haver incremento de jogadores.** 🆕
 
 **40. A conta entra por cadastro**, no jogo ou no portal.
 
-**41. Troca entre contas** exige **autorização das DUAS**. Havendo relato de
-troca indevida ou conta invadida, **a polícia segura o pet até resolver**, e
-**verificação de sessão acontece aqui** — é onde dá para perceber que algo está
-errado. 🆕 *(O `403` vs `404` continua em aberto — ver abaixo.)*
+**41. Troca entre contas** exige **autorização das DUAS** (reafirmado). Havendo
+relato de troca indevida ou conta invadida, **a polícia segura o pet até
+resolver**, e **verificação de sessão acontece aqui** — é onde dá para perceber
+que algo está errado. 🆕
+
+*Decisão de engenharia, tomada pelo assistente por ser técnica e não de produto:*
+**`404`**. Responder `403` confirma a quem perguntou que aquele pet existe, e
+transforma a rota em ferramenta de enumeração de coleção alheia (OWASP API1,
+BOLA). O dono legítimo nunca vê `404`, então nada se perde. Reversível se o
+usuário preferir o contrário.
 
 **42. Pet abandonado volta a ser selvagem.**
 
@@ -199,7 +220,9 @@ mundo pode ser usado em batalha.
 **51.** *(Adiada pelo usuário: "vamos decidir ainda". Registrado: as ilhas podem
 ligar-se por terra ou continuar ilhas; hoje todo servidor vê o mesmo mapa fixo.)*
 
-**52.** *(Ainda em aberto.)*
+**52. Vila NÃO se abandona: ela se RECONSTRÓI.** A única exceção é **morrer
+toda a população**. ⚠️ Isso **inverte a premissa da MB4**, que procurava um
+limiar de magnitude para abandono — o limiar não existe.
 
 ---
 
@@ -209,7 +232,7 @@ ligar-se por terra ou continuar ilhas; hoje todo servidor vê o mesmo mapa fixo.
 administrativa).
 
 **54. Dá para agradar os deuses: existem TEMPLOS, e orar AUMENTA os atributos
-do personagem.** 🆕
+do personagem** — confirmado, e vale para os atributos. 🆕
 
 **55. Os deuses discordam — e podem entrar em GUERRA.** 🆕
 
@@ -217,16 +240,19 @@ do personagem.** 🆕
 
 ## Ainda em aberto — onze itens
 
+**Respondidas na segunda rodada:** 5, 6, 7, 9, 17, 19, 34, 52, e 41 (a parte de
+produto). Restam três, e duas por escolha do usuário:
+
 | # | o que falta |
 |---|---|
-| 5 | reformulada: "a carta" é o GABARITO (`ChartConformance`), o teste que exige mundo e carta idênticos — não o mapa do jogo |
-| 6 | reformulada em linguagem direta |
-| 7 | sugestão pedida ao assistente |
-| 8 | adiada pelo usuário ("pensamos nisso depois") |
-| 9 | respondida sobre o MAPA; a pergunta era sobre o gabarito |
-| 17 | reformulada |
-| 19 | sugestão pedida ao assistente |
-| 34 | reformulada |
-| 41 | `403` vs `404` não respondido |
-| 51 | adiada pelo usuário |
-| 52 | reformulada |
+| 8 | quantos segredos — **adiada pelo usuário** ("pensamos nisso depois") |
+| 18 | **placas** no mundo: pedidas na primeira resposta, "acredito que não" na segunda |
+| 51 | quantas ilhas e como se ligam — **adiada pelo usuário** ("vamos decidir ainda") |
+
+## Duas premissas que caíram, e as tasks precisam mudar
+
+- **17 mata a viagem rápida.** A task do Marco de retorno em
+  `cidades-do-interior` supunha teletransporte. Reescrever ou remover.
+- **52 inverte a MB4.** Ela procurava o limiar de magnitude que abandona uma
+  vila; não há abandono — há reconstrução, exceto se a população inteira
+  morrer. A task passa a ser sobre RECONSTRUÇÃO.

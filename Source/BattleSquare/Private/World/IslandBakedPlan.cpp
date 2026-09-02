@@ -10,6 +10,108 @@
 #include "World/TrailLayout.h"
 #include "World/WorldBudget.h"
 
+namespace FaixasDoTerreno
+{
+	/**
+	 * A partir de que altura o terreno é CUME.
+	 *
+	 * Como fração da altura mais alta do assado, e não em unidades: número
+	 * absoluto escolhido quando só existia um tamanho de ilha é a armadilha
+	 * mais cara deste projeto — ela apareceu medida em sete lugares.
+	 */
+	constexpr float FracaoDoCume = 0.6f;
+}
+
+float UIslandBakedPlan::CoastRadiusAt(float RumoRadianos) const
+{
+	if (CoastRadiusByDegree.Num() == 0)
+	{
+		return LandRadiusUnits;
+	}
+
+	const int32 Graus = CoastRadiusByDegree.Num();
+	const float EmGraus = FMath::Fmod(
+		FMath::RadiansToDegrees(RumoRadianos) + 360.0f, 360.0f);
+
+	const int32 Antes = FMath::Clamp(FMath::FloorToInt(EmGraus), 0, Graus - 1);
+	const int32 Depois = (Antes + 1) % Graus;
+
+	// Interpola entre os graus vizinhos: saltar de grau em grau poria degraus
+	// de costa onde a linha é lisa, e a faixa de praia herdaria os degraus.
+	return FMath::Lerp(CoastRadiusByDegree[Antes], CoastRadiusByDegree[Depois],
+		EmGraus - Antes);
+}
+
+const TCHAR* UIslandBakedPlan::BandDebugName(ETerrainBand Faixa)
+{
+	switch (Faixa)
+	{
+	case ETerrainBand::Praia:         return TEXT("praia");
+	case ETerrainBand::Mata:          return TEXT("mata");
+	case ETerrainBand::Barranco:      return TEXT("barranco");
+	case ETerrainBand::RochaQueimada: return TEXT("rocha queimada");
+	case ETerrainBand::Cume:          return TEXT("cume");
+	default: break;
+	}
+	return TEXT("?");
+}
+
+ETerrainBand UIslandBakedPlan::BandAt(const FVector2D& Onde) const
+{
+	// A ROCHA QUEIMADA vem primeiro: o vulcão queima o que já estava ali,
+	// seja mata, barranco ou praia.
+	if (Parameters.VolcanoScorchedRadiusUnits > 0.0f
+		&& FVector2D::Distance(Onde, Parameters.VolcanoCenterUnits)
+			<= Parameters.VolcanoScorchedRadiusUnits)
+	{
+		return ETerrainBand::RochaQueimada;
+	}
+
+	const int32 Lado = HeightGridSide;
+	if (Lado >= 2 && LandRadiusUnits > 0.0f)
+	{
+		const float Casa = (2.0f * LandRadiusUnits) / (Lado - 1);
+		const int32 Coluna = FMath::Clamp(
+			FMath::RoundToInt((Onde.X + LandRadiusUnits) / Casa), 0, Lado - 1);
+		const int32 Linha = FMath::Clamp(
+			FMath::RoundToInt((Onde.Y + LandRadiusUnits) / Casa), 0, Lado - 1);
+
+		float MaisAlto = 0.0f;
+		for (const float Altura : GroundHeightUnits)
+		{
+			MaisAlto = FMath::Max(MaisAlto, Altura);
+		}
+
+		// O CUME antes do barranco: o alto de uma escarpa ainda é alto.
+		if (MaisAlto > 0.0f
+			&& HeightAtCell(Coluna, Linha)
+				>= MaisAlto * FaixasDoTerreno::FracaoDoCume)
+		{
+			return ETerrainBand::Cume;
+		}
+	}
+
+	const float Raio = Onde.Size();
+
+	if (Raio >= Parameters.BluffInnerRadiusUnits
+		&& Raio <= Parameters.BluffOuterRadiusUnits
+		&& Parameters.BluffOuterRadiusUnits > 0.0f)
+	{
+		return ETerrainBand::Barranco;
+	}
+
+	// A PRAIA mede da COSTA para dentro, nunca do centro para fora: a ilha
+	// deixou de ser um círculo, e uma faixa a distância fixa do centro cairia
+	// no mar numa reentrância.
+	const float NaCosta = CoastRadiusAt(FMath::Atan2(Onde.Y, Onde.X));
+	if (Raio >= NaCosta - Parameters.BeachWidthUnits)
+	{
+		return ETerrainBand::Praia;
+	}
+
+	return ETerrainBand::Mata;
+}
+
 float UIslandBakedPlan::HeightAtCell(int32 Column, int32 Row) const
 {
 	const int32 Indice = Row * HeightGridSide + Column;
@@ -89,6 +191,12 @@ namespace IslandBakedPlan
 		Parametros.GraveyardsPerSettlement = WorldBudget::GraveyardsPerSettlement(Bioma);
 		Parametros.ForgottenGraveyardCount = WorldBudget::ForgottenGraveyardCount(Bioma);
 		Parametros.ForestDensity = WorldBudget::ForestDensity(Bioma);
+		Parametros.BeachWidthUnits = IslandGeography::BeachWidthUnits();
+		Parametros.BluffInnerRadiusUnits = IslandGeography::BluffInnerRadiusUnits();
+		Parametros.BluffOuterRadiusUnits = IslandGeography::BluffOuterRadiusUnits();
+		Parametros.VolcanoCenterUnits = IslandGeography::VolcanoCenterUnits();
+		Parametros.VolcanoScorchedRadiusUnits =
+			IslandGeography::VolcanoScorchedRadiusUnits();
 		return Parametros;
 	}
 
@@ -145,6 +253,13 @@ namespace IslandBakedPlan
 
 		Out.HeightGridSide = HeightGridSide();
 		Out.LandRadiusUnits = IslandGeography::LandRadiusUnits();
+
+		Out.CoastRadiusByDegree.Reset(360);
+		for (int32 Grau = 0; Grau < 360; ++Grau)
+		{
+			Out.CoastRadiusByDegree.Add(IslandGeography::LandRadiusAt(
+				FMath::DegreesToRadians(static_cast<float>(Grau))));
+		}
 
 		const int32 Lado = Out.HeightGridSide;
 		Out.GroundHeightUnits.Reset(Lado * Lado);

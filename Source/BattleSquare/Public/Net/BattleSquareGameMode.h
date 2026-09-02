@@ -319,6 +319,14 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<class AWorldBoundaryWater> AguaDoMundo;
 
+	/** O relevo construído, para o painel poder dizer em que terreno se pisa. */
+	UPROPERTY()
+	TObjectPtr<class ATerrainMesh> RelevoDoMundo;
+
+	/** O traçado assado de que este mundo saiu. Guardado para não recarregar. */
+	UPROPERTY()
+	TObjectPtr<const class UIslandBakedPlan> TracadoAssado;
+
 	/** A altura de repouso do mar, para a onda subir DE algum lugar. */
 	float AguaEmRepousoZ = 0.0f;
 

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "World/IslandBakedPlan.h"
 #include "TerrainMesh.generated.h"
 
 class UIslandBakedPlan;
@@ -77,4 +78,15 @@ private:
 
 	UPROPERTY()
 	float CellSizeUnits = 0.0f;
+
+	/** Que seção da malha ficou com cada faixa. `INDEX_NONE` é faixa ausente. */
+	UPROPERTY()
+	TArray<int32> SectionOfBand;
+
+public:
+	/**
+	 * A seção que ficou com a faixa dada, ou `INDEX_NONE` se ela não existe
+	 * nesta ilha. É por aqui que se verifica que a cor de fato subiu.
+	 */
+	int32 GetSectionOfBand(ETerrainBand Band) const;
 };

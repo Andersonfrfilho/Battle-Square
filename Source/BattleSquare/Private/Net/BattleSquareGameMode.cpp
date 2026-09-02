@@ -1615,6 +1615,8 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 		if (const UIslandBakedPlan* Assado = IslandBakedPlan::LoadForWorld())
 		{
 			Relevo->BuildFrom(*Assado);
+			RelevoDoMundo = Relevo;
+			TracadoAssado = Assado;
 		}
 	}
 
@@ -1832,6 +1834,20 @@ void ABattleSquareGameMode::RefreshRegionResidency()
 		{
 			It.RemoveCurrent();
 		}
+	}
+
+	// EM QUE TERRENO O JOGADOR PISA — antes de qualquer saída antecipada.
+	//
+	// A cor no chão diz o terreno de longe; o painel diz QUAL é, e é o painel
+	// que transforma "aquilo ali é mais escuro" em informação verificável
+	// contra a carta. Chave fixa: é estado que muda ao andar, não evento.
+	if (TracadoAssado)
+	{
+		const FVector2D Onde(Jogador->GetActorLocation());
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("terreno: %s"),
+				UIslandBakedPlan::BandDebugName(TracadoAssado->BandAt(Onde))),
+			0.0f, FColor(200, 200, 150), /*Key=*/747);
 	}
 
 	TSet<FIntPoint> Vivos;

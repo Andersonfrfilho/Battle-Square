@@ -41,6 +41,22 @@ bool FIslandParameterHashChangesWithEveryParameterTest::RunTest(const FString& P
 		{
 			Byte->SetPropertyValue(Valor, Byte->GetPropertyValue(Valor) ^ 1);
 		}
+		else if (const FStructProperty* Estrutura = CastField<FStructProperty>(*Campo))
+		{
+			// O único struct entre os parâmetros é a posição do vulcão. Mexer
+			// nela é mover o vulcão, que é mudança de ilha como qualquer outra.
+			if (Estrutura->Struct == TBaseStructure<FVector2D>::Get())
+			{
+				static_cast<FVector2D*>(Valor)->X += 1000.0f;
+			}
+			else
+			{
+				AddError(FString::Printf(
+					TEXT("o campo %s e um struct que este teste nao sabe mexer"),
+					*Campo->GetName()));
+				return false;
+			}
+		}
 		else
 		{
 			AddError(FString::Printf(

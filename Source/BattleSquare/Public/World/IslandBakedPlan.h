@@ -112,6 +112,49 @@ struct BATTLESQUARE_API FIslandParameters
 
 	UPROPERTY()
 	float ForestDensity = 0.0f;
+
+	/**
+	 * As fronteiras das FAIXAS DE TERRENO.
+	 *
+	 * Estão aqui, e não lidas de `IslandGeography` na hora de construir, por
+	 * duas razões que puxam para o mesmo lado: elas são parâmetros da ilha, e
+	 * portanto mudá-las tem de envelhecer o assado; e com elas dentro, a faixa
+	 * de cada ponto é derivável do assado SOZINHO — uma fonte de verdade, em
+	 * vez de o mundo perguntar ao gerador o que o assado já deveria saber.
+	 */
+	UPROPERTY()
+	float BeachWidthUnits = 0.0f;
+
+	UPROPERTY()
+	float BluffInnerRadiusUnits = 0.0f;
+
+	UPROPERTY()
+	float BluffOuterRadiusUnits = 0.0f;
+
+	UPROPERTY()
+	FVector2D VolcanoCenterUnits = FVector2D::ZeroVector;
+
+	UPROPERTY()
+	float VolcanoScorchedRadiusUnits = 0.0f;
+};
+
+/**
+ * AS FAIXAS DE TERRENO — o que a cor conta ao jogador.
+ *
+ * A ordem importa: a faixa de um ponto é a PRIMEIRA que o reivindica, e isso
+ * é decisão, não acaso. A rocha queimada vem antes de tudo porque o vulcão
+ * queima o que já estava ali; o cume vem antes do barranco porque o alto de
+ * uma escarpa ainda é alto.
+ */
+UENUM()
+enum class ETerrainBand : uint8
+{
+	Praia,
+	Mata,
+	Barranco,
+	RochaQueimada,
+	Cume,
+	Count UMETA(Hidden)
 };
 
 /**
@@ -325,6 +368,16 @@ public:
 	UPROPERTY()
 	float LandRadiusUnits = 0.0f;
 
+	/**
+	 * O raio de terra em cada GRAU de rumo — a linha da costa.
+	 *
+	 * A ilha deixou de ser um círculo, então um raio só não diz onde a terra
+	 * acaba. Sem isto a faixa de praia sairia a uma distância fixa do centro, e
+	 * numa reentrância ela cairia no mar.
+	 */
+	UPROPERTY()
+	TArray<float> CoastRadiusByDegree;
+
 	/** As alturas, linha a linha. Tem `HeightGridSide * HeightGridSide` casas. */
 	UPROPERTY()
 	TArray<float> GroundHeightUnits;
@@ -358,6 +411,21 @@ public:
 
 	/** A altura no índice de grade, sem o consumidor refazer a conta do índice. */
 	float HeightAtCell(int32 Column, int32 Row) const;
+
+	/** Onde a terra acaba no rumo dado. Interpola entre os graus vizinhos. */
+	float CoastRadiusAt(float BearingRadians) const;
+
+	/**
+	 * A FAIXA DE TERRENO num ponto — a única resposta desta pergunta.
+	 *
+	 * Mora aqui, e não no ator, porque quem pinta o chão e quem diz ao jogador
+	 * em que terreno ele está têm de dar a mesma resposta. Duas tabelas
+	 * concordam até a primeira edição (L-032).
+	 */
+	ETerrainBand BandAt(const FVector2D& PositionUnits) const;
+
+	/** O nome da faixa, para o painel. */
+	static const TCHAR* BandDebugName(ETerrainBand Band);
 };
 
 namespace IslandBakedPlan

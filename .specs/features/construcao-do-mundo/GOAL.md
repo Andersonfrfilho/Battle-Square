@@ -19,14 +19,17 @@ ver. Não faltam elementos de design. Falta encarnação.
 
 ## PRONTO é isto, e nada menos
 
-- [ ] As 20 tarefas de `.specs/features/construcao-do-mundo/tasks.md` fechadas
-- [ ] Bateria completa verde (hoje 679; o número só sobe)
-- [ ] As cinco auditorias limpas
-- [ ] **T19** passando: o teste que compara mundo construído com o assado e
-      falha nomeando o que faltou
-- [ ] **T20** feito: a ilha percorrida em PIE, conferida contra
-      `docs/mundo/carta-ilha-de-mata.html`
-- [ ] Um commit por task, cada um com o motivo — não só o quê
+- [x] As 20 tarefas de `.specs/features/construcao-do-mundo/tasks.md` fechadas
+- [x] Bateria completa verde — **750/750**, zero falhas (era 679)
+- [x] As cinco auditorias limpas, mais a sonda de isolamento
+- [x] **T19** passando: `BattleSquare.WorldMatchesBakedPlan` — e o CAMINHO DE
+      FALHA também tem prova, alimentado com um mundo incompleto de propósito
+- [ ] **T20**: a ilha percorrida em PIE. A metade automatizável está feita —
+      **todos os números da carta viraram teste** (`BattleSquare.ChartConformance`,
+      22 contagens, todas batendo). Falta a passagem do olho, que é a única
+      parte que teste nenhum faz: roteiro em
+      `docs/verification/construcao-do-mundo.md`, 15 perguntas de sim ou não
+- [x] Um commit por task, cada um com o motivo — não só o quê
 
 Enquanto qualquer caixa estiver aberta, o objetivo **continua**.
 

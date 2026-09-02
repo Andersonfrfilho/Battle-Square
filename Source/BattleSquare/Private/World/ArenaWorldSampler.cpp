@@ -2,6 +2,9 @@
 
 #include "World/ArenaWorldSampler.h"
 
+#include "World/IslandBakedPlan.h"
+#include "World/WaterFooting.h"
+
 #include "Battle/BattleArena.h"
 #include "Environment/ForestBackdrop.h"
 #include "Environment/WorldBoundaryWater.h"
@@ -108,10 +111,24 @@ void FArenaWorldSampler::Collect(const UWorld* World, const FVector& Around,
 				// terreno mais interessante da beira — nunca apareceria.
 				if (Distancia >= Agua->ShoreRadiusUnits)
 				{
+					// DE QUE FLUIDO é esta água, perguntado ao assado — que é
+					// quem sabe, e ponto a ponto: a água na saia do vulcão é
+					// termal e a mesma água rio abaixo é doce.
+					//
+					// Aqui, e não na metade pura: colher exige o mundo, e é
+					// esta a metade que o tem.
+					uint8 Fluido = static_cast<uint8>(EFluidKind::AguaDoce);
+					if (const UIslandBakedPlan* Assado = IslandBakedPlan::LoadedOrNull())
+					{
+						Fluido = static_cast<uint8>(WaterFooting::FluidAt(
+							*Assado, FVector2D(Ponto)));
+					}
+
 					OutFeatures.Add({ Ponto,
 						Distancia < Agua->ShoreRadiusUnits + TamanhoDaCasa
 							? EWorldFeatureKind::Shore
-							: EWorldFeatureKind::DeepWater });
+							: EWorldFeatureKind::DeepWater,
+						Fluido });
 				}
 			}
 		}

@@ -112,7 +112,8 @@ namespace
 	}
 }
 
-TArray<uint8> FArenaFromWorld::Build(const FArenaFromWorldParams& Params)
+TArray<uint8> FArenaFromWorld::Build(const FArenaFromWorldParams& Params,
+	TArray<uint8>* OutFluids)
 {
 	if (Params.Features.IsEmpty()
 		|| Params.Columns <= 0 || Params.Rows <= 0
@@ -123,6 +124,11 @@ TArray<uint8> FArenaFromWorld::Build(const FArenaFromWorldParams& Params)
 
 	TArray<uint8> Layout;
 	Layout.Init(static_cast<uint8>(ECellProperty::None), Params.Columns * Params.Rows);
+
+	if (OutFluids)
+	{
+		OutFluids->Init(0, Params.Columns * Params.Rows);
+	}
 
 	// O canto da grade, para converter posição de mundo em casa. A grade fica
 	// CENTRADA no ponto do encontro: a batalha acontece onde os dois se
@@ -154,6 +160,16 @@ TArray<uint8> FArenaFromWorld::Build(const FArenaFromWorldParams& Params)
 		if (PesoDoTerreno(Novo) > PesoDoTerreno(Layout[Indice]))
 		{
 			Layout[Indice] = Novo;
+
+			// O FLUIDO SAI DO MESMO DESEMPATE que a propriedade, e é por isso
+			// que ele não tem função própria: uma segunda passada escolhendo
+			// "qual amostra vence" concordaria com esta até a primeira edição,
+			// e aí a casa teria a fundura de uma amostra e a substância de
+			// outra — sem nada acusar.
+			if (OutFluids)
+			{
+				(*OutFluids)[Indice] = Amostra.Fluid;
+			}
 		}
 	}
 

@@ -1,6 +1,8 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "World/EncounterMatchAssembler.h"
+
+#include "Battle/FluidRegistry.h"
 #include "Battle/BattleArena.h"
 #include "Environment/IslandGeography.h"
 #include "Environment/ScenaryClimate.h"
@@ -107,10 +109,35 @@ bool FEncounterMatchAssembler::AssembleFromEncounter(const FEncounterMatchParams
 		Terreno.bFlooded = WorldWeather::IsFlooding(Params.Weather);
 		Terreno.Features = Params.WorldFeatures;
 
-		const TArray<uint8> DoMundo = FArenaFromWorld::Build(Terreno);
+		// O FLUIDO VEM JUNTO da propriedade, da mesma montagem. Pedi-lo numa
+		// segunda passada faria a casa ter a fundura de uma amostra e a
+		// substancia de outra.
+		TArray<uint8> FluidosDoMundo;
+		const TArray<uint8> DoMundo = FArenaFromWorld::Build(Terreno, &FluidosDoMundo);
 		if (DoMundo.Num() == OutInitialState.CellLayout.Num())
 		{
 			OutInitialState.CellLayout = DoMundo;
+
+			// So materializa a lista quando ha alguma substancia FORA do
+			// padrao: uma arena de agua doce nao paga um byte por casa para
+			// dizer que agua e agua.
+			bool bAlgumaDiverge = false;
+			for (int32 Casa = 0; Casa < FluidosDoMundo.Num(); ++Casa)
+			{
+				const EFluidKind Padrao =
+					FBattleState::DefaultFluidFor(DoMundo[Casa]);
+				if (FluidosDoMundo[Casa] != 0
+					&& static_cast<EFluidKind>(FluidosDoMundo[Casa]) != Padrao)
+				{
+					bAlgumaDiverge = true;
+					break;
+				}
+			}
+
+			if (bAlgumaDiverge)
+			{
+				OutInitialState.CellFluid = FluidosDoMundo;
+			}
 		}
 	}
 

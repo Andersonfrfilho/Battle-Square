@@ -26,8 +26,21 @@ enum class EWorldFeatureKind : uint8
 
 struct FWorldFeatureSample
 {
+
 	FVector Location = FVector::ZeroVector;
 	EWorldFeatureKind Kind = EWorldFeatureKind::Solid;
+
+	/**
+	 * DE QUE FLUIDO é a água desta amostra, como `EFluidKind`.
+	 *
+	 * Viaja na AMOSTRA porque é a amostra que sabe onde ela foi colhida, e a
+	 * substância é propriedade da posição — a água na saia do vulcão é termal
+	 * e a mesma água rio abaixo é doce. Quem colhe é a metade suja, que tem
+	 * `UWorld`; quem decide o tabuleiro continua puro.
+	 *
+	 * Zero em amostra seca, e é o mesmo zero de "sem fluido".
+	 */
+	uint8 Fluid = 0;
 };
 
 struct FArenaFromWorldParams
@@ -79,7 +92,8 @@ public:
 	 * mundo tem de cair no catálogo de sempre, e não num campo todo neutro
 	 * que pareceria uma escolha.
 	 */
-	static TArray<uint8> Build(const FArenaFromWorldParams& Params);
+	static TArray<uint8> Build(const FArenaFromWorldParams& Params,
+		TArray<uint8>* OutFluids = nullptr);
 
 	/**
 	 * Nenhuma casa INICIAL pode ficar bloqueada.

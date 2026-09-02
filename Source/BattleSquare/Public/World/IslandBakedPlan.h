@@ -583,6 +583,21 @@ namespace IslandBakedPlan
 	BATTLESQUARE_API UIslandBakedPlan* Load();
 
 	/**
+	 * O assado JÁ CARREGADO, ou nulo — nunca força uma carga.
+	 *
+	 * Existe para quem roda em caminho quente: o coletor de arena é chamado a
+	 * cada encontro, e carregar um `UDataAsset` de 676 KB ali dentro é
+	 * trabalho de I/O no meio de uma amostragem. Num mundo de teste sem o
+	 * assado carregado isso chegou a derrubar o processo.
+	 *
+	 * Quem constrói o mundo já chamou `LoadForWorld` no início; quando um
+	 * encontro acontece, ele está carregado. Nulo aqui é degradar para o
+	 * padrão, e não falhar: uma arena sem substância declarada é água doce,
+	 * que é exatamente o que ela era antes deste eixo existir.
+	 */
+	BATTLESQUARE_API UIslandBakedPlan* LoadedOrNull();
+
+	/**
 	 * Carrega o assado E confere que ele é da configuração de agora.
 	 *
 	 * Devolve nulo quando diverge, depois de dizer alto qual parâmetro mudou.

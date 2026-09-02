@@ -529,6 +529,12 @@ namespace IslandBakedPlan
 		return LoadObject<UIslandBakedPlan>(nullptr, AssetPath());
 	}
 
+	UIslandBakedPlan* LoadedOrNull()
+	{
+		// `FindObject`, e nunca `LoadObject`: procurar não toca em disco.
+		return FindObject<UIslandBakedPlan>(nullptr, AssetPath());
+	}
+
 	UIslandBakedPlan* LoadForWorld()
 	{
 		UIslandBakedPlan* Assado = Load();

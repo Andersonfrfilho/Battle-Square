@@ -221,6 +221,12 @@ void FBattleDataTranslator::TranslatePet(
 			? static_cast<uint8>(FMath::Clamp(Source.Moves[Indice].TerrainDuration, 0, 5))
 			: 0;
 
+		// Concentração: o núcleo recebe o golpe já EFETIVO, e "exige foco" é
+		// característica do golpe, não do pet.
+		OutBattleState.MoveNeedsFocus[Indice] =
+			(Source.Moves.IsValidIndex(Indice) && Source.Moves[Indice].bNeedsFocus)
+				? 1 : 0;
+
 		// Teto de 100: devolver MAIS vida do que o dano causado faria um golpe
 		// fraco em alvo defendido render mais que um forte, e o jogador não
 		// teria como ler isso.

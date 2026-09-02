@@ -53,6 +53,7 @@ uint64 FBattleState::ComputeHash() const
 			Hash = CombineBattleHash(Hash, static_cast<uint64>(static_cast<int64>(Pet->MovePowers[Indice])));
 			Hash = CombineBattleHash(Hash, Pet->MoveTerrainEffects[Indice]);
 			Hash = CombineBattleHash(Hash, Pet->MoveTerrainDurations[Indice]);
+			Hash = CombineBattleHash(Hash, Pet->MoveNeedsFocus[Indice]);
 			Hash = CombineBattleHash(Hash, Pet->MoveDrainPercents[Indice]);
 			Hash = CombineBattleHash(Hash, Pet->MoveConducts[Indice]);
 			Hash = CombineBattleHash(Hash, Pet->MoveEffectStats[Indice]);

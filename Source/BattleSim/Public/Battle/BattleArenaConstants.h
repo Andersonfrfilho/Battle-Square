@@ -91,4 +91,5 @@ namespace BattleArenaConstants
 	 * (150): mais que ocupar terreno bom, menos que pegar alguém sem chão.
 	 */
 	constexpr int32 ElevatedAttackPercent = 130;
+
 }

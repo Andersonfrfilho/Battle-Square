@@ -105,7 +105,32 @@ enum class EBattleEventType : uint8
 	// negativo ali faria a linha dizer o contrário do que aconteceu.
 	//
 	// No FIM do enum, pelo mesmo motivo dos anteriores.
-	VidaDrenada
+	VidaDrenada,
+
+	// O FOGO NÃO PEGOU: o golpe acertou, mas a casa estava molhada e a brasa
+	// não ficou. Evento próprio, e não o simples silêncio de "não depositou":
+	// sem linha nenhuma, o jogador vê o acerto e não vê a brasa, e a única
+	// conclusão disponível é que o golpe falhou — quando na verdade a regra
+	// funcionou exatamente como devia.
+	//
+	// `Detail` carrega o FLUIDO que apagou, porque "apagou na água" e "apagou
+	// no pântano" são a mesma regra contada com a palavra do lugar.
+	//
+	// No FIM do enum, pelo mesmo motivo dos anteriores.
+	FogoApagou,
+
+	// A CONCENTRAÇÃO QUEBROU: o pet tinha escolhido um golpe que exige foco e
+	// levou dano antes de concluí-lo. Evento próprio, e não `PosturaFalhou`:
+	// aquele narra uma postura que não pegou, e o jogador que lê "a postura
+	// falhou" procura o erro na postura que ele escolheu — quando a causa foi
+	// o outro tê-lo acertado.
+	//
+	// `Value` carrega o DANO acumulado que quebrou o foco, porque a frase
+	// precisa dizer o quanto — "quebrou por 3" e "quebrou por 40" ensinam
+	// coisas diferentes sobre o que evitar.
+	//
+	// No FIM do enum, pelo mesmo motivo dos anteriores.
+	ConcentracaoQuebrada
 };
 
 // Sentinela para TargetId/ActorId quando não há alvo aplicável

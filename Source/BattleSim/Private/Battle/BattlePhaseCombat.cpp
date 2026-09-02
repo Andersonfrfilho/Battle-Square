@@ -297,6 +297,30 @@ namespace
 			Attacker->GetMoveTerrainEffect(MoveIndex),
 			Attacker->GetMoveTerrainDuration(MoveIndex) };
 
+		// CONCENTRAÇÃO QUEBRADA: quem está apanhando não conclui um golpe que
+		// exige foco.
+		//
+		// A checagem vem DEPOIS de resolver alvo e golpe, e antes de qualquer
+		// efeito: quebrar o foco não pode aplicar meio golpe — nem o efeito de
+		// atributo, nem o terreno, nem a drenagem. Golpe pela metade seria a
+		// regra punindo e recompensando no mesmo slot.
+		//
+		// E é aqui, e não na escolha da ação: o jogador escolhe antes de saber
+		// se vai apanhar, e proibir a escolha diria "você não pode" a quem
+		// ainda podia. A ação se escolhe; o dano é que a desfaz.
+		if (Attacker->MoveNeedsFocusAt(MoveIndex) && Attacker->IsUnderFire())
+		{
+			FBattleEvent Quebrou;
+			Quebrou.Type = EBattleEventType::ConcentracaoQuebrada;
+			Quebrou.SlotIndex = SlotIndex;
+			Quebrou.Phase = 4;
+			Quebrou.ActorId = Attacker->PetId;
+			Quebrou.TargetId = Target->PetId;
+			Quebrou.Value = Attacker->PendingDamage;
+			OutTrace.Add(Quebrou);
+			return;
+		}
+
 		// A MAGIA DE ATRIBUTO acontece ANTES do dano, e por dois motivos: um
 		// golpe que sobe o próprio ataque precisa valer já neste acerto, senão
 		// o jogador gasta um slot para nada; e um que derruba a defesa do
@@ -573,6 +597,37 @@ namespace
 				// casa volta a ser chão. É o único depósito que REMOVE, e por
 				// isso ele passa por aqui em vez de virar mais um terreno que
 				// se acumula sobre o anterior.
+				// A ÁGUA APAGA O FOGO.
+				//
+				// Antes disto, o fogo apenas NÃO CONDUZIA — a ausência de uma
+				// regra, não uma regra. Deixar brasa acesa dentro d'água é a
+				// casa contando duas coisas incompatíveis ao mesmo tempo, e o
+				// jogador que aprendeu "molhado conduz" não tem como adivinhar
+				// que molhado também deveria apagar.
+				//
+				// LAVA NÃO APAGA, e é por isso que a pergunta é ao registro de
+				// fluidos e não à fundura da casa: a lava é funda como a água
+				// e faz o oposto dela. `IsWater` é onde essa diferença já mora.
+				const EFluidKind FluidoDaCasa =
+					State.FluidAt(TargetPtr->Column, TargetPtr->Row);
+				const bool bMolhado = FluidRegistry::IsWater(FluidoDaCasa);
+				const bool bEhFogo =
+					Deposito.Terrain == static_cast<uint8>(ECellProperty::Damage);
+
+				if (bMolhado && bEhFogo)
+				{
+					FBattleEvent Apagou;
+					Apagou.Type = EBattleEventType::FogoApagou;
+					Apagou.SlotIndex = SlotIndex;
+					Apagou.Phase = 4;
+					Apagou.ActorId = AttackerPtr->PetId;
+					Apagou.TargetId = TargetPtr->PetId;
+					Apagou.ToCell = PackCell(TargetPtr->Column, TargetPtr->Row);
+					Apagou.Detail = static_cast<int32>(FluidoDaCasa);
+					OutTrace.Add(Apagou);
+					return;
+				}
+
 				const bool bSeca =
 					Deposito.Terrain == static_cast<uint8>(ECellProperty::Dries);
 

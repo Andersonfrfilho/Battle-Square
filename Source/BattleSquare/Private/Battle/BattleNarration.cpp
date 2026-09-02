@@ -4,6 +4,7 @@
 
 #include "Battle/BattleEvent.h"
 #include "Battle/BattleState.h"
+#include "Battle/FluidRegistry.h"
 
 #define LOCTEXT_NAMESPACE "BattleNarration"
 
@@ -34,6 +35,29 @@ namespace
 			case ECellProperty::Buff:         return LOCTEXT("TerrenoBonus", "terreno de bônus");
 			case ECellProperty::Blocked:      return LOCTEXT("TerrenoObstaculo", "obstáculo");
 			default:                          return LOCTEXT("TerrenoSeco", "chão seco");
+		}
+	}
+
+	/**
+	 * O fluido como o JOGADOR lê.
+	 *
+	 * `FFluidTraits::DebugName` existe e não serve aqui: ele é string de
+	 * desenvolvimento, não passa pela coleta e nasceria faltando em todo
+	 * idioma que não o português. Uma tabela a mais é o preço de a frase ser
+	 * traduzível — e é o mesmo preço que `DescribeTerrain` já paga.
+	 */
+	FText DescribeFluid(EFluidKind Fluid)
+	{
+		switch (Fluid)
+		{
+			case EFluidKind::AguaDoce:      return LOCTEXT("FluidoAguaDoce", "água");
+			case EFluidKind::AguaSalgada:   return LOCTEXT("FluidoAguaSalgada", "água salgada");
+			case EFluidKind::AguaTermal:    return LOCTEXT("FluidoAguaTermal", "água termal");
+			case EFluidKind::AguaDePantano: return LOCTEXT("FluidoAguaDePantano", "água de pântano");
+			case EFluidKind::AguaDeCaverna: return LOCTEXT("FluidoAguaDeCaverna", "água de caverna");
+			case EFluidKind::Lama:          return LOCTEXT("FluidoLama", "lama");
+			case EFluidKind::Lava:          return LOCTEXT("FluidoLava", "lava");
+			default:                        return LOCTEXT("FluidoNenhum", "água");
 		}
 	}
 }
@@ -175,6 +199,30 @@ FText FBattleNarration::Describe(const FBattleEvent& Event, const FString& Actor
 		// falasse em curar faria parecer que ele se tratou sozinho.
 		return FText::Format(LOCTEXT("VidaDrenada",
 			"{Actor} drenou {Quanto} de vida de {Target}"), ArgsDreno);
+	}
+
+	case EBattleEventType::FogoApagou:
+	{
+		FFormatNamedArguments ArgsFogo = Args;
+		ArgsFogo.Add(TEXT("Fluido"),
+			DescribeFluid(static_cast<EFluidKind>(Event.Detail)));
+		// Diz que o GOLPE ACERTOU e que foi a ÁGUA que apagou. Sem as duas
+		// metades, o jogador lê um acerto sem brasa e conclui que o golpe
+		// falhou — quando a regra funcionou exatamente como devia.
+		return FText::Format(LOCTEXT("FogoApagou",
+			"{Actor} acertou {Target}, mas a {Fluido} apagou o fogo"), ArgsFogo);
+	}
+
+	case EBattleEventType::ConcentracaoQuebrada:
+	{
+		FFormatNamedArguments ArgsFoco = Args;
+		ArgsFoco.Add(TEXT("Quanto"), FText::AsNumber(Event.Value));
+		// Diz a CAUSA, e diz o quanto: sem o número, "perdeu a concentração"
+		// é um azar; com ele, é uma conta que o jogador pode evitar da próxima
+		// vez tomando menos dano antes do slot.
+		return FText::Format(LOCTEXT("ConcentracaoQuebrada",
+			"{Actor} perdeu a concentração — levou {Quanto} antes de concluir"),
+			ArgsFoco);
 	}
 
 	case EBattleEventType::Revelado:

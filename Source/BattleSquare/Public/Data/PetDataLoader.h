@@ -45,6 +45,16 @@ struct FLoadedPetMove
 	 */
 	FString EffectStat = TEXT("none");
 	int32 EffectPercent = 0;
+
+	/**
+	 * O golpe exige CONCENTRAÇÃO: quem já está apanhando neste turno não o
+	 * conclui.
+	 *
+	 * `false` é o golpe de sempre, e é o que todo golpe assinado antes desta
+	 * feature continua sendo — a regra nova não pode desligar retroativamente
+	 * um golpe que ninguém marcou.
+	 */
+	bool bNeedsFocus = false;
 };
 
 struct FLoadedPetRecord

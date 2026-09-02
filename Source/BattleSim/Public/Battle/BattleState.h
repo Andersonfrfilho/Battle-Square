@@ -180,6 +180,18 @@ struct FPetState
 	uint8 MoveTerrainDurations[4] = { 0, 0, 0, 0 };
 
 	/**
+	 * Quais golpes exigem CONCENTRAÇÃO — e portanto falham em quem está
+	 * apanhando neste turno.
+	 *
+	 * Zero é o golpe de sempre. A regra nova não pode desligar
+	 * retroativamente um golpe que ninguém marcou: isso mudaria o
+	 * comportamento de todo pet já cadastrado sem uma linha de cadastro ter
+	 * mudado, e o dono só descobriria perdendo.
+	 */
+	UPROPERTY()
+	uint8 MoveNeedsFocus[4] = { 0, 0, 0, 0 };
+
+	/**
 	 * Quanto do dano causado o golpe DEVOLVE como vida, em porcentagem.
 	 *
 	 * Zero é o golpe de sempre. Propriedade do GOLPE e não do tipo: assim
@@ -306,6 +318,21 @@ struct FPetState
 	{
 		return MoveIndex < 4 ? MoveTerrainDurations[MoveIndex] : 0;
 	}
+
+	bool MoveNeedsFocusAt(uint8 MoveIndex) const
+	{
+		return MoveIndex < 4 && MoveNeedsFocus[MoveIndex] != 0;
+	}
+
+	/**
+	 * ESTÁ APANHANDO neste turno.
+	 *
+	 * Lê `PendingDamage`, que é o dano ACUMULADO e ainda não aplicado
+	 * (BTL-07: F5 aplica tudo de uma vez). Perguntar à vida em vez disso
+	 * responderia sempre "não", porque dentro do turno a vida ainda não caiu
+	 * — e a regra inteira nasceria morta, verde em todo teste.
+	 */
+	bool IsUnderFire() const { return PendingDamage > 0; }
 
 	uint8 GetMoveDrainPercent(uint8 MoveIndex) const
 	{

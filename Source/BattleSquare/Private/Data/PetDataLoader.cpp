@@ -86,6 +86,11 @@ namespace
 			(*Objeto)->TryGetStringField(TEXT("effectStat"), Golpe.EffectStat);
 			(*Objeto)->TryGetNumberField(TEXT("effectPercent"), Golpe.EffectPercent);
 
+			// Ausente é FALSO: golpe assinado antes da concentração existir
+			// não pode passar a falhar sob dano sem uma linha do cadastro ter
+			// mudado. O dono só descobriria perdendo.
+			(*Objeto)->TryGetBoolField(TEXT("needsFocus"), Golpe.bNeedsFocus);
+
 			if (!Golpe.Name.IsEmpty())
 			{
 				OutMoves.Add(Golpe);

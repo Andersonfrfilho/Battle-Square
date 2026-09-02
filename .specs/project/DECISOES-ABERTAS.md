@@ -280,11 +280,41 @@ pet indefeso —, mas quem move a posse é o mesmo código, com a mesma trilha.
 
 ### O que ainda falta decidir
 
-**K1. Vender para NPC, para jogador, ou os dois?** ⬜
-**K2. A venda tem preço livre ou tabelado?** ⬜ (o `SettlementEconomy` já tem
-tabela, e a regra da casa diz para não escrever preço à mão)
-**K3. O mercado-negro é lugar no mapa ou estado do vendedor?** ⬜ — se for
-lugar, ele entra na carta; se for estado, ele não aparece e é achado.
+**K1. Vender para NPC, para jogador, ou os dois?** ✅ *"pode vender para os
+dois"*
+→ A transferência precisa aceitar **contraparte de dois tipos**. O NPC compra
+sempre (é ele que dá liquidez ao preço tabelado); o jogador compra se quiser, e
+aí a venda vira uma troca com dinheiro de um lado.
+
+**K2. Preço livre ou tabelado?** ✅ *"tabelado"*
+→ Sai de `SettlementEconomy`, como a regra da casa exige. Preço escrito à mão
+numa tarefa de venda recriaria o defeito que o próprio comentário do módulo já
+nomeia (o raio da ilha).
+
+⚠️ **Tabelado com NPC comprando sempre é uma torneira de dinheiro**, e ela
+alimenta a massa monetária que você mandou medir na D1. As duas se conversam:
+quem tabela o preço decide quanto dinheiro entra no mundo por hora.
+
+**K3. O mercado-negro é lugar ou estado?** ✅ *"é lugar"*
+
+→ **E isso faz duas features se encontrarem.** Lugar entra na carta, porque o
+gabarito exige que o mundo bata com ela — e um mercado-negro que a carta anuncia
+é um mercado-negro **com placa**, que não é mercado-negro.
+
+A saída não é exceção: é a `segredos-e-a-carta`, que você já respondeu. Ela
+existe justamente para a carta dizer *"há coisas que eu não mostro"* sem dizer
+quais. O mercado-negro vira o **primeiro cliente real** dela:
+
+- é **lugar** (K3), então tem posição no mundo;
+- é **escondido** (J4: *"lugares escondidos"*), então a carta o CONTA sem o
+  apontar;
+- e o mapa do jogador o revela **andando** (J1), como todo o resto.
+
+Sem os segredos, o mercado-negro precisaria de uma exceção no gabarito — e
+exceção no gabarito é o começo do gabarito não valer.
+
+**K4. Quantos mercados-negros, e onde?** ⬜ — depende de quantos segredos (J4),
+que ficou em aberto.
 
 ---
 

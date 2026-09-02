@@ -2,7 +2,7 @@
 
 > **As decisões de conteúdo desta feature foram respondidas em 02/09/2026.**
 > Elas vivem em `.specs/project/DECISOES.md` — fonte única, não copiar para cá.
-> Onze itens seguem em aberto, e estão listados no fim daquele arquivo.
+> Três itens seguem em aberto, e estão listados no fim daquele arquivo.
 
 
 ## O objetivo, numa frase

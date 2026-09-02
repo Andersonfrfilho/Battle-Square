@@ -238,7 +238,7 @@ do personagem** — confirmado, e vale para os atributos. 🆕
 
 ---
 
-## Ainda em aberto — onze itens
+## Ainda em aberto — TRÊS itens
 
 **Respondidas na segunda rodada:** 5, 6, 7, 9, 17, 19, 34, 52, e 41 (a parte de
 produto). Restam três, e duas por escolha do usuário:

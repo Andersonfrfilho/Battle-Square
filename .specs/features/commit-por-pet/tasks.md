@@ -59,7 +59,7 @@ de medição é como se cobra zero onde o certo é cobrar o parâmetro.
 
 ---
 
-## CP2 — Aliados nascem em casas DIFERENTES
+## CP2 — Aliados nascem em casas DIFERENTES ✅ FEITO
 > 🤖 Modelo: `sonnet`
 
 **Dependências:** CP1 (o teto decide quantas casas iniciais precisam existir).

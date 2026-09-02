@@ -193,12 +193,41 @@ void FBattleState::PlaceDuelistsAtStartingCells()
 	// duelo e não uma perseguição na diagonal.
 	const uint8 LinhaDoMeio = static_cast<uint8>((GridRows - 1) / 2);
 
+	// ALIADOS NÃO NASCEM UM DENTRO DO OUTRO.
+	//
+	// Antes disto, TODO pet de um lado ia para a mesma casa. Com dois aliados
+	// eles nasciam empilhados, e a não-coabitação (DP-02) os barrava no
+	// primeiro slot — a batalha abria com os dois se empurrando sem ninguém ter
+	// escolhido nada. Medido na CP1: quebra no SEGUNDO pet, e com quatro por
+	// lado são doze pares dividindo casa.
+	//
+	// O PRIMEIRO de cada lado fica na LINHA DO MEIO, e os seguintes se abrem
+	// para os lados dela — um acima, um abaixo, um mais acima. Empilhar a
+	// partir da linha 0 mudaria a casa inicial do DUELO, e todo instantâneo de
+	// determinismo de cenário que nem tem aliado passaria a divergir.
+	int32 QuantosNoLado[2] = { 0, 0 };
+
 	for (FPetState& Pet : Pets)
 	{
+		const int32 Lado = Pet.Side < 2 ? Pet.Side : 0;
+		const int32 Ordem = QuantosNoLado[Lado]++;
+
 		Pet.Column = Pet.Side == 0
 			? 0
 			: static_cast<uint8>(GridColumns - 1);
-		Pet.Row = LinhaDoMeio;
+
+		// 0, +1, -1, +2, -2… a partir do meio. O deslocamento é o mesmo dos
+		// dois lados, então a batalha continua simétrica.
+		const int32 Passo = (Ordem + 1) / 2;
+		const int32 Deslocamento = (Ordem % 2 == 1) ? Passo : -Passo;
+		const int32 Alvo = static_cast<int32>(LinhaDoMeio) + Deslocamento;
+
+		// PRENDE na grade em vez de sair dela. Um lado com mais pets do que a
+		// coluna comporta volta a empilhar — e isso é honesto: a CP1 mediu que
+		// o teto por lado é a ALTURA da grade, e passar dele é decisão de quem
+		// monta a partida, não deste laço.
+		Pet.Row = static_cast<uint8>(
+			FMath::Clamp(Alvo, 0, static_cast<int32>(GridRows) - 1));
 	}
 }
 

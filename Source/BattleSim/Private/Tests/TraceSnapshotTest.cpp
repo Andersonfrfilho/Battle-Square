@@ -51,6 +51,18 @@ namespace
 		return Result;
 	}
 
+	/**
+	 * A ASSINATURA de um cenário, num número.
+	 *
+	 * `SerializeTrace` da o traço inteiro; isto o reduz a algo que cabe numa
+	 * constante e sobrevive a um `git diff`. Guardar o traço por extenso daria
+	 * um teste de milhares de linhas que ninguém revisa.
+	 */
+	uint32 AssinaturaDoTraco(const TArray<FBattleEvent>& Traco)
+	{
+		return GetTypeHash(SerializeTrace(Traco));
+	}
+
 	// Roda um cenário duas vezes e compara linha a linha, apontando a
 	// primeira divergência em vez de só "diferente".
 	bool RunAndCompareSnapshot(FAutomationTestBase& Test, const TCHAR* ScenarioName, const FBattleState& InitialState, const FTurnCommit& LeftCommit, const FTurnCommit& RightCommit)
@@ -147,4 +159,70 @@ bool FTraceSnapshotDeterminismTest::RunTest(const FString& Parameters)
 	}
 
 	return bAllPassed;
+}
+
+
+// ---------------------------------------------------------------------------
+// O QUE O TESTE ACIMA NÃO PROVA — e que a CP3 exige.
+//
+// `FiveScenariosProduceIdenticalTraces` roda o MESMO cenário duas vezes NO
+// MESMO PROCESSO e compara A com B. Isso prova repetibilidade DENTRO de uma
+// execução; não prova estabilidade ATRAVÉS de uma mudança. Se um refatoramento
+// alterasse todos os traços, A e B mudariam juntos e ele passaria — e o nome
+// dele ("produzem traços idênticos") faria qualquer leitor concluir o
+// contrário.
+//
+// Este teste guarda os NÚMEROS. Uma mudança que altere o traço ou o hash de um
+// cenário de 1 pet por lado REPROVA aqui, e é exatamente o contrapeso que a CP3
+// pede: o commit não entra no `ComputeHash`, então divergência não é "esperada
+// pela mudança de contrato" — é defeito.
+//
+// ⚠️ Se este teste reprovar depois de uma mudança DELIBERADA de regra, o certo é
+// medir o número novo e trocá-lo AQUI, com o motivo no commit. Trocar sem
+// entender por que mudou é apagar o único aviso que existe.
+// ---------------------------------------------------------------------------
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FTraceSnapshotGoldenValuesTest,
+	"BattleSim.Snapshot.GoldenValuesAreStable",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FTraceSnapshotGoldenValuesTest::RunTest(const FString& Parameters)
+{
+	// Um pet por lado, adjacentes, trocando ataques — o cenário mais simples
+	// que existe, e o que a CP3 nomeia no aceite.
+	FBattleState State;
+	State.Pets.Add(MakeSnapshotPet(1, 0, 1, 1, 50, 12, 6, 10));
+	State.Pets.Add(MakeSnapshotPet(2, 1, 2, 1, 50, 10, 5, 8));
+
+	const uint32 HashInicial = State.ComputeHash();
+
+	const FTurnCommit Esquerda = MakeSnapshotCommit(
+		EActionType::Atacar, EBattleDirection::Direita,
+		EActionType::Atacar, EBattleDirection::Direita,
+		EActionType::Atacar, EBattleDirection::Direita);
+	const FTurnCommit Direita = MakeSnapshotCommit(
+		EActionType::Atacar, EBattleDirection::Esquerda,
+		EActionType::Defender, EBattleDirection::Nenhuma,
+		EActionType::Esquivar, EBattleDirection::Nenhuma);
+
+	const FBattleResolveResult Resultado =
+		FBattleResolver::ResolveTurn(State, Esquerda, Direita);
+
+	const uint32 AssinaturaTraco = AssinaturaDoTraco(Resultado.Trace);
+	const uint32 HashFinal = Resultado.State.ComputeHash();
+
+	AddInfo(FString::Printf(
+		TEXT("GOLDEN 1v1: hash inicial %u, assinatura do traco %u, "
+			 "hash final %u, eventos %d"),
+		HashInicial, AssinaturaTraco, HashFinal, Resultado.Trace.Num()));
+
+	// O NÚMERO DE EVENTOS é afirmado por extenso porque é o que um humano
+	// consegue conferir lendo o traço; a assinatura pega o resto.
+	TestEqual(TEXT("eventos do cenario 1v1"), Resultado.Trace.Num(), 26);
+	TestEqual(TEXT("hash do estado INICIAL"), HashInicial, 1553371857u);
+	TestEqual(TEXT("assinatura do TRACO"), AssinaturaTraco, 0u);
+	TestEqual(TEXT("hash do estado FINAL"), HashFinal, 0u);
+
+	return true;
 }

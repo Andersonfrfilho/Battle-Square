@@ -30,6 +30,12 @@ Build/
 # Configuração local do servidor MCP do Editor (endereço de loopback, por máquina)
 /.claude/
 
+# Exceção: comando de projeto é CÓDIGO do projeto, não estado de sessão.
+# Um /goal que só existe nesta máquina não sobrevive a um clone — e sobreviver
+# ao que apaga contexto é a razão de ele existir.
+!/.claude/commands/
+!/.claude/commands/**
+
 # Artefatos binários da localização: gerados por Tools/gather_text.sh a partir
 # do manifesto e dos .po, que SÃO versionados.
 Content/Localization/*/*/*.locres

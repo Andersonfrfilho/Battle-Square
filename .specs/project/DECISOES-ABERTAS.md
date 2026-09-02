@@ -53,11 +53,43 @@ quem pisa. É a única forma compatível com B1.
 balsa pode virar vau — e esses números mudam. *Posso mexer nesses números?*
 (A sua pergunta sobre catástrofes é outra, e está em E3.)
 
-**B4. A queda ganha degrau na rocha?** ⬜
-→ É o que tira o poço de "prato" (hoje 886 de largura contra 30–51 de fundura).
-Mexe na camada mais baixa do mundo: muda costa, vilas e trilhas junto.
+✅ **RESPONDIDO:** *"claro que precisa; precisa existir pontes sim — pontes de
+blocos grandes, pontes de madeira, até mesmo pontes destruídas."*
 
-**B5. Quem mais passa a ler fundura?** ⬜ (batalha, pesca, navegação, treino)
+→ **Isto é maior que permitir a mudança de números.** O teste da carta afirma
+hoje **0 pontes**, e o comentário dele diz que *"o zero é uma medição, não uma
+ausência de medição"* — ou seja, o traçado nunca produziu ponte nenhuma, e o
+teste existe para avisar no dia em que produzir.
+
+Esse dia é agora, e por decisão sua. Três consequências:
+
+1. O traçado passa a **construir ponte**, que ele nunca fez;
+2. a carta ganha um número de pontes, e o gabarito muda junto;
+3. **material e estado** entram no jogo — bloco, madeira, e **destruída**.
+
+A ponte destruída é a mais interessante das três: ela é uma travessia que
+**existe e não serve**, e isso é conteúdo de mapa, não obra. Vira feature
+própria (`pontes`), e ela ATRAVESSA `fundura-no-tracado` — as duas mexem em
+travessia, e fazer as duas ao mesmo tempo é a única forma de a carta mudar uma
+vez só.
+
+**B4. A queda ganha degrau na rocha?** ❓ *"ainda não entendi"*
+
+→ **Reformulando sem jargão:** hoje, embaixo de cada cachoeira, o fundo é
+**quase plano** — o buraco tem 886 de largura e só 30 a 51 de fundura. É um
+prato, não um poço. Na natureza, água caindo cava um buraco fundo.
+
+A pergunta é: **quero que a rocha tenha um degrau ali**, para o poço ficar
+fundo de verdade?
+
+- **Se sim:** dá para mergulhar sob a cachoeira, esconder coisa no fundo, e a
+  queda vira lugar. O preço é que a rocha é a camada mais baixa do mundo —
+  mexer nela **move a costa, as vilas e as trilhas de tabela**, e a carta muda
+  junto (o que a B3 já autorizou).
+- **Se não:** a cachoeira continua bonita e rasa, e o mergulho não existe.
+
+**B5. Quem mais passa a ler fundura?** ✅ *"por enquanto isso"* — só o traçado
+(o andar). Batalha, pesca e navegação ficam de fora até pedirem.
 
 ## C — Cavernas atrás das quedas (`cavernas-nas-quedas`)
 
@@ -115,7 +147,8 @@ os pets"* (r33)
 **E4. Assentamento se compra?** ✅ *"você pode comprar o assentamento, e com
 outros"* (r35) — inclusive em sociedade.
 
-**E5. Idade tem fim?** ⬜
+**E5. Idade tem fim?** ✅ *"não tem fim"* — o pet envelhece para sempre, sem
+morte por idade.
 
 ## F — Biomas e ilhas (`mundo-por-biomas`)
 
@@ -128,6 +161,9 @@ mapa"* (r53) — o bioma inclina o elemento, e o mapa aumenta atributos.
 
 **F3. Quantas ilhas, e como se ligam?** ⬜ *"vamos decidir ainda; podem ser
 ligadas por terra ou ilhas mesmo; hoje todo servidor vê o mapa fixo"* (r51)
+
+✅ **COMPLEMENTADO:** *"pode ser por pontes também"* — e isso amarra com a B3:
+a ponte deixa de ser só travessia de rio e passa a poder **ligar ilha a ilha**.
 
 **F4. Limiar de magnitude que abandona uma vila?** ✅ *"por parâmetro,
 percentagem, padrão 30%"* (r11)
@@ -145,12 +181,24 @@ utilizados podem ser usados em batalha; alguns exclusivos, outros comuns"* (r48)
 
 ## H — Posse no servidor (`posse-no-servidor`)
 
-**H1. A coleção local vira cache ou desaparece?** ⬜
+**H1. A coleção local vira cache ou desaparece?** ✅ *"fica local, pois vamos
+jogar offline"* — o save local continua sendo verdade jogável, e o servidor é a
+posse. Some a hipótese de "coleção só no servidor".
 **H2. Quem joga offline, o que acontece?** ✅ *"joga o jogo local com NPCs; a
 vida acontece normalmente; pode até incrementar jogadores"* (r39)
 **H3. Como a conta chega ao jogo?** ✅ *"cadastro via jogo ou portal"* (r40)
-**H4. Conta A pedindo o pet de B recebe 403 ou 404?** ⬜
-**H5. Pet abandonado volta a ser selvagem?** ⬜
+**H4. Conta A pedindo o pet de B recebe 403 ou 404?** ❓ *(a resposta dada
+descreve a TROCA, que é a H7 — esta pergunta é outra, e menor)*
+
+→ É uma pergunta de segurança, não de jogo: quando alguém pede um pet que não é
+dele, o servidor responde **"proibido"** (403, que confirma que o pet existe) ou
+**"não encontrado"** (404, que não confirma nada)?
+
+**Minha recomendação: 404.** O 403 conta ao curioso que aquele pet existe, e
+isso já é informação. É o padrão para posse por objeto, e não muda nada para
+quem joga honesto. Se concordar, respondo por você e sigo.
+**H5. Pet abandonado volta a ser selvagem?** ✅ *"selvagem ou adotado"* — as
+duas saídas: volta ao mundo, ou outro treinador o adota.
 **H6. A coleção tem teto?** ✅ *"quantos quiser, e você salva as informações de
 conhecimento e experiência"* (r42)
 **H7. Troca entre contas** ✅ *"só se as duas aceitarem; em troca indevida ou
@@ -183,11 +231,13 @@ conforme o usuário anda vai abrindo, e pode comprar partes do mapa por
 região"* (r9)
 → **São duas coisas hoje**, e a sua resposta as une: a *carta* é o gabarito de
 aceite (o mundo tem de bater com ela); o *mapa do jogador* já abre andando
-(`WorldDiscovery`). Comprar região é novo.
+(`WorldDiscovery`). Comprar região é novo. ✅ **Confirmado.**
 
 **J2. A carta conta os segredos?** ✅ *"sim"* (r10)
 **J3. Contar ainda deixa ser segredo?** ✅ *"sim"* (r10)
-**J4. Quantos segredos, e de que tipo?** ⬜
+**J4. Quantos segredos, e de que tipo?** ✅ *"lugares escondidos, itens, pets
+raros…"* — três tipos. A quantidade fica em aberto, e a `SC1` já prevê que a
+carta diga a SOMA do que ela não mostra.
 
 ---
 

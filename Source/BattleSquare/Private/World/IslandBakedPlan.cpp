@@ -331,9 +331,10 @@ namespace IslandBakedPlan
 		Out.Brooks.Reset();
 		for (const FreshWater::FBrook& Corrego : FreshWater::PlanBrooks())
 		{
-			FBakedPolyline Linha;
-			Linha.PointsUnits = Corrego.PointsUnits;
-			Out.Brooks.Add(MoveTemp(Linha));
+			FBakedBrook Assado;
+			Assado.PointsUnits = Corrego.PointsUnits;
+			Assado.HalfWidthUnits = Corrego.HalfWidthUnits;
+			Out.Brooks.Add(MoveTemp(Assado));
 		}
 
 		Out.Springs.Reset();

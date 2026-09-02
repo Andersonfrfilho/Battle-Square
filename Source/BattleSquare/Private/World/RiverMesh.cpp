@@ -110,6 +110,8 @@ int32 ARiverMesh::BuildFrom(const UIslandBakedPlan& Assado)
 	BuiltCourseCount = 0;
 	BuiltLakeCount = 0;
 	BuiltPlungePoolCount = 0;
+	BuiltBrookCount = 0;
+	BuiltSpringCount = 0;
 	SamplesPerCourse = IslandBakedPlan::RiverSampleCount();
 
 	int32 Secao = 0;
@@ -208,6 +210,89 @@ int32 ARiverMesh::BuildFrom(const UIslandBakedPlan& Assado)
 		++BuiltCourseCount;
 	}
 
+	// CÓRREGOS: o fio de água que liga fonte a rio, e rio a rio. Sem eles a
+	// ilha tem cursos paralelos e nada entre eles — água correndo lado a lado
+	// sem nunca se encontrar não é bacia, é listras.
+	//
+	// Com a largura DELE, nunca a do rio: é atravessar a pé que o separa do
+	// rio, e desenhá-lo com calha de rio apagaria a diferença.
+	for (const FBakedBrook& Corrego : Assado.Brooks)
+	{
+		const int32 Pontos = Corrego.PointsUnits.Num();
+		if (Pontos < 2)
+		{
+			continue;
+		}
+
+		TArray<FVector> Vertices;
+		TArray<int32> Triangulos;
+		TArray<FVector2D> Uvs;
+
+		for (int32 Ponto = 0; Ponto < Pontos; ++Ponto)
+		{
+			const FVector2D Aqui = Corrego.PointsUnits[Ponto];
+			const FVector2D Antes = Corrego.PointsUnits[FMath::Max(Ponto - 1, 0)];
+			const FVector2D Depois = Corrego.PointsUnits[FMath::Min(Ponto + 1, Pontos - 1)];
+
+			FVector2D Rumo = Depois - Antes;
+			if (Rumo.IsNearlyZero())
+			{
+				Rumo = FVector2D(1.0f, 0.0f);
+			}
+			Rumo.Normalize();
+
+			const FVector2D Lado(-Rumo.Y, Rumo.X);
+			const FVector2D Esquerda = Aqui - Lado * Corrego.HalfWidthUnits;
+			const FVector2D Direita = Aqui + Lado * Corrego.HalfWidthUnits;
+
+			Vertices.Add(FVector(Esquerda.X, Esquerda.Y,
+				Assado.HeightAt(Esquerda) + AguaCorrente::ElevacaoDaLamina));
+			Vertices.Add(FVector(Direita.X, Direita.Y,
+				Assado.HeightAt(Direita) + AguaCorrente::ElevacaoDaLamina));
+
+			const float AoLongo = static_cast<float>(Ponto) / (Pontos - 1);
+			Uvs.Add(FVector2D(0.0f, AoLongo));
+			Uvs.Add(FVector2D(1.0f, AoLongo));
+		}
+
+		for (int32 Ponto = 0; Ponto + 1 < Pontos; ++Ponto)
+		{
+			const int32 EsquerdaAqui = Ponto * 2;
+			Triangulos.Add(EsquerdaAqui);
+			Triangulos.Add(EsquerdaAqui + 2);
+			Triangulos.Add(EsquerdaAqui + 1);
+
+			Triangulos.Add(EsquerdaAqui + 1);
+			Triangulos.Add(EsquerdaAqui + 2);
+			Triangulos.Add(EsquerdaAqui + 3);
+		}
+
+		Water->CreateMeshSection(Secao, Vertices, Triangulos, TArray<FVector>(), Uvs,
+			TArray<FColor>(), TArray<FProcMeshTangent>(), false);
+		++Secao;
+		++BuiltBrookCount;
+	}
+
+	// FONTES: a água do lugar plano. Todas numa seção só — são cinco discos
+	// pequenos, e uma seção por disco seria geometria repartida à toa.
+	if (Assado.Springs.Num() > 0)
+	{
+		TArray<FVector> Vertices;
+		TArray<int32> Triangulos;
+		TArray<FVector2D> Uvs;
+
+		for (const FBakedSpring& Fonte : Assado.Springs)
+		{
+			AguaCorrente::MontarDisco(Assado, Fonte.CenterUnits,
+				Fonte.PoolHalfWidthUnits, Vertices, Triangulos, Uvs);
+			++BuiltSpringCount;
+		}
+
+		Water->CreateMeshSection(Secao, Vertices, Triangulos, TArray<FVector>(), Uvs,
+			TArray<FColor>(), TArray<FProcMeshTangent>(), false);
+		++Secao;
+	}
+
 	// Pinta DEPOIS de as seções existirem: pintar antes acha zero slot e
 	// devolve zero, que é a pintura silenciosa que não pinta nada.
 	ScenaryPalette::PaintComponent(Water, EScenaryRole::FreshWater);
@@ -221,8 +306,9 @@ int32 ARiverMesh::BuildFrom(const UIslandBakedPlan& Assado)
 
 	FBattleDebugScreen::Show(
 		FString::Printf(
-			TEXT("MUNDO: %d cursos d'agua, %d lagos, %d pocos de queda"),
-			BuiltCourseCount, BuiltLakeCount, BuiltPlungePoolCount),
+			TEXT("MUNDO: %d cursos, %d lagos, %d pocos, %d corregos, %d fontes"),
+			BuiltCourseCount, BuiltLakeCount, BuiltPlungePoolCount,
+			BuiltBrookCount, BuiltSpringCount),
 		30.0f, FColor(120, 180, 255), AguaCorrente::ChaveDoPainel);
 
 	return BuiltCourseCount;

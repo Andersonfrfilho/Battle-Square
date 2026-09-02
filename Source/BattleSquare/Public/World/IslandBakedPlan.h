@@ -228,6 +228,25 @@ struct BATTLESQUARE_API FBakedRiver
 	float PlungePoolDepthUnits = 0.0f;
 };
 
+/**
+ * Um CÓRREGO: o fio de água que liga uma fonte a um rio, ou um rio a outro.
+ *
+ * Tem largura PRÓPRIA, e não a do rio. Ele se atravessa a pé — é isso que o
+ * separa do rio, que precisa de ponte —, e assar só a linha faria o mundo
+ * desenhá-lo com a calha de um rio, apagando a diferença que lhe dá sentido.
+ */
+USTRUCT()
+struct BATTLESQUARE_API FBakedBrook
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	TArray<FVector2D> PointsUnits;
+
+	UPROPERTY()
+	float HalfWidthUnits = 0.0f;
+};
+
 /** Uma fonte: o olho d'água e o poço que ele forma. */
 USTRUCT()
 struct BATTLESQUARE_API FBakedSpring
@@ -386,7 +405,7 @@ public:
 	TArray<FBakedRiver> Rivers;
 
 	UPROPERTY()
-	TArray<FBakedPolyline> Brooks;
+	TArray<FBakedBrook> Brooks;
 
 	UPROPERTY()
 	TArray<FBakedSpring> Springs;

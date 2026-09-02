@@ -54,6 +54,16 @@ public:
 	int32 GetBuiltPlungePoolCount() const { return BuiltPlungePoolCount; }
 
 	/**
+	 * Córregos e fontes erguidos.
+	 *
+	 * Contados à parte dos rios porque são outra coisa: o córrego se atravessa
+	 * a pé e a fonte é água parada num lugar plano. Somá-los à conta dos
+	 * cursos esconderia a ausência de qualquer um dos dois.
+	 */
+	int32 GetBuiltBrookCount() const { return BuiltBrookCount; }
+	int32 GetBuiltSpringCount() const { return BuiltSpringCount; }
+
+	/**
 	 * A meia-largura com que o curso dado foi ERGUIDO, no ponto dado.
 	 *
 	 * É o que a malha tem, não o que o plano diz — e é a diferença entre os
@@ -92,4 +102,10 @@ private:
 
 	UPROPERTY()
 	int32 BuiltPlungePoolCount = 0;
+
+	UPROPERTY()
+	int32 BuiltBrookCount = 0;
+
+	UPROPERTY()
+	int32 BuiltSpringCount = 0;
 };

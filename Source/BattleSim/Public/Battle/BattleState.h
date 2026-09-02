@@ -190,6 +190,38 @@ struct FPetState
 	uint8 MoveDrainPercents[4] = { 0, 0, 0, 0 };
 
 	/**
+	 * Este golpe CONDUZ pela água molhada.
+	 *
+	 * Propriedade do GOLPE, e nunca do pet, e isto não é preferência: o núcleo
+	 * não sabe que tipo existe — o Attack já lhe chega pré-multiplicado pela
+	 * efetividade. Perguntar "o pet é elétrico?" aqui seria ensinar tipo ao
+	 * núcleo. Quem liga esta bandeira é o tradutor, que sabe.
+	 */
+	UPROPERTY()
+	uint8 MoveConducts[4] = { 0, 0, 0, 0 };
+
+	/**
+	 * A maior força de raio que este pet sabe GERAR.
+	 *
+	 * É ela que ele aguenta receber: quem produz quarenta absorve quarenta, e
+	 * só o excedente passa. A resistência não é um número à parte — é a
+	 * própria capacidade, e por isso um pet elétrico forte resiste mais
+	 * PORQUE é forte, sem tabela paralela dizendo quanto.
+	 */
+	int32 ConductionCapacity() const
+	{
+		int32 Maior = 0;
+		for (int32 Qual = 0; Qual < 4; ++Qual)
+		{
+			if (MoveConducts[Qual] != 0)
+			{
+				Maior = FMath::Max(Maior, MovePowers[Qual]);
+			}
+		}
+		return Maior;
+	}
+
+	/**
 	 * O que cada golpe faz com ATRIBUTO, e em quem.
 	 *
 	 * O SINAL diz o alvo: positivo sobe o SEU atributo, negativo derruba o
@@ -538,6 +570,62 @@ struct FBattleState
 	 * É por aqui que submergir deixa de valer numa casa de lava marcada como
 	 * água funda — que passava antes, e passava calado.
 	 */
+	/**
+	 * AS CASAS LIGADAS a esta por fluido que conduz — o "condutor direto".
+	 *
+	 * Componente conexo, e não raio de distância: uma poça a duas casas mas
+	 * ligada por um fio de água leva a corrente; uma encostada e separada por
+	 * chão seco, não. Duas poças que não se tocam são dois circuitos.
+	 *
+	 * Vizinhança de QUATRO, sem diagonal: a diagonal encosta só num vértice, e
+	 * água não corre por um ponto — deixar a diagonal passar juntaria poças
+	 * que o olho vê separadas.
+	 */
+	void ConductiveCellsFrom(int32 Column, int32 Row, TArray<int32>& OutCells) const
+	{
+		OutCells.Reset();
+
+		if (!CellLayout.IsValidIndex(CellIndex(Column, Row))
+			|| !FluidRegistry::Conducts(FluidAt(Column, Row)))
+		{
+			return;
+		}
+
+		TArray<int32> Fila;
+		Fila.Add(CellIndex(Column, Row));
+		OutCells.Add(Fila[0]);
+
+		for (int32 Lido = 0; Lido < Fila.Num(); ++Lido)
+		{
+			const int32 Aqui = Fila[Lido];
+			const int32 Coluna = Aqui % static_cast<int32>(GridColumns);
+			const int32 Linha = Aqui / static_cast<int32>(GridColumns);
+
+			const int32 Passos[4][2] = { {1,0}, {-1,0}, {0,1}, {0,-1} };
+			for (const int32 (&Passo)[2] : Passos)
+			{
+				const int32 OutraColuna = Coluna + Passo[0];
+				const int32 OutraLinha = Linha + Passo[1];
+
+				if (OutraColuna < 0 || OutraColuna >= static_cast<int32>(GridColumns)
+					|| OutraLinha < 0 || OutraLinha >= static_cast<int32>(GridRows))
+				{
+					continue;
+				}
+
+				const int32 Vizinha = CellIndex(OutraColuna, OutraLinha);
+				if (OutCells.Contains(Vizinha)
+					|| !FluidRegistry::Conducts(FluidAt(OutraColuna, OutraLinha)))
+				{
+					continue;
+				}
+
+				OutCells.Add(Vizinha);
+				Fila.Add(Vizinha);
+			}
+		}
+	}
+
 	bool CellAllowsSkill(EActionType Action, int32 Column, int32 Row) const
 	{
 		const int32 Indice = CellIndex(Column, Row);

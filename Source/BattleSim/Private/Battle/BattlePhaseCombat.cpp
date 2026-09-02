@@ -2,6 +2,7 @@
 
 #include "Battle/BattlePhases.h"
 #include "Battle/BattleState.h"
+#include "Battle/FluidRegistry.h"
 #include "Battle/BattleEvent.h"
 #include "Battle/BattleArenaConstants.h"
 
@@ -236,7 +237,7 @@ namespace
 	// Declarada antes porque ResolveAttackForSide a chama e ela vem depois.
 	void ApplyHitAgainst(FBattleState& State, FPetState& Attacker, FPetState& Target,
 		bool bIsMagic, int32 MovePower, FTerrainDeposit Deposito, int32 DrainPercent,
-		uint8 SlotIndex, TArray<FBattleEvent>& OutTrace);
+		bool bConducts, uint8 SlotIndex, TArray<FBattleEvent>& OutTrace);
 
 	FPetState* FindPetById(FBattleState& State, uint8 PetId)
 	{
@@ -314,7 +315,9 @@ namespace
 		}
 
 		ApplyHitAgainst(State, *Attacker, *Target, bIsMagic, MovePower, Deposito,
-			Attacker->GetMoveDrainPercent(MoveIndex), SlotIndex, OutTrace);
+			Attacker->GetMoveDrainPercent(MoveIndex),
+			Attacker->MoveConducts[FMath::Clamp(static_cast<int32>(MoveIndex), 0, 3)] != 0,
+			SlotIndex, OutTrace);
 	}
 
 	/**
@@ -350,6 +353,7 @@ namespace
 		int32 MovePower,
 		FTerrainDeposit Deposito,
 		int32 DrainPercent,
+		bool bConducts,
 		uint8 SlotIndex,
 		TArray<FBattleEvent>& OutTrace)
 	{
@@ -490,6 +494,61 @@ namespace
 			OutTrace.Add(Drenou);
 		}
 
+		// A ÁGUA CONDUZ.
+		//
+		// A corrente parte de ONDE O RAIO CAIU, e não de onde o lançador está:
+		// assim atirar de fora da poça é uma escolha que se paga com posição,
+		// e acertar alguém molhado é o que a recompensa. Quem estiver na mesma
+		// poça é alcançado — inclusive o lançador, se ele estiver nela.
+		//
+		// O alvo direto fica de FORA: ele já levou o raio. Somar a corrente por
+		// cima cobraria duas vezes do mesmo pet pelo mesmo golpe.
+		if (bConducts)
+		{
+			TArray<int32> Ligadas;
+			State.ConductiveCellsFrom(TargetPtr->Column, TargetPtr->Row, Ligadas);
+
+			const EFluidKind NaPoca = State.FluidAt(TargetPtr->Column, TargetPtr->Row);
+			const int32 Corrente = FluidRegistry::ConductedShare(MovePower, NaPoca);
+
+			for (FPetState& Alcancado : State.Pets)
+			{
+				if (!Alcancado.IsAlive() || Alcancado.PetId == TargetPtr->PetId)
+				{
+					continue;
+				}
+
+				// Fora do chão, fora da corrente: quem voa não encosta na água.
+				if (Alcancado.IsOffTheGround()
+					|| !Ligadas.Contains(State.CellIndex(Alcancado.Column, Alcancado.Row)))
+				{
+					continue;
+				}
+
+				// QUEM GERA, AGUENTA. Absorve até a própria capacidade e só o
+				// excedente passa — e é isto que responde, sem regra à parte,
+				// se o lançador se machuca: a corrente que ele mesmo produziu
+				// nunca supera o que ele sabe produzir.
+				const int32 Passou = Corrente - Alcancado.ConductionCapacity();
+				if (Passou <= 0)
+				{
+					continue;
+				}
+
+				// Mesmo acumulador de sempre. F5 aplica e narra.
+				Alcancado.PendingDamage += Passou;
+
+				FBattleEvent Conduziu;
+				Conduziu.Type = EBattleEventType::AtaqueAcertou;
+				Conduziu.SlotIndex = SlotIndex;
+				Conduziu.Phase = 4;
+				Conduziu.ActorId = AttackerPtr->PetId;
+				Conduziu.TargetId = Alcancado.PetId;
+				Conduziu.Value = Passou;
+				OutTrace.Add(Conduziu);
+			}
+		}
+
 		// O golpe DEIXA algo na casa que acertou.
 		//
 		// Só no ACERTO: terreno mudando num golpe que errou tiraria do jogador
@@ -578,8 +637,10 @@ void BattlePhases::ApplyCombat(
 		// físico padrão. Usar o golpe de alguém aqui faria a colisão ferir
 		// conforme uma escolha que ninguém fez.
 		ApplyHitAgainst(State, *Um, *Outro, /*bIsMagic=*/false, /*MovePower=*/0,
-			FTerrainDeposit{}, /*DrainPercent=*/0, SlotIndex, OutTrace);
+			FTerrainDeposit{}, /*DrainPercent=*/0, /*bConducts=*/false,
+			SlotIndex, OutTrace);
 		ApplyHitAgainst(State, *Outro, *Um, /*bIsMagic=*/false, /*MovePower=*/0,
-			FTerrainDeposit{}, /*DrainPercent=*/0, SlotIndex, OutTrace);
+			FTerrainDeposit{}, /*DrainPercent=*/0, /*bConducts=*/false,
+			SlotIndex, OutTrace);
 	}
 }

@@ -121,6 +121,19 @@ struct BATTLESIM_API FFluidTraits
 	 */
 	bool bIsWater = false;
 
+	/**
+	 * QUANTO ELE CONDUZ, em partes por mil.
+	 *
+	 * Mil é conduzir por inteiro. Referência de fora, como as densidades: a
+	 * água do mar conduz muito mais que a doce (sal), o pântano fica no meio
+	 * (minerais), e a lava conduz porque rocha fundida é iônica.
+	 *
+	 * É NÚMERO e não booleano porque a corrente que chega ao outro lado da
+	 * poça depende do que ela atravessou: um raio que corre pelo mar chega
+	 * inteiro, e o mesmo raio numa poça de água doce chega fraco.
+	 */
+	int32 ConductivityPerMille = 0;
+
 	/** O nome, para o painel. */
 	const TCHAR* DebugName = TEXT("?");
 };
@@ -146,6 +159,12 @@ namespace FluidRegistry
 
 	/** Atalho: quanto custa estar dentro dele por um slot, sem proteção. */
 	BATTLESIM_API int32 DamagePerSlot(EFluidKind Fluid);
+
+	/** Atalho: este fluido conduz corrente? */
+	BATTLESIM_API bool Conducts(EFluidKind Fluid);
+
+	/** Quanto de uma corrente de força dada chega, depois de atravessar este fluido. */
+	BATTLESIM_API int32 ConductedShare(int32 Amount, EFluidKind Fluid);
 
 	/**
 	 * O que BOIA sobre o quê.

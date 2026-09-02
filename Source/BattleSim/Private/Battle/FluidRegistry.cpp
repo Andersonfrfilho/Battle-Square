@@ -24,33 +24,33 @@ namespace RegistroDosFluidos
 	const FFluidTraits Tabela[static_cast<int32>(EFluidKind::Count)] =
 	{
 		// Nenhum: casa seca. Densidade zero, e nada boia no que não existe.
-		{ 0,           false, 0, false, TEXT("nenhum") },
+		{ 0,           false, 0, false, 0,    TEXT("nenhum") },
 
 		// Água doce: a régua.
-		{ AguaDoce,    true,  0, true,  TEXT("agua doce") },
+		{ AguaDoce,    true,  0, true,  400,  TEXT("agua doce") },
 
 		// Água salgada: 2,5% mais densa — é o que faz boiar mais fácil no mar.
-		{ 1025,        true,  0, true,  TEXT("agua salgada") },
+		{ 1025,        true,  0, true,  1000, TEXT("agua salgada") },
 
 		// Água termal: quente, e por isso um pouco MENOS densa que a fria.
 		// O dano fica em zero: ela é morna, não fervente. Quem quiser que
 		// escalde muda esta linha, e muda num lugar só.
-		{ 988,         true,  0, true,  TEXT("agua termal") },
+		{ 988,         true,  0, true,  600,  TEXT("agua termal") },
 
 		// Água de pântano: carregada de barro, mais pesada que a doce.
-		{ 1080,        true,  0, true,  TEXT("agua de pantano") },
+		{ 1080,        true,  0, true,  700,  TEXT("agua de pantano") },
 
 		// Água de caverna: doce e parada. Igual à doce até alguém medir
 		// diferença — e a linha existe para essa diferença ter onde morar.
-		{ AguaDoce,    true,  0, true,  TEXT("agua de caverna") },
+		{ AguaDoce,    true,  0, true,  400,  TEXT("agua de caverna") },
 
 		// Lama: densa o bastante para segurar quem entra. NÃO se submerge
 		// nela — afundar em lama não é mergulhar, é atolar.
-		{ 1500,        false, 0, false, TEXT("lama") },
+		{ 1500,        false, 0, false, 300,  TEXT("lama") },
 
 		// Lava: densa e cara. O dano é o que a torna uma decisão em vez de um
 		// cenário colorido, e é o único fluido em que estar dentro custa por si.
-		{ 3100,        false, 12, false, TEXT("lava") },
+		{ 3100,        false, 12, false, 900,  TEXT("lava") },
 	};
 
 	const FFluidTraits& LinhaDe(EFluidKind Fluido)
@@ -107,6 +107,19 @@ namespace FluidRegistry
 		// flutuar para sempre — que é o caso que mais aparece, porque é o
 		// número redondo que alguém escreve primeiro.
 		return DensidadeDoCorpo < DoFluido;
+	}
+
+	bool Conducts(EFluidKind Fluido)
+	{
+		return RegistroDosFluidos::LinhaDe(Fluido).ConductivityPerMille > 0;
+	}
+
+	int32 ConductedShare(int32 Quanto, EFluidKind Fluido)
+	{
+		// Inteiro, como tudo no núcleo. A corrente que chega é a que o fluido
+		// deixa passar — um raio que corre pelo mar chega inteiro, e o mesmo
+		// raio numa poça de água doce chega com menos da metade.
+		return (Quanto * RegistroDosFluidos::LinhaDe(Fluido).ConductivityPerMille) / 1000;
 	}
 
 	int32 FreshWaterDensityPerMille()

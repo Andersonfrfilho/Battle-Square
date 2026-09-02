@@ -482,6 +482,19 @@ public:
 	static const TCHAR* BandDebugName(ETerrainBand Band);
 
 	/**
+	 * EM QUE TEMPLO OU RUÍNA se está, ou `INDEX_NONE` se em nenhum.
+	 *
+	 * A regra mora aqui, e não na tela: a tela não decide regra (DP-ui-01).
+	 * Com ela no painel, "a linha some ao sair" era comportamento que só um
+	 * humano podia conferir — e conferir a olho o que uma função pura responde
+	 * é gastar a rodada de alguém com o que a máquina cobra melhor.
+	 *
+	 * O alcance sai da meia-extensão da própria mancha: alcance fixo anunciaria
+	 * uma ruína pequena de longe e uma grande só em cima dela.
+	 */
+	int32 SacredAt(const FVector2D& PositionUnits) const;
+
+	/**
 	 * O chão mais alto em que se PODE ESTAR — fora da mancha queimada.
 	 *
 	 * É a régua do cume. O ponto mais alto da ilha é o vulcão, e medir por ele

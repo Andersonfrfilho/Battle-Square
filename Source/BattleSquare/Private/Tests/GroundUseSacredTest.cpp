@@ -155,3 +155,71 @@ bool FGroundUseSacredTheTempleStandsTallerThanTheRuinTest::RunTest(const FString
 	Mundo->DestroyWorld(false);
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGroundUseSacredTheLineGoesAwayWhenYouLeaveTest,
+	"BattleSquare.GroundUseSacred.TheLineGoesAwayWhenYouLeave",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FGroundUseSacredTheLineGoesAwayWhenYouLeaveTest::RunTest(const FString& Parameters)
+{
+	const UIslandBakedPlan* Assado = IslandBakedPlan::Load();
+	if (!Assado)
+	{
+		AddError(TEXT("o assado nao existe — rode ./Tools/bake_island.sh"));
+		return false;
+	}
+
+	// A PERGUNTA QUE EU NAO SOUBE EXPLICAR no roteiro manual, virada em teste.
+	//
+	// O painel usa uma CHAVE FIXA para a linha do sagrado, o que faz a linha se
+	// atualizar no lugar em vez de empilhar. O risco disso é o oposto: a linha
+	// FICA. Quem chega num templo, lê "templo de Pedra" e caminha um quilômetro
+	// continuaria vendo "templo de Pedra" — o painel passaria a mentir sobre
+	// onde a pessoa está, e mentira em instrumento de medição é pior que
+	// instrumento nenhum.
+	//
+	// Isto nunca deveria ter ido para o roteiro humano: é uma função pura, e
+	// conferir a olho o que uma função pura responde gasta a rodada de alguém
+	// com o que a máquina cobra melhor.
+	int32 SagradosConferidos = 0;
+
+	for (int32 Qual = 0; Qual < Assado->GroundUses.Num(); ++Qual)
+	{
+		const FBakedGroundUse& Mancha = Assado->GroundUses[Qual];
+		if (Mancha.Use != EGroundUse::Templo && Mancha.Use != EGroundUse::Ruina)
+		{
+			continue;
+		}
+
+		++SagradosConferidos;
+
+		// EM CIMA dele: o painel tem o que dizer.
+		if (Assado->SacredAt(Mancha.CenterUnits) == INDEX_NONE)
+		{
+			AddError(FString::Printf(
+				TEXT("no centro do '%s' em (%.0f,%.0f) o painel nao anuncia nada"),
+				AGroundUseActor::UseDebugName(Mancha.Use),
+				Mancha.CenterUnits.X, Mancha.CenterUnits.Y));
+			return false;
+		}
+
+		// LONGE dele: o painel se cala. A distância é dez vezes o alcance, para
+		// não depender do valor exato da folga — o que importa é que exista
+		// distância a partir da qual a linha some, não qual é ela.
+		const FVector2D BemLonge = Mancha.CenterUnits
+			+ FVector2D(Mancha.HalfExtentUnits * 30.0f, 0.0f);
+
+		if (Assado->SacredAt(BemLonge) == Qual)
+		{
+			AddError(FString::Printf(
+				TEXT("a %.0f unidades do '%s' o painel ainda diz que se esta nele"),
+				Mancha.HalfExtentUnits * 30.0f,
+				AGroundUseActor::UseDebugName(Mancha.Use)));
+			return false;
+		}
+	}
+
+	TestTrue(TEXT("houve sagrado para conferir"), SagradosConferidos > 0);
+
+	return true;
+}

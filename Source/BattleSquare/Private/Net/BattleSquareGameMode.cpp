@@ -1867,51 +1867,25 @@ void ABattleSquareGameMode::BuildResidentChunk(const FIntPoint& Pedaco)
 void ABattleSquareGameMode::AnunciarSagradoPerto(
 	const UIslandBakedPlan& Assado, const FVector2D& Onde)
 {
-	// O MAIS PERTO, e só se estiver perto o bastante para se estar NELE.
-	//
-	// O alcance sai da meia-extensão da própria mancha, com folga: um alcance
-	// fixo anunciaria uma ruína pequena de longe e uma grande só em cima dela.
-	constexpr float FolgaDoAlcance = 3.0f;
+	// A REGRA mora no assado, não aqui: a tela não decide regra (DP-ui-01).
+	const int32 Qual = Assado.SacredAt(Onde);
 
-	const FBakedGroundUse* MaisPerto = nullptr;
-	float MenorDistancia = TNumericLimits<float>::Max();
-
-	for (const FBakedGroundUse& Mancha : Assado.GroundUses)
+	if (Qual == INDEX_NONE)
 	{
-		if (Mancha.Use != EGroundUse::Templo && Mancha.Use != EGroundUse::Ruina)
-		{
-			continue;
-		}
-
-		const float Distancia = FVector2D::Distance(Mancha.CenterUnits, Onde);
-		if (Distancia > Mancha.HalfExtentUnits * FolgaDoAlcance)
-		{
-			continue;
-		}
-
-		if (Distancia < MenorDistancia)
-		{
-			MenorDistancia = Distancia;
-			MaisPerto = &Mancha;
-		}
-	}
-
-	if (!MaisPerto)
-	{
-		// Apaga a linha ao sair. Deixada, ela diria que se está num templo
-		// que ficou para trás — e o painel passaria a mentir sobre o lugar.
+		// Apaga a linha ao sair. Deixada, ela diria que se está num templo que
+		// ficou para trás — e o painel passaria a mentir sobre o lugar.
 		FBattleDebugScreen::Show(TEXT(""), 0.0f, FColor::White, /*Key=*/749);
 		return;
 	}
 
+	const FBakedGroundUse& Mancha = Assado.GroundUses[Qual];
+
 	FBattleDebugScreen::Show(
 		FString::Printf(TEXT("%s de %s"),
-			AGroundUseActor::UseDebugName(MaisPerto->Use),
-			Pantheon::DebugName(MaisPerto->Deity)),
+			AGroundUseActor::UseDebugName(Mancha.Use),
+			Pantheon::DebugName(Mancha.Deity)),
 		0.0f,
-		MaisPerto->Use == EGroundUse::Templo
-			? FColor(240, 230, 180)
-			: FColor(170, 150, 130),
+		Mancha.Use == EGroundUse::Templo ? FColor(240, 230, 180) : FColor(170, 150, 130),
 		/*Key=*/749);
 }
 

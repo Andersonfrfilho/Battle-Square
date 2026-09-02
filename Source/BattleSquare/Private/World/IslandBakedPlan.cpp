@@ -93,6 +93,38 @@ const TCHAR* UIslandBakedPlan::BandDebugName(ETerrainBand Faixa)
 	return TEXT("?");
 }
 
+int32 UIslandBakedPlan::SacredAt(const FVector2D& Onde) const
+{
+	// O alcance sai da meia-extensão da PRÓPRIA mancha, com folga.
+	constexpr float FolgaDoAlcance = 3.0f;
+
+	int32 MaisPerto = INDEX_NONE;
+	float MenorDistancia = TNumericLimits<float>::Max();
+
+	for (int32 Qual = 0; Qual < GroundUses.Num(); ++Qual)
+	{
+		const FBakedGroundUse& Mancha = GroundUses[Qual];
+		if (Mancha.Use != EGroundUse::Templo && Mancha.Use != EGroundUse::Ruina)
+		{
+			continue;
+		}
+
+		const float Distancia = FVector2D::Distance(Mancha.CenterUnits, Onde);
+		if (Distancia > Mancha.HalfExtentUnits * FolgaDoAlcance)
+		{
+			continue;
+		}
+
+		if (Distancia < MenorDistancia)
+		{
+			MenorDistancia = Distancia;
+			MaisPerto = Qual;
+		}
+	}
+
+	return MaisPerto;
+}
+
 float UIslandBakedPlan::HighestWalkableHeightUnits() const
 {
 	// Calculado UMA vez e guardado: `BandAt` é perguntado por casa da grade ao

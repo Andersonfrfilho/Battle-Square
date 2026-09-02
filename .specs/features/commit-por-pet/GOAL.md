@@ -16,21 +16,22 @@ nenhum teste alcança.
 - [x] **CP1** — o teto de pets por lado que o sistema já aguenta está MEDIDO
 - [x] **CP2** — aliados nascem em casas DIFERENTES, e o duelo nasce onde nascia
 - [x] **CP3** — o commit do núcleo endereça pet por `PetId`, não lado
-- [ ] **CP4** — postura, movimento e combate agem sobre o pet endereçado
+- [x] **CP4** — postura, movimento e combate agem sobre o pet endereçado
 - [x] **CP5** — o `AddWarning` de BTL-05 virou PROVA, e não sobrou aviso nenhum
-- [ ] **CP6** — o desempate entre aliados está medido e decidido por `PetId`
+- [x] **CP6** — o desempate entre aliados está medido e decidido por `PetId`
 - [ ] **CP7** — o fio carrega N pets, e a auditoria do commit cobre o tipo novo
 - [ ] **CP8** — quem joga escolhe ação POR PET, e a tela diz de quem é qual
 - [x] O grep por `AddWarning` em `Source/` não acha mais BTL-05
-- [ ] Bateria completa verde (hoje **865** depois da CP3; o número só sobe)
+- [ ] Bateria completa verde (hoje **866** depois da CP5; o número só sobe)
 - [ ] As cinco auditorias limpas, mais `audit_no_commit_replication.sh`
 - [ ] Um commit por task, cada um com o motivo — não só o quê
 
 Enquanto qualquer caixa estiver aberta, o objetivo **continua**.
 
-**ABERTA e em andamento.** CP1, CP2 e CP3 estão commitadas (`461e8d7`, `6c5e18a`,
-`88df909`), bateria 865. As caixas nasceram `⛔` e ficaram assim depois de a
-feature começar: o ponteiro dizia "nada aberto" enquanto três tasks fechavam.
+**ABERTA e em andamento.** CP1 a CP5 commitadas (`461e8d7`, `6c5e18a`, `88df909`,
+`71c04ee`, `c6410f7`), bateria 866. As caixas nasceram `⛔` e continuaram assim
+depois de a feature começar: o ponteiro dizia "nada aberto" enquanto cinco tasks
+fechavam. Marcar a caixa é parte de fechar a task, não do commit final.
 
 ## Não pare entre tarefas
 

@@ -1003,3 +1003,38 @@ independente da que fez a troca — e preferir uma mudança de assinatura que
 QUEBRE a compilação, em vez de uma que aceite os dois formatos. É primo do
 `timeout` que retorna 127 e do `grep -P` que sai sem procurar: ferramenta que
 falha em silêncio parece ferramenta que não achou nada.
+
+### L-047: três testes verdes sobre a pergunta errada
+
+**Descoberto:** 02/09/2026, medindo a precedência entre aliados (CP6).
+
+Escrevi três testes afirmando que a ordem não decide o resultado. Os três
+passaram. **Nenhum dos três tocava no ponto de decisão.**
+
+| teste | por que não respondia |
+|---|---|
+| ordem de `State.Pets`, sem lama | a coleta de intenções nem itera `State.Pets` — itera as ações do slot, achando o pet por id |
+| ordem de `State.Pets`, com lama | mesma coisa: inverter os pets não muda a ordem de consumo do sorteio |
+| ordem dos COMMITS, sem lama | inverte a coisa certa, mas sem lama ninguém pede número ao sorteio |
+
+A combinação que faltava — **lama com os commits invertidos** — reprovou de
+primeira: hash 1440089706 contra 1488336816. A ordem dos commits decidia **quem
+escorrega**, e em rede os dois clientes recebem em ordens diferentes.
+
+**Eu estava a um passo de reportar "medido, nenhum ponto de decisão"** e entregar
+um defeito de dessincronia cujo culpado aparente seria a latência.
+
+**A pergunta que separa o teste verde do teste útil:** *se o defeito existisse,
+este teste ficaria vermelho?* Quando a resposta é não, o teste mede outra coisa
+— e a resposta dele não é resposta.
+
+**O contrapeso que o teste novo carrega** é do mesmo tipo: ele afirma que a lama
+MUDA o resultado em relação ao chão seco. Sem isso, uma lama que não sorteasse
+nada faria os dois hashes baterem por não haver acaso nenhum, e o teste passaria
+provando o contrário do que diz provar.
+
+⚠️ **Foi a terceira vez no dia.** `Snapshot.FiveScenariosProduceIdenticalTraces`
+comparava a execução consigo mesma em vez de com um valor gravado, e o aviso de
+BTL-05 afirmava a limitação em vez da regra (esse era honesto — avisava em voz
+alta). Verde verdadeiro sobre pergunta errada é o modo de falhar mais comum
+deste projeto.

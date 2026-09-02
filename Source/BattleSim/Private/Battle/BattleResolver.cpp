@@ -17,16 +17,33 @@ namespace
 	}
 }
 
-// NOTA sobre desempate por velocidade (T9, tasks.md): as quatro fases
-// (T5–T8) foram desenhadas para que Left e Right sejam resolvidos de
-// forma simétrica dentro de cada fase — postura não compete, movimento
-// coleta todas as intenções antes de aplicar qualquer uma, combate
-// acumula dano em vez de aplicar sequencialmente. Não existe, hoje, um
-// ponto de decisão em v1 (1 pet por lado) onde a ordem Left-antes-de-Right
-// mude o resultado. O desempate por velocidade fica como infraestrutura
-// para M3 (N pets por lado, onde múltiplos pets do MESMO lado podem
-// competir por precedência) — implementá-lo agora seria código morto,
-// o mesmo problema já registrado em B-003 para BTL-05. Ver STATE.md.
+// PRECEDÊNCIA — a nota antiga estava certa PARA V1, e a CP4 a tornou obsoleta.
+//
+// Ela dizia que as quatro fases resolvem os dois lados simetricamente (postura
+// não compete, movimento coleta todas as intenções antes de aplicar qualquer
+// uma, combate acumula dano em vez de aplicar em sequência) e que, com UM pet
+// por lado, não existia ponto de decisão onde a ordem mudasse o resultado.
+// Isso continua verdade para um pet por lado.
+//
+// COM DOIS ALIADOS, EXISTE — e foi MEDIDO em 02/09/2026, não deduzido: a lama é
+// a única casa cujo efeito é sorteado, o sorteio vem de um gerador COM ESTADO,
+// e quem pede um número primeiro recebe outro número. Os mesmos commits em
+// ordem invertida davam hash 1440089706 contra 1488336816.
+//
+// Em rede, os dois clientes recebem os commits na ordem em que cada jogador
+// confirmou — que não é a mesma. A partida divergiria sem nada acusar, e o
+// culpado aparente seria a latência ou o próprio sorteio.
+//
+// A ORDENAÇÃO POR `PetId` em `ResolveTurn` é o conserto, e ela não é um
+// critério novo: é o MESMO que `ComputeHash` usa para ordenar pets e que a
+// escolha de alvo no combate usa para desempatar. Desempate por VELOCIDADE
+// seria um segundo critério, que precisaria concordar com esses dois para
+// sempre — e continua sem ponto de decisão que o justifique.
+//
+// Três testes de ordem passaram ANTES deste defeito aparecer, e nenhum o
+// tocava: dois invertiam `State.Pets` (que a coleta de intenções nem itera) e
+// o terceiro invertia os commits mas sem lama, então ninguém sorteava nada.
+// Ver `BattleSim.Resolver.Ordering` e L-047 em STATE.md.
 TArray<FTurnCommit> FBattleResolver::DuelCommits(
 	const FBattleState& InState,
 	const FTurnCommit& LeftCommit,
@@ -108,6 +125,27 @@ FBattleResolveResult FBattleResolver::ResolveTurn(
 			Acao.Action = Commit.Actions[SlotIndex];
 			AcoesDoSlot.Add(Acao);
 		}
+
+		// ORDENADAS POR `PetId`, e isto NÃO é zelo: é conserto de um defeito
+		// medido.
+		//
+		// A lama sorteia, e o sorteio vem de um gerador COM ESTADO — quem pede
+		// um número primeiro recebe um número diferente de quem pede depois.
+		// Sem esta ordenação, dois aliados na lama escorregam conforme a ordem
+		// em que os commits chegaram, e essa ordem não é a mesma nos dois
+		// clientes: medido em 02/09/2026, os mesmos commits invertidos deram
+		// hash 1440089706 contra 1488336816.
+		//
+		// O sintoma seria uma partida em rede que diverge sem nada acusar, e o
+		// culpado aparente seria a latência ou o próprio sorteio.
+		//
+		// `PetId`, e não velocidade: é o mesmo desempate que `ComputeHash` já
+		// usa e que a escolha de alvo no combate já usa. Um segundo critério
+		// de precedência precisaria concordar com esses dois para sempre.
+		AcoesDoSlot.Sort([](const FSlotAction& A, const FSlotAction& B)
+		{
+			return A.PetId < B.PetId;
+		});
 
 		// F1 — Declaração. Nada muda; apenas marca o início do slot.
 		EmitTurnBoundary(Trace, EBattleEventType::SlotIniciado, SlotIndex, /*Phase=*/1);

@@ -190,7 +190,7 @@ um símbolo que não existe é trocar uma lacuna por outra.
 
 ---
 
-## CP6 — MEDIR se a ordem entre aliados decide algo
+## CP6 — MEDIR se a ordem entre aliados decide algo ✅ FEITO — ACHOU UM
 > 🤖 Modelo: `opus` 🧠 — é decisão de determinismo
 
 **Dependências:** CP4.

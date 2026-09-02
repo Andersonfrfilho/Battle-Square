@@ -409,6 +409,20 @@ namespace IslandBakedPlan
 	BATTLESQUARE_API TArray<FString> DescribeParameterDivergence(
 		const FIslandParameters& Baked, const FIslandParameters& Current);
 
-	/** Carrega o assado gravado. Devolve nulo se ele não existir. */
+	/**
+	 * Carrega o assado gravado, SEM conferir os parâmetros.
+	 *
+	 * É o caminho de quem está inspecionando o assado — a ferramenta de assar,
+	 * o teste da guarda. Quem vai CONSTRUIR o mundo usa `LoadForWorld()`.
+	 */
 	BATTLESQUARE_API UIslandBakedPlan* Load();
+
+	/**
+	 * Carrega o assado E confere que ele é da configuração de agora.
+	 *
+	 * Devolve nulo quando diverge, depois de dizer alto qual parâmetro mudou.
+	 * Devolver o assado velho com um aviso seria pior que nenhum aviso: o
+	 * mundo subiria inteiro, parecendo certo, sendo de outra configuração.
+	 */
+	BATTLESQUARE_API UIslandBakedPlan* LoadForWorld();
 }

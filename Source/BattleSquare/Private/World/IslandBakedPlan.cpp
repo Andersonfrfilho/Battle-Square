@@ -1,5 +1,6 @@
 #include "World/IslandBakedPlan.h"
 
+#include "Debug/BattleDebugScreen.h"
 #include "Environment/CaveLabyrinth.h"
 #include "Environment/FreshWater.h"
 #include "Environment/IslandFeatureLayout.h"
@@ -275,5 +276,41 @@ namespace IslandBakedPlan
 	UIslandBakedPlan* Load()
 	{
 		return LoadObject<UIslandBakedPlan>(nullptr, AssetPath());
+	}
+
+	UIslandBakedPlan* LoadForWorld()
+	{
+		UIslandBakedPlan* Assado = Load();
+		if (!Assado)
+		{
+			const FString Recado = FString::Printf(
+				TEXT("MUNDO: o assado nao existe em %s — rode ./Tools/bake_island.sh"),
+				AssetPath());
+			UE_LOG(LogTemp, Error, TEXT("%s"), *Recado);
+			FBattleDebugScreen::Show(Recado, 30.0f, FColor::Red, 770);
+			return nullptr;
+		}
+
+		const FIslandParameters Agora = GatherParameters();
+		if (Assado->ParameterHash == HashParameters(Agora))
+		{
+			return Assado;
+		}
+
+		// O resumo diz que divergiu; os nomes dizem no quê. Sem os nomes, a
+		// pessoa recebe "reasse" e vai procurar sozinha o que já dava para ler.
+		const TArray<FString> Divergiram =
+			DescribeParameterDivergence(Assado->Parameters, Agora);
+
+		const FString Recado = FString::Printf(
+			TEXT("MUNDO: o assado e de outra configuracao — %s. Rode ./Tools/bake_island.sh"),
+			Divergiram.Num() > 0
+				? *FString::Join(Divergiram, TEXT("; "))
+				: TEXT("o resumo nao bate, mas nenhum parametro difere (formato mudou?)"));
+
+		UE_LOG(LogTemp, Error, TEXT("%s"), *Recado);
+		FBattleDebugScreen::Show(Recado, 30.0f, FColor::Red, 770);
+
+		return nullptr;
 	}
 }

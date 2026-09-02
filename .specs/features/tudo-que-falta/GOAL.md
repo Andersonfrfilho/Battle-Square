@@ -1,0 +1,105 @@
+# OBJETIVO — Tudo o que falta
+
+**Aberto em 02/09/2026. Só fecha quando o critério abaixo for atingido.**
+
+## O objetivo, numa frase
+
+Fechar **os dois objetivos abertos** e abrir **os dois sistemas** que várias
+tarefas já pediram e que nunca existiram.
+
+## Por que ele existe
+
+Este é um objetivo GUARDA-CHUVA, e ele não repete nenhuma tarefa: quem tem dono
+continua onde está, porque duplicar uma lista é duplicar uma verdade.
+
+Ele existe para responder "o que falta" com uma coisa só, e para que a ordem e
+os bloqueios fiquem escritos em vez de serem relembrados.
+
+## PRONTO é isto, e nada menos
+
+- [ ] **Corrente fechada** — C4, C5, C6 em `.specs/features/corrente/`
+- [ ] **Pendências fechadas** — P4 a P10 em `.specs/features/pendencias/`
+- [ ] **T-ITENS** — o sistema de itens existe, e a bota de lava funciona
+- [ ] **T-ANATOMIA** — dois pets do mesmo elemento resistem diferente
+- [ ] Bateria completa verde (hoje **824**; o número só sobe)
+- [ ] As cinco auditorias limpas
+- [ ] Um commit por task, cada um com o motivo — não só o quê
+
+Enquanto qualquer caixa estiver aberta, o objetivo **continua**.
+
+## A ordem, e ela não é de valor
+
+1. **C4, C6, P5, P6** — todas têm cano pronto. Rendem sem atrito.
+2. **C5** — o mundo aberto, independente do resto.
+3. **P4** — a maior, e a única sem nenhuma peça: precisa de um limiar
+   comparando potência do golpe com tamanho do campo, e esse número não existe.
+4. **P9** — parcial: a queda tem poço, a gruta é peça separada.
+5. **T-ITENS** e **T-ANATOMIA** — os dois sistemas. A metade de DENTRO dos dois
+   já está pronta e testada; falta a de fora.
+6. **P7, P8, P10** — por último, e o motivo está abaixo.
+
+## As TRÊS que vão parar, e isso é previsto
+
+Não é fracasso do objetivo; é o objetivo dizendo antes.
+
+- **P7** (nadar pela cintura) e **P8** (o poço pela fundura) **encostam no
+  TRAÇADO**, e por invariante o traçado não muda dentro de uma tarefa de
+  construção. **Medir qual lado precisa mudar, e então parar e dizer** — com a
+  medição, não com a impressão.
+- **P10** (coisas escondidas) **muda o gabarito de aceite**: hoje
+  `ChartConformance` exige carta e mundo IDÊNTICOS, e esconder algo reprova.
+  Para haver segredo, a carta precisa dizer o que ela **não** mostra — senão o
+  teste que protege a feature passa a proibir o design.
+
+## Invariantes
+
+As doze de `corrente`, sem exceção. E a que mais vai pesar aqui:
+
+**Todo teste que afirma a regra VELHA vira o teste da regra NOVA.** Já
+aconteceu duas vezes nesta sessão — o aqueduto que nunca entrava no morro, e a
+resistência que não podia ser negativa. Nos dois, deixar o antigo verde ao lado
+do novo faria a bateria provar duas regras que se contradizem, e uma delas
+estaria mentindo em silêncio. **Vermelho avisa; verde errado não.**
+
+## Se um item pedir decisão de conteúdo
+
+**Perguntar, não escolher.** Os dois sistemas novos têm decisões que são do
+usuário — quantos slots de item, se ele se perde, o que é uma anatomia. Enquanto
+a resposta não vem, fazer os outros itens, que são independentes.
+
+## O ciclo de cada task
+
+```
+ler a task  →  procurar o cano que já existe  →  escrever o teste E o
+contrapeso  →  implementar  →  build  →  bateria  →  auditorias  →
+grep fora de /Tests/  →  pôr na tela  →  commit  →  próxima
+```
+
+```bash
+./Tools/build_editor.sh
+./Tools/audit_determinism.sh && ./Tools/audit_no_recalculation.sh
+./Tools/audit_localizable_text.sh && ./Tools/audit_test_helper_names.sh
+./Tools/audit_visible_actors.sh
+./Tools/sync_module_manifest.sh   # DEPOIS do build
+```
+
+Fechar o Editor antes de compilar; reabrir com `open -a`. `timeout` não existe
+no macOS — retorna 127 sem executar.
+
+## O que este objetivo NÃO faz
+
+- **Não repete tarefa que já tem dono.** C4–C6 e P4–P10 se executam nos
+  arquivos delas, e as caixas se marcam LÁ e aqui.
+- **Não autora asset.** O material de lava segue sendo o da água.
+- **Não decide conteúdo.** Ele pergunta.
+
+## Se o contexto for compactado
+
+1. Reler este objetivo, e depois o `tasks.md` da feature em que se estava.
+2. `git log --oneline -15`.
+3. Continuar da primeira caixa aberta. **Não recomeçar, não replanejar.**
+
+## Se bloquear
+
+Fazer todo o resto que não depende do bloqueio, e então dizer o que travou com
+a **medição** que sustenta isso. Reduzir escopo é decisão do usuário.

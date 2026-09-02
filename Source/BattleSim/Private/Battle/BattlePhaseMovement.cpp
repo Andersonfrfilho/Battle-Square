@@ -127,6 +127,57 @@ namespace
 			int8 DeltaRow = 0;
 			GetDirectionDelta(Action.Direction, DeltaColumn, DeltaRow);
 
+			// SUBIR A CORRENTEZA NÃO SAI DE GRAÇA.
+			//
+			// Contra uma corrente forte o bastante para CARREGAR, o passo não
+			// acontece. O limiar é o mesmo da carga — uma corrente que te leva
+			// é forte o bastante para te barrar, e dois limiares para a mesma
+			// água seriam duas fronteiras que concordam até a primeira edição.
+			//
+			// DETERMINÍSTICO, sem sorteio: tirar um número do gerador aqui
+			// deslocaria o fluxo aleatório de toda partida já gravada, e todo
+			// snapshot de determinismo passaria a divergir por uma regra que
+			// aquelas batalhas nem exercem. É a mesma razão que o escorregão
+			// documenta logo acima.
+			//
+			// Quem VOA passa por cima, como não é carregado. Quem SUBMERGE
+			// sente, pela mesma razão da carga: ele está dentro da água.
+			const int32 ForcaDaCorrente = State.FlowStrengthAt(Pet.Column, Pet.Row);
+			const bool bVoando =
+				(Pet.PostureFlags & static_cast<uint16>(EBattlePostureFlags::Flying)) != 0;
+
+			if (!bVoando
+				&& ForcaDaCorrente > BattleArenaConstants::CurrentCarriesAbovePerMille)
+			{
+				int8 CorrenteColuna = 0;
+				int8 CorrenteLinha = 0;
+				GetDirectionDelta(State.FlowDirectionAt(Pet.Column, Pet.Row),
+					CorrenteColuna, CorrenteLinha);
+
+				// Produto escalar NEGATIVO é ir contra. Zero é atravessar de
+				// lado, e atravessar de lado não paga nem ganha — a corrente
+				// não ajuda nem atrapalha quem corta o rio.
+				const int32 Contra = DeltaColumn * CorrenteColuna + DeltaRow * CorrenteLinha;
+				if (Contra < 0)
+				{
+					// COM EVENTO, pela mesma razão do escorregão: ação que
+					// some sem frase parece defeito. `Escorregou` é o evento
+					// de "você não saiu do lugar, o chão te segurou", e o
+					// `Detail` já diz QUAL terreno segurou — aqui, a água.
+					FBattleEvent Segurou;
+					Segurou.Type = EBattleEventType::Escorregou;
+					Segurou.SlotIndex = SlotIndex;
+					Segurou.Phase = 3; // F3
+					Segurou.ActorId = Pet.PetId;
+					Segurou.TargetId = BattleEventNoActor;
+					Segurou.FromCell = PackCell(Pet.Column, Pet.Row);
+					Segurou.ToCell = Segurou.FromCell;
+					Segurou.Detail = State.CellLayout[State.CellIndex(Pet.Column, Pet.Row)];
+					OutTrace.Add(Segurou);
+					continue;
+				}
+			}
+
 			const int32 DestColumn = static_cast<int32>(Pet.Column) + DeltaColumn;
 			const int32 DestRow = static_cast<int32>(Pet.Row) + DeltaRow;
 

@@ -49,14 +49,22 @@ isso é tarefa própria.
 dano de casa. O dano é do CHÃO; a corrente é a ÁGUA, e estar submerso é estar
 mais dentro dela.
 
-## C3 — Subir a correnteza custa
+## C3 — Subir a correnteza custa ✅ FEITO
 > 🤖 Modelo: `sonnet`
 
 Andar contra a corrente é mais caro que a favor. É o que faz o sentido virar
 decisão de rota em vez de enfeite.
 
-*Aceite:* o mesmo trecho, nos dois sentidos, com custos diferentes.
-*Contrapeso:* atravessar de lado não paga nem ganha.
+**Determinístico, sem sorteio:** contra corrente forte o passo não acontece.
+Tirar um número do gerador aqui deslocaria o fluxo aleatório de toda partida já
+gravada — a mesma razão que o escorregão documenta.
+
+**O ganho de descer não foi programado:** ele CAI FORA da carga da C2 — quem
+anda a favor também é carregado, e faz duas casas com uma ação. Descer é barato
+sem uma regra própria dizendo isso.
+
+**O limiar é o mesmo da carga.** Uma corrente que te leva é forte o bastante
+para te barrar, e dois limiares para a mesma água seriam duas fronteiras.
 
 ## C4 — A balsa sente a corrente
 > 🤖 Modelo: `sonnet`

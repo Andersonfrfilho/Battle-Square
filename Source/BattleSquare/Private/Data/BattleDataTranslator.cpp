@@ -153,6 +153,9 @@ void FBattleDataTranslator::TranslatePet(
 		if (const FPetElementDefinition* Dele =
 			FPetTypeCatalog::Get().FindElement(ParaResistir.Element))
 		{
+			// A FIRMEZA contra a corrente, do mesmo lugar e pela mesma razão.
+			OutBattleState.FootingPerMille = Dele->FootingPerMille;
+
 			for (int32 Qual = 1; Qual < static_cast<int32>(EFluidKind::Count); ++Qual)
 			{
 				const EFluidKind Fluido = static_cast<EFluidKind>(Qual);
@@ -233,7 +236,16 @@ int32 FBattleDataTranslator::ComposeFluidResist(int32 DoTraco, int32 DoItem)
 	// SOMA, e não o maior dos dois: o item ACRESCENTA ao que a criatura já é.
 	// Tomar o maior faria uma bota de lava não valer nada num pet de Fogo, que
 	// é justamente o pet que mais a usaria.
-	return FMath::Clamp(FMath::Max(DoTraco, 0) + FMath::Max(DoItem, 0), 0, 100);
+	//
+	// O TRAÇO PODE SER NEGATIVO — fraqueza é parte do que a criatura é, e
+	// prendê-lo em zero apagaria metade do que distingue uma das outras. Isto
+	// aqui já apagou: a versão anterior fazia `Max(DoTraco, 0)`, e ela teria
+	// engolido em silêncio toda fraqueza que alguém cadastrasse.
+	//
+	// O ITEM, não: ele só acrescenta. Item que ENFRAQUECE é maldição, e
+	// maldição é outra mecânica — com outra narração e outra forma de sair
+	// dela. Um item mal cadastrado não pode virar uma por acidente.
+	return FMath::Clamp(DoTraco + FMath::Max(DoItem, 0), -100, 100);
 }
 
 void FBattleDataTranslator::TranslateMatchup(

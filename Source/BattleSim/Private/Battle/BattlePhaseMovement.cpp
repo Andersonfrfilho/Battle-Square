@@ -147,7 +147,8 @@ namespace
 				(Pet.PostureFlags & static_cast<uint16>(EBattlePostureFlags::Flying)) != 0;
 
 			if (!bVoando
-				&& ForcaDaCorrente > BattleArenaConstants::CurrentCarriesAbovePerMille)
+				&& ForcaDaCorrente > BattleArenaConstants::CurrentCarriesAbovePerMille
+				&& ForcaDaCorrente > Pet.FootingPerMille)
 			{
 				int8 CorrenteColuna = 0;
 				int8 CorrenteLinha = 0;
@@ -562,6 +563,15 @@ void BattlePhases::ApplyMovement(
 
 		const int32 Forca = State.FlowStrengthAt(Pet.Column, Pet.Row);
 		if (Forca <= BattleArenaConstants::CurrentCarriesAbovePerMille)
+		{
+			continue;
+		}
+
+		// A FIRMEZA DO PET, e é o buraco que a C2 declarou em aberto: lá quem
+		// resistia era só o LUGAR, porque não havia número por criatura. Agora
+		// há, e ele está na MESMA escala da força — firmeza 200 aguenta uma
+		// corrente de 200, sem conversão pelo meio.
+		if (Forca <= Pet.FootingPerMille)
 		{
 			continue;
 		}

@@ -27,7 +27,7 @@ testado.
       afirma o contrário vira o teste novo
 - [x] **P2** — a casa ganha atributos, com a medição de o que é do fluido e o
       que é da casa
-- [ ] **P3** — a resistência vem da anatomia, e ela também resolve o buraco da
+- [x] **P3** — a resistência vem da anatomia, e ela também resolve o buraco da
       C2 (resistir a ser carregado)
 - [ ] **P4** — efeito de campo inteiro, comparado ao tamanho do campo
 - [ ] **P5** — golpe que se desliga sob dano

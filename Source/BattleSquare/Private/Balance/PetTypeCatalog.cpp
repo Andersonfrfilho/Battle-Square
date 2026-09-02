@@ -148,6 +148,11 @@ bool FPetTypeCatalog::LoadFromJson(const FString& FilePath, FPetTypeCatalog& Out
 				}
 			}
 
+			// Ausente é ZERO: elemento que não diz nada não se segura em nada.
+			double Firmeza = 0.0;
+			(*Objeto)->TryGetNumberField(TEXT("footing"), Firmeza);
+			Elemento.FootingPerMille = FMath::Max(0, static_cast<int32>(Firmeza));
+
 			// Ausente é falso: elemento que não diz nada não conduz.
 			(*Objeto)->TryGetBoolField(TEXT("conducts"), Elemento.bConducts);
 

@@ -68,8 +68,12 @@ uint64 FBattleState::ComputeHash() const
 		// slot em que alguém pisa na lava, tarde demais para o hash servir.
 		for (int32 Qual = 0; Qual < 8; ++Qual)
 		{
-			Hash = CombineBattleHash(Hash, Pet->FluidResistPercent[Qual]);
+			Hash = CombineBattleHash(Hash,
+				static_cast<uint64>(static_cast<int64>(Pet->FluidResistPercent[Qual])));
 		}
+
+		Hash = CombineBattleHash(Hash,
+			static_cast<uint64>(static_cast<int64>(Pet->FootingPerMille)));
 
 		Hash = CombineBattleHash(Hash, Pet->PostureFlags);
 		Hash = CombineBattleHash(Hash, Pet->Traits);

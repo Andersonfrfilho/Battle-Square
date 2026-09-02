@@ -79,7 +79,8 @@
    "tiltDegrees": -28,
    "skills": [
     "camuflar"
-   ]
+   ],
+   "footing": 150
   },
   {
    "name": "Terra",
@@ -91,7 +92,8 @@
    "tiltDegrees": -80,
    "skills": [
     "escavar"
-   ]
+   ],
+   "footing": 300
   },
   {
    "name": "Fantasma",
@@ -128,7 +130,8 @@
    "tiltDegrees": 46,
    "skills": [
     "voar"
-   ]
+   ],
+   "footing": 0
   },
   {
    "name": "Raio",
@@ -141,7 +144,11 @@
    "skills": [
     "eletrificar"
    ],
-   "conducts": true
+   "conducts": true,
+   "resists": {
+    "agua salgada": -50,
+    "agua doce": -50
+   }
   }
  ],
  "_comment_legado": "Nomes de UM eixo so que ja foram ASSINADOS. Nao e conveniencia: dado assinado nao se reescreve de fora, e recusar estes nomes invalidaria pets que existem.",

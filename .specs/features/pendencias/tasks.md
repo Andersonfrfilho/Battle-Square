@@ -62,7 +62,7 @@ toda água doce da ilha seria venenosa.
 Raio conduz, então a matriz teria uma linha — código sem prova. Quando um
 segundo elemento condutor existir, ela passa a ser necessária.
 
-## P3 — Resistência pela ANATOMIA
+## P3 — Resistência pela ANATOMIA ✅ FEITO (com uma metade declarada de fora)
 > 🤖 Modelo: `sonnet`
 
 > *"depende da anatomia dele e da biologia da pele dele"*
@@ -72,8 +72,20 @@ Hoje a base vem do ELEMENTO (Fogo aguenta lava a 50%). O pedido é que venha da
 criatura. **Não contradiz a G3:** é trocar a fonte do número, e o número já tem
 onde morar (`FluidResistPercent`) e como compor (`ComposeFluidResist`).
 
-*Também resolve o buraco da C2:* resistir a ser CARREGADO precisa de um número
-por criatura, e hoje não existe nenhum.
+**Duas metades entregues:**
+
+- **FRAQUEZA.** `FluidResistPercent` virou `int8`: sem sinal, fraqueza não
+  cabia, e ela foi pedida na MESMA frase que a imunidade. Piso de -100 (o
+  dobro), porque sem piso um `-800` digitado viraria morte instantânea.
+- **FIRMEZA** (`FootingPerMille`), que fecha o buraco declarado na C2 — lá quem
+  resistia à corrente era só o LUGAR. Na mesma escala da força, para a
+  comparação ser direta.
+
+**A metade que fica de fora, declarada:** anatomia e biologia da pele são mais
+finas que o elemento, e **o cadastro do pet não tem eixo de anatomia**.
+Inventá-lo criaria um sistema que ninguém alimenta. O elemento é o que a
+criatura É hoje, e o comentário em `FPetElementDefinition::FootingPerMille`
+marca por onde a anatomia entra quando existir.
 
 ## P4 — Efeito de CAMPO INTEIRO
 > 🤖 Modelo: `sonnet`

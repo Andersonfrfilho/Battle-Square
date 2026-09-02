@@ -97,10 +97,24 @@ bool FFluidResistanceIsAPercentNotASwitchTest::RunTest(const FString& Parameters
 	TestEqual(TEXT("resistencia acima de 100 nao cura"),
 		Absurdo.Pets[0].PendingDamage, 0);
 
-	FBattleState Negativa = ProvaDaResistencia::NaLava(-50);
-	ProvaDaResistencia::PassarUmSlot(Negativa);
-	TestEqual(TEXT("resistencia negativa nao aumenta o dano"),
-		Negativa.Pets[0].PendingDamage, Bruto);
+	// ESTA AFIRMAÇÃO MUDOU, e a mudança é deliberada.
+	//
+	// Ela dizia "resistência negativa não aumenta o dano", e era verdade
+	// enquanto o número era preso em zero. A P3 abriu o piso porque FRAQUEZA
+	// foi pedida na mesma frase que a imunidade — e negativo é como ela cabe.
+	//
+	// A bateria pegou isto na primeira rodada depois da mudança, e é o que
+	// tinha de acontecer: deixar a versão antiga verde ao lado da nova faria
+	// duas regras contraditórias parecerem provadas.
+	//
+	// O que a linha antiga PROTEGIA continua protegido, e num lugar melhor:
+	// `ComposeFluidResist` prende o ITEM em não-negativo, então um item mal
+	// cadastrado segue sem poder tirar o que a criatura é. Item que enfraquece
+	// é maldição, e maldição é outra mecânica.
+	FBattleState Fraco = ProvaDaResistencia::NaLava(-50);
+	ProvaDaResistencia::PassarUmSlot(Fraco);
+	TestEqual(TEXT("resistencia negativa e FRAQUEZA, e aumenta o dano"),
+		Fraco.Pets[0].PendingDamage, (Bruto * 150) / 100);
 
 	return true;
 }

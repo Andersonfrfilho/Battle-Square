@@ -348,10 +348,15 @@ struct FPetState
 	/**
 	 * RESISTÊNCIA A FLUIDO, em porcentagem, uma entrada por fluido.
 	 *
-	 * Zero é não resistir; 100 é não sentir. Porcentagem, e não booleano de
+	 * Zero é não resistir; 100 é não sentir; **NEGATIVO é fraqueza** — quem
+	 * vale -100 leva o dobro. Porcentagem com sinal, e não booleano de
 	 * imunidade, porque o jogo já fala em porcentagem em todo lugar
 	 * (efetividade de tipo, escorregão, atraso) — e um booleano fecharia a
-	 * porta para "resiste um pouco" sem ganhar nada em troca.
+	 * porta para "resiste um pouco" e para "sofre mais", que são metade do que
+	 * distingue uma criatura de outra.
+	 *
+	 * `int8` e não `uint8`: sem sinal, fraqueza não cabe, e ela foi pedida na
+	 * mesma frase que a imunidade.
 	 *
 	 * **O núcleo não sabe de ONDE ela vem.** Item, traço da espécie, bênção de
 	 * templo: quem decide é a camada de cima, e o que chega aqui é o número —
@@ -359,7 +364,7 @@ struct FPetState
 	 * tipo, que o núcleo também nunca aprendeu a existir.
 	 */
 	UPROPERTY()
-	uint8 FluidResistPercent[8] = { 0 };
+	int8 FluidResistPercent[8] = { 0 };
 
 	/** Quanto este pet resiste ao fluido dado, de 0 a 100. */
 	int32 ResistPercentFor(EFluidKind Fluid) const
@@ -368,16 +373,39 @@ struct FPetState
 		return (Qual >= 0 && Qual < 8) ? FluidResistPercent[Qual] : 0;
 	}
 
-	/** Põe a resistência, presa entre 0 e 100 — acima de 100 curaria. */
+	/**
+	 * Põe a resistência, presa entre -100 e 100.
+	 *
+	 * Teto de 100 porque acima disso o dano viraria negativo, e curar quem
+	 * pisa na lava é o oposto do que a regra promete. Piso de -100 porque
+	 * abaixo disso o dobro viraria triplo sem nada segurando — e uma fraqueza
+	 * sem fundo transformaria um descuido de cadastro em morte instantânea.
+	 */
 	void SetResistPercentFor(EFluidKind Fluid, int32 Percent)
 	{
 		const int32 Qual = static_cast<int32>(Fluid);
 		if (Qual >= 0 && Qual < 8)
 		{
 			FluidResistPercent[Qual] =
-				static_cast<uint8>(FMath::Clamp(Percent, 0, 100));
+				static_cast<int8>(FMath::Clamp(Percent, -100, 100));
 		}
 	}
+
+	/**
+	 * A FIRMEZA do pet contra ser levado pela corrente, em partes por mil.
+	 *
+	 * Fecha o buraco que a C2 declarou: lá, quem resistia era só o LUGAR —
+	 * água mansa não carrega ninguém —, e eu disse por extenso que resistir a
+	 * ser carregado precisava de um número por criatura que não existia.
+	 * Este é o número.
+	 *
+	 * Em partes por mil, na MESMA escala da força da corrente, para a
+	 * comparação ser direta: firmeza 200 aguenta uma corrente de 200. Escalas
+	 * diferentes obrigariam uma conversão, e conversão é onde o sentido se
+	 * perde.
+	 */
+	UPROPERTY()
+	int32 FootingPerMille = 0;
 
 	bool HasTrait(EPetTrait Trait) const
 	{

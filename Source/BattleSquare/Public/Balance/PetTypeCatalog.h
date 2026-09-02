@@ -43,6 +43,21 @@ struct BATTLESQUARE_API FPetElementDefinition
 	 * bit por fluido daria oito traços que só sabem dizer sim ou não.
 	 */
 	TMap<FString, int32> FluidResists;
+
+	/**
+	 * A FIRMEZA da criatura contra a corrente, em partes por mil.
+	 *
+	 * Vem do elemento pela mesma razão que o Incorpóreo vem: o núcleo guarda o
+	 * efeito, a camada de fora guarda o significado. Terra se planta; Ar não
+	 * tem no que se segurar.
+	 *
+	 * **Onde a ANATOMIA entraria.** O usuário pediu que a resistência viesse da
+	 * "anatomia e da biologia da pele", e isso é mais fino que o elemento — mas
+	 * o cadastro do pet não tem eixo de anatomia, e inventá-lo aqui criaria um
+	 * sistema que ninguém alimenta. O elemento é o que a criatura É hoje; o dia
+	 * em que houver anatomia, ela entra por este mesmo número.
+	 */
+	int32 FootingPerMille = 0;
 };
 
 /** Uma ESCOLA: o que a magia dela faz, e a malha que diz isso na tela. */

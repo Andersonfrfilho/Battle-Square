@@ -621,6 +621,15 @@ void BattlePhases::ApplyMovement(
 			Pet.PendingDamage += BattleArenaConstants::CellDamageAmount;
 		}
 
+		// O VENENO da casa cobra pelo mesmo cano, e escapa quem NÃO PISA nela —
+		// como a brasa, e ao contrário da corrente.
+		//
+		// A diferença tem princípio: o que é do LUGAR alcança quem toca o
+		// lugar, e voar ou submergir tiram o pet dali. O que é da ÁGUA alcança
+		// quem está dentro dela, e submergir é estar MAIS dentro. Veneno de
+		// poça é do lugar; a correnteza é da água.
+		Pet.PendingDamage += State.PoisonAt(Pet.Column, Pet.Row);
+
 		// O FLUIDO cobra pelo MESMO cano, e é de propósito.
 		//
 		// Mesmo acumulador, mesma guarda de quem está fora do chão, mesmo

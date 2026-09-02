@@ -118,6 +118,16 @@ uint64 FBattleState::ComputeHash() const
 		}
 	}
 
+	// O VENENO entra no hash, derivado como o resto: lista vazia e lista de
+	// zeros são a mesma casa limpa.
+	for (int32 Linha = 0; Linha < static_cast<int32>(GridRows); ++Linha)
+	{
+		for (int32 Coluna = 0; Coluna < static_cast<int32>(GridColumns); ++Coluna)
+		{
+			Hash = CombineBattleHash(Hash, static_cast<uint64>(PoisonAt(Coluna, Linha)));
+		}
+	}
+
 	// A CORRENTE entra no hash, e DERIVADA como o fluido — pelo mesmo motivo:
 	// lista vazia e lista de zeros querem dizer a mesma coisa (água parada), e
 	// somar o array cru daria assinaturas diferentes para estados idênticos.

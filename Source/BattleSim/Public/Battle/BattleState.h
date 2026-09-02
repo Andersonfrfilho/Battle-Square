@@ -518,6 +518,44 @@ struct FBattleState
 	UPROPERTY()
 	TArray<uint8> CellFlowStrength;
 
+	/**
+	 * QUANTO VENENO esta casa tem, em dano por slot. Zero é casa limpa.
+	 *
+	 * É atributo da CASA, e não do fluido, e a razão decide sozinha: veneno é
+	 * de uma poça ESPECÍFICA. Pô-lo no registro faria toda água doce da ilha
+	 * ser venenosa, o que é absurdo — e faria a tabela do fluido responder por
+	 * uma coisa que muda de lugar para lugar.
+	 *
+	 * Paralelo às outras listas, e **vazia quer dizer limpa**: uma arena sem
+	 * veneno não paga um byte por casa para dizer que não tem.
+	 */
+	UPROPERTY()
+	TArray<uint8> CellPoison;
+
+	/** Quanto veneno há nesta casa, em dano por slot. */
+	int32 PoisonAt(int32 Column, int32 Row) const
+	{
+		const int32 Indice = CellIndex(Column, Row);
+		return CellPoison.IsValidIndex(Indice) ? CellPoison[Indice] : 0;
+	}
+
+	/** Envenena uma casa, materializando a lista se preciso. */
+	void SetPoisonAt(int32 Column, int32 Row, int32 DamagePerSlot)
+	{
+		const int32 Indice = CellIndex(Column, Row);
+		if (!CellLayout.IsValidIndex(Indice))
+		{
+			return;
+		}
+
+		if (CellPoison.Num() != CellLayout.Num())
+		{
+			CellPoison.SetNumZeroed(CellLayout.Num());
+		}
+
+		CellPoison[Indice] = static_cast<uint8>(FMath::Clamp(DamagePerSlot, 0, 255));
+	}
+
 	/** Para onde a água corre nesta casa. `Nenhuma` em água parada e em terra. */
 	EBattleDirection FlowDirectionAt(int32 Column, int32 Row) const
 	{

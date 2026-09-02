@@ -33,7 +33,7 @@ precisava de túnel porque inventava altura para escapar do morro. A queda agora
 antigo verde ao lado do novo faria a bateria provar duas regras que se
 contradizem.
 
-## P2 — A casa ganha ATRIBUTOS 🧠
+## P2 — A casa ganha ATRIBUTOS ✅ FEITO
 > 🤖 Modelo: `opus` — é o contrato que P3 e P4 consomem
 
 > *"pode ser específico com as propriedades daquele local: água, doce,
@@ -43,9 +43,24 @@ contradizem.
 Hoje a casa tem fundura, substância e (desde a corrente) rumo e força. Falta o
 resto ser **medido por casa** em vez de herdado do fluido.
 
-*Decisão a MEDIR:* o que é do FLUIDO (densidade — igual em toda água doce) e o
-que é da CASA (venenoso — uma poça específica). Confundir os dois duplicaria a
-tabela do registro dentro da grade.
+**A medição achou que SEIS DOS SETE já existiam, e já do lado certo:**
+
+| pedido | onde já estava | de quem |
+|---|---|---|
+| água | `ECellProperty` | casa |
+| doce | `EFluidKind` | fluido |
+| densidade | `DensityPerMille` | fluido |
+| condutor | `ConductivityPerMille` | fluido |
+| velocidade | `CellFlowStrength` (C1) | casa |
+| sentido | `CellFlowDirection` (C1) | casa |
+| **venenoso** | **não existia** | **casa** |
+
+E a decisão se respondeu sozinha: veneno é de uma poça ESPECÍFICA. No registro,
+toda água doce da ilha seria venenosa.
+
+**Fica de fora, declarado:** "condutor por elemento com potência". Hoje só o
+Raio conduz, então a matriz teria uma linha — código sem prova. Quando um
+segundo elemento condutor existir, ela passa a ser necessária.
 
 ## P3 — Resistência pela ANATOMIA
 > 🤖 Modelo: `sonnet`

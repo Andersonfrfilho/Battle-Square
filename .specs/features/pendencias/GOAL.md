@@ -25,7 +25,7 @@ testado.
 
 - [x] **P1** — o aqueduto pode entrar no morro, saindo por túnel; e o teste que
       afirma o contrário vira o teste novo
-- [ ] **P2** — a casa ganha atributos, com a medição de o que é do fluido e o
+- [x] **P2** — a casa ganha atributos, com a medição de o que é do fluido e o
       que é da casa
 - [ ] **P3** — a resistência vem da anatomia, e ela também resolve o buraco da
       C2 (resistir a ser carregado)

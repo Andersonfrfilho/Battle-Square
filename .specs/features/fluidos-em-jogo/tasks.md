@@ -4,7 +4,7 @@
 
 ---
 
-## G1 — A arena põe fluido nas casas 🧠
+## G1 — A arena põe fluido nas casas ✅ FEITO
 > 🤖 Modelo: `opus` — é o contrato entre o mundo e o tabuleiro
 
 `FArenaFromWorld` já decide `ECellProperty` **casa a casa** a partir do que há
@@ -18,7 +18,7 @@ em volta do encontro. O mundo já sabe de que fluido é cada ponto
 *Aceite:* uma batalha na saia do vulcão nasce com casas de água TERMAL, e uma
 longe dele com água doce. E o contrapeso: casa seca continua sem fluido.
 
-## G2 — O tradutor liga a condução
+## G2 — O tradutor liga a condução ✅ FEITO
 > 🤖 Modelo: `sonnet`
 
 Uma bandeira, no lugar onde o tipo ainda é conhecido. `BattleDataTranslator`
@@ -29,7 +29,7 @@ converte tipo em Attack pré-multiplicado.
 *Motivo:* sem isto a F8 inteira é inerte — regra completa, testada, e que nunca
 acontece.
 
-## G3 — A resistência tem origem  ✔ DECIDIDO: traço dá a base, item soma
+## G3 — A resistência tem origem ✅ FEITO (traço dá a base, item soma)
 > 🤖 Modelo: `sonnet`
 
 `FluidResistPercent` é sempre zero: nada preenche. **De onde vem a proteção?**
@@ -43,7 +43,7 @@ acontece.
 *Aceite (qualquer que seja a origem):* um pet com a proteção atravessa a lava
 sem se queimar; o mesmo pet sem ela, não.
 
-## G4 — A prova na tela
+## G4 — A prova na tela ✅ FEITO
 > 🤖 Modelo: `sonnet`
 
 O que se implementa aparece. A etiqueta da casa já mostra a substância quando
@@ -53,3 +53,15 @@ rodou com fluido de verdade numa partida.
 *Aceite:* roteiro manual com o que só o olho vê — a casa de lava lida como
 perigosa antes de alguém pisar nela, e a corrente contada no painel quando ela
 alcança um terceiro pet.
+
+---
+
+## O que ficou EXPLICITAMENTE de fora
+
+**O sistema de itens.** Não há cadastro, save nem equipar — foi medido antes de
+começar, e dito ao usuário antes da G3. A REGRA de composição existe e tem prova
+(`ComposeFluidResist`, com valor injetado); o que falta é a origem do número.
+Criar o sistema é feature própria, maior que este objetivo inteiro.
+
+**O material da lava.** A casa veste o material da água até alguém desenhar um.
+O nome na etiqueta e o vermelho são o remendo declarado.

@@ -31,12 +31,12 @@ tocam**. O trabalho é encanamento, e a única decisão de conteúdo é a G3.
       partida real; pet de Fogo, não
 - [x] **G3** — a resistência tem origem (**pergunte antes**: item, traço, ou
       as duas)
-- [ ] **G4** — a prova na tela, com roteiro do que só o olho vê
-- [ ] O grep acima deixa de vir vazio — e essa é a prova de que o objetivo
-      aconteceu
-- [ ] Bateria completa verde (hoje **790**; o número só sobe)
-- [ ] As cinco auditorias limpas
-- [ ] Um commit por task, cada um com o motivo — não só o quê
+- [x] **G4** — a prova na tela, com roteiro do que só o olho vê
+- [x] O grep acima deixa de vir vazio (`EncounterMatchAssembler:139`,
+      `BattleDataTranslator:157`) — a prova de que o objetivo aconteceu
+- [x] Bateria completa verde — **800/800**, zero falhas (era 790)
+- [x] As cinco auditorias limpas
+- [x] Um commit por task, cada um com o motivo — não só o quê
 
 Enquanto qualquer caixa estiver aberta, o objetivo **continua**.
 

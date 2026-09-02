@@ -13,24 +13,24 @@ nenhum teste alcança.
 
 ## PRONTO é isto, e nada menos
 
-- [⛔] **CP1** — o teto de pets por lado que o sistema já aguenta está MEDIDO
-- [⛔] **CP2** — aliados nascem em casas DIFERENTES, e o duelo nasce onde nascia
-- [⛔] **CP3** — o commit do núcleo endereça pet por `PetId`, não lado
-- [⛔] **CP4** — postura, movimento e combate agem sobre o pet endereçado
-- [⛔] **CP5** — o `AddWarning` de BTL-05 virou PROVA, e não sobrou aviso nenhum
-- [⛔] **CP6** — o desempate entre aliados está medido e decidido por `PetId`
-- [⛔] **CP7** — o fio carrega N pets, e a auditoria do commit cobre o tipo novo
-- [⛔] **CP8** — quem joga escolhe ação POR PET, e a tela diz de quem é qual
-- [ ] O grep por `AddWarning` em `Source/` não acha mais BTL-05
-- [ ] Bateria completa verde (hoje **843**; o número só sobe)
+- [x] **CP1** — o teto de pets por lado que o sistema já aguenta está MEDIDO
+- [x] **CP2** — aliados nascem em casas DIFERENTES, e o duelo nasce onde nascia
+- [x] **CP3** — o commit do núcleo endereça pet por `PetId`, não lado
+- [ ] **CP4** — postura, movimento e combate agem sobre o pet endereçado
+- [x] **CP5** — o `AddWarning` de BTL-05 virou PROVA, e não sobrou aviso nenhum
+- [ ] **CP6** — o desempate entre aliados está medido e decidido por `PetId`
+- [ ] **CP7** — o fio carrega N pets, e a auditoria do commit cobre o tipo novo
+- [ ] **CP8** — quem joga escolhe ação POR PET, e a tela diz de quem é qual
+- [x] O grep por `AddWarning` em `Source/` não acha mais BTL-05
+- [ ] Bateria completa verde (hoje **865** depois da CP3; o número só sobe)
 - [ ] As cinco auditorias limpas, mais `audit_no_commit_replication.sh`
 - [ ] Um commit por task, cada um com o motivo — não só o quê
 
 Enquanto qualquer caixa estiver aberta, o objetivo **continua**.
 
-**PARADA, à espera de decisão do usuário.** Trocar `[⛔]` por `[ ]` nas caixas
-acima é o que abre a feature — e até lá `goal_status.sh` não a elege como
-próxima.
+**ABERTA e em andamento.** CP1, CP2 e CP3 estão commitadas (`461e8d7`, `6c5e18a`,
+`88df909`), bateria 865. As caixas nasceram `⛔` e ficaram assim depois de a
+feature começar: o ponteiro dizia "nada aberto" enquanto três tasks fechavam.
 
 ## Não pare entre tarefas
 

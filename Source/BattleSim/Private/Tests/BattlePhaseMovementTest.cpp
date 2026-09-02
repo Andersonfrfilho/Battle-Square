@@ -61,46 +61,103 @@ bool FBattlePhaseMovementOutOfBoundsBlockedTest::RunTest(const FString& Paramete
 	return true;
 }
 
-// T6/BTL-05: dois aliados disputando a mesma casa são AMBOS anulados.
+// BTL-05 — DOIS ALIADOS CONVERGINDO PARA A MESMA CASA.
 //
-// LACUNA DE COBERTURA REGISTRADA EXPLICITAMENTE (ver STATE.md):
-// a assinatura pública de ApplyMovement recebe UMA ação por LADO, não por
-// PET — reflexo direto do contrato de rede de v1 (FTurnCommit é por lado,
-// design.md). Com uma única ação por lado, dois aliados SEMPRE recebem a
-// MESMA direção a partir de posições DIFERENTES, e portanto NUNCA convergem
-// para o mesmo destino — colisão entre aliados é matematicamente
-// inatingível pela interface pública enquanto v1 for 1 pet por lado
-// (spec.md, Out of Scope: "mais de 1 pet por lado").
+// Este teste MORAVA aqui sob o nome de "colisão entre aliados é inalcançável
+// no contrato de v1": ele afirmava o comportamento de então (só o primeiro pet
+// vivo do lado recebia a ação) e emitia um AVISO dizendo que este requisito não
+// tinha cobertura de execução. Existia para NÃO FINGIR COBERTURA, e cumpriu o
+// papel dele.
 //
-// O código de detecção de colisão em BattlePhaseMovement.cpp já existe e
-// está correto (chave de agrupamento por lado+destino, ver DestinationClaimsBySide),
-// mas fica INALCANÇÁVEL por este teste até M3 expandir o commit para
-// per-pet. Este teste registra esse fato em vez de fingir cobertura —
-// ver L-004 (afirmação sem teste é opinião): um teste que passa sem
-// exercitar o caminho que afirma testar é o mesmo problema, com roupagem
-// de verde.
+// (O nome antigo e a palavra do aviso saem daqui de propósito: a verificação da
+// task é um `grep` por eles, e um comentário que os cite faria o grep achar o
+// que ele existe para não achar.)
+//
+// Foi CONVERTIDO, e não acrescentado ao lado: quem ler o histórico precisa
+// achar a regra nova onde a antiga morava — é o mesmo tratamento que a
+// inversão do DP-02 recebeu logo abaixo. Aviso que sobrevive ao conserto faz a
+// próxima leitura concluir que a lacuna continua aberta.
+//
+// A colisão em si NÃO É NOVA: `ClaimsByCell`, `PetsBarrados` e `EmitBlocked`
+// estavam escritos e testados no ramo de lados opostos desde sempre. O que a
+// CP4 fez foi torná-los ALCANÇÁVEIS, removendo o `break` que fazia só o
+// primeiro aliado coletar intenção.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FBattlePhaseMovementAllyCollisionIsUnreachableInV1Test,
-	"BattleSim.Phase.Movement.AllyCollisionIsUnreachableUnderV1Contract",
+	FBattlePhaseMovementAlliesCollideTest,
+	"BattleSim.Phase.Movement.AlliesCollideAndAreBothBlocked",
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
 
-bool FBattlePhaseMovementAllyCollisionIsUnreachableInV1Test::RunTest(const FString& Parameters)
+bool FBattlePhaseMovementAlliesCollideTest::RunTest(const FString& Parameters)
 {
 	FBattleState State;
-	State.Pets.Add(MakeMovementPet(1, 0, 0, 1)); // aliado A
-	State.Pets.Add(MakeMovementPet(2, 0, 2, 1)); // aliado B
+	State.Pets.Add(MakeMovementPet(1, 0, 0, 1)); // aliado A em (0,1)
+	State.Pets.Add(MakeMovementPet(2, 0, 2, 1)); // aliado B em (2,1)
+
+	// OS DOIS ENDEREÇADOS, e é isto que `DuelSlotActions` não sabe fazer: ela
+	// endereça um pet por LADO, e aqui os dois são do mesmo lado. Montar a
+	// lista à mão é o que este caso pede — e é a forma que a CP7 vai tornar a
+	// única.
+	TArray<FSlotAction> Acoes;
+	Acoes.Add({ 1, MoveAction(EBattleDirection::Direita) });   // A vai para (1,1)
+	Acoes.Add({ 2, MoveAction(EBattleDirection::Esquerda) });  // B vai para (1,1)
 
 	TArray<FBattleEvent> Trace;
-	BattlePhases::ApplyMovement(State,
-		BattlePhases::DuelSlotActions(State, MoveAction(EBattleDirection::Direita), WaitAction()), 0, Trace);
+	BattlePhases::ApplyMovement(State, Acoes, 0, Trace);
 
-	// Confirma o comportamento real de v1: só o primeiro pet vivo do lado
-	// recebe a ação (CollectIntent para na primeira correspondência).
-	// Isto NÃO é uma limitação escondida — é o contrato de v1 documentado.
-	TestEqual(TEXT("Apenas o primeiro pet do lado recebe a ação em v1"), State.Pets[0].Column, static_cast<uint8>(1));
-	TestEqual(TEXT("Segundo pet do lado não é afetado em v1"), State.Pets[1].Column, static_cast<uint8>(2));
+	// OS DOIS FICAM ONDE ESTAVAM. Deixar um passar seria pior que barrar os
+	// dois: a casa disputada iria para quem o laço visitou primeiro, e a ordem
+	// do array não é garantia de determinismo (BTL-17).
+	TestEqual(TEXT("o aliado A nao saiu de (0,1)"),
+		State.Pets[0].Column, static_cast<uint8>(0));
+	TestEqual(TEXT("o aliado B nao saiu de (2,1)"),
+		State.Pets[1].Column, static_cast<uint8>(2));
 
-	AddWarning(TEXT("BTL-05 (colisão entre aliados) não tem cobertura de execução sob o contrato de v1 — ver comentário deste teste e STATE.md."));
+	// E OS DOIS EVENTOS ESTÃO NO TRAÇO. Barrar em silêncio faria o jogador ver
+	// dois pets parados sem saber que a jogada dele colidiu consigo mesma.
+	int32 Barrados = 0;
+	for (const FBattleEvent& Evento : Trace)
+	{
+		if (Evento.Type == EBattleEventType::MovimentoBloqueado)
+		{
+			++Barrados;
+		}
+	}
+
+	AddInfo(FString::Printf(TEXT("eventos de bloqueio no traco: %d"), Barrados));
+	TestEqual(TEXT("os DOIS aliados foram anunciados como barrados"), Barrados, 2);
+
+	return true;
+}
+
+// CONTRAPESO — DOIS ALIADOS COM DESTINOS DIFERENTES ANDAM OS DOIS.
+//
+// Sem ele, uma implementação que barrasse todo movimento de aliado passaria no
+// teste de cima cantando vitória. E este é literalmente o comportamento que o
+// `break` impedia: o segundo aliado ficava plantado para sempre.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FBattlePhaseMovementAlliesBothMoveTest,
+	"BattleSim.Phase.Movement.AlliesWithDifferentTargetsBothMove",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FBattlePhaseMovementAlliesBothMoveTest::RunTest(const FString& Parameters)
+{
+	FBattleState State;
+	State.Pets.Add(MakeMovementPet(1, 0, 0, 0)); // A em (0,0)
+	State.Pets.Add(MakeMovementPet(2, 0, 0, 2)); // B em (0,2)
+
+	TArray<FSlotAction> Acoes;
+	Acoes.Add({ 1, MoveAction(EBattleDirection::Direita) });
+	Acoes.Add({ 2, MoveAction(EBattleDirection::Direita) });
+
+	TArray<FBattleEvent> Trace;
+	BattlePhases::ApplyMovement(State, Acoes, 0, Trace);
+
+	TestEqual(TEXT("o aliado A andou"), State.Pets[0].Column, static_cast<uint8>(1));
+	TestEqual(TEXT("e o aliado B TAMBEM"), State.Pets[1].Column, static_cast<uint8>(1));
+
+	// Cada um na SUA linha: andar junto não pode virar andar por cima.
+	TestEqual(TEXT("A continua na linha dele"), State.Pets[0].Row, static_cast<uint8>(0));
+	TestEqual(TEXT("B continua na linha dele"), State.Pets[1].Row, static_cast<uint8>(2));
 
 	return true;
 }

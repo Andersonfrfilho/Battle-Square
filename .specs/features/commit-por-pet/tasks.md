@@ -152,7 +152,7 @@ lados faria aliados se matarem por andar junto.
 
 ---
 
-## CP5 — O AVISO de BTL-05 vira PROVA
+## CP5 — O AVISO de BTL-05 vira PROVA ✅ FEITO
 > 🤖 Modelo: `sonnet`
 
 **Dependências:** CP4.

@@ -51,6 +51,28 @@ namespace WaterFooting
 	BATTLESQUARE_API const TCHAR* DebugName(EWaterFooting Footing);
 
 	/**
+	 * Quanto o passo rende AQUI, INDO PARA LÁ.
+	 *
+	 * `SpeedMultiplierFor` sozinho atrasa igual nos dois sentidos, e uma água
+	 * que atrapalha tanto quem desce quanto quem sobe não é uma corrente — é
+	 * um pântano com desenho de rio. O sentido só vira jogo quando ele
+	 * DIFERENCIA: descer o curso rende mais que subir, e é essa diferença que
+	 * transforma "onde eu atravesso" numa escolha.
+	 *
+	 * `Heading` é para onde se anda; vetor nulo (parado) devolve o fator seco
+	 * da água, sem bônus nem castigo — quem não anda não anda a favor de nada.
+	 *
+	 * O empurrão entra pela COMPONENTE AO LONGO do rumo, como na balsa: a
+	 * parte perpendicular empurra de lado, e empurrar de lado não é atraso.
+	 *
+	 * **Há piso**, e ele é a mesma lição da travessia: correnteza forte o
+	 * bastante para ZERAR o passo prende o jogador dentro do rio para sempre,
+	 * e o que ele vê não é uma água difícil — é um jogo travado.
+	 */
+	BATTLESQUARE_API float SpeedMultiplierAlong(EWaterFooting Footing,
+		const FVector2D& Heading, const FVector2D& Flow, int32 StrengthPerMille);
+
+	/**
 	 * DE QUE FLUIDO é a água que se está pisando.
 	 *
 	 * O mundo tinha seis fluidos e tratava todos como uma água só. Quem entra

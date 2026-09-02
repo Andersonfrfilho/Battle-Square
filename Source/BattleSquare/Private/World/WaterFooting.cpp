@@ -19,6 +19,23 @@ namespace ChaoMolhado
 	constexpr float PassoNoFundo = 0.25f;
 
 	/**
+	 * O quanto a corrente cheia mexe no passo, para mais ou para menos.
+	 *
+	 * 0,8 e não 1,0: em 1,0 a correnteza máxima subtrairia o passo inteiro, e
+	 * o piso abaixo passaria a ser o único responsável por o jogador andar —
+	 * regra de verdade escondida atrás de uma salvaguarda.
+	 */
+	constexpr float EmpurraoDaCorrente = 0.8f;
+
+	/**
+	 * Nunca menos que um quinto do que se andaria naquela água parada.
+	 *
+	 * Não é generosidade: é o que impede a corredeira de virar uma parede
+	 * invisível, em que o jogador aperta para a frente e a tela não muda.
+	 */
+	constexpr float PisoContraACorrente = 0.2f;
+
+	/**
 	 * O pé encontra água quando está DENTRO da calha, não perto dela.
 	 *
 	 * Mede contra os SEGMENTOS do curso, nunca contra os pontos amostrados. A
@@ -321,6 +338,27 @@ namespace WaterFooting
 		default: break;
 		}
 		return ChaoMolhado::PassoEmTerra;
+	}
+
+	float SpeedMultiplierAlong(EWaterFooting Chao, const FVector2D& Rumo,
+		const FVector2D& Fluxo, int32 ForcaPorMil)
+	{
+		const float Parado = SpeedMultiplierFor(Chao);
+		if (ForcaPorMil <= 0 || Rumo.IsNearlyZero() || Fluxo.IsNearlyZero())
+		{
+			return Parado;
+		}
+
+		// SÓ A COMPONENTE AO LONGO DO RUMO. Atravessar de través não é subir
+		// nem descer o rio, e cobrar atraso ali castigaria justamente a
+		// travessia — que é o movimento que o mapa mais pede.
+		const float AoLongo = static_cast<float>(Rumo.GetSafeNormal()
+			| Fluxo.GetSafeNormal());
+
+		const float Fator = 1.0f + AoLongo
+			* (static_cast<float>(ForcaPorMil) / 1000.0f) * ChaoMolhado::EmpurraoDaCorrente;
+
+		return FMath::Max(Parado * ChaoMolhado::PisoContraACorrente, Parado * Fator);
 	}
 
 	const TCHAR* DebugName(EWaterFooting Chao)

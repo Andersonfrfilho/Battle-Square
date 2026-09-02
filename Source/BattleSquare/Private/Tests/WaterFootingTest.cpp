@@ -189,3 +189,145 @@ bool FWaterFootingTheFordComesFromTheCrossingsTest::RunTest(const FString& Param
 
 	return true;
 }
+
+/**
+ * O MESMO RIO NOS DOIS SENTIDOS NÃO É A MESMA TRAVESSIA.
+ *
+ * Este é o aceite da C5. Antes dela, a água atrasava por ser água: descer e
+ * subir o curso rendiam idêntico, e um rio que atrapalha os dois lados por
+ * igual não tem sentido nenhum — é um pântano com desenho de rio.
+ *
+ * O teste procura no traçado uma casa com corrente de verdade em vez de
+ * inventar coordenada: número escolhido por mim mediria a minha escolha.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FWaterFootingUpstreamCostsMoreTest,
+	"BattleSquare.WaterFooting.UpstreamCostsMore",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FWaterFootingUpstreamCostsMoreTest::RunTest(const FString& Parameters)
+{
+	const UIslandBakedPlan* Assado = IslandBakedPlan::Load();
+	if (!Assado)
+	{
+		AddError(TEXT("o assado nao existe — rode ./Tools/bake_island.sh"));
+		return false;
+	}
+
+	FVector2D Onde = FVector2D::ZeroVector;
+	FVector2D FluxoDaAgua = FVector2D::ZeroVector;
+	int32 Forca = 0;
+
+	for (const FBakedRiver& Curso : Assado->Rivers)
+	{
+		for (const FVector2D& Ponto : Curso.PointsUnits)
+		{
+			int32 ForcaAqui = 0;
+			const FVector2D FluxoDaAguaAqui =
+				WaterFooting::FlowAt(*Assado, Ponto, ForcaAqui);
+			if (ForcaAqui > 0 && !FluxoDaAguaAqui.IsNearlyZero())
+			{
+				Onde = Ponto;
+				FluxoDaAgua = FluxoDaAguaAqui;
+				Forca = ForcaAqui;
+				break;
+			}
+		}
+		if (Forca > 0)
+		{
+			break;
+		}
+	}
+
+	if (Forca <= 0)
+	{
+		AddError(TEXT("nenhum ponto de curso tem corrente — C1 nao chegou aqui"));
+		return false;
+	}
+
+	const EWaterFooting Chao = WaterFooting::At(*Assado, Onde);
+	const float Descendo =
+		WaterFooting::SpeedMultiplierAlong(Chao, FluxoDaAgua, FluxoDaAgua, Forca);
+	const float Subindo =
+		WaterFooting::SpeedMultiplierAlong(Chao, -FluxoDaAgua, FluxoDaAgua, Forca);
+
+	AddInfo(FString::Printf(
+		TEXT("forca %d por mil — descendo %.3f, subindo %.3f"),
+		Forca, Descendo, Subindo));
+
+	TestTrue(TEXT("descer o curso rende MAIS que subir"), Descendo > Subindo);
+
+	// CONTRAPESO DE SANIDADE: o de graça teria de ser melhor que o de graça
+	// nenhum. Sem ele, "os dois iguais a zero" também passaria no teste acima
+	// se alguém trocasse o `>` por `>=` numa refatoração.
+	TestTrue(TEXT("subir ainda ANDA — corredeira nao e parede invisivel"),
+		Subindo > 0.0f);
+
+	return true;
+}
+
+/**
+ * DE TRAVÉS, NEM UM NEM OUTRO — e este é o contrapeso que importa.
+ *
+ * Atravessar de margem a margem é o movimento que o mapa mais pede, e é
+ * perpendicular ao curso. Se a corrente cobrasse ali, ela castigaria
+ * justamente a travessia, e o rio ficaria mais difícil de cruzar por correr
+ * mais forte — que é o contrário do que ela deveria fazer com quem cruza.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FWaterFootingSidewaysIsNeitherTest,
+	"BattleSquare.WaterFooting.SidewaysIsNeither",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FWaterFootingSidewaysIsNeitherTest::RunTest(const FString& Parameters)
+{
+	const FVector2D FluxoDaAgua(1.0f, 0.0f);
+	const FVector2D DeTraves(0.0f, 1.0f);
+
+	const float Parado = WaterFooting::SpeedMultiplierFor(EWaterFooting::Vau);
+	const float Atravessando = WaterFooting::SpeedMultiplierAlong(
+		EWaterFooting::Vau, DeTraves, FluxoDaAgua, /*ForcaPorMil=*/1000);
+
+	TestEqual(TEXT("de traves, a corrente nao muda o passo"),
+		Atravessando, Parado, 0.001f);
+
+	// E o mesmo vale para quem está PARADO: quem não anda não anda a favor de
+	// nada, e um multiplicador aplicado a velocidade zero continua zero — mas
+	// o fator não pode virar castigo guardado para o primeiro passo.
+	const float Imovel = WaterFooting::SpeedMultiplierAlong(
+		EWaterFooting::Vau, FVector2D::ZeroVector, FluxoDaAgua, /*ForcaPorMil=*/1000);
+	TestEqual(TEXT("parado nao sobe nem desce"), Imovel, Parado, 0.001f);
+
+	// E ÁGUA PARADA continua sendo só água: força zero devolve o fator seco,
+	// mesmo com um rumo apontando para algum lado.
+	const float SemCorrente = WaterFooting::SpeedMultiplierAlong(
+		EWaterFooting::Vau, FluxoDaAgua, FluxoDaAgua, /*ForcaPorMil=*/0);
+	TestEqual(TEXT("agua parada e so agua"), SemCorrente, Parado, 0.001f);
+
+	return true;
+}
+
+/**
+ * A CORREDEIRA NÃO É PAREDE.
+ *
+ * Mesma lição que a balsa já custou: corrente forte o bastante para zerar o
+ * passo prende o jogador dentro do rio, e o que ele vê não é uma água difícil
+ * — é um jogo travado, sem nada na tela explicando por quê.
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FWaterFootingNeverStopsTheWalkerTest,
+	"BattleSquare.WaterFooting.NeverStopsTheWalker",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FWaterFootingNeverStopsTheWalkerTest::RunTest(const FString& Parameters)
+{
+	const FVector2D FluxoDaAgua(1.0f, 0.0f);
+
+	for (const EWaterFooting Chao :
+		{ EWaterFooting::Seco, EWaterFooting::Vau, EWaterFooting::Fundo })
+	{
+		const float ContraTudo = WaterFooting::SpeedMultiplierAlong(
+			Chao, -FluxoDaAgua, FluxoDaAgua, /*ForcaPorMil=*/1000);
+		TestTrue(FString::Printf(TEXT("%s: contra a corrente maxima, ainda anda"),
+			WaterFooting::DebugName(Chao)), ContraTudo > 0.0f);
+	}
+
+	return true;
+}

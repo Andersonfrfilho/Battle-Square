@@ -349,7 +349,8 @@ private:
 		const struct FActorSpawnParameters& Parametros);
 
 	/** Aplica ao movimento o que o pé encontrou. */
-	void AplicarChaoMolhado(const APawn* Jogador, EWaterFooting Chao);
+	void AplicarChaoMolhado(const APawn* Jogador, EWaterFooting Chao,
+		const FVector2D& Fluxo, int32 ForcaPorMil);
 
 	/** A altura de repouso do mar, para a onda subir DE algum lugar. */
 	float AguaEmRepousoZ = 0.0f;

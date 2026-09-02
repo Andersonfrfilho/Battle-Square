@@ -2265,6 +2265,19 @@ void ABattleArena::DrawDebugGrid() const
 					CurrentState.CellCountdown[IndiceDaCasa]);
 			}
 
+			// PARA ONDE A ÁGUA CORRE, e com que força.
+			//
+			// Sem isto, a corrente é uma regra que o jogador descobre SENDO
+			// EMPURRADO: ele escolhe ir para cima, termina uma casa ao lado,
+			// e a única explicação disponível é "o jogo errou". A seta é a
+			// diferença entre uma armadilha e uma decisão.
+			const EBattleDirection Rumo = CurrentState.FlowDirectionAt(Column, Row);
+			const int32 ForcaDaAgua = CurrentState.FlowStrengthAt(Column, Row);
+			if (Rumo != EBattleDirection::Nenhuma && ForcaDaAgua > 0)
+			{
+				NomeDaCasa += FString::Printf(TEXT(" →%d"), ForcaDaAgua);
+			}
+
 			// Ocupação em AMARELO por cima do terreno: saber quem está onde
 			// decide o turno, e o terreno decide o seguinte.
 			const FColor CorDaCasa = Ocupantes.IsEmpty() ? CorDoTerreno : FColor::Yellow;
@@ -2287,6 +2300,41 @@ void ABattleArena::DrawDebugGrid() const
 				DrawDebugSolidBox(GetWorld(), CentroNaSuperficie, FVector(HalfCell * 0.85f, HalfCell * 0.85f, 1.0f),
 					FColor(CorDoTerreno.R, CorDoTerreno.G, CorDoTerreno.B, 90),
 					/*bPersistent=*/false, /*LifeTime=*/-1.0f);
+			}
+
+			// A SETA é desenhada, e não só escrita: o rumo é a única coisa
+			// nesta grade que é uma DIREÇÃO, e direção se lê apontada. Ler
+			// "BaixoDireita" e traduzir para o tabuleiro é justamente o passo
+			// em que "Baixo" já virou "para a direita" neste projeto.
+			if (Rumo != EBattleDirection::Nenhuma && ForcaDaAgua > 0)
+			{
+				int8 PassoColuna = 0;
+				int8 PassoLinha = 0;
+				GetDirectionDelta(Rumo, PassoColuna, PassoLinha);
+
+				// Da casa para a VIZINHA no rumo: a seta nasce da mesma
+				// tabela que move o pet, então ela não pode discordar do que
+				// vai acontecer. Uma seta com geometria própria seria uma
+				// segunda verdade sobre a direção.
+				const FVector Vizinha = GetCellWorldLocation(
+					static_cast<uint8>(FMath::Clamp(Coluna + PassoColuna, 0, Colunas - 1)),
+					static_cast<uint8>(FMath::Clamp(Linha + PassoLinha, 0, Linhas - 1)));
+
+				const FVector Sentido = (Vizinha - Centro).GetSafeNormal();
+				if (!Sentido.IsNearlyZero())
+				{
+					// Comprimento pela FORÇA: corrente fraca e forte
+					// desenhadas iguais diriam que a força não existe.
+					const float Alcance = HalfCell * 0.7f
+						* FMath::Clamp(ForcaDaAgua / 1000.0f, 0.25f, 1.0f);
+
+					DrawDebugDirectionalArrow(GetWorld(),
+						CentroNaSuperficie - Sentido * Alcance,
+						CentroNaSuperficie + Sentido * Alcance,
+						/*ArrowSize=*/HalfCell * 0.35f, FColor(80, 220, 255),
+						/*bPersistent=*/false, /*LifeTime=*/-1.0f,
+						/*DepthPriority=*/0, /*Thickness=*/4.0f);
+				}
 			}
 
 			DrawDebugString(GetWorld(), CentroNaSuperficie + FVector(0.0f, 0.0f, 10.0f),

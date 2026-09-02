@@ -1980,7 +1980,8 @@ int32 ABattleSquareGameMode::ConstruirUsosDoSolo(
 	return Erguidos;
 }
 
-void ABattleSquareGameMode::AplicarChaoMolhado(const APawn* Jogador, EWaterFooting Chao)
+void ABattleSquareGameMode::AplicarChaoMolhado(const APawn* Jogador,
+	EWaterFooting Chao, const FVector2D& Fluxo, int32 ForcaPorMil)
 {
 	const ACharacter* Personagem = Cast<ACharacter>(Jogador);
 	UCharacterMovementComponent* Movimento =
@@ -1998,8 +1999,13 @@ void ABattleSquareGameMode::AplicarChaoMolhado(const APawn* Jogador, EWaterFooti
 		PassoEmTerraUnidades = Movimento->MaxWalkSpeed;
 	}
 
-	Movimento->MaxWalkSpeed =
-		PassoEmTerraUnidades * WaterFooting::SpeedMultiplierFor(Chao);
+	// O RUMO É A VELOCIDADE, não a frente do ator. Quem anda de ré descendo o
+	// rio está descendo o rio, e olhar para onde o personagem aponta diria o
+	// contrário — a corrente empurra o corpo, não o olhar.
+	const FVector2D Rumo(Jogador->GetVelocity());
+
+	Movimento->MaxWalkSpeed = PassoEmTerraUnidades
+		* WaterFooting::SpeedMultiplierAlong(Chao, Rumo, Fluxo, ForcaPorMil);
 }
 
 void ABattleSquareGameMode::RefreshRegionResidency()
@@ -2040,7 +2046,10 @@ void ABattleSquareGameMode::RefreshRegionResidency()
 		// enfeite: lê como obstáculo e se comporta como chão — e é essa
 		// promessa quebrada que esvazia as 56 travessias do traçado.
 		const EWaterFooting Chao = WaterFooting::At(*TracadoAssado, Onde);
-		AplicarChaoMolhado(Jogador, Chao);
+		int32 ForcaDaCorrente = 0;
+		const FVector2D Fluxo =
+			WaterFooting::FlowAt(*TracadoAssado, Onde, ForcaDaCorrente);
+		AplicarChaoMolhado(Jogador, Chao, Fluxo, ForcaDaCorrente);
 
 		// O SAGRADO SE ANUNCIA DE PERTO.
 		//
@@ -2060,10 +2069,42 @@ void ABattleSquareGameMode::RefreshRegionResidency()
 					WaterFooting::DebugName(Chao),
 					FluidRegistry::TraitsOf(
 						WaterFooting::FluidAt(*TracadoAssado, Onde)).DebugName,
-					WaterFooting::SpeedMultiplierFor(Chao) * 100.0f),
+					WaterFooting::SpeedMultiplierAlong(Chao,
+						FVector2D(Jogador->GetVelocity()),
+						Fluxo, ForcaDaCorrente) * 100.0f),
 			0.0f,
 			Chao == EWaterFooting::Seco ? FColor(200, 200, 150) : FColor(120, 180, 255),
 			/*Key=*/748);
+
+		// A CORRENTE SE ANUNCIA, e o passo diz de que lado dela se está.
+		//
+		// Sem esta linha, descer o rio depressa e subir devagar são dois
+		// números que o jogador não tem como comparar: ele anda uma vez em
+		// cada sentido com minutos de diferença e conclui que "a água é
+		// estranha". Dizer o rumo E o passo na mesma linha põe a causa ao
+		// lado do efeito — e é o que torna a C5 verificável pelo olho, em vez
+		// de só pelo teste.
+		//
+		// Some em água parada: uma linha fixa dizendo "corrente: nenhuma" em
+		// toda a ilha ensinaria a ignorá-la justo onde ela passa a importar.
+		if (ForcaDaCorrente > 0 && !Fluxo.IsNearlyZero())
+		{
+			const FVector2D Rumo(Jogador->GetVelocity());
+			const float AoLongo = Rumo.IsNearlyZero()
+				? 0.0f
+				: static_cast<float>(Rumo.GetSafeNormal() | Fluxo.GetSafeNormal());
+
+			FBattleDebugScreen::Show(
+				FString::Printf(
+					TEXT("corrente: %.0f%% rumo (%.2f, %.2f) — voce vai %s"),
+					ForcaDaCorrente / 10.0f, Fluxo.X, Fluxo.Y,
+					AoLongo > 0.2f ? TEXT("A FAVOR")
+						: (AoLongo < -0.2f ? TEXT("CONTRA") : TEXT("de traves"))),
+				0.0f,
+				AoLongo > 0.2f ? FColor(120, 240, 160)
+					: (AoLongo < -0.2f ? FColor(240, 160, 120) : FColor(200, 200, 150)),
+				/*Key=*/741);
+		}
 	}
 
 	TSet<FIntPoint> Vivos;

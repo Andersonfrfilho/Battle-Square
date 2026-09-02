@@ -106,6 +106,10 @@ public:
 
 		/** De que fluido é a água que ela atravessa — é ele que decide o empuxo. */
 		EFluidKind Fluid = EFluidKind::AguaDoce;
+
+		/** A corrente onde ela flutua: rumo normalizado e força por mil. */
+		FVector2D FlowDirection = FVector2D::ZeroVector;
+		int32 FlowStrengthPerMille = 0;
 	};
 
 	const TArray<FFerryPlacement>& GetFerryPlacements() const { return FerryPlacements; }

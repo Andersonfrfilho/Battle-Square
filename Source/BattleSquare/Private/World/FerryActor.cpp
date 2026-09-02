@@ -142,6 +142,36 @@ bool AFerryActor::MoverPara(float NovoOffset)
 	return true;
 }
 
+void AFerryActor::SetCurrent(const FVector2D& Rumo, int32 ForcaPorMil)
+{
+	CurrentDirection = Rumo.IsNearlyZero() ? FVector2D::ZeroVector : Rumo.GetSafeNormal();
+	CurrentStrengthPerMille = CurrentDirection.IsNearlyZero()
+		? 0
+		: FMath::Max(0, ForcaPorMil);
+}
+
+float AFerryActor::CurrentSpeedUnitsPerSecond() const
+{
+	// SÓ A COMPONENTE AO LONGO DO EIXO conta. A parte perpendicular empurra a
+	// balsa de lado, e empurrar de lado não muda quanto tempo ela leva para
+	// chegar do outro lado — é deriva, não atraso.
+	//
+	// O sinal do rumo entra junto: indo a favor, a componente soma; voltando,
+	// a mesma componente subtrai. É o que faz a ida e a volta durarem
+	// diferente sem nenhuma regra dizendo "a volta é mais lenta".
+	const float AoLongo = static_cast<float>(
+		(CurrentDirection | (Axis * static_cast<float>(Heading))));
+
+	const float DaCorrente = Balsa::VelocidadeUnidadesPorSegundo
+		* (static_cast<float>(CurrentStrengthPerMille) / 1000.0f) * AoLongo;
+
+	// Piso em um décimo: uma corrente forte o bastante para ZERAR o passo
+	// deixaria a balsa parada para sempre no meio do rio, e travessia que não
+	// termina não é travessia — é armadilha silenciosa.
+	return FMath::Max(Balsa::VelocidadeUnidadesPorSegundo * 0.1f,
+		Balsa::VelocidadeUnidadesPorSegundo + DaCorrente);
+}
+
 bool AFerryActor::AdvanceBy(float DeltaSeconds)
 {
 	if (HalfSpanUnits <= 0.0f || DeltaSeconds <= 0.0f)
@@ -151,7 +181,7 @@ bool AFerryActor::AdvanceBy(float DeltaSeconds)
 
 	const float Antes = OffsetUnits;
 	float Andado = OffsetUnits
-		+ Heading * Balsa::VelocidadeUnidadesPorSegundo * DeltaSeconds;
+		+ Heading * CurrentSpeedUnitsPerSecond() * DeltaSeconds;
 
 	// Chegou na margem: vira. Ela vai e VOLTA — uma balsa que só vai deixa a
 	// outra margem sem travessia para sempre.

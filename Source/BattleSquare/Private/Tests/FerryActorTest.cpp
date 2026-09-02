@@ -269,3 +269,98 @@ bool FFerryActorFloatsByDensityTest::RunTest(const FString& Parameters)
 	Mundo->DestroyWorld(false);
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FFerryActorFeelsTheCurrentTest,
+	"BattleSquare.FerryActor.FeelsTheCurrent",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FFerryActorFeelsTheCurrentTest::RunTest(const FString& Parameters)
+{
+	UWorld* Mundo = ProvaDaBalsa::MundoDeTeste();
+
+	// UMA BALSA QUE IGNORA A ÁGUA em que boia é uma plataforma sobre trilhos.
+	//
+	// O eixo da travessia é o X. Uma corrente ao longo do X ajuda num sentido
+	// e atrapalha no outro — e é isso que faz a ida e a volta durarem
+	// diferente, sem nenhuma regra dizendo "a volta é mais lenta".
+	AFerryActor* Balsa = Mundo->SpawnActor<AFerryActor>();
+	Balsa->ConfigureFor(FVector2D::ZeroVector, FVector2D(1.0f, 0.0f),
+		ProvaDaBalsa::VaoDeTeste, ProvaDaBalsa::LaminaDeTeste, EFluidKind::AguaDoce);
+
+	const float SemCorrente = Balsa->CurrentSpeedUnitsPerSecond();
+
+	// A FAVOR (ela parte com rumo +1, e a corrente aponta para +X).
+	Balsa->SetCurrent(FVector2D(1.0f, 0.0f), 500);
+	const float AFavor = Balsa->CurrentSpeedUnitsPerSecond();
+
+	// CONTRA.
+	Balsa->SetCurrent(FVector2D(-1.0f, 0.0f), 500);
+	const float Contra = Balsa->CurrentSpeedUnitsPerSecond();
+
+	TestTrue(TEXT("a favor da corrente ela anda mais"), AFavor > SemCorrente);
+	TestTrue(TEXT("contra a corrente ela anda menos"), Contra < SemCorrente);
+
+	Mundo->DestroyWorld(false);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FFerryActorSidewaysCurrentDoesNotDelayTest,
+	"BattleSquare.FerryActor.SidewaysCurrentDoesNotDelay",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FFerryActorSidewaysCurrentDoesNotDelayTest::RunTest(const FString& Parameters)
+{
+	UWorld* Mundo = ProvaDaBalsa::MundoDeTeste();
+
+	// O CONTRAPESO, e ele é o que separa DERIVA de ATRASO: uma corrente
+	// perpendicular empurra a balsa de lado, e empurrar de lado não muda
+	// quanto tempo ela leva para chegar do outro lado.
+	//
+	// Sem esta prova, uma regra que somasse a força inteira faria toda balsa
+	// atravessar mais devagar por causa de uma água que corre transversal a
+	// ela — e o rio mais comum é justamente o que se atravessa de través.
+	AFerryActor* Balsa = Mundo->SpawnActor<AFerryActor>();
+	Balsa->ConfigureFor(FVector2D::ZeroVector, FVector2D(1.0f, 0.0f),
+		ProvaDaBalsa::VaoDeTeste, ProvaDaBalsa::LaminaDeTeste, EFluidKind::AguaDoce);
+
+	const float SemCorrente = Balsa->CurrentSpeedUnitsPerSecond();
+
+	Balsa->SetCurrent(FVector2D(0.0f, 1.0f), 900);
+	TestEqual(TEXT("corrente de traves nao muda a travessia"),
+		Balsa->CurrentSpeedUnitsPerSecond(), SemCorrente, 0.01f);
+
+	Mundo->DestroyWorld(false);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FFerryActorNeverStallsForeverTest,
+	"BattleSquare.FerryActor.NeverStallsForever",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FFerryActorNeverStallsForeverTest::RunTest(const FString& Parameters)
+{
+	UWorld* Mundo = ProvaDaBalsa::MundoDeTeste();
+
+	// Uma corrente forte o bastante para ZERAR o passo deixaria a balsa parada
+	// para sempre no meio do rio — e travessia que não termina não é
+	// travessia, é armadilha silenciosa. O piso existe para isso.
+	AFerryActor* Balsa = Mundo->SpawnActor<AFerryActor>();
+	Balsa->ConfigureFor(FVector2D::ZeroVector, FVector2D(1.0f, 0.0f),
+		ProvaDaBalsa::VaoDeTeste, ProvaDaBalsa::LaminaDeTeste, EFluidKind::AguaDoce);
+
+	Balsa->SetCurrent(FVector2D(-1.0f, 0.0f), 5000);
+	TestTrue(TEXT("ela nunca para de todo"),
+		Balsa->CurrentSpeedUnitsPerSecond() > 0.0f);
+
+	// E ela CHEGA: andando o suficiente, o deslocamento muda.
+	const float Comecou = Balsa->GetOffsetUnits();
+	for (int32 Passo = 0; Passo < 200; ++Passo)
+	{
+		Balsa->AdvanceBy(0.1f);
+	}
+	TestTrue(TEXT("e ela sai do lugar"),
+		!FMath::IsNearlyEqual(Balsa->GetOffsetUnits(), Comecou, 1.0f));
+
+	Mundo->DestroyWorld(false);
+	return true;
+}

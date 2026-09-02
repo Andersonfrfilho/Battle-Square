@@ -264,6 +264,8 @@ int32 ACrossingMesh::BuildFrom(const UIslandBakedPlan& Assado)
 			Onde2.SpanUnits = MeioComprimento * 2.0f;
 			Onde2.WaterZ = NaLamina;
 			Onde2.Fluid = WaterFooting::FluidAt(Assado, Onde.CenterUnits);
+			Onde2.FlowDirection = WaterFooting::FlowAt(
+				Assado, Onde.CenterUnits, Onde2.FlowStrengthPerMille);
 			FerryPlacements.Add(Onde2);
 
 			// Ela entra na conta pelo PLANO, não pelos vértices: a obra dela não

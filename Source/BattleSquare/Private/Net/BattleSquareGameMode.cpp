@@ -1671,6 +1671,13 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 					{
 						Embarcacao->Destroy();
 					}
+					else if (Embarcacao)
+					{
+						// A balsa SENTE a agua em que boia: sem isto ela e uma
+						// plataforma sobre trilhos.
+						Embarcacao->SetCurrent(
+							Plano.FlowDirection, Plano.FlowStrengthPerMille);
+					}
 				}
 			}
 

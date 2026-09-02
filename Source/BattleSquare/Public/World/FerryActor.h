@@ -63,6 +63,20 @@ public:
 	/** Troca o material do convés. Balsa de pedra existe — só não em água. */
 	void SetDeckDensityPerMille(int32 Density) { DeckDensityPerMille = Density; }
 
+	/**
+	 * A CORRENTE em que ela flutua: rumo já normalizado e força em partes por
+	 * mil.
+	 *
+	 * Uma balsa que ignora a água em que boia é uma plataforma sobre trilhos.
+	 * O que a acelera ou atrasa é a COMPONENTE da corrente ao longo do eixo da
+	 * travessia — a parte perpendicular empurra de lado, e não muda quanto
+	 * tempo ela leva para chegar do outro lado.
+	 */
+	void SetCurrent(const FVector2D& FlowDirection, int32 StrengthPerMille);
+
+	/** Quanto o passo dela rende AGORA, contando a corrente e o rumo em que vai. */
+	float CurrentSpeedUnitsPerSecond() const;
+
 	UStaticMeshComponent* GetDeck() const { return Deck; }
 
 	/**
@@ -117,4 +131,10 @@ private:
 	/** Madeira: 600 por mil, contra os 1000 da água doce. */
 	UPROPERTY()
 	int32 DeckDensityPerMille = 600;
+
+	UPROPERTY()
+	FVector2D CurrentDirection = FVector2D::ZeroVector;
+
+	UPROPERTY()
+	int32 CurrentStrengthPerMille = 0;
 };

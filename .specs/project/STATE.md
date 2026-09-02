@@ -850,3 +850,36 @@ resposta estava no runtime.
 A lição não é sobre cubos: **"assinatura estreita" foi afirmação minha, sem
 medição.** Bastava listar o que ela casava antes de confiar nela.
 
+
+### B-0FLAKY: crash INTERMITENTE na bateria completa (`PThreadsSharedMutex`)
+
+**Descoberto:** 02/09/2026, ao fechar C4.
+
+**O que acontece:** a bateria completa morre com
+`Assertion failed: Err == 0 [PThreadsSharedMutex.h:32]` e `SIGSEGV` em 0x3. O
+processo cai no meio, e **todo teste que viria depois em ordem alfabética
+simplesmente não roda** — a contagem despenca sem nenhuma falha reportada.
+
+**Medido, e é o que impede de culpar a causa errada:**
+
+| execução | resultado |
+|---|---|
+| bateria completa (1ª) | 705 de 827, **crash** em `Volcano.KeepsAnOpenCrater` |
+| `Volcano` sozinho | 6/6, sem crash |
+| `FerryActor` + `Volcano` | 14/14, sem crash |
+| bateria completa (2ª) | **827/827, sem crash** |
+
+**Não é o teste que aparece no log.** `KeepsAnOpenCrater` passa sozinho e passa
+depois dos testes que eu tinha acabado de escrever. Foi a terceira vez que esta
+assinatura apareceu no dia; as duas anteriores tinham causa própria e foram
+consertadas (spawn de 25 atores dentro da montagem de outro; `LoadObject` no
+coletor de arena). Esta não reproduz.
+
+**Por que fica registrado em vez de fechado:** um crash que engole 122 testes em
+silêncio é perigoso justamente por ser intermitente — numa rodada ruim, ele
+esconde uma falha de verdade e a contagem menor passa por "ainda não rodou
+tudo". **Ao ver a contagem cair, conferir `grep -ac StaticShutdownAfterError` no
+log ANTES de investigar qualquer outra coisa.**
+
+**Próximo passo quando incomodar:** rodar a bateria com `-nullrhi` e sem, e com
+`-ForceLogFlush`, para separar pressão de memória de corrida no carregamento.

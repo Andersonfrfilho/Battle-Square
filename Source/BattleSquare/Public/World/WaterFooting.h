@@ -63,4 +63,25 @@ namespace WaterFooting
 	 */
 	BATTLESQUARE_API EFluidKind FluidAt(const UIslandBakedPlan& Baked,
 		const FVector2D& PositionUnits);
+
+	/**
+	 * PARA ONDE E COM QUE FORÇA a água corre neste ponto do mundo.
+	 *
+	 * Devolve o rumo já normalizado e a força em partes por mil; vetor nulo em
+	 * água parada e em terra.
+	 *
+	 * ## Por que aqui o rumo é um VETOR, e na grade são oito
+	 *
+	 * A fonte é a MESMA — a ordem da polilinha do curso, que já é o sentido do
+	 * fluxo (invariante 12). O que muda é o consumidor: numa grade de casas só
+	 * existem oito passos, e lá o rumo é quantizado; no mundo aberto a balsa
+	 * anda em qualquer direção, e quantizar ali inventaria um degrau que a
+	 * água não tem.
+	 *
+	 * Duas REPRESENTAÇÕES da mesma verdade não são duas verdades. O que seria
+	 * duas verdades é deduzir o sentido de outra coisa — do raio, do declive —,
+	 * e é isso que a invariante proíbe.
+	 */
+	BATTLESQUARE_API FVector2D FlowAt(const UIslandBakedPlan& Baked,
+		const FVector2D& PositionUnits, int32& OutStrengthPerMille);
 }

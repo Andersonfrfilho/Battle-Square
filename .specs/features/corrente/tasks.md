@@ -66,13 +66,21 @@ sem uma regra própria dizendo isso.
 **O limiar é o mesmo da carga.** Uma corrente que te leva é forte o bastante
 para te barrar, e dois limiares para a mesma água seriam duas fronteiras.
 
-## C4 — A balsa sente a corrente
+## C4 — A balsa sente a corrente ✅ FEITO
 > 🤖 Modelo: `sonnet`
 
 Ela já é sólida, anda e esbarra. Uma balsa num rio corrente que ignora a água é
 uma plataforma sobre trilhos.
 
-*Aceite:* a travessia demora mais contra a corrente que a favor.
+**Só a COMPONENTE ao longo do eixo conta.** A parte perpendicular empurra de
+lado, e empurrar de lado não muda quanto tempo ela leva para chegar do outro
+lado — é deriva, não atraso. Sem essa distinção, toda balsa atravessaria mais
+devagar por causa de uma água que corre transversal a ela, e o rio mais comum é
+justamente o que se atravessa de través.
+
+**Piso de um décimo:** corrente forte o bastante para zerar o passo deixaria a
+balsa parada para sempre no meio do rio, e travessia que não termina não é
+travessia — é armadilha silenciosa.
 
 ## C5 — O mundo aberto
 > 🤖 Modelo: `sonnet`

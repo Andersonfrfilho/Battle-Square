@@ -250,6 +250,68 @@ namespace WaterFooting
 		return Achado;
 	}
 
+	FVector2D FlowAt(const UIslandBakedPlan& Assado, const FVector2D& Onde,
+		int32& ForcaPorMil)
+	{
+		ForcaPorMil = 0;
+
+		// A água mais LARGA ganha, pela mesma razão de `At` e `FluidAt`: parar
+		// na primeira encontrada faria o resultado depender da ordem do
+		// assado, que é desempate disfarçado de regra.
+		float MaiorMeiaLargura = 0.0f;
+		FVector2D Rumo = FVector2D::ZeroVector;
+
+		for (const FBakedRiver& Curso : Assado.Rivers)
+		{
+			for (int32 Ponto = 0; Ponto + 1 < Curso.PointsUnits.Num(); ++Ponto)
+			{
+				const float Meia = FMath::Max(
+					Curso.HalfWidthUnits.IsValidIndex(Ponto)
+						? Curso.HalfWidthUnits[Ponto] : 0.0f,
+					Curso.HalfWidthUnits.IsValidIndex(Ponto + 1)
+						? Curso.HalfWidthUnits[Ponto + 1] : 0.0f);
+
+				if (Meia <= 0.0f || Meia <= MaiorMeiaLargura)
+				{
+					continue;
+				}
+
+				const FVector2D NoTrecho = FMath::ClosestPointOnSegment2D(
+					Onde, Curso.PointsUnits[Ponto], Curso.PointsUnits[Ponto + 1]);
+
+				if (FVector2D::DistSquared(NoTrecho, Onde) > Meia * Meia)
+				{
+					continue;
+				}
+
+				// O RUMO É O DO TRECHO, lido da ordem da polilinha — a mesma
+				// fonte que a grade quantiza em oito. Deduzi-lo do raio ou do
+				// declive seria a segunda verdade que a invariante proíbe.
+				const FVector2D Passo =
+					Curso.PointsUnits[Ponto + 1] - Curso.PointsUnits[Ponto];
+				if (Passo.IsNearlyZero())
+				{
+					continue;
+				}
+
+				MaiorMeiaLargura = Meia;
+				Rumo = Passo.GetSafeNormal();
+				ForcaPorMil = Curso.FlowStrengthByPoint.IsValidIndex(Ponto)
+					? Curso.FlowStrengthByPoint[Ponto]
+					: 0;
+			}
+		}
+
+		// Força sem rumo é zero, como na grade: uma corrente que empurra para
+		// lugar nenhum sairia MUDA em vez de errada.
+		if (Rumo.IsNearlyZero())
+		{
+			ForcaPorMil = 0;
+		}
+
+		return Rumo;
+	}
+
 	float SpeedMultiplierFor(EWaterFooting Chao)
 	{
 		switch (Chao)

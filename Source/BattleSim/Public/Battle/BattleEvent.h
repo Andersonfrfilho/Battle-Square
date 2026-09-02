@@ -130,7 +130,19 @@ enum class EBattleEventType : uint8
 	// coisas diferentes sobre o que evitar.
 	//
 	// No FIM do enum, pelo mesmo motivo dos anteriores.
-	ConcentracaoQuebrada
+	ConcentracaoQuebrada,
+
+	// O GOLPE TOMOU O CAMPO INTEIRO. Evento próprio, e não um `TerrenoMudou`
+	// por casa: nove linhas iguais no feed enterrariam tudo o mais que
+	// aconteceu no slot, e o jogador leria o tabuleiro mudado sem achar a
+	// causa no meio da enxurrada. Uma linha diz a mesma coisa melhor.
+	//
+	// `Value` carrega o terreno e `Detail`, quantas casas mudaram — porque
+	// "tomou o campo" e "tomou as três casas que ainda estavam livres" são
+	// resultados diferentes da mesma jogada.
+	//
+	// No FIM do enum, pelo mesmo motivo dos anteriores.
+	CampoInteiroMudou
 };
 
 // Sentinela para TargetId/ActorId quando não há alvo aplicável

@@ -17,8 +17,10 @@ os bloqueios fiquem escritos em vez de serem relembrados.
 
 ## PRONTO é isto, e nada menos
 
-- [ ] **Corrente fechada** — `.specs/features/corrente/`
-- [ ] **Pendências fechadas** — `.specs/features/pendencias/`
+- [x] **Corrente fechada** — `.specs/features/corrente/`
+- [~] **Pendências** — P1 a P6 fechadas; **P7, P8, P9, P10 PARARAM**, com a
+      medição em `.specs/features/pendencias/BLOQUEIO-P7-P8-P9-P10.md`. Abrir as
+      features novas é decisão do usuário.
 - [ ] **T-ITENS** — o sistema de itens existe, e a bota de lava funciona
 - [ ] **T-ANATOMIA** — dois pets do mesmo elemento resistem diferente
 - [ ] Bateria completa verde (hoje **824**; o número só sobe)

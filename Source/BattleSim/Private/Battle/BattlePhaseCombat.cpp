@@ -628,6 +628,61 @@ namespace
 					return;
 				}
 
+				// O GOLPE FORTE O BASTANTE TOMA O CAMPO INTEIRO.
+				//
+				// O limiar compara o PODER com o TAMANHO do tabuleiro, e é
+				// isso que impede a regra de virar "golpe de área": o mesmo
+				// golpe que alaga uma arena pequena inteira alaga uma casa só
+				// numa grande. Uma bandeira no cadastro não teria essa
+				// propriedade — bastaria marcá-la num golpe fraco.
+				//
+				// A regra passa por AQUI, e não por um caminho próprio, para
+				// herdar tudo o que este bloco já decide: casa bloqueada não
+				// muda, secar apaga em vez de pintar, e a água apaga o fogo
+				// casa a casa. Um segundo caminho teria de repetir as três, e
+				// as cópias concordariam até a primeira edição.
+				if (MovePower >= State.PowerToTakeTheField())
+				{
+					int32 Mudadas = 0;
+					for (int32 Linha = 0; Linha < static_cast<int32>(State.GridRows); ++Linha)
+					{
+						for (int32 Coluna = 0; Coluna < static_cast<int32>(State.GridColumns); ++Coluna)
+						{
+							const int32 Indice = State.CellIndex(Coluna, Linha);
+							if (!State.CellLayout.IsValidIndex(Indice)
+								|| State.CellLayout[Indice] == static_cast<uint8>(ECellProperty::Blocked))
+							{
+								continue;
+							}
+
+							// A ÁGUA APAGA O FOGO TAMBÉM AQUI. Um golpe de
+							// campo inteiro que acendesse brasa dentro d'água
+							// desfaria a regra de cima só por ser grande.
+							if (bEhFogo && FluidRegistry::IsWater(
+								State.FluidAt(static_cast<uint8>(Coluna), static_cast<uint8>(Linha))))
+							{
+								continue;
+							}
+
+							State.SetTemporaryTerrain(
+								static_cast<uint8>(Coluna), static_cast<uint8>(Linha),
+								Deposito.Terrain, Deposito.Slots);
+							++Mudadas;
+						}
+					}
+
+					FBattleEvent Campo;
+					Campo.Type = EBattleEventType::CampoInteiroMudou;
+					Campo.SlotIndex = SlotIndex;
+					Campo.Phase = 4;
+					Campo.ActorId = AttackerPtr->PetId;
+					Campo.TargetId = TargetPtr->PetId;
+					Campo.Value = static_cast<int32>(Deposito.Terrain);
+					Campo.Detail = Mudadas;
+					OutTrace.Add(Campo);
+					return;
+				}
+
 				const bool bSeca =
 					Deposito.Terrain == static_cast<uint8>(ECellProperty::Dries);
 

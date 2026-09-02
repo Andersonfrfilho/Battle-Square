@@ -6,6 +6,7 @@
 #include "Battle/BattleRandom.h"
 #include "Battle/BattleTypes.h"
 #include "Battle/FluidRegistry.h"
+#include "Battle/BattleArenaConstants.h"
 #include "BattleState.generated.h"
 
 /**
@@ -1166,6 +1167,30 @@ struct FBattleState
 	// servidor (ver design.md, Tratamento de Erro). Não depende de ordem
 	// de contêiner: itera Pets ordenado por PetId antes de combinar.
 	uint64 ComputeHash() const;
+
+	/**
+	 * Quantas casas o campo tem.
+	 *
+	 * Mora no ESTADO porque o tamanho da grade mora no estado: 3x3 não é fixo,
+	 * e uma constante 9 em qualquer lugar mentiria na primeira arena 4x4.
+	 */
+	int32 CellCount() const
+	{
+		return static_cast<int32>(GridColumns) * static_cast<int32>(GridRows);
+	}
+
+	/**
+	 * PODER NECESSÁRIO para um golpe tomar o campo inteiro, nesta arena.
+	 *
+	 * É o tamanho do campo que decide — o mesmo golpe alcança tudo num
+	 * tabuleiro pequeno e uma casa só num grande. Uma bandeira no cadastro
+	 * ("este golpe é de área") não teria essa propriedade: um golpe fraco
+	 * marcado com ela viraria arma de área em qualquer arena.
+	 */
+	int32 PowerToTakeTheField() const
+	{
+		return CellCount() * BattleArenaConstants::PowerPerCellToTakeTheField;
+	}
 
 	/** Índice da casa no layout, com as dimensões DESTE estado. */
 	int32 CellIndex(int32 Column, int32 Row) const

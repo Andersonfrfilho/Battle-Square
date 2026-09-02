@@ -92,4 +92,24 @@ namespace BattleArenaConstants
 	 */
 	constexpr int32 ElevatedAttackPercent = 130;
 
+	/**
+	 * Quanto PODER custa cada casa para um golpe tomar o campo inteiro.
+	 *
+	 * O limiar é `casas × este número`, e é o TAMANHO DO CAMPO que decide:
+	 * num tabuleiro pequeno um golpe forte alcança tudo; no grande, o mesmo
+	 * golpe alcança uma casa só. Sem essa comparação, "eletrizar o campo"
+	 * seria uma bandeira no cadastro, e um golpe fraco marcado com ela viraria
+	 * arma de área em qualquer arena.
+	 *
+	 * 20 é medido contra o elenco, não escolhido no vazio: os golpes
+	 * cadastrados hoje têm poder de 40 a 100, e a grade padrão é 3x3. Nove
+	 * casas × 20 = 180, quase o dobro do golpe mais forte que existe — raro o
+	 * bastante para ser notícia. Numa arena 4x4 o mesmo golpe já não toma o
+	 * campo (320), que é exatamente o que o tamanho deveria impedir.
+	 *
+	 * ⚠️ Este número é decisão de BALANCEAMENTO, e portanto do dono do jogo.
+	 * Ele está aqui para a regra existir e ser mensurável; mudá-lo não mexe em
+	 * nenhuma linha de lógica.
+	 */
+	constexpr int32 PowerPerCellToTakeTheField = 20;
 }

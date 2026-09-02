@@ -225,6 +225,18 @@ FText FBattleNarration::Describe(const FBattleEvent& Event, const FString& Actor
 			ArgsFoco);
 	}
 
+	case EBattleEventType::CampoInteiroMudou:
+	{
+		FFormatNamedArguments ArgsCampo = Args;
+		ArgsCampo.Add(TEXT("Terreno"), DescribeTerrain(static_cast<uint8>(Event.Value)));
+		ArgsCampo.Add(TEXT("Casas"), FText::AsNumber(Event.Detail));
+		// Diz QUANTAS casas: "tomou o campo" e "tomou as três que ainda
+		// estavam livres" são resultados diferentes da mesma jogada, e o
+		// jogador precisa dos dois para entender o que a arena fez pelo golpe.
+		return FText::Format(LOCTEXT("CampoInteiroMudou",
+			"{Actor} tomou o campo — {Casas} casas viraram {Terreno}"), ArgsCampo);
+	}
+
 	case EBattleEventType::Revelado:
 		// Diz o que MUDOU, não o que brilhou: "iluminou" sozinho seria efeito
 		// visual, e o jogador precisa entender que o golpe passou a acertar.

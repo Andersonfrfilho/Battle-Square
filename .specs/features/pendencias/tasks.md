@@ -87,7 +87,7 @@ Inventá-lo criaria um sistema que ninguém alimenta. O elemento é o que a
 criatura É hoje, e o comentário em `FPetElementDefinition::FootingPerMille`
 marca por onde a anatomia entra quando existir.
 
-## P4 — Efeito de CAMPO INTEIRO
+## P4 — Efeito de CAMPO INTEIRO ✅ FEITO
 > 🤖 Modelo: `sonnet`
 
 > *"dependendo do tamanho do campo, alguns ataques como eletricidade
@@ -98,7 +98,7 @@ bastante para tomar o tabuleiro, comparando potência com **tamanho do campo** �
 e é o tamanho que impede um golpe fraco de virar arma de área numa arena
 pequena.
 
-## P5 — Golpe que se DESLIGA sob dano
+## P5 — Golpe que se DESLIGA sob dano ✅ FEITO
 > 🤖 Modelo: `sonnet`
 
 > *"golpes desse tipo devem ser desativados se o pet não tiver muito controle,
@@ -107,7 +107,7 @@ pequena.
 Concentração interrompida. Tem parente no jogo: a escola Física já *"interrompe
 a concentração"* no ciclo de escolas.
 
-## P6 — A água APAGA o fogo
+## P6 — A água APAGA o fogo ✅ FEITO
 > 🤖 Modelo: `sonnet`
 
 > *"fogo na água não vai ficar pegando fogo"*
@@ -115,7 +115,7 @@ a concentração"* no ciclo de escolas.
 Hoje fogo apenas não conduz — a ausência. O pedido é o oposto ativo.
 `MoveTerrainEffects` já deixa um golpe mudar a casa, então o cano existe.
 
-## P7 — Nadar quando a água passa da CINTURA
+## P7 — Nadar quando a água passa da CINTURA ⛔ PAROU — ver BLOQUEIO-P7-P8-P9-P10.md
 > 🤖 Modelo: `sonnet`
 
 > *"depende o nível da água, se ela ultrapassar a cintura do jogador precisa
@@ -125,18 +125,18 @@ Hoje quem decide o vau é o traçado (as 30 travessias), e não a altura do
 personagem contra a fundura. **Mexe no traçado ou na leitura dele — medir qual
 antes de escrever.**
 
-## P8 — O poço se lê pela FUNDURA
+## P8 — O poço se lê pela FUNDURA ⛔ PAROU — ver BLOQUEIO-P7-P8-P9-P10.md
 > 🤖 Modelo: `sonnet`
 
 Hoje é binário: dá água ou não dá. **O traçado não guarda fundura de poço** — e
 por isso esta tarefa começa no traçado, que é feature separada por invariante.
 
-## P9 — Cavernas por dentro das cachoeiras
+## P9 — Cavernas por dentro das cachoeiras ⛔ PAROU — ver BLOQUEIO-P7-P8-P9-P10.md
 > 🤖 Modelo: `sonnet`
 
 A queda tem poço; a gruta é peça separada, sem ligação com a queda.
 
-## P10 — Coisas ESCONDIDAS, fora da carta
+## P10 — Coisas ESCONDIDAS, fora da carta ⛔ PAROU — ver BLOQUEIO-P7-P8-P9-P10.md
 > 🤖 Modelo: `opus` 🧠 — mexe no gabarito de aceite
 
 Hoje `ChartConformance` exige carta e mundo **idênticos**: esconder algo

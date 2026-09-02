@@ -274,6 +274,43 @@ namespace IslandBakedPlan
 	 * quente mesmo correndo por dentro do pântano; e o pântano vence a doce,
 	 * porque é ele que carrega o barro.
 	 */
+	/**
+	 * O rumo do fluxo entre dois pontos do curso, como `EBattleDirection`.
+	 *
+	 * Usa `GetDirectionTowards`, que é o inverso já existente da tabela de
+	 * direções — o comentário dele diz por quê: "uma segunda cópia da relação
+	 * direção<->deslocamento já produziu um defeito neste projeto".
+	 *
+	 * O EIXO DA LINHA É INVERTIDO em relação ao Y do mundo: na grade, `Cima` é
+	 * linha MENOS UM. Ignorar isso faria a água correr para o lado errado, que
+	 * é exatamente o defeito de "Baixo andava para a direita" deste projeto.
+	 */
+	uint8 RumoDoFluxo(const FVector2D& De, const FVector2D& Para)
+	{
+		const FVector2D Passo = Para - De;
+		if (Passo.IsNearlyZero())
+		{
+			return static_cast<uint8>(EBattleDirection::Nenhuma);
+		}
+
+		// Só o SINAL importa, e é o que `GetDirectionTowards` consome.
+		const int32 EmColuna = FMath::IsNearlyZero(Passo.X, 1.0f)
+			? 0 : (Passo.X > 0.0f ? 1 : -1);
+
+		// Y do mundo cresce para cima; a LINHA da grade cresce para baixo.
+		const int32 EmLinha = FMath::IsNearlyZero(Passo.Y, 1.0f)
+			? 0 : (Passo.Y > 0.0f ? -1 : 1);
+
+		return static_cast<uint8>(GetDirectionTowards(EmColuna, EmLinha));
+	}
+
+	/** A força do fluxo em partes por mil, presa no que um byte guarda. */
+	uint8 ForcaDoFluxo(float DecliveDoLeito)
+	{
+		return static_cast<uint8>(
+			FMath::Clamp(FMath::RoundToInt(DecliveDoLeito * 1000.0f), 0, 255));
+	}
+
 	EFluidKind FluidoDaAguaEm(const FVector2D& Onde)
 	{
 		if (FreshWater::IsThermalAt(Onde))
@@ -425,6 +462,23 @@ namespace IslandBakedPlan
 				Assado.HalfWidthUnits.Add(FreshWater::HalfWidthAtProgress(Curso, Onde));
 				Assado.bIsRapids.Add(FreshWater::IsRapidsAtProgress(Curso, Onde));
 				Assado.FluidByPoint.Add(static_cast<uint8>(FluidoDaAguaEm(NoPonto)));
+
+				// O RUMO olha para o PRÓXIMO ponto: o fluxo vai daqui para lá.
+				// No último não há próximo, e ele herda o rumo do trecho
+				// anterior — a foz corre para onde o rio vinha correndo, e
+				// zerar ali faria a última casa de todo rio virar água parada.
+				const float Adiante = ProgressAtSample(
+					FMath::Min(Amostra + 1, RiverSampleCount() - 1));
+				const FVector2D NoSeguinte = FreshWater::PointAtProgress(Curso, Adiante);
+
+				Assado.FlowDirectionByPoint.Add(Amostra + 1 < RiverSampleCount()
+					? RumoDoFluxo(NoPonto, NoSeguinte)
+					: (Assado.FlowDirectionByPoint.Num() > 0
+						? Assado.FlowDirectionByPoint.Last()
+						: static_cast<uint8>(EBattleDirection::Nenhuma)));
+
+				Assado.FlowStrengthByPoint.Add(
+					ForcaDoFluxo(FreshWater::BedGradientAtProgress(Curso, Onde)));
 			}
 
 			Out.Rivers.Add(MoveTemp(Assado));

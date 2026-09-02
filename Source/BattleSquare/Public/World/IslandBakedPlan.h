@@ -208,6 +208,35 @@ struct BATTLESQUARE_API FBakedRiver
 	UPROPERTY()
 	TArray<uint8> FluidByPoint;
 
+	/**
+	 * PARA ONDE A ÁGUA CORRE em cada ponto, como `EBattleDirection`.
+	 *
+	 * Lido da ORDEM da polilinha, que já é o sentido do fluxo — da nascente
+	 * para a foz. Deduzi-lo de novo a partir do raio, do declive ou da
+	 * geometria seria uma segunda verdade, e ela concordaria com esta até a
+	 * primeira edição, com o rio correndo para trás num trecho que ninguém
+	 * olhou.
+	 *
+	 * Oito rumos, e a escolha foi MEDIDA: encaixar os 5.480 trechos da bacia
+	 * em oito direções troca de rumo em 2% dos passos e vai-e-volta em 0,3%.
+	 * O rio não treme. E o consumidor é 8-direcional de qualquer forma —
+	 * não há como empurrar alguém a 12 graus numa grade de casas.
+	 */
+	UPROPERTY()
+	TArray<uint8> FlowDirectionByPoint;
+
+	/**
+	 * QUANTO ela corre, em partes por mil do declive do leito.
+	 *
+	 * Sai de `BedGradientAtProgress`, que é o que faz a água correr depressa —
+	 * medido: mediana 0,056 e máximo 0,329, ou 56 e 329 por mil. Inteiro,
+	 * porque o núcleo não tem float, e por MIL pela mesma razão das
+	 * densidades: por cento perderia a diferença entre um fio manso e um
+	 * quase parado.
+	 */
+	UPROPERTY()
+	TArray<uint8> FlowStrengthByPoint;
+
 	/** A ordem de Strahler: 1 é cabeceira, e é daqui que a água engrossa. */
 	UPROPERTY()
 	int32 Order = 1;

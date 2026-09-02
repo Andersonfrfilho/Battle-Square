@@ -118,6 +118,24 @@ uint64 FBattleState::ComputeHash() const
 		}
 	}
 
+	// A CORRENTE entra no hash, e DERIVADA como o fluido — pelo mesmo motivo:
+	// lista vazia e lista de zeros querem dizer a mesma coisa (água parada), e
+	// somar o array cru daria assinaturas diferentes para estados idênticos.
+	//
+	// A FORÇA sai de `FlowStrengthAt`, que já devolve zero onde não há rumo:
+	// assim uma força esquecida numa casa sem direção não muda a assinatura,
+	// porque ela também não muda o jogo.
+	for (int32 Linha = 0; Linha < static_cast<int32>(GridRows); ++Linha)
+	{
+		for (int32 Coluna = 0; Coluna < static_cast<int32>(GridColumns); ++Coluna)
+		{
+			Hash = CombineBattleHash(Hash,
+				static_cast<uint64>(static_cast<uint8>(FlowDirectionAt(Coluna, Linha))));
+			Hash = CombineBattleHash(Hash,
+				static_cast<uint64>(FlowStrengthAt(Coluna, Linha)));
+		}
+	}
+
 	// O PRAZO entra no hash junto com o terreno. Duas partidas com o mesmo
 	// tabuleiro, uma com gelo que derrete no próximo slot e outra com gelo que
 	// dura três, são duas partidas diferentes — e sem isto teriam a mesma

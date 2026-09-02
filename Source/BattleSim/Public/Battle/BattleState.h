@@ -503,6 +503,69 @@ struct FBattleState
 	TArray<uint8> CellFluid;
 
 	/**
+	 * PARA ONDE A ÁGUA CORRE em cada casa, como `EBattleDirection`.
+	 *
+	 * Paralelo a `CellFluid`, e pelo mesmo padrão: **vazio quer dizer água
+	 * parada** — uma arena de poça não paga um byte por casa para dizer que
+	 * nada corre. `Nenhuma` numa casa quer dizer o mesmo.
+	 *
+	 * A água deixa de ser ESTADO e vira FORÇA: ela tem para onde ir.
+	 */
+	UPROPERTY()
+	TArray<uint8> CellFlowDirection;
+
+	/** QUANTO ela corre, em partes por mil do declive do leito. */
+	UPROPERTY()
+	TArray<uint8> CellFlowStrength;
+
+	/** Para onde a água corre nesta casa. `Nenhuma` em água parada e em terra. */
+	EBattleDirection FlowDirectionAt(int32 Column, int32 Row) const
+	{
+		const int32 Indice = CellIndex(Column, Row);
+		return CellFlowDirection.IsValidIndex(Indice)
+			? static_cast<EBattleDirection>(CellFlowDirection[Indice])
+			: EBattleDirection::Nenhuma;
+	}
+
+	/**
+	 * A força da corrente nesta casa, em partes por mil.
+	 *
+	 * ZERO onde não há rumo, sempre — e isto não é redundância: uma casa com
+	 * força e sem rumo seria uma corrente que empurra para lugar nenhum, e o
+	 * empurrão sairia mudo em vez de errado.
+	 */
+	int32 FlowStrengthAt(int32 Column, int32 Row) const
+	{
+		if (FlowDirectionAt(Column, Row) == EBattleDirection::Nenhuma)
+		{
+			return 0;
+		}
+
+		const int32 Indice = CellIndex(Column, Row);
+		return CellFlowStrength.IsValidIndex(Indice) ? CellFlowStrength[Indice] : 0;
+	}
+
+	/** Põe corrente numa casa, materializando as listas se preciso. */
+	void SetFlowAt(int32 Column, int32 Row, EBattleDirection Direction, int32 StrengthPerMille)
+	{
+		const int32 Indice = CellIndex(Column, Row);
+		if (!CellLayout.IsValidIndex(Indice))
+		{
+			return;
+		}
+
+		if (CellFlowDirection.Num() != CellLayout.Num())
+		{
+			CellFlowDirection.SetNumZeroed(CellLayout.Num());
+			CellFlowStrength.SetNumZeroed(CellLayout.Num());
+		}
+
+		CellFlowDirection[Indice] = static_cast<uint8>(Direction);
+		CellFlowStrength[Indice] =
+			static_cast<uint8>(FMath::Clamp(StrengthPerMille, 0, 255));
+	}
+
+	/**
 	 * O fluido que uma fundura implica, quando ninguém disse outra coisa.
 	 *
 	 * A ilha é de água doce, então é ela o padrão. O gelo fica de fora de

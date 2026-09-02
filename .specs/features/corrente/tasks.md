@@ -4,7 +4,7 @@
 
 ---
 
-## C1 — A casa sabe para onde a água corre 🧠
+## C1 — A casa sabe para onde a água corre ✅ FEITO
 > 🤖 Modelo: `opus` — é o contrato, e decide a representação
 
 Assar, por ponto de curso, o **rumo** e a **força** — os dois saem do que já
@@ -14,10 +14,14 @@ ordenada da nascente para a foz), e a força sai de `BedGradientAtProgress`.
 Depois, a casa: um campo por casa em `FBattleState`, paralelo a `CellFluid`,
 pelo mesmo padrão — **vazio quer dizer água parada**.
 
-*Decisão a MEDIR, não escolher:* `EBattleDirection` (oito rumos, a língua que o
-movimento já fala) ou um ângulo inteiro. Oito bastam numa grade de casas?
-*Aceite:* um rio corre no mesmo sentido em casas seguidas, e o sentido bate com
-a ordem da polilinha do traçado. Contrapeso: água parada não tem rumo.
+**A decisão foi MEDIDA:** oito rumos. Encaixar os 5.480 trechos da bacia em
+`EBattleDirection` troca de rumo em 2% dos passos e **vai-e-volta em 0,3%** — o
+rio não treme. O erro de encaixe (mediana 12,3°) é irrelevante: o consumidor é
+8-direcional de qualquer forma, e não há como empurrar alguém a 12 graus numa
+grade de casas.
+
+A força sai de `BedGradientAtProgress` em partes por mil (mediana 56, máximo
+329), inteira, pela disciplina das densidades.
 
 ## C2 — A corrente EMPURRA
 > 🤖 Modelo: `sonnet`

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "World/WaterFooting.h"
 #include "World/WorldDiscovery.h"
 #include "World/WorldMapPins.h"
 #include "UI/WorldMapProjection.h"
@@ -326,6 +327,18 @@ private:
 	/** O traçado assado de que este mundo saiu. Guardado para não recarregar. */
 	UPROPERTY()
 	TObjectPtr<const class UIslandBakedPlan> TracadoAssado;
+
+	/**
+	 * O passo do jogador em TERRA, guardado na primeira vez e nunca relido.
+	 *
+	 * Reler a velocidade atual multiplicaria o fator por si mesmo a cada passo
+	 * dentro da água, e o jogador pararia de andar sem nada acusar.
+	 */
+	UPROPERTY()
+	float PassoEmTerraUnidades = 0.0f;
+
+	/** Aplica ao movimento o que o pé encontrou. */
+	void AplicarChaoMolhado(const APawn* Jogador, EWaterFooting Chao);
 
 	/** A altura de repouso do mar, para a onda subir DE algum lugar. */
 	float AguaEmRepousoZ = 0.0f;

@@ -48,7 +48,10 @@
 #include "GameFramework/Character.h"
 #include "Engine/StaticMeshActor.h"
 #include "World/IslandBakedPlan.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "World/RiverMesh.h"
+#include "World/WaterFooting.h"
 #include "World/TerrainMesh.h"
 #include "World/TrainingFieldRules.h"
 #include "Balance/PetTypeCatalog.h"
@@ -1826,6 +1829,28 @@ void ABattleSquareGameMode::BuildResidentChunk(const FIntPoint& Pedaco)
 	ResidentChunks.Add(Pedaco, Mata);
 }
 
+void ABattleSquareGameMode::AplicarChaoMolhado(const APawn* Jogador, EWaterFooting Chao)
+{
+	const ACharacter* Personagem = Cast<ACharacter>(Jogador);
+	UCharacterMovementComponent* Movimento =
+		Personagem ? Personagem->GetCharacterMovement() : nullptr;
+	if (!Movimento)
+	{
+		return;
+	}
+
+	// A velocidade em TERRA é guardada na primeira vez, e nunca relida depois.
+	// Reler a atual multiplicaria o fator por si mesmo a cada passo dentro da
+	// água, e o jogador pararia de andar sem nada acusar.
+	if (PassoEmTerraUnidades <= 0.0f)
+	{
+		PassoEmTerraUnidades = Movimento->MaxWalkSpeed;
+	}
+
+	Movimento->MaxWalkSpeed =
+		PassoEmTerraUnidades * WaterFooting::SpeedMultiplierFor(Chao);
+}
+
 void ABattleSquareGameMode::RefreshRegionResidency()
 {
 	UWorld* World = GetWorld();
@@ -1859,6 +1884,20 @@ void ABattleSquareGameMode::RefreshRegionResidency()
 			FString::Printf(TEXT("terreno: %s"),
 				UIslandBakedPlan::BandDebugName(TracadoAssado->BandAt(Onde))),
 			0.0f, FColor(200, 200, 150), /*Key=*/747);
+
+		// A ÁGUA MOLHA. Rio desenhado que não muda nada ao ser pisado é
+		// enfeite: lê como obstáculo e se comporta como chão — e é essa
+		// promessa quebrada que esvazia as 56 travessias do traçado.
+		const EWaterFooting Chao = WaterFooting::At(*TracadoAssado, Onde);
+		AplicarChaoMolhado(Jogador, Chao);
+
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("pisando: %s (passo %.0f%%)"),
+				WaterFooting::DebugName(Chao),
+				WaterFooting::SpeedMultiplierFor(Chao) * 100.0f),
+			0.0f,
+			Chao == EWaterFooting::Seco ? FColor(200, 200, 150) : FColor(120, 180, 255),
+			/*Key=*/748);
 	}
 
 	TSet<FIntPoint> Vivos;

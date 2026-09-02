@@ -84,9 +84,17 @@ bool FRiverMeshBuildsEveryCourseOfThePlanTest::RunTest(const FString& Parameters
 	TestEqual(TEXT("o assado tem os cursos do gerador"),
 		Assado->Rivers.Num(), FreshWater::Plan().Num());
 
-	// Uma seção de malha por curso, e todas com tinta.
+	// As seções: uma por curso, uma por córrego, e uma para todas as fontes.
+	//
+	// A conta é EXATA e escrita por extenso porque a frouxa ("pelo menos os
+	// cursos") deixaria uma seção sumir sem nada acusar. Ela já ficou velha uma
+	// vez: dizia "uma seção por curso" e passou a reprovar quando os córregos
+	// chegaram — 143 contra 137. Errar aqui é barato; não perceber, não.
 	UProceduralMeshComponent* Agua = Rio->GetWater();
-	TestEqual(TEXT("uma secao por curso"), Agua->GetNumSections(), Erguidos);
+	const int32 SecoesEsperadas = Erguidos + Assado->Brooks.Num()
+		+ (Assado->Springs.Num() > 0 ? 1 : 0);
+	TestEqual(TEXT("uma secao por curso, uma por corrego, uma para as fontes"),
+		Agua->GetNumSections(), SecoesEsperadas);
 	for (int32 Secao = 0; Secao < Agua->GetNumSections(); ++Secao)
 	{
 		if (!Agua->GetMaterial(Secao))

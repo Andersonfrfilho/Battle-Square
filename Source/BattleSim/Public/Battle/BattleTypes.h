@@ -116,13 +116,31 @@ struct FBattleAction
 	EBattleDirection Direction = EBattleDirection::Nenhuma;
 };
 
-// As 3 ações que um jogador compromete por turno, às cegas (AD-005).
+// As 3 ações que UM PET compromete por turno, às cegas (AD-005).
 USTRUCT()
 struct FTurnCommit
 {
 	GENERATED_BODY()
 
 	static constexpr int32 ActionsPerTurn = 3;
+
+	/**
+	 * DE QUEM são estas ações, por `PetId` — e não por lado nem por índice.
+	 *
+	 * Por lado seria o contrato de v1, e é exatamente o que impede dois
+	 * aliados de agirem no mesmo turno (BTL-05).
+	 *
+	 * Por ÍNDICE do array seria pior que por lado: `BTL-17` já diz que a ordem
+	 * de `State.Pets` não é garantia de determinismo — `ComputeHash` ordena por
+	 * `PetId` justamente por isso. Uma ação endereçada por índice trocaria de
+	 * dono se alguém reordenasse o array, e o sintoma seria "o pet errado
+	 * atacou", sem nenhuma pista de que a causa é ordenação.
+	 *
+	 * O padrão é o SENTINELA de "sem dono": um commit que ninguém endereçou não
+	 * pode acabar valendo para o pet 0 por acidente.
+	 */
+	UPROPERTY()
+	uint8 PetId = 0xFF;
 
 	UPROPERTY()
 	FBattleAction Actions[ActionsPerTurn];

@@ -92,7 +92,8 @@ bool FBattleNetTypesFeedsRealResolverTest::RunTest(const FString& Parameters)
 	FNetTurnCommit NetRightCommit;
 	NetRightCommit.ActionA = { EActionType::Aguardar, EBattleDirection::Nenhuma };
 
-	const FBattleResolveResult Result = FBattleResolver::ResolveTurn(State, ToTurnCommit(NetLeftCommit), ToTurnCommit(NetRightCommit));
+	const FBattleResolveResult Result = FBattleResolver::ResolveTurn(State,
+		FBattleResolver::DuelCommits(State, ToTurnCommit(NetLeftCommit), ToTurnCommit(NetRightCommit)));
 	TestTrue(TEXT("Resolvedor real aceitou o commit convertido do fio de rede"), Result.Trace.Num() > 0);
 
 	return true;

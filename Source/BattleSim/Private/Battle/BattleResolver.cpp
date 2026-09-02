@@ -27,10 +27,36 @@ namespace
 // para M3 (N pets por lado, onde múltiplos pets do MESMO lado podem
 // competir por precedência) — implementá-lo agora seria código morto,
 // o mesmo problema já registrado em B-003 para BTL-05. Ver STATE.md.
-FBattleResolveResult FBattleResolver::ResolveTurn(
+TArray<FTurnCommit> FBattleResolver::DuelCommits(
 	const FBattleState& InState,
 	const FTurnCommit& LeftCommit,
 	const FTurnCommit& RightCommit)
+{
+	TArray<FTurnCommit> Commits;
+
+	// O pet VIVO de cada lado, que é a quem o commit daquele lado pertencia
+	// no contrato de v1. Lado sem pet vivo não gera commit: um commit
+	// endereçado a ninguém seria uma ação que o resolvedor teria de descartar
+	// mais tarde, e descartar em silêncio é como uma jogada some.
+	for (uint8 Lado = 0; Lado < 2; ++Lado)
+	{
+		const FPetState* Pet = InState.FindAlivePetOnSideConst(Lado);
+		if (!Pet)
+		{
+			continue;
+		}
+
+		FTurnCommit Commit = (Lado == 0) ? LeftCommit : RightCommit;
+		Commit.PetId = Pet->PetId;
+		Commits.Add(Commit);
+	}
+
+	return Commits;
+}
+
+FBattleResolveResult FBattleResolver::ResolveTurn(
+	const FBattleState& InState,
+	TArrayView<const FTurnCommit> Commits)
 {
 	// Pureza: NextState é uma CÓPIA de InState. InState nunca é mutado —
 	// é o que torna ResolveTurn chamável repetidamente com o mesmo
@@ -49,8 +75,36 @@ FBattleResolveResult FBattleResolver::ResolveTurn(
 		// cada busca (FindAlivePetOnSide, CollectIntent, FindLivingOpponentAtCell)
 		// — "ações restantes descartadas" é garantido por construção,
 		// sem código extra necessário aqui.
-		const FBattleAction& LeftAction = LeftCommit.Actions[SlotIndex];
-		const FBattleAction& RightAction = RightCommit.Actions[SlotIndex];
+		// A AÇÃO DE CADA LADO, achada pelo DONO do commit.
+		//
+		// As fases ainda recebem "a ação da esquerda e a da direita" — quem
+		// muda isso é a CP4. O que a CP3 troca é o ENDEREÇAMENTO: a ação
+		// chega aqui porque alguém a endereçou àquele pet, e não porque ela
+		// estava na variável chamada `LeftCommit`.
+		//
+		// Commit sem dono reconhecível é IGNORADO. Inventar um dono faria uma
+		// ação chegar a quem ninguém escolheu, e o jogador veria o pet dele
+		// fazer algo que ele não pediu.
+		FBattleAction LeftAction;
+		FBattleAction RightAction;
+
+		for (const FTurnCommit& Commit : Commits)
+		{
+			const FPetState* Dono = State.FindPetByIdConst(Commit.PetId);
+			if (!Dono)
+			{
+				continue;
+			}
+
+			if (Dono->Side == 0)
+			{
+				LeftAction = Commit.Actions[SlotIndex];
+			}
+			else if (Dono->Side == 1)
+			{
+				RightAction = Commit.Actions[SlotIndex];
+			}
+		}
 
 		// F1 — Declaração. Nada muda; apenas marca o início do slot.
 		EmitTurnBoundary(Trace, EBattleEventType::SlotIniciado, SlotIndex, /*Phase=*/1);

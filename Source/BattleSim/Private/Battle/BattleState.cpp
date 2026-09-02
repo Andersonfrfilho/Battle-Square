@@ -231,6 +231,30 @@ void FBattleState::PlaceDuelistsAtStartingCells()
 	}
 }
 
+const FPetState* FBattleState::FindAlivePetOnSideConst(uint8 Side) const
+{
+	for (const FPetState& Pet : Pets)
+	{
+		if (Pet.Side == Side && Pet.IsAlive())
+		{
+			return &Pet;
+		}
+	}
+	return nullptr;
+}
+
+const FPetState* FBattleState::FindPetByIdConst(uint8 PetId) const
+{
+	for (const FPetState& Pet : Pets)
+	{
+		if (Pet.PetId == PetId)
+		{
+			return &Pet;
+		}
+	}
+	return nullptr;
+}
+
 FPetState* FBattleState::FindAlivePetOnSide(uint8 Side)
 {
 	for (FPetState& Pet : Pets)

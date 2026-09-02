@@ -43,7 +43,7 @@ bool FPetViewAppliesEventsFromRealTraceTest::RunTest(const FString& Parameters)
 	FTurnCommit RightCommit;
 	RightCommit.Actions[0] = { EActionType::Aguardar, EBattleDirection::Nenhuma };
 
-	const FBattleResolveResult Result = FBattleResolver::ResolveTurn(State, LeftCommit, RightCommit);
+	const FBattleResolveResult Result = FBattleResolver::ResolveTurn(State, FBattleResolver::DuelCommits(State, LeftCommit, RightCommit));
 
 	bool bFoundDamageEvent = false;
 	int32 ExpectedDamage = 0;

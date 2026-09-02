@@ -84,7 +84,7 @@ bool FBattleDataTranslatorMatchupAsymmetricTest::RunTest(const FString& Paramete
 	FTurnCommit RightCommit;
 	RightCommit.Actions[0] = { EActionType::Aguardar, EBattleDirection::Nenhuma };
 
-	const FBattleResolveResult Result = FBattleResolver::ResolveTurn(State, LeftCommit, RightCommit);
+	const FBattleResolveResult Result = FBattleResolver::ResolveTurn(State, FBattleResolver::DuelCommits(State, LeftCommit, RightCommit));
 	TestTrue(TEXT("FPetState com Attack pré-multiplicado alimenta o resolvedor real sem erro"), Result.Trace.Num() > 0);
 
 	return true;

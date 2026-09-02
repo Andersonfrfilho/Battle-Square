@@ -137,3 +137,36 @@ no macOS — retorna 127 sem executar.
 
 Fazer todo o resto que não depende do bloqueio, e então dizer o que travou com
 a **medição** que sustenta isso. Reduzir escopo é decisão do usuário.
+
+## As onze features escritas em 02/09/2026 — todas PARADAS
+
+Onze pastas novas ganharam `spec.md`, `tasks.md` e `GOAL.md` neste dia, e
+**nenhuma foi aberta**. Somadas à `pendencias`, que já esperava, são **12
+features e 79 paradas** à espera de decisão do usuário.
+
+Não há lista de tarefas aqui de propósito: ela viveria em dois lugares e as
+duas cópias concordariam até a primeira edição (L-032). Quem quer o quadro
+roda `./Tools/goal_status.sh`, que lê os `GOAL.md` e é a única fonte.
+
+| feature | paradas | o que ela abre |
+|---|---|---|
+| `posse-no-servidor` | 11 | a posse do pet deixa de ser do save e passa a ser da conta, no servidor |
+| `crime-e-recompensa` | 10 | roubo, marca de procurado e a polícia — depende de `posse-no-servidor` |
+| `cidades-do-interior` | 9 | as portas das construções que já existem no mundo e não abrem |
+| `commit-por-pet` | 8 | o turno endereça PET, não lado — é o que torna BTL-05 alcançável |
+| `mae-natureza` | 7 | o corretor do mundo: censo entra, correção sai, e toda correção é delatada |
+| `mundo-vivo` | 7 | a idade do mundo, que não para quando o jogo fecha |
+| `fundura-no-tracado` | 6 | a fundura por ponto existe no assado, e o traçado LÊ em vez de estimar |
+| `montaria-e-trilhas` | 5 | montar um pet, e o cansaço fora da batalha |
+| `cavernas-nas-quedas` | 4 | a gruta atrás da lâmina de água, e a boca olhando para a queda |
+| `mundo-por-biomas` | 4 | o bioma manda no pet selvagem, na cor da vila e na cancela da fronteira |
+| `segredos-e-a-carta` | 4 | o gabarito aprende a dizer "escondido" sem revelar o segredo |
+| `pendencias` | 4 | P7–P10, cada uma com a medição que a travou |
+
+**Toda caixa de task nasce `- [⛔]`.** Isso não é decoração: `goal_status.sh`
+elege como próxima a primeira `- [ ] **ID**` que encontra em ordem alfabética
+de pasta, então uma feature nova com caixas abertas ROUBA a vez de quem estava
+em andamento. Aconteceu neste dia com `commit-por-pet`, que nasceu aberta e
+passou a ser apontada como próxima sem ninguém ter decidido isso.
+
+Abrir uma feature é trocar `[⛔]` por `[ ]`, e é decisão do usuário.

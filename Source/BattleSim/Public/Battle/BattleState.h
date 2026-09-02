@@ -1232,4 +1232,22 @@ struct FBattleState
 	 * reclamou quando o unity build juntou os dois arquivos.
 	 */
 	FPetState* FindAlivePetOnSide(uint8 Side);
+
+	/**
+	 * O mesmo, sem poder mexer.
+	 *
+	 * Ao lado do que já existe, e não numa segunda forma de achar pet: duas
+	 * buscas concordam até alguém acrescentar uma condição a uma delas.
+	 */
+	BATTLESIM_API const FPetState* FindAlivePetOnSideConst(uint8 Side) const;
+
+	/**
+	 * O pet DAQUELE `PetId`, vivo ou morto.
+	 *
+	 * Vivo ou morto de propósito: o commit foi escolhido antes de o turno
+	 * começar, e um pet que morreu no slot anterior ainda é o dono legítimo
+	 * daquelas ações — quem as descarta são as fases, que já ignoram pet sem
+	 * `IsAlive()`. Filtrar aqui faria a ação sumir sem passar por elas.
+	 */
+	BATTLESIM_API const FPetState* FindPetByIdConst(uint8 PetId) const;
 };

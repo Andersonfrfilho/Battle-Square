@@ -74,13 +74,15 @@ bool FPuddleIsNotDeepEnoughToSubmergeTest::RunTest(const FString& Parameters)
 {
 	FBattleState NaFunda = RequisitoDeTerrenoTeste::EstadoComTerreno(ECellProperty::Water);
 	const FBattleResolveResult Funda =
-		FBattleResolver::ResolveTurn(NaFunda, RequisitoDeTerrenoTeste::Submergir(), RequisitoDeTerrenoTeste::Aguardar());
+		FBattleResolver::ResolveTurn(NaFunda,
+		FBattleResolver::DuelCommits(NaFunda, RequisitoDeTerrenoTeste::Submergir(), RequisitoDeTerrenoTeste::Aguardar()));
 	TestFalse(TEXT("Na água funda submergir NÃO falha"),
 		RequisitoDeTerrenoTeste::TemEvento(Funda.Trace, EBattleEventType::PosturaFalhou));
 
 	FBattleState NaPoca = RequisitoDeTerrenoTeste::EstadoComTerreno(ECellProperty::ShallowWater);
 	const FBattleResolveResult Poca =
-		FBattleResolver::ResolveTurn(NaPoca, RequisitoDeTerrenoTeste::Submergir(), RequisitoDeTerrenoTeste::Aguardar());
+		FBattleResolver::ResolveTurn(NaPoca,
+		FBattleResolver::DuelCommits(NaPoca, RequisitoDeTerrenoTeste::Submergir(), RequisitoDeTerrenoTeste::Aguardar()));
 	TestTrue(TEXT("Na poça submergir FALHA"),
 		RequisitoDeTerrenoTeste::TemEvento(Poca.Trace, EBattleEventType::PosturaFalhou));
 
@@ -88,7 +90,8 @@ bool FPuddleIsNotDeepEnoughToSubmergeTest::RunTest(const FString& Parameters)
 	// achando que a skill não funciona, quando o que falta é fundura.
 	FBattleState NoSeco = RequisitoDeTerrenoTeste::EstadoComTerreno(ECellProperty::None);
 	TestTrue(TEXT("Em terra seca também falha"),
-		RequisitoDeTerrenoTeste::TemEvento(FBattleResolver::ResolveTurn(NoSeco, RequisitoDeTerrenoTeste::Submergir(), RequisitoDeTerrenoTeste::Aguardar()).Trace,
+		RequisitoDeTerrenoTeste::TemEvento(FBattleResolver::ResolveTurn(NoSeco,
+		FBattleResolver::DuelCommits(NoSeco, RequisitoDeTerrenoTeste::Submergir(), RequisitoDeTerrenoTeste::Aguardar())).Trace,
 			EBattleEventType::PosturaFalhou));
 
 	return true;

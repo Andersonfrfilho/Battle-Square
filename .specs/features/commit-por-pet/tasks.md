@@ -88,7 +88,7 @@ que nem tem aliado.
 
 ---
 
-## CP3 — O commit do núcleo endereça `PetId`
+## CP3 — O commit do núcleo endereça `PetId` ✅ FEITO
 > 🤖 Modelo: `opus` 🧠 — mexe no contrato que rede, replay e hash compartilham
 
 **Dependências:** CP2.

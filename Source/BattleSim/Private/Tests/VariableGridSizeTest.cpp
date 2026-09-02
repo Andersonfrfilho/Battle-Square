@@ -181,7 +181,7 @@ bool FMovementRespectsPerAxisBoundsTest::RunTest(const FString& Parameters)
 	Oponente.Actions[0].Direction = EBattleDirection::Direita;
 
 	const FBattleResolveResult Resultado =
-		FBattleResolver::ResolveTurn(Estado, Jogador, Oponente);
+		FBattleResolver::ResolveTurn(Estado, FBattleResolver::DuelCommits(Estado, Jogador, Oponente));
 
 	TestEqual(TEXT("Jogador barrado pela borda esquerda"),
 		static_cast<int32>(Resultado.NextState.Pets[0].Column), 0);

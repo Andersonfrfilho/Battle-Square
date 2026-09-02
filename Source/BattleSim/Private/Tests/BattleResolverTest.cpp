@@ -61,7 +61,7 @@ bool FBattleResolverDoesNotMutateInputTest::RunTest(const FString& Parameters)
 	FTurnCommit LeftCommit = MakeCommit(EActionType::Atacar, EBattleDirection::Direita);
 	FTurnCommit RightCommit = MakeCommit(EActionType::Atacar, EBattleDirection::Esquerda);
 
-	FBattleResolveResult Result = FBattleResolver::ResolveTurn(InitialState, LeftCommit, RightCommit);
+	FBattleResolveResult Result = FBattleResolver::ResolveTurn(InitialState, FBattleResolver::DuelCommits(InitialState, LeftCommit, RightCommit));
 
 	TestEqual(TEXT("InState não mudou após a chamada"), InitialState.ComputeHash(), HashBefore);
 	TestNotEqual(TEXT("NextState é diferente do InState (algo de fato aconteceu)"), Result.NextState.ComputeHash(), HashBefore);
@@ -82,8 +82,8 @@ bool FBattleResolverIsDeterministicTest::RunTest(const FString& Parameters)
 	const FTurnCommit LeftCommit = MakeCommit(EActionType::Mover, EBattleDirection::Direita, EActionType::Atacar, EBattleDirection::Direita, EActionType::Defender);
 	const FTurnCommit RightCommit = MakeCommit(EActionType::Defender, EBattleDirection::Nenhuma, EActionType::Mover, EBattleDirection::Esquerda, EActionType::Atacar, EBattleDirection::Esquerda);
 
-	FBattleResolveResult ResultA = FBattleResolver::ResolveTurn(InitialState, LeftCommit, RightCommit);
-	FBattleResolveResult ResultB = FBattleResolver::ResolveTurn(InitialState, LeftCommit, RightCommit);
+	FBattleResolveResult ResultA = FBattleResolver::ResolveTurn(InitialState, FBattleResolver::DuelCommits(InitialState, LeftCommit, RightCommit));
+	FBattleResolveResult ResultB = FBattleResolver::ResolveTurn(InitialState, FBattleResolver::DuelCommits(InitialState, LeftCommit, RightCommit));
 
 	TestEqual(TEXT("Hashes finais idênticos"), ResultA.NextState.ComputeHash(), ResultB.NextState.ComputeHash());
 	TestEqual(TEXT("Traces do mesmo tamanho"), ResultA.Trace.Num(), ResultB.Trace.Num());
@@ -116,7 +116,7 @@ bool FBattleResolverResolvesThreeSlotsTest::RunTest(const FString& Parameters)
 	const FTurnCommit LeftCommit = MakeCommit(EActionType::Aguardar, EBattleDirection::Nenhuma, EActionType::Aguardar, EBattleDirection::Nenhuma, EActionType::Aguardar, EBattleDirection::Nenhuma);
 	const FTurnCommit RightCommit = LeftCommit;
 
-	FBattleResolveResult Result = FBattleResolver::ResolveTurn(InitialState, LeftCommit, RightCommit);
+	FBattleResolveResult Result = FBattleResolver::ResolveTurn(InitialState, FBattleResolver::DuelCommits(InitialState, LeftCommit, RightCommit));
 
 	int32 TurnStartedCount = 0;
 	int32 SlotStartedCount = 0;
@@ -157,7 +157,7 @@ bool FBattleResolverIncompleteCommitDefaultsToWaitTest::RunTest(const FString& P
 	FTurnCommit LeftCommit; // nenhuma ação setada — os 3 slots são Aguardar por default
 	FTurnCommit RightCommit;
 
-	FBattleResolveResult Result = FBattleResolver::ResolveTurn(InitialState, LeftCommit, RightCommit);
+	FBattleResolveResult Result = FBattleResolver::ResolveTurn(InitialState, FBattleResolver::DuelCommits(InitialState, LeftCommit, RightCommit));
 
 	// Sem ação nenhuma, nenhum dano, nenhum movimento — só as fronteiras de slot/turno.
 	int32 GameplayEventCount = 0;
@@ -200,7 +200,7 @@ bool FBattleResolverDeadPetSkipsRemainingSlotsTest::RunTest(const FString& Param
 	const FTurnCommit LeftCommit = MakeCommit(EActionType::Atacar, EBattleDirection::Direita, EActionType::Atacar, EBattleDirection::Direita, EActionType::Atacar, EBattleDirection::Direita);
 	const FTurnCommit RightCommit = MakeCommit(EActionType::Atacar, EBattleDirection::Esquerda, EActionType::Atacar, EBattleDirection::Esquerda, EActionType::Atacar, EBattleDirection::Esquerda);
 
-	FBattleResolveResult Result = FBattleResolver::ResolveTurn(LowHealthState, LeftCommit, RightCommit);
+	FBattleResolveResult Result = FBattleResolver::ResolveTurn(LowHealthState, FBattleResolver::DuelCommits(LowHealthState, LeftCommit, RightCommit));
 
 	TestFalse(TEXT("Right morreu no slot 0"), Result.NextState.Pets[1].IsAlive());
 

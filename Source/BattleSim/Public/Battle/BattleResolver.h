@@ -23,7 +23,27 @@ struct FBattleResolveResult
 class BATTLESIM_API FBattleResolver
 {
 public:
+	/**
+	 * Resolve o turno a partir dos commits DE CADA PET.
+	 *
+	 * Recebe uma lista, e não um commit por lado: era o commit por lado que
+	 * impedia dois aliados de agirem no mesmo turno. Commit sem dono
+	 * reconhecível é IGNORADO — inventar um dono para ele faria uma ação
+	 * chegar a quem ninguém escolheu.
+	 */
 	static FBattleResolveResult ResolveTurn(
+		const FBattleState& InState,
+		TArrayView<const FTurnCommit> Commits);
+
+	/**
+	 * Monta a lista de um DUELO, endereçando cada commit ao pet vivo do lado.
+	 *
+	 * Existe porque o fio ainda carrega dois commits, um por lado (CP7 muda
+	 * isso). É a tradução do contrato antigo para o novo, num lugar só — feita
+	 * em cada chamador, ela seria a mesma regra escrita cinco vezes, e as cinco
+	 * concordariam até a primeira edição.
+	 */
+	static TArray<FTurnCommit> DuelCommits(
 		const FBattleState& InState,
 		const FTurnCommit& LeftCommit,
 		const FTurnCommit& RightCommit);

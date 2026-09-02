@@ -55,7 +55,8 @@ FBattleBalanceResult FBattleBalanceSimulator::RunBatchSimulation(
 			const FTurnCommit LeftCommit = FDumbOpponentAI::GenerateRandomValidCommit(State, /*Side=*/0, State.Random);
 			const FTurnCommit RightCommit = FDumbOpponentAI::GenerateRandomValidCommit(State, /*Side=*/1, State.Random);
 
-			FBattleResolveResult TurnResult = FBattleResolver::ResolveTurn(State, LeftCommit, RightCommit);
+			FBattleResolveResult TurnResult = FBattleResolver::ResolveTurn(State,
+				FBattleResolver::DuelCommits(State, LeftCommit, RightCommit));
 			BattleOutcome::EvaluateOutcome(TurnResult.NextState, TurnResult.Trace);
 			State = TurnResult.NextState;
 

@@ -148,7 +148,7 @@ bool FDumbOpponentAIFeedsRealResolverTest::RunTest(const FString& Parameters)
 
 	const FTurnCommit RightCommit = FDumbOpponentAI::GenerateRandomValidCommit(State, /*Side=*/1, State.Random);
 
-	FBattleResolveResult Result = FBattleResolver::ResolveTurn(State, LeftCommit, RightCommit);
+	FBattleResolveResult Result = FBattleResolver::ResolveTurn(State, FBattleResolver::DuelCommits(State, LeftCommit, RightCommit));
 	TestTrue(TEXT("Resolvedor real aceitou o commit gerado pela IA"), Result.Trace.Num() > 0);
 
 	return true;

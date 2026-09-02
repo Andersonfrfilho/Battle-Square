@@ -102,7 +102,7 @@ bool FBattleDataTranslatorFeedsResolverTest::RunTest(const FString& Parameters)
 	LeftCommit.Actions[0] = { EActionType::Atacar, EBattleDirection::Direita };
 	FTurnCommit RightCommit; // Aguardar nos 3 slots
 
-	FBattleResolveResult Result = FBattleResolver::ResolveTurn(State, LeftCommit, RightCommit);
+	FBattleResolveResult Result = FBattleResolver::ResolveTurn(State, FBattleResolver::DuelCommits(State, LeftCommit, RightCommit));
 
 	TestTrue(TEXT("Resolver aceitou o estado traduzido sem crash"), Result.Trace.Num() > 0);
 	TestTrue(TEXT("Right (Spike) recebeu dano do ataque de Fluffy"), Result.NextState.Pets[1].Health < RightBattleState.Health);

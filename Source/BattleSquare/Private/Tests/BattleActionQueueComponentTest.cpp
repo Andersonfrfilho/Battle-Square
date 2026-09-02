@@ -226,7 +226,9 @@ bool FBattleActionQueueBuildCommitFeedsRealResolverTest::RunTest(const FString& 
 	State.Pets.Add(LeftPet);
 	State.Pets.Add(RightPet);
 
-	FBattleResolveResult Result = FBattleResolver::ResolveTurn(State, LeftQueue->BuildCommit(), RightQueue->BuildCommit());
+	FBattleResolveResult Result = FBattleResolver::ResolveTurn(State,
+		FBattleResolver::DuelCommits(State,
+			LeftQueue->BuildCommit(), RightQueue->BuildCommit()));
 
 	TestTrue(TEXT("Resolvedor real aceitou o commit construído pela fila"), Result.Trace.Num() > 0);
 	TestTrue(TEXT("Right recebeu dano do ataque de Left"), Result.NextState.Pets[1].Health < RightPet.Health);

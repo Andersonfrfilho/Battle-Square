@@ -67,8 +67,8 @@ namespace
 	// primeira divergência em vez de só "diferente".
 	bool RunAndCompareSnapshot(FAutomationTestBase& Test, const TCHAR* ScenarioName, const FBattleState& InitialState, const FTurnCommit& LeftCommit, const FTurnCommit& RightCommit)
 	{
-		const FBattleResolveResult ResultA = FBattleResolver::ResolveTurn(InitialState, LeftCommit, RightCommit);
-		const FBattleResolveResult ResultB = FBattleResolver::ResolveTurn(InitialState, LeftCommit, RightCommit);
+		const FBattleResolveResult ResultA = FBattleResolver::ResolveTurn(InitialState, FBattleResolver::DuelCommits(InitialState, LeftCommit, RightCommit));
+		const FBattleResolveResult ResultB = FBattleResolver::ResolveTurn(InitialState, FBattleResolver::DuelCommits(InitialState, LeftCommit, RightCommit));
 
 		const FString TraceA = SerializeTrace(ResultA.Trace);
 		const FString TraceB = SerializeTrace(ResultB.Trace);
@@ -207,10 +207,10 @@ bool FTraceSnapshotGoldenValuesTest::RunTest(const FString& Parameters)
 		EActionType::Esquivar, EBattleDirection::Nenhuma);
 
 	const FBattleResolveResult Resultado =
-		FBattleResolver::ResolveTurn(State, Esquerda, Direita);
+		FBattleResolver::ResolveTurn(State, FBattleResolver::DuelCommits(State, Esquerda, Direita));
 
 	const uint32 AssinaturaTraco = AssinaturaDoTraco(Resultado.Trace);
-	const uint32 HashFinal = Resultado.State.ComputeHash();
+	const uint32 HashFinal = Resultado.NextState.ComputeHash();
 
 	AddInfo(FString::Printf(
 		TEXT("GOLDEN 1v1: hash inicial %u, assinatura do traco %u, "
@@ -219,10 +219,13 @@ bool FTraceSnapshotGoldenValuesTest::RunTest(const FString& Parameters)
 
 	// O NÚMERO DE EVENTOS é afirmado por extenso porque é o que um humano
 	// consegue conferir lendo o traço; a assinatura pega o resto.
-	TestEqual(TEXT("eventos do cenario 1v1"), Resultado.Trace.Num(), 26);
-	TestEqual(TEXT("hash do estado INICIAL"), HashInicial, 1553371857u);
-	TestEqual(TEXT("assinatura do TRACO"), AssinaturaTraco, 0u);
-	TestEqual(TEXT("hash do estado FINAL"), HashFinal, 0u);
+	// MEDIDOS em 02/09/2026, ANTES da CP3 tocar em `FTurnCommit`. Não são
+	// escolhidos: são o que o resolvedor produz hoje, e a CP3 tem de reproduzir
+	// exatamente isto.
+	TestEqual(TEXT("eventos do cenario 1v1"), Resultado.Trace.Num(), 17);
+	TestEqual(TEXT("hash do estado INICIAL"), HashInicial, 3506909037u);
+	TestEqual(TEXT("assinatura do TRACO"), AssinaturaTraco, 3831775738u);
+	TestEqual(TEXT("hash do estado FINAL"), HashFinal, 4153325322u);
 
 	return true;
 }

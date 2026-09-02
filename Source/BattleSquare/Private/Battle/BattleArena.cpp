@@ -1999,7 +1999,8 @@ void ABattleArena::ResolveTurnWithCommits(const FTurnCommit& LocalCommit, const 
 	LastCommitBySide[1] = RightCommit;
 
 	const uint64 AcasoAntesDoTurno = CurrentState.Random.State;
-	FBattleResolveResult Result = FBattleResolver::ResolveTurn(CurrentState, LeftCommit, RightCommit);
+	FBattleResolveResult Result = FBattleResolver::ResolveTurn(CurrentState,
+		FBattleResolver::DuelCommits(CurrentState, LeftCommit, RightCommit));
 	// ResolveTurn nunca decide vitória/derrota por design (BattleOutcome.h:
 	// "separação deliberada") — quem chama precisa avaliar depois. Achado
 	// real durante escala-pets-skills: nem aqui nem UBattleTurnCoordinator

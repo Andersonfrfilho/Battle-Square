@@ -43,7 +43,7 @@ bool FBattleTracePlayerGroupsRealTraceTest::RunTest(const FString& Parameters)
 	RightCommit.Actions[1] = { EActionType::Atacar, EBattleDirection::Esquerda };
 	RightCommit.Actions[2] = { EActionType::Aguardar, EBattleDirection::Nenhuma };
 
-	const FBattleResolveResult Result = FBattleResolver::ResolveTurn(State, LeftCommit, RightCommit);
+	const FBattleResolveResult Result = FBattleResolver::ResolveTurn(State, FBattleResolver::DuelCommits(State, LeftCommit, RightCommit));
 	TestTrue(TEXT("Trace real tem eventos"), Result.Trace.Num() > 0);
 
 	const TArray<TArray<FBattleEvent>> Groups = GroupBattleEventsByPhase(Result.Trace);
@@ -127,7 +127,7 @@ bool FBattleTracePlayerGroupsSimultaneousEventsTogetherTest::RunTest(const FStri
 	FTurnCommit RightCommit;
 	RightCommit.Actions[0] = { EActionType::Esquivar, EBattleDirection::Nenhuma };
 
-	const FBattleResolveResult Result = FBattleResolver::ResolveTurn(State, LeftCommit, RightCommit);
+	const FBattleResolveResult Result = FBattleResolver::ResolveTurn(State, FBattleResolver::DuelCommits(State, LeftCommit, RightCommit));
 	const TArray<TArray<FBattleEvent>> Groups = GroupBattleEventsByPhase(Result.Trace);
 
 	int32 PostureEventsInSameGroup = 0;
@@ -165,7 +165,7 @@ bool FBattleTracePlayerPlayAndSkipTest::RunTest(const FString& Parameters)
 	FTurnCommit RightCommit;
 	RightCommit.Actions[0] = { EActionType::Esquivar, EBattleDirection::Nenhuma };
 
-	const FBattleResolveResult Result = FBattleResolver::ResolveTurn(State, LeftCommit, RightCommit);
+	const FBattleResolveResult Result = FBattleResolver::ResolveTurn(State, FBattleResolver::DuelCommits(State, LeftCommit, RightCommit));
 	TestTrue(TEXT("Trace real tem eventos"), Result.Trace.Num() > 0);
 
 	UBattleTracePlayer* Player = NewObject<UBattleTracePlayer>();

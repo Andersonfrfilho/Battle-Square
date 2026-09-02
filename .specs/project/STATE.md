@@ -973,3 +973,28 @@ comparação exata de campo faz o mesmo sem depender de PCRE. É primo do
 **Regra:** variável de arquivo em `namespace { }` leva nome PRÓPRIO, derivado do
 que ela guarda (`GBiologyOverride`, não `GOverride`). E a auditoria roda junto
 com as outras cinco.
+
+### L-046: numa varredura mecânica, `->` desbalanceia quem conta `<` e `>`
+
+**Descoberto:** 02/09/2026, migrando os 47 sítios de `ResolveTurn` na CP3.
+
+Escrevi um separador de argumentos que conta o nível de aninhamento para achar
+as vírgulas do nível zero — porque **regex não serve aqui**: `Submergir()` tem
+parênteses e nenhuma vírgula, e `Fn(a, b)` tem vírgula que NÃO separa argumentos
+do chamador. A primeira tentativa, com regex, deixou 21 chamadas para trás.
+
+O separador contava `<` e `>` junto com os parênteses, para não quebrar em
+`TArray<int, 2>`. **E `->` tem um `>`.** Toda chamada com `Ponteiro->Metodo()`
+saía com o nível negativo, e a migração a pulava calada.
+
+Só uma escapou, e quem a achou foi o **compilador** — `too many arguments to
+function call, expected 2, have 3`, com arquivo e coluna. Numa migração de
+assinatura o compilador é a rede: se a mudança fosse compatível (um parâmetro
+com valor padrão, por exemplo), a chamada pulada compilaria e o defeito só
+apareceria em jogo.
+
+**Regra:** depois de varredura mecânica, **conferir o que sobrou** com uma busca
+independente da que fez a troca — e preferir uma mudança de assinatura que
+QUEBRE a compilação, em vez de uma que aceite os dois formatos. É primo do
+`timeout` que retorna 127 e do `grep -P` que sai sem procurar: ferramenta que
+falha em silêncio parece ferramenta que não achou nada.

@@ -43,7 +43,7 @@ bool FArenaDamageCellCombinesWithCombatForSimultaneousDeathTest::RunTest(const F
 	FTurnCommit RightCommit;
 	RightCommit.Actions[0] = { EActionType::Atacar, EBattleDirection::Esquerda };
 
-	const FBattleResolveResult Result = FBattleResolver::ResolveTurn(State, LeftCommit, RightCommit);
+	const FBattleResolveResult Result = FBattleResolver::ResolveTurn(State, FBattleResolver::DuelCommits(State, LeftCommit, RightCommit));
 
 	// Left: Attack=3 do Right vs Defense=5 -> MinDamage=1 de combate;
 	// dano de casa (constante do módulo) soma no mesmo PendingDamage.
@@ -91,8 +91,8 @@ bool FArenaBuffCellStrengthensContextuallyTest::RunTest(const FString& Parameter
 		FTurnCommit WaitCommit;
 		WaitCommit.Actions[0] = { EActionType::Aguardar, EBattleDirection::Nenhuma };
 
-		const FBattleResolveResult BuffedResult = FBattleResolver::ResolveTurn(BuffedState, AttackCommit, WaitCommit);
-		const FBattleResolveResult NeutralResult = FBattleResolver::ResolveTurn(NeutralState, AttackCommit, WaitCommit);
+		const FBattleResolveResult BuffedResult = FBattleResolver::ResolveTurn(BuffedState, FBattleResolver::DuelCommits(BuffedState, AttackCommit, WaitCommit));
+		const FBattleResolveResult NeutralResult = FBattleResolver::ResolveTurn(NeutralState, FBattleResolver::DuelCommits(NeutralState, AttackCommit, WaitCommit));
 
 		const int32 BuffedDamage = 50 - BuffedResult.NextState.Pets[1].Health;
 		const int32 NeutralDamage = 50 - NeutralResult.NextState.Pets[1].Health;
@@ -115,8 +115,8 @@ bool FArenaBuffCellStrengthensContextuallyTest::RunTest(const FString& Parameter
 		FTurnCommit WaitCommit;
 		WaitCommit.Actions[0] = { EActionType::Aguardar, EBattleDirection::Nenhuma };
 
-		const FBattleResolveResult TargetBuffedResult = FBattleResolver::ResolveTurn(TargetBuffedState, AttackCommit, WaitCommit);
-		const FBattleResolveResult NeutralResult = FBattleResolver::ResolveTurn(NeutralState, AttackCommit, WaitCommit);
+		const FBattleResolveResult TargetBuffedResult = FBattleResolver::ResolveTurn(TargetBuffedState, FBattleResolver::DuelCommits(TargetBuffedState, AttackCommit, WaitCommit));
+		const FBattleResolveResult NeutralResult = FBattleResolver::ResolveTurn(NeutralState, FBattleResolver::DuelCommits(NeutralState, AttackCommit, WaitCommit));
 
 		const int32 TargetBuffedDamage = 50 - TargetBuffedResult.NextState.Pets[1].Health;
 		const int32 NeutralDamage = 50 - NeutralResult.NextState.Pets[1].Health;
@@ -139,7 +139,7 @@ bool FArenaBuffCellStrengthensContextuallyTest::RunTest(const FString& Parameter
 		RightWaitThenNothing.Actions[0] = { EActionType::Aguardar, EBattleDirection::Nenhuma };
 		RightWaitThenNothing.Actions[1] = { EActionType::Aguardar, EBattleDirection::Nenhuma };
 
-		const FBattleResolveResult MovedAwayResult = FBattleResolver::ResolveTurn(State, LeftMoveAway, RightWaitThenNothing);
+		const FBattleResolveResult MovedAwayResult = FBattleResolver::ResolveTurn(State, FBattleResolver::DuelCommits(State, LeftMoveAway, RightWaitThenNothing));
 
 		FBattleState NeverBuffedState;
 		NeverBuffedState.Pets.Add(MakeArenaPet(1, 0, 1, 0, 50, 20, 5)); // mesma posição final de MovedAwayResult, sem nunca ter passado pela casa de buff
@@ -147,7 +147,7 @@ bool FArenaBuffCellStrengthensContextuallyTest::RunTest(const FString& Parameter
 		FTurnCommit AttackFromSamePosition;
 		AttackFromSamePosition.Actions[0] = { EActionType::Aguardar, EBattleDirection::Nenhuma };
 		AttackFromSamePosition.Actions[1] = { EActionType::Atacar, EBattleDirection::BaixoDireita };
-		const FBattleResolveResult NeverBuffedResult = FBattleResolver::ResolveTurn(NeverBuffedState, AttackFromSamePosition, RightWaitThenNothing);
+		const FBattleResolveResult NeverBuffedResult = FBattleResolver::ResolveTurn(NeverBuffedState, FBattleResolver::DuelCommits(NeverBuffedState, AttackFromSamePosition, RightWaitThenNothing));
 
 		const int32 DamageAfterLeavingBuff = 50 - MovedAwayResult.NextState.Pets[1].Health;
 		const int32 DamageNeverBuffed = 50 - NeverBuffedResult.NextState.Pets[1].Health;

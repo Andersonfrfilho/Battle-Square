@@ -83,7 +83,8 @@ bool FZeroReflexNeverDodgesByItselfTest::RunTest(const FString& Parameters)
 	{
 		FBattleState Estado = MakeReflexDuel(/*Esquiva=*/0, /*Variacao=*/0, Semente);
 		const FBattleResolveResult Resultado =
-			FBattleResolver::ResolveTurn(Estado, AtaqueSimples(), AguardarTresVezes());
+			FBattleResolver::ResolveTurn(Estado,
+		FBattleResolver::DuelCommits(Estado, AtaqueSimples(), AguardarTresVezes()));
 
 		Reflexos += ContarEventos(Resultado.Trace, EBattleEventType::EsquivouPorReflexo);
 	}
@@ -109,7 +110,8 @@ bool FReflexDodgeIsCappedTest::RunTest(const FString& Parameters)
 	{
 		FBattleState Estado = MakeReflexDuel(/*Esquiva=*/250, /*Variacao=*/0, Semente);
 		const FBattleResolveResult Resultado =
-			FBattleResolver::ResolveTurn(Estado, AtaqueSimples(), AguardarTresVezes());
+			FBattleResolver::ResolveTurn(Estado,
+		FBattleResolver::DuelCommits(Estado, AtaqueSimples(), AguardarTresVezes()));
 
 		Reflexos += ContarEventos(Resultado.Trace, EBattleEventType::EsquivouPorReflexo);
 	}
@@ -144,7 +146,8 @@ bool FReflexDodgeDoesNotStopMagicTest::RunTest(const FString& Parameters)
 		Magia.Actions[0].Type = EActionType::Magia;
 
 		const FBattleResolveResult Resultado =
-			FBattleResolver::ResolveTurn(Estado, Magia, AguardarTresVezes());
+			FBattleResolver::ResolveTurn(Estado,
+		FBattleResolver::DuelCommits(Estado, Magia, AguardarTresVezes()));
 
 		Reflexos += ContarEventos(Resultado.Trace, EBattleEventType::EsquivouPorReflexo);
 	}
@@ -175,7 +178,8 @@ bool FAggressionNarrowsVarianceWithoutRaisingDamageTest::RunTest(const FString& 
 		{
 			FBattleState Estado = MakeReflexDuel(/*Esquiva=*/0, Variacao, Semente);
 			const FBattleResolveResult Resultado =
-				FBattleResolver::ResolveTurn(Estado, AtaqueSimples(), AguardarTresVezes());
+				FBattleResolver::ResolveTurn(Estado,
+		FBattleResolver::DuelCommits(Estado, AtaqueSimples(), AguardarTresVezes()));
 
 			for (const FBattleEvent& Evento : Resultado.Trace)
 			{
@@ -240,9 +244,11 @@ bool FRandomnessStaysDeterministicTest::RunTest(const FString& Parameters)
 	FBattleState Segunda = MakeReflexDuel(/*Esquiva=*/15, /*Variacao=*/8, /*Semente=*/987654321);
 
 	const FBattleResolveResult ResultadoA =
-		FBattleResolver::ResolveTurn(Primeira, AtaqueSimples(), AguardarTresVezes());
+		FBattleResolver::ResolveTurn(Primeira,
+		FBattleResolver::DuelCommits(Primeira, AtaqueSimples(), AguardarTresVezes()));
 	const FBattleResolveResult ResultadoB =
-		FBattleResolver::ResolveTurn(Segunda, AtaqueSimples(), AguardarTresVezes());
+		FBattleResolver::ResolveTurn(Segunda,
+		FBattleResolver::DuelCommits(Segunda, AtaqueSimples(), AguardarTresVezes()));
 
 	TestEqual(TEXT("Mesma semente, mesma assinatura de estado"),
 		ResultadoA.NextState.ComputeHash(), ResultadoB.NextState.ComputeHash());
@@ -253,7 +259,8 @@ bool FRandomnessStaysDeterministicTest::RunTest(const FString& Parameters)
 	// acaso desligado e ninguém notaria.
 	FBattleState Outra = MakeReflexDuel(/*Esquiva=*/15, /*Variacao=*/8, /*Semente=*/123456789);
 	const FBattleResolveResult ResultadoC =
-		FBattleResolver::ResolveTurn(Outra, AtaqueSimples(), AguardarTresVezes());
+		FBattleResolver::ResolveTurn(Outra,
+		FBattleResolver::DuelCommits(Outra, AtaqueSimples(), AguardarTresVezes()));
 
 	TestNotEqual(TEXT("Semente diferente muda o resultado"),
 		ResultadoC.NextState.ComputeHash(), ResultadoA.NextState.ComputeHash());

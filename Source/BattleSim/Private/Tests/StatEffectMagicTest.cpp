@@ -90,9 +90,11 @@ bool FBuffRaisesLaterDamageTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(EBattleStat::Nenhum), /*Percentual=*/0);
 
 	const FBattleResolveResult ComEfeito =
-		FBattleResolver::ResolveTurn(ComBonus, MagiaDepoisAtaque(0), TresVezesAguardar());
+		FBattleResolver::ResolveTurn(ComBonus,
+		FBattleResolver::DuelCommits(ComBonus, MagiaDepoisAtaque(0), TresVezesAguardar()));
 	const FBattleResolveResult SemEfeito =
-		FBattleResolver::ResolveTurn(SemBonus, MagiaDepoisAtaque(0), TresVezesAguardar());
+		FBattleResolver::ResolveTurn(SemBonus,
+		FBattleResolver::DuelCommits(SemBonus, MagiaDepoisAtaque(0), TresVezesAguardar()));
 
 	TestTrue(TEXT("Com o bônus, o alvo termina com MENOS vida"),
 		ComEfeito.NextState.Pets[1].Health < SemEfeito.NextState.Pets[1].Health);
@@ -116,7 +118,8 @@ bool FSignDecidesWhoIsAffectedTest::RunTest(const FString& Parameters)
 {
 	FBattleState Positivo = MakeEffectDuel(static_cast<uint8>(EBattleStat::Ataque), 40);
 	const FBattleResolveResult SubiuEmSi =
-		FBattleResolver::ResolveTurn(Positivo, MagiaDepoisAtaque(0), TresVezesAguardar());
+		FBattleResolver::ResolveTurn(Positivo,
+		FBattleResolver::DuelCommits(Positivo, MagiaDepoisAtaque(0), TresVezesAguardar()));
 
 	TestEqual(TEXT("Positivo afeta QUEM LANÇOU"),
 		static_cast<int32>(SubiuEmSi.Trace[
@@ -125,7 +128,8 @@ bool FSignDecidesWhoIsAffectedTest::RunTest(const FString& Parameters)
 
 	FBattleState Negativo = MakeEffectDuel(static_cast<uint8>(EBattleStat::Defesa), -40);
 	const FBattleResolveResult DesceuNoOutro =
-		FBattleResolver::ResolveTurn(Negativo, MagiaDepoisAtaque(0), TresVezesAguardar());
+		FBattleResolver::ResolveTurn(Negativo,
+		FBattleResolver::DuelCommits(Negativo, MagiaDepoisAtaque(0), TresVezesAguardar()));
 
 	TestEqual(TEXT("Negativo afeta O OPONENTE"),
 		static_cast<int32>(DesceuNoOutro.Trace[
@@ -135,7 +139,8 @@ bool FSignDecidesWhoIsAffectedTest::RunTest(const FString& Parameters)
 	// E derrubar a defesa do outro precisa AUMENTAR o dano que ele leva.
 	FBattleState Limpo = MakeEffectDuel(static_cast<uint8>(EBattleStat::Nenhum), 0);
 	const FBattleResolveResult SemNada =
-		FBattleResolver::ResolveTurn(Limpo, MagiaDepoisAtaque(0), TresVezesAguardar());
+		FBattleResolver::ResolveTurn(Limpo,
+		FBattleResolver::DuelCommits(Limpo, MagiaDepoisAtaque(0), TresVezesAguardar()));
 
 	TestTrue(TEXT("Defesa derrubada faz o alvo perder mais vida"),
 		DesceuNoOutro.NextState.Pets[1].Health < SemNada.NextState.Pets[1].Health);
@@ -165,7 +170,8 @@ bool FNewEffectReplacesTheOldTest::RunTest(const FString& Parameters)
 	}
 
 	const FBattleResolveResult Resultado =
-		FBattleResolver::ResolveTurn(Estado, TresMagias, TresVezesAguardar());
+		FBattleResolver::ResolveTurn(Estado,
+		FBattleResolver::DuelCommits(Estado, TresMagias, TresVezesAguardar()));
 
 	TestEqual(TEXT("O percentual ativo continua o de UMA magia"),
 		Resultado.NextState.Pets[0].ActiveEffectPercent, 40);
@@ -187,7 +193,8 @@ bool FEffectExpiresAndSaysSoTest::RunTest(const FString& Parameters)
 	FBattleState Estado = MakeEffectDuel(static_cast<uint8>(EBattleStat::Ataque), 40);
 
 	const FBattleResolveResult Primeiro =
-		FBattleResolver::ResolveTurn(Estado, MagiaDepoisAtaque(0), TresVezesAguardar());
+		FBattleResolver::ResolveTurn(Estado,
+		FBattleResolver::DuelCommits(Estado, MagiaDepoisAtaque(0), TresVezesAguardar()));
 
 	// Lançado no slot 0, dura três slots: expira ao fim do turno, e não antes.
 	TestEqual(TEXT("O efeito acabou ao fim do turno"),
@@ -212,7 +219,8 @@ bool FEffectIsClampedInTheCoreTest::RunTest(const FString& Parameters)
 {
 	FBattleState Absurdo = MakeEffectDuel(static_cast<uint8>(EBattleStat::Ataque), 5000);
 	const FBattleResolveResult Resultado =
-		FBattleResolver::ResolveTurn(Absurdo, MagiaDepoisAtaque(0), TresVezesAguardar());
+		FBattleResolver::ResolveTurn(Absurdo,
+		FBattleResolver::DuelCommits(Absurdo, MagiaDepoisAtaque(0), TresVezesAguardar()));
 
 	// O valor é lido no EVENTO, e não no estado final: o efeito expira ao fim
 	// do turno, então o estado final tem zero — e zero passaria por "recortado"
@@ -230,7 +238,8 @@ bool FEffectIsClampedInTheCoreTest::RunTest(const FString& Parameters)
 	// adversário e perder assim não ensina nada a quem perdeu.
 	FBattleState Aniquilador = MakeEffectDuel(static_cast<uint8>(EBattleStat::Defesa), -5000);
 	const FBattleResolveResult Fundo =
-		FBattleResolver::ResolveTurn(Aniquilador, MagiaDepoisAtaque(0), TresVezesAguardar());
+		FBattleResolver::ResolveTurn(Aniquilador,
+		FBattleResolver::DuelCommits(Aniquilador, MagiaDepoisAtaque(0), TresVezesAguardar()));
 
 	TestTrue(TEXT("A defesa do alvo continua ao menos 1"),
 		Fundo.NextState.Pets[1].GetEffectiveDefense() >= 1);
@@ -257,7 +266,8 @@ bool FPhysicalAttackCarriesNoEffectTest::RunTest(const FString& Parameters)
 	}
 
 	const FBattleResolveResult Resultado =
-		FBattleResolver::ResolveTurn(Estado, SoAtaques, TresVezesAguardar());
+		FBattleResolver::ResolveTurn(Estado,
+		FBattleResolver::DuelCommits(Estado, SoAtaques, TresVezesAguardar()));
 
 	TestEqual(TEXT("Nenhum efeito de atributo foi aplicado"),
 		ContarEventosDoTipo(Resultado.Trace, EBattleEventType::AtributoAlterado), 0);

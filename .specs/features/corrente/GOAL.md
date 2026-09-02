@@ -27,10 +27,10 @@ E o mais importante: **quase tudo já existe.**
 
 ## PRONTO é isto, e nada menos
 
-- [ ] **C1** — a casa sabe o rumo e a força, assados do traçado; e água parada
+- [x] **C1** — a casa sabe o rumo e a força, assados do traçado; e água parada
       não tem rumo
-- [ ] **C2** — a corrente EMPURRA, pelo cano que já move quem escorrega
-- [ ] **C3** — subir a correnteza custa mais que descer; de lado, nem um nem
+- [x] **C2** — a corrente EMPURRA, pelo cano que já move quem escorrega
+- [x] **C3** — subir a correnteza custa mais que descer; de lado, nem um nem
       outro
 - [ ] **C4** — a balsa sente a corrente
 - [ ] **C5** — o mundo aberto: o mesmo rio nos dois sentidos dá resultados

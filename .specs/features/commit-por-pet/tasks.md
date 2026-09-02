@@ -224,7 +224,7 @@ custou uma vez.
 
 ---
 
-## CP7 — O fio carrega N pets
+## CP7 — O fio carrega N pets ✅ FEITO
 > 🤖 Modelo: `opus` 🧠 — rede, e a auditoria que a protege é regex
 
 **Dependências:** CP3.

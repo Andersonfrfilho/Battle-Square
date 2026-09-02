@@ -17,10 +17,32 @@
 // O modo de falha alternativo é silencioso: o jogo compilaria, conectaria
 // e resolveria turnos, só que as ações 2 e 3 do oponente não existiriam.
 // Três campos nomeados eliminam a dúvida inteira.
+//
+// ⚠️ N PETS NÃO REABRE ESSA DÚVIDA, e a escolha é deliberada: vários pets viajam
+// como `TArray<FNetTurnCommit>`, e não como um array C maior. `TArray` de
+// USTRUCT é justamente o caso que `FRepLayout` sabe expandir — o array C
+// interno continua com três campos nomeados, e o crescimento acontece por fora.
+//
+// Reencontrar o mesmo modo de falhar, agora com o PET 2 em vez da AÇÃO 2, seria
+// pagar duas vezes pela mesma investigação.
 USTRUCT()
 struct FNetTurnCommit
 {
 	GENERATED_BODY()
+
+	/**
+	 * DE QUEM sao estas acoes, por `PetId`.
+	 *
+	 * O fio carregava um commit por LADO, e o lado deixou de identificar
+	 * alguem quando um lado passou a ter dois pets. O id acompanha o commit
+	 * pelo fio porque o servidor precisa saber a quem aplicar cada um — deduzir
+	 * pela ordem faria a acao trocar de dono se um pacote chegasse fora de
+	 * ordem, e o sintoma seria "o pet errado atacou".
+	 *
+	 * Sentinela 0xFF: commit que ninguem enderecou nao pode valer para o pet 0.
+	 */
+	UPROPERTY()
+	uint8 PetId = 0xFF;
 
 	UPROPERTY()
 	FBattleAction ActionA;

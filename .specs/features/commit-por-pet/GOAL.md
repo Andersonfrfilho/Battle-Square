@@ -19,7 +19,7 @@ nenhum teste alcança.
 - [x] **CP4** — postura, movimento e combate agem sobre o pet endereçado
 - [x] **CP5** — o `AddWarning` de BTL-05 virou PROVA, e não sobrou aviso nenhum
 - [x] **CP6** — o desempate entre aliados está medido e decidido por `PetId`
-- [ ] **CP7** — o fio carrega N pets, e a auditoria do commit cobre o tipo novo
+- [x] **CP7** — o fio carrega N pets, e a auditoria do commit cobre o tipo novo
 - [ ] **CP8** — quem joga escolhe ação POR PET, e a tela diz de quem é qual
 - [x] O grep por `AddWarning` em `Source/` não acha mais BTL-05
 - [ ] Bateria completa verde (hoje **866** depois da CP5; o número só sobe)

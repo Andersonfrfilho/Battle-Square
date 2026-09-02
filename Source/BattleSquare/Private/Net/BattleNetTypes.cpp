@@ -30,7 +30,11 @@ bool ValidateNetTurnCommit(const FNetTurnCommit& Commit)
 
 FTurnCommit ToTurnCommit(const FNetTurnCommit& NetCommit)
 {
+	// O DONO atravessa a conversão. Perdê-lo aqui faria o commit chegar ao
+	// núcleo sem endereço, e o resolvedor o ignoraria em silêncio — a ação do
+	// jogador sumiria entre o fio e a regra.
 	FTurnCommit Result;
+	Result.PetId = NetCommit.PetId;
 	Result.Actions[0] = NetCommit.ActionA;
 	Result.Actions[1] = NetCommit.ActionB;
 	Result.Actions[2] = NetCommit.ActionC;
@@ -40,6 +44,7 @@ FTurnCommit ToTurnCommit(const FNetTurnCommit& NetCommit)
 FNetTurnCommit ToNetTurnCommit(const FTurnCommit& Commit)
 {
 	FNetTurnCommit Result;
+	Result.PetId = Commit.PetId;
 	Result.ActionA = Commit.Actions[0];
 	Result.ActionB = Commit.Actions[1];
 	Result.ActionC = Commit.Actions[2];

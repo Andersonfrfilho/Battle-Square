@@ -71,6 +71,21 @@ namespace WaterFooting
 
 	EWaterFooting At(const UIslandBakedPlan& Assado, const FVector2D& Onde)
 	{
+		// FORA DA COSTA É MAR, e mar é FUNDO.
+		//
+		// Isto faltava, e quem achou foi a prova de que "onde o pé está seco
+		// não há fluido": fora da terra, `FluidAt` dizia água salgada e `At`
+		// dizia seco — as duas perguntas discordando sobre o mesmo lugar. O
+		// painel teria dito "seco em água salgada", e o jogador aprenderia a
+		// não confiar nele.
+		//
+		// O mar não está no traçado como curso; ele é o que sobra depois que a
+		// terra acaba, e por isso nenhum laço sobre rios jamais o encontraria.
+		if (Onde.Size() > Assado.CoastRadiusAt(FMath::Atan2(Onde.Y, Onde.X)))
+		{
+			return EWaterFooting::Fundo;
+		}
+
 		// A água mais FUNDA ganha: quem está no encontro de um córrego com um
 		// rio está no rio. Parar na primeira água encontrada faria o resultado
 		// depender da ordem do assado, que é desempate disfarçado de regra.
@@ -161,6 +176,78 @@ namespace WaterFooting
 			== FreshWater::ENavigability::APe
 			? EWaterFooting::Vau
 			: EWaterFooting::Fundo;
+	}
+
+	EFluidKind FluidAt(const UIslandBakedPlan& Assado, const FVector2D& Onde)
+	{
+		// FORA DA COSTA É MAR. Ele não está no traçado como curso — é o que
+		// sobra depois que a terra acaba —, então a pergunta se responde pela
+		// linha da costa, que o assado tem.
+		if (Onde.Size() > Assado.CoastRadiusAt(FMath::Atan2(Onde.Y, Onde.X)))
+		{
+			return EFluidKind::AguaSalgada;
+		}
+
+		// A água mais FUNDA ganha, pela mesma razão do `At`: parar na primeira
+		// encontrada faria o resultado depender da ordem do assado, que é
+		// desempate disfarçado de regra.
+		float MaiorMeiaLargura = 0.0f;
+		EFluidKind Achado = EFluidKind::Nenhum;
+
+		for (const FBakedRiver& Curso : Assado.Rivers)
+		{
+			for (int32 Ponto = 0; Ponto + 1 < Curso.PointsUnits.Num(); ++Ponto)
+			{
+				const float Meia = FMath::Max(
+					Curso.HalfWidthUnits.IsValidIndex(Ponto)
+						? Curso.HalfWidthUnits[Ponto] : 0.0f,
+					Curso.HalfWidthUnits.IsValidIndex(Ponto + 1)
+						? Curso.HalfWidthUnits[Ponto + 1] : 0.0f);
+
+				if (Meia <= 0.0f || Meia <= MaiorMeiaLargura)
+				{
+					continue;
+				}
+
+				const FVector2D NoTrecho = FMath::ClosestPointOnSegment2D(
+					Onde, Curso.PointsUnits[Ponto], Curso.PointsUnits[Ponto + 1]);
+
+				if (FVector2D::DistSquared(NoTrecho, Onde) <= Meia * Meia)
+				{
+					MaiorMeiaLargura = Meia;
+
+					// O fluido do PONTO, não do curso: termal é propriedade da
+					// posição, e um rio nasce fervendo e chega frio ao mar.
+					Achado = Curso.FluidByPoint.IsValidIndex(Ponto)
+						? static_cast<EFluidKind>(Curso.FluidByPoint[Ponto])
+						: EFluidKind::AguaDoce;
+				}
+			}
+		}
+
+		for (const FBakedBrook& Corrego : Assado.Brooks)
+		{
+			float Meia = 0.0f;
+			if (ChaoMolhado::DentroDaCalha(Corrego.PointsUnits, Onde,
+				[&Corrego](int32) { return Corrego.HalfWidthUnits; }, Meia)
+				&& Meia > MaiorMeiaLargura)
+			{
+				MaiorMeiaLargura = Meia;
+				Achado = static_cast<EFluidKind>(Corrego.Fluid);
+			}
+		}
+
+		for (const FBakedSpring& Fonte : Assado.Springs)
+		{
+			if (FVector2D::Distance(Onde, Fonte.CenterUnits) <= Fonte.PoolHalfWidthUnits
+				&& Fonte.PoolHalfWidthUnits > MaiorMeiaLargura)
+			{
+				MaiorMeiaLargura = Fonte.PoolHalfWidthUnits;
+				Achado = static_cast<EFluidKind>(Fonte.Fluid);
+			}
+		}
+
+		return Achado;
 	}
 
 	float SpeedMultiplierFor(EWaterFooting Chao)

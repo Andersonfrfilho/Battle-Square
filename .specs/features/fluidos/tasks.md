@@ -100,12 +100,21 @@ O array tem tamanho fixo (a reflexão não aceita `EFluidKind::Count` como
 dimensão), com `static_assert` guardando: o nono fluido não nasce sem lugar
 onde ser resistido.
 
-## F6 — O mundo declara seus fluidos
-> 🤖 Modelo: `sonnet`
+## F6 — O mundo declara seus fluidos ✅ FEITO
 
-`WaterFooting` e a paleta passam a consultar o registro em vez de tratarem
-toda água como uma. Hoje o mundo tem seis fluidos e trata todos igual.
-*Aceite:* a água termal perto do vulcão é reconhecida como termal, não doce.
+O fluido é ASSADO **ponto a ponto** nos rios, e não um por curso: termal é
+propriedade da POSIÇÃO, e um rio nasce fervendo na saia do vulcão e chega frio
+ao mar. Um fluido por curso decidiria pelo meio do percurso, e um rio que só
+passa perto do vulcão sairia frio — quebrando o próprio aceite.
+
+A ordem do mapeamento é decisão: **termal vence o pântano** (a água quente
+continua quente correndo por dentro do barro), e o pântano vence a doce.
+
+**DEFEITO ACHADO PELO CONTRAPESO:** a prova de que "onde o pé está seco não há
+fluido" pegou as duas perguntas discordando fora da costa — `FluidAt` dizia
+água salgada e `At` dizia seco. O painel teria dito "seco em água salgada". O
+mar não está no traçado como curso (ele é o que sobra depois que a terra acaba),
+então nenhum laço sobre rios o encontraria. Agora fora da costa é FUNDO.
 
 ## F7 — A balsa flutua por DENSIDADE
 

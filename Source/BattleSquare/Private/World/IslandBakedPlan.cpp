@@ -264,6 +264,31 @@ namespace IslandBakedPlan
 		return Cavernas;
 	}
 
+	/**
+	 * DE QUE FLUIDO é a água num ponto da ilha.
+	 *
+	 * A tabela do mundo, num lugar só — assada uma vez, para o jogo não
+	 * perguntar ao gerador o que o assado já deveria saber.
+	 *
+	 * A ordem é decisão: TERMAL vence, porque a água quente do vulcão continua
+	 * quente mesmo correndo por dentro do pântano; e o pântano vence a doce,
+	 * porque é ele que carrega o barro.
+	 */
+	EFluidKind FluidoDaAguaEm(const FVector2D& Onde)
+	{
+		if (FreshWater::IsThermalAt(Onde))
+		{
+			return EFluidKind::AguaTermal;
+		}
+
+		if (IslandGeography::BiomeAt(Onde) == EIslandBiome::Swamp)
+		{
+			return EFluidKind::AguaDePantano;
+		}
+
+		return EFluidKind::AguaDoce;
+	}
+
 	int32 WorldScenerySeed()
 	{
 		const ABattleSquareGameMode* Padrao = GetDefault<ABattleSquareGameMode>();
@@ -395,9 +420,11 @@ namespace IslandBakedPlan
 			for (int32 Amostra = 0; Amostra < RiverSampleCount(); ++Amostra)
 			{
 				const float Onde = ProgressAtSample(Amostra);
-				Assado.PointsUnits.Add(FreshWater::PointAtProgress(Curso, Onde));
+				const FVector2D NoPonto = FreshWater::PointAtProgress(Curso, Onde);
+				Assado.PointsUnits.Add(NoPonto);
 				Assado.HalfWidthUnits.Add(FreshWater::HalfWidthAtProgress(Curso, Onde));
 				Assado.bIsRapids.Add(FreshWater::IsRapidsAtProgress(Curso, Onde));
+				Assado.FluidByPoint.Add(static_cast<uint8>(FluidoDaAguaEm(NoPonto)));
 			}
 
 			Out.Rivers.Add(MoveTemp(Assado));
@@ -409,6 +436,10 @@ namespace IslandBakedPlan
 			FBakedBrook Assado;
 			Assado.PointsUnits = Corrego.PointsUnits;
 			Assado.HalfWidthUnits = Corrego.HalfWidthUnits;
+			Assado.Fluid = static_cast<uint8>(FluidoDaAguaEm(
+				Corrego.PointsUnits.Num() > 0
+					? Corrego.PointsUnits[Corrego.PointsUnits.Num() / 2]
+					: FVector2D::ZeroVector));
 			Out.Brooks.Add(MoveTemp(Assado));
 		}
 
@@ -418,6 +449,7 @@ namespace IslandBakedPlan
 			FBakedSpring Assada;
 			Assada.CenterUnits = Fonte.CenterUnits;
 			Assada.PoolHalfWidthUnits = Fonte.PoolHalfWidthUnits;
+			Assada.Fluid = static_cast<uint8>(FluidoDaAguaEm(Fonte.CenterUnits));
 			Out.Springs.Add(Assada);
 		}
 

@@ -2042,9 +2042,16 @@ void ABattleSquareGameMode::RefreshRegionResidency()
 		AnunciarSagradoPerto(*TracadoAssado, Onde);
 
 		FBattleDebugScreen::Show(
-			FString::Printf(TEXT("pisando: %s (passo %.0f%%)"),
-				WaterFooting::DebugName(Chao),
-				WaterFooting::SpeedMultiplierFor(Chao) * 100.0f),
+			// O FLUIDO junto do chão: o mundo tinha seis e dizia "água" para
+			// todos. Quem entra numa fonte termal na saia do vulcão sentia o
+			// mesmo que quem atravessa um córrego de montanha.
+			Chao == EWaterFooting::Seco
+				? FString::Printf(TEXT("pisando: seco"))
+				: FString::Printf(TEXT("pisando: %s em %s (passo %.0f%%)"),
+					WaterFooting::DebugName(Chao),
+					FluidRegistry::TraitsOf(
+						WaterFooting::FluidAt(*TracadoAssado, Onde)).DebugName,
+					WaterFooting::SpeedMultiplierFor(Chao) * 100.0f),
 			0.0f,
 			Chao == EWaterFooting::Seco ? FColor(200, 200, 150) : FColor(120, 180, 255),
 			/*Key=*/748);

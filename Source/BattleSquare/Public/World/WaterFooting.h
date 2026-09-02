@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 
+#include "Battle/FluidRegistry.h"
+
 class UIslandBakedPlan;
 
 /**
@@ -47,4 +49,18 @@ namespace WaterFooting
 	BATTLESQUARE_API float SpeedMultiplierFor(EWaterFooting Footing);
 
 	BATTLESQUARE_API const TCHAR* DebugName(EWaterFooting Footing);
+
+	/**
+	 * DE QUE FLUIDO é a água que se está pisando.
+	 *
+	 * O mundo tinha seis fluidos e tratava todos como uma água só. Quem entra
+	 * numa fonte termal na saia do vulcão sentia o mesmo que quem atravessa um
+	 * córrego de montanha — e o registro, que existe para separá-los, não
+	 * chegava até aqui.
+	 *
+	 * Devolve `Nenhum` em terra firme. Fora da costa é ÁGUA SALGADA: o mar não
+	 * está no traçado como curso, ele é o que sobra depois que a terra acaba.
+	 */
+	BATTLESQUARE_API EFluidKind FluidAt(const UIslandBakedPlan& Baked,
+		const FVector2D& PositionUnits);
 }

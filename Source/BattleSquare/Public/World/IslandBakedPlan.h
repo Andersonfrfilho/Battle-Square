@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
+#include "Battle/FluidRegistry.h"
 #include "World/LandUseLayout.h"
 #include "IslandBakedPlan.generated.h"
 
@@ -195,6 +196,18 @@ struct BATTLESQUARE_API FBakedRiver
 	UPROPERTY()
 	TArray<bool> bIsRapids;
 
+	/**
+	 * DE QUE FLUIDO a água é, PONTO A PONTO.
+	 *
+	 * Ponto a ponto, e não um fluido por curso, porque termal é propriedade da
+	 * POSIÇÃO: um rio nasce fervendo na saia do vulcão e chega frio ao mar. Um
+	 * fluido por curso decidiria isso pelo meio do percurso, e um rio que só
+	 * passa perto do vulcão sairia frio — quebrando exatamente a promessa de
+	 * "a água termal perto do vulcão é reconhecida como termal".
+	 */
+	UPROPERTY()
+	TArray<uint8> FluidByPoint;
+
 	/** A ordem de Strahler: 1 é cabeceira, e é daqui que a água engrossa. */
 	UPROPERTY()
 	int32 Order = 1;
@@ -245,6 +258,10 @@ struct BATTLESQUARE_API FBakedBrook
 
 	UPROPERTY()
 	float HalfWidthUnits = 0.0f;
+
+	/** De que fluido este córrego é. Ele é curto: um só basta. */
+	UPROPERTY()
+	uint8 Fluid = 0;
 };
 
 /**
@@ -277,6 +294,10 @@ struct BATTLESQUARE_API FBakedSpring
 
 	UPROPERTY()
 	float PoolHalfWidthUnits = 0.0f;
+
+	/** De que fluido esta fonte é — uma fonte termal não é uma fonte comum. */
+	UPROPERTY()
+	uint8 Fluid = 0;
 };
 
 /** Uma trilha, com a ALTURA do chão em cada ponto. */

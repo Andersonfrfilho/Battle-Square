@@ -50,6 +50,17 @@ public:
 	/** A altura erguida na casa dada — o que a MALHA tem, não o que o plano diz. */
 	float BuiltHeightAtCell(int32 Column, int32 Row) const;
 
+	/**
+	 * A altura da SUPERFÍCIE ERGUIDA numa posição qualquer da ilha.
+	 *
+	 * Interpola entre as quatro casas em volta, que é o que a malha de fato
+	 * desenha entre os vértices. Perguntar a `GroundHeightAt` daria a altura do
+	 * PLANO — e o que a trilha e o rio precisam saber é onde o chão está, não
+	 * onde ele deveria estar. Entre os dois cabe justamente o erro que faria a
+	 * trilha flutuar.
+	 */
+	float BuiltHeightAt(const FVector2D& PositionUnits) const;
+
 protected:
 	virtual void BeginPlay() override;
 

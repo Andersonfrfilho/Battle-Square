@@ -20,6 +20,17 @@ struct BATTLESQUARE_API FPetElementDefinition
 
 	/** Nomes de skill, como PetSkillCatalog os traduz ("voar", "camuflar"…). */
 	TArray<FString> SkillNames;
+
+	/**
+	 * Os golpes deste elemento CONDUZEM pela água molhada.
+	 *
+	 * Declarado aqui, e não como um `if` no tradutor comparando com "Raio":
+	 * um segundo elemento condutor passa a ser um campo no JSON, e não uma
+	 * edição de código — que é a promessa deste arquivo desde o começo.
+	 *
+	 * Ausente é FALSO. Elemento que não diz nada não conduz, e é o inócuo.
+	 */
+	bool bConducts = false;
 };
 
 /** Uma ESCOLA: o que a magia dela faz, e a malha que diz isso na tela. */

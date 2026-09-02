@@ -1,6 +1,8 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Data/BattleDataTranslator.h"
+
+#include "Balance/PetTypeCatalog.h"
 #include "Balance/PetTypeIdentity.h"
 
 #include "Battle/BattleArenaConstants.h"
@@ -138,8 +140,23 @@ void FBattleDataTranslator::TranslatePet(
 	// não pode conhecer texto (AD-012); a tela precisa do nome e não pode
 	// recalcular dano (audit_no_recalculation.sh). Cada lado recebe o que usa,
 	// e nada além.
+	// O ELEMENTO decide se os golpes conduzem, e a decisão acontece AQUI —
+	// onde o tipo ainda é conhecido. O núcleo nunca aprende o que é "Raio":
+	// ele recebe uma bandeira por golpe, do mesmo jeito que recebe o Attack já
+	// pré-multiplicado pela efetividade.
+	//
+	// Golpe não carrega elemento próprio no cadastro, então quem responde é o
+	// elemento do PET: os golpes de uma criatura de raio são de raio.
+	const FPetTypeIdentity Identidade = FPetTypeIdentity::Parse(Source.Type);
+	const FPetElementDefinition* Elemento =
+		FPetTypeCatalog::Get().FindElement(Identidade.Element);
+	const bool bConduz = Elemento != nullptr && Elemento->bConducts;
+
 	for (int32 Indice = 0; Indice < 4; ++Indice)
 	{
+		OutBattleState.MoveConducts[Indice] =
+			(bConduz && Source.Moves.IsValidIndex(Indice)) ? 1 : 0;
+
 		OutBattleState.MovePowers[Indice] = Source.Moves.IsValidIndex(Indice)
 			? Source.Moves[Indice].Power
 			: 0;

@@ -25,9 +25,9 @@ tocam**. O trabalho é encanamento, e a única decisão de conteúdo é a G3.
 
 ## PRONTO é isto, e nada menos
 
-- [ ] **G1** — a arena põe fluido nas casas: batalha na saia do vulcão nasce
+- [x] **G1** — a arena põe fluido nas casas: batalha na saia do vulcão nasce
       com água TERMAL, longe dele com doce, e casa seca sem fluido
-- [ ] **G2** — o tradutor liga a condução: pet de Raio eletrifica a poça numa
+- [x] **G2** — o tradutor liga a condução: pet de Raio eletrifica a poça numa
       partida real; pet de Fogo, não
 - [ ] **G3** — a resistência tem origem (**pergunte antes**: item, traço, ou
       as duas)

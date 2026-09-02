@@ -29,7 +29,7 @@ converte tipo em Attack pré-multiplicado.
 *Motivo:* sem isto a F8 inteira é inerte — regra completa, testada, e que nunca
 acontece.
 
-## G3 — A resistência tem origem  ⏸ AGUARDA DECISÃO
+## G3 — A resistência tem origem  ✔ DECIDIDO: traço dá a base, item soma
 > 🤖 Modelo: `sonnet`
 
 `FluidResistPercent` é sempre zero: nada preenche. **De onde vem a proteção?**

@@ -130,6 +130,9 @@ bool FPetTypeCatalog::LoadFromJson(const FString& FilePath, FPetTypeCatalog& Out
 			(*Objeto)->TryGetNumberField(TEXT("tiltDegrees"), Tombo);
 			Elemento.TiltDegrees = static_cast<float>(Tombo);
 
+			// Ausente é falso: elemento que não diz nada não conduz.
+			(*Objeto)->TryGetBoolField(TEXT("conducts"), Elemento.bConducts);
+
 			const TArray<TSharedPtr<FJsonValue>>* Skills = nullptr;
 			if ((*Objeto)->TryGetArrayField(TEXT("skills"), Skills) && Skills)
 			{

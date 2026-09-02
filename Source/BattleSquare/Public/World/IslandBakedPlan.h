@@ -447,6 +447,11 @@ public:
 	UPROPERTY()
 	TArray<FBakedAqueduct> Aqueducts;
 
+private:
+	/** Guardado: `BandAt` é perguntado uma vez por casa ao erguer o relevo. */
+	mutable float CachedHighestWalkable = -1.0f;
+
+public:
 	/** A altura no índice de grade, sem o consumidor refazer a conta do índice. */
 	float HeightAtCell(int32 Column, int32 Row) const;
 
@@ -475,6 +480,15 @@ public:
 
 	/** O nome da faixa, para o painel. */
 	static const TCHAR* BandDebugName(ETerrainBand Band);
+
+	/**
+	 * O chão mais alto em que se PODE ESTAR — fora da mancha queimada.
+	 *
+	 * É a régua do cume. O ponto mais alto da ilha é o vulcão, e medir por ele
+	 * tornava a faixa de cume inalcançável: tudo acima do limiar era queimado,
+	 * e queimado vem antes.
+	 */
+	float HighestWalkableHeightUnits() const;
 };
 
 namespace IslandBakedPlan

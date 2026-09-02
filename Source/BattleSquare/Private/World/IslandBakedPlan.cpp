@@ -15,11 +15,21 @@ namespace FaixasDoTerreno
 	/**
 	 * A partir de que altura o terreno é CUME.
 	 *
-	 * Como fração da altura mais alta do assado, e não em unidades: número
-	 * absoluto escolhido quando só existia um tamanho de ilha é a armadilha
-	 * mais cara deste projeto — ela apareceu medida em sete lugares.
+	 * Como fração, e não em unidades: número absoluto escolhido quando só
+	 * existia um tamanho de ilha é a armadilha mais cara deste projeto — ela
+	 * apareceu medida em sete lugares.
+	 *
+	 * A fração é do CHÃO MAIS ALTO QUE NÃO ESTÁ QUEIMADO, e não do mais alto de
+	 * todos. Medido: o ponto mais alto da ilha é o vulcão (17.814), e as 36
+	 * casas acima de 60% dele estavam TODAS dentro da mancha queimada — que é
+	 * avaliada antes. A faixa de cume era inalcançável por construção: código
+	 * declarava uma cor que o jogador nunca veria.
+	 *
+	 * Medir pelo chão pisável (8.127 fora da mancha) também dá ao cume o
+	 * significado útil: o alto do relevo em que se pode estar. O topo do vulcão
+	 * é rocha queimada, e isso é o certo — vulcão não é cume, é vulcão.
 	 */
-	constexpr float FracaoDoCume = 0.6f;
+	constexpr float FracaoDoCume = 0.7f;
 }
 
 float UIslandBakedPlan::HeightAt(const FVector2D& Onde) const
@@ -83,6 +93,43 @@ const TCHAR* UIslandBakedPlan::BandDebugName(ETerrainBand Faixa)
 	return TEXT("?");
 }
 
+float UIslandBakedPlan::HighestWalkableHeightUnits() const
+{
+	// Calculado UMA vez e guardado: `BandAt` é perguntado por casa da grade ao
+	// construir o relevo, e varrer 32.400 alturas a cada pergunta seria varrer
+	// a ilha inteira trinta e duas mil vezes.
+	if (CachedHighestWalkable >= 0.0f)
+	{
+		return CachedHighestWalkable;
+	}
+
+	const int32 Lado = HeightGridSide;
+	float MaisAlto = 0.0f;
+
+	for (int32 Linha = 0; Linha < Lado; ++Linha)
+	{
+		for (int32 Coluna = 0; Coluna < Lado; ++Coluna)
+		{
+			const float X = ((static_cast<float>(Coluna) / (Lado - 1)) * 2.0f - 1.0f)
+				* LandRadiusUnits;
+			const float Y = ((static_cast<float>(Linha) / (Lado - 1)) * 2.0f - 1.0f)
+				* LandRadiusUnits;
+
+			// Fora da mancha queimada: é o chão em que se pode estar.
+			if (FVector2D::Distance(FVector2D(X, Y), Parameters.VolcanoCenterUnits)
+				<= Parameters.VolcanoScorchedRadiusUnits)
+			{
+				continue;
+			}
+
+			MaisAlto = FMath::Max(MaisAlto, HeightAtCell(Coluna, Linha));
+		}
+	}
+
+	CachedHighestWalkable = MaisAlto;
+	return MaisAlto;
+}
+
 ETerrainBand UIslandBakedPlan::BandAt(const FVector2D& Onde) const
 {
 	// A ROCHA QUEIMADA vem primeiro: o vulcão queima o que já estava ali,
@@ -103,11 +150,7 @@ ETerrainBand UIslandBakedPlan::BandAt(const FVector2D& Onde) const
 		const int32 Linha = FMath::Clamp(
 			FMath::RoundToInt((Onde.Y + LandRadiusUnits) / Casa), 0, Lado - 1);
 
-		float MaisAlto = 0.0f;
-		for (const float Altura : GroundHeightUnits)
-		{
-			MaisAlto = FMath::Max(MaisAlto, Altura);
-		}
+		const float MaisAlto = HighestWalkableHeightUnits();
 
 		// O CUME antes do barranco: o alto de uma escarpa ainda é alto.
 		if (MaisAlto > 0.0f

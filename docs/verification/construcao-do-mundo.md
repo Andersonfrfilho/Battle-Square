@@ -32,23 +32,23 @@ segundo plano não recebe teclado no PIE.
 Cada item é **uma pergunta com resposta sim ou não**. Um "não" vira TAREFA com
 teste próprio, nunca observação solta — é o que a T20 pede.
 
-| # | Onde | A pergunta |
-|---|---|---|
-| 1 | qualquer lugar | O chão existe, e você anda sobre ele sem cair através? |
-| 2 | andando do mar para dentro | A cor MUDA ao trocar de terreno, e o painel (`terreno:`) concorda com o que você vê? |
-| 3 | perto do vulcão | A rocha queimada é visivelmente outra coisa, e não mata escurecida? |
-| 4 | num rio qualquer | A água está SOBRE o leito — sem piscar, sem faixa aparecendo e sumindo? |
-| 5 | seguindo um rio da cabeceira à foz | Ele ENGROSSA? |
-| 6 | numa cachoeira | Existe um poço embaixo dela, e ele está no degrau do terreno? |
-| 7 | entrando na água | O painel muda para `pisando: vau` ou `agua funda`, e o andar fica mais lento? |
-| 8 | num vau marcado | Dá para atravessar a pé sem nadar? |
-| 9 | numa balsa | A plataforma está sobre a água, não afundada nem na altura de uma ponte? |
-| 10 | numa trilha | Ela acompanha o chão — sem flutuar, sem enterrar — e sobe em curva, não de frente? |
-| 11 | num aqueduto | Ele desce, e em nenhum ponto entra no morro? |
-| 12 | chegando num templo | O painel diz `templo de <deus>`, e o nome MUDA entre templos diferentes? |
-| 13 | saindo do templo | A linha do deus SOME (ela não pode ficar dizendo onde você já não está) |
-| 14 | num poço | Dá para ver de longe qual dá água e qual é seco? |
-| 15 | o mapa todo | Alguma coisa da carta que você não achou no mundo? |
+| #   | Onde                               | A pergunta                                                                           |
+| --- | ---------------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| 1   | qualquer lugar                     | O chão existe, e você anda sobre ele sem cair através?                               | sim                                                                                                              |
+| 2   | andando do mar para dentro         | A cor MUDA ao trocar de terreno, e o painel (`terreno:`) concorda com o que você vê? | sim                                                                                                              |
+| 3   | perto do vulcão                    | A rocha queimada é visivelmente outra coisa, e não mata escurecida?                  | sim                                                                                                              |
+| 4   | num rio qualquer                   | A água está SOBRE o leito — sem piscar, sem faixa aparecendo e sumindo?              | sim                                                                                                              |
+| 5   | seguindo um rio da cabeceira à foz | Ele ENGROSSA?                                                                        | sim                                                                                                              |
+| 6   | numa cachoeira                     | Existe um poço embaixo dela, e ele está no degrau do terreno?                        | sim, poderia existir cavernas entrando para dentro de cachoeiras                                                 |
+| 7   | entrando na água                   | O painel muda para `pisando: vau` ou `agua funda`, e o andar fica mais lento?        | sim, como se fosse lama ou caminhos muita neve                                                                   |
+| 8   | num vau marcado                    | Dá para atravessar a pé sem nadar?                                                   | depende o nivel da agua se ela ultrapassar a cintura do jogador precisa nadar                                    |
+| 9   | numa balsa                         | A plataforma está sobre a água, não afundada nem na altura de uma ponte?             | ela bate na ponte pois é um solido no jogo que o fluido é mais leve que a agua                                   |
+| 10  | numa trilha                        | Ela acompanha o chão — sem flutuar, sem enterrar — e sobe em curva, não de frente?   | sim sim, trilha não flutua ela pode ser as vezes mais profunda que o nivel atual exemplo entrando em uma caverna |
+| 11  | num aqueduto                       | Ele desce, e em nenhum ponto entra no morro?                                         | pode entrar no morro mas, precisa de sair por tuneis ou a estrutura da a volta                                   |
+| 12  | chegando num templo                | O painel diz `templo de <deus>`, e o nome MUDA entre templos diferentes?             | sim sim pois vamos ter varias divindades                                                                         |
+| 13  | saindo do templo                   | A linha do deus SOME (ela não pode ficar dizendo onde você já não está)              | não entendi                                                                                                      |
+| 14  | num poço                           | Dá para ver de longe qual dá água e qual é seco?                                     | depende a fundura do poço                                                                                        |
+| 15  | o mapa todo                        | Alguma coisa da carta que você não achou no mundo?                                   | pode ter coisas escondidas do mapa                                                                               |
 
 ## Se algo estiver errado
 

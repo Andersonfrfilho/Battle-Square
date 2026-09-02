@@ -169,3 +169,64 @@ bool FTerrainBandScorchedRockWinsOverEverythingTest::RunTest(const FString& Para
 
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTerrainBandNoBandIsUnreachableTest,
+	"BattleSquare.TerrainBand.NoBandIsUnreachable",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FTerrainBandNoBandIsUnreachableTest::RunTest(const FString& Parameters)
+{
+	const UIslandBakedPlan* Assado = IslandBakedPlan::Load();
+	if (!Assado)
+	{
+		AddError(TEXT("o assado nao existe — rode ./Tools/bake_island.sh"));
+		return false;
+	}
+
+	// TODA FAIXA DECLARADA TEM DE APARECER em alguma casa da ilha.
+	//
+	// Faixa que o código declara e o mundo nunca produz é cor que o jogador
+	// jamais vê — e nada acusa, porque as outras aparecem e o mapa parece
+	// completo. Foi assim que o CUME ficou de fora: as 36 casas acima do
+	// limiar estavam TODAS dentro da mancha queimada, que é avaliada antes, e
+	// a prova de variedade pedia só "mais de uma faixa" — passou com quatro.
+	//
+	// Este teste é a versão forte daquela: nenhuma faixa pode ser inalcançável
+	// por construção.
+	TArray<int32> CasasDaFaixa;
+	CasasDaFaixa.SetNumZeroed(static_cast<int32>(ETerrainBand::Count));
+
+	const int32 Lado = Assado->HeightGridSide;
+	for (int32 Linha = 0; Linha < Lado; ++Linha)
+	{
+		for (int32 Coluna = 0; Coluna < Lado; ++Coluna)
+		{
+			const float X = ((static_cast<float>(Coluna) / (Lado - 1)) * 2.0f - 1.0f)
+				* Assado->LandRadiusUnits;
+			const float Y = ((static_cast<float>(Linha) / (Lado - 1)) * 2.0f - 1.0f)
+				* Assado->LandRadiusUnits;
+
+			++CasasDaFaixa[static_cast<int32>(Assado->BandAt(FVector2D(X, Y)))];
+		}
+	}
+
+	FString Ausentes;
+	for (int32 Faixa = 0; Faixa < static_cast<int32>(ETerrainBand::Count); ++Faixa)
+	{
+		if (CasasDaFaixa[Faixa] == 0)
+		{
+			Ausentes += FString::Printf(TEXT(" %s"),
+				UIslandBakedPlan::BandDebugName(static_cast<ETerrainBand>(Faixa)));
+		}
+	}
+
+	if (!Ausentes.IsEmpty())
+	{
+		AddError(FString::Printf(
+			TEXT("faixa(s) que o codigo declara e a ilha nunca produz:%s — ")
+			TEXT("cor que o jogador jamais ve"), *Ausentes));
+		return false;
+	}
+
+	return true;
+}

@@ -16,15 +16,16 @@ cd "$(dirname "$0")/.."
 
 UE="/Users/Shared/Epic Games/UE_5.8"
 ASSADO="$PWD/Saved/IslandMap.json"
+UASSET="$PWD/Content/World/IslandBaked.uasset"
 
 # As sete seções são as sete linhas da tabela da spec — os planos que o mundo
 # precisa construir. Faltar uma é faltar uma categoria inteira de mundo.
 SECOES=(alturas rios trilhas travessias solo cavernas aquedutos)
 
-rm -f "$ASSADO"
+rm -f "$ASSADO" "$UASSET"
 
 "$UE/Engine/Binaries/Mac/UnrealEditor-Cmd" "$PWD/BattleSquare.uproject" \
-  -ExecCmds="Automation RunTests BattleSquare.IslandMap.Dump; Quit" \
+  -ExecCmds="Automation RunTests BattleSquare.IslandMap; Quit" \
   -unattended -nopause -nosplash -nullrhi -log > /dev/null 2>&1
 
 if [ ! -f "$ASSADO" ]; then
@@ -41,4 +42,13 @@ for SECAO in "${SECOES[@]}"; do
 done
 [ "$FALTOU" -eq 0 ] || exit 1
 
-echo "bake_island: assado em $ASSADO ($(du -h "$ASSADO" | cut -f1)), sete secoes presentes"
+# O JSON e o retrato para a carta; o `.uasset` e o que o JOGO le. Gravar so um
+# dos dois faria carta e mundo divergirem em silencio — que e exatamente o que
+# a fonte unica existe para impedir.
+if [ ! -f "$UASSET" ]; then
+  echo "bake_island: o UDataAsset nao foi gravado em $UASSET" >&2
+  exit 1
+fi
+
+echo "bake_island: $ASSADO ($(du -h "$ASSADO" | cut -f1)), sete secoes presentes"
+echo "bake_island: $UASSET ($(du -h "$UASSET" | cut -f1))"

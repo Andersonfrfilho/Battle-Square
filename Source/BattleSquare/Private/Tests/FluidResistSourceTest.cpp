@@ -97,25 +97,48 @@ bool FFluidResistSourceTheItemAddsToTheTraitTest::RunTest(const FString& Paramet
 	// equipar. Esta prova injeta o valor que ele daria, para que a REGRA de
 	// composição não fique sem prova até lá. Sem ela, o ponto onde o item
 	// entra seria uma descoberta no dia em que alguém criasse o sistema.
+	//
+	// A BIOLOGIA já existe, e entra pelo mesmo ponto. Este teste afirmava a
+	// assinatura de DOIS argumentos; ele vira o teste da de três, em vez de
+	// ficar verde ao lado dele — dois testes provando composições diferentes
+	// fariam a bateria afirmar duas regras que se contradizem, e uma delas
+	// estaria mentindo em silêncio.
 
 	// SOMA, e não o maior dos dois: tomar o maior faria uma bota de lava não
 	// valer nada num pet de Fogo, que é justamente quem mais a usaria.
 	TestEqual(TEXT("traco 50 mais item 30 da 80"),
-		FBattleDataTranslator::ComposeFluidResist(50, 30), 80);
+		FBattleDataTranslator::ComposeFluidResist(50, 0, 30), 80);
 
 	// Presa em 100: acima disso o dano viraria negativo, e curar quem pisa na
 	// lava e o oposto do que a regra promete.
 	TestEqual(TEXT("traco 50 mais item 80 para em 100"),
-		FBattleDataTranslator::ComposeFluidResist(50, 80), 100);
+		FBattleDataTranslator::ComposeFluidResist(50, 0, 80), 100);
 
 	// Sem item, vale o traço; sem traço, vale o item. As duas metades sozinhas.
-	TestEqual(TEXT("so o traco"), FBattleDataTranslator::ComposeFluidResist(50, 0), 50);
-	TestEqual(TEXT("so o item"), FBattleDataTranslator::ComposeFluidResist(0, 30), 30);
+	TestEqual(TEXT("so o traco"), FBattleDataTranslator::ComposeFluidResist(50, 0, 0), 50);
+	TestEqual(TEXT("so o item"), FBattleDataTranslator::ComposeFluidResist(0, 0, 30), 30);
+	TestEqual(TEXT("so a biologia"), FBattleDataTranslator::ComposeFluidResist(0, 25, 0), 25);
+
+	// A BIOLOGIA SUBTRAI, e o item não. Pelo encharca — uma biologia que só
+	// somasse bônus seria uma lista de vantagens em vez de um eixo, e todo pet
+	// escolheria a mesma pele. É a mesma razão pela qual o traço pode ser
+	// negativo, e a razão oposta à do item.
+	TestEqual(TEXT("biologia negativa TIRA do traco"),
+		FBattleDataTranslator::ComposeFluidResist(50, -20, 0), 30);
+
+	// E os três somam juntos.
+	TestEqual(TEXT("traco, biologia e item somam"),
+		FBattleDataTranslator::ComposeFluidResist(40, 20, 30), 90);
 
 	// E negativo não subtrai: um item mal cadastrado não pode tirar a
 	// resistência que a criatura tem por natureza.
 	TestEqual(TEXT("item negativo nao tira o traco"),
-		FBattleDataTranslator::ComposeFluidResist(50, -40), 50);
+		FBattleDataTranslator::ComposeFluidResist(50, 0, -40), 50);
+
+	// Preso em -100 do outro lado também: uma fraqueza somada a outra não pode
+	// virar dano multiplicado sem teto.
+	TestEqual(TEXT("fraqueza somada para em -100"),
+		FBattleDataTranslator::ComposeFluidResist(-50, -80, 0), -100);
 
 	return true;
 }

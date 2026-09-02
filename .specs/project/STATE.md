@@ -883,3 +883,52 @@ log ANTES de investigar qualquer outra coisa.**
 
 **Próximo passo quando incomodar:** rodar a bateria com `-nullrhi` e sem, e com
 `-ForceLogFlush`, para separar pressão de memória de corrida no carregamento.
+
+### L-043: MEDIÇÃO CONCORRENTE NÃO É MEDIÇÃO
+
+**Descoberto:** 02/09/2026, ao fechar biologia e itens.
+
+Rodei compilações em paralelo com a bateria para "ganhar tempo". O que ganhei
+foram **três medições falsas**, cada uma disfarçada de coisa diferente:
+
+| o que apareceu | o que era |
+|---|---|
+| `Conduction.StopsAtDryGround` falhou | erro de I/O no `CachedAssetRegistry`, atribuído ao teste que corria na hora |
+| teste isolado deu `0 sucessos 0 falhas` | **não rodou** — e "zero falhas" lê-se como aprovação |
+| `ReachesTheBattle` falhou depois de corrigido | a bateria rodou o binário ANTERIOR à correção |
+
+**O `0/0/0` é o mais perigoso dos três.** Ele tem a mesma forma de um sucesso, e
+eu quase o li assim. Falha de infraestrutura que se explica sozinha bem demais é
+justamente a que esconde uma falha de verdade.
+
+**E ela me pegou mais DUAS vezes depois de eu tê-la escrito.** Corrigi o defeito
+real (o tipo invertido, L-044), e o teste continuou reprovando em duas medições
+seguidas — porque as duas rodaram binário anterior à correção. Na segunda eu já
+tinha abandonado a explicação certa e ido atrás de "contaminação entre testes",
+que era falsa. O teste passou de primeira assim que rodou no binário certo.
+
+**A lição não é "não rode em paralelo". É que a contagem de um teste NÃO DIZ DE
+QUE BUILD ELA VEIO**, e sem esse dado toda conclusão é sobre o passado. Um
+resultado sem procedência não é medição — é lembrança.
+
+**Regra:** bateria e build **não correm juntos**. Esperar ficar ocioso
+(`pgrep -f "UnrealBuildTool|UnrealEditor-Cmd"`) antes de medir, e **encadear no
+mesmo comando** (`build && testes`) em vez de disparar os dois e torcer. Se um
+teste falha depois de um conserto que deveria resolvê-lo, a PRIMEIRA hipótese é
+binário defasado — não uma causa nova.
+
+### L-044: O TIPO É `Escola/Elemento`, e o inverso falha CALADO no lugar errado
+
+Escrevi `Agua/Fisica` em dois testes novos. O `Parse` não acha o elemento, o
+bloco inteiro de resistência é **pulado**, e os dois lados da comparação dão
+zero — então o teste reprova dizendo **"a bota não faz diferença na lava"**, que
+é verdade e não é o defeito.
+
+O que apontou a causa foi um `else AddError` que eu tinha escrito por outro
+motivo (caso o catálogo mudasse): `o elemento do tipo de teste sumiu do
+catalogo`. **Sem ele, eu teria ido procurar o defeito na composição, que estava
+certa.**
+
+Lição além do caso: quando um teste depende de um dado ser ENCONTRADO, afirmar
+que ele foi encontrado custa duas linhas e aponta a causa de erros que ainda
+nem existem.

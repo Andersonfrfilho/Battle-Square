@@ -352,6 +352,28 @@ private:
 	void AplicarChaoMolhado(const APawn* Jogador, EWaterFooting Chao,
 		const FVector2D& Fluxo, int32 ForcaPorMil);
 
+public:
+	/**
+	 * PÕE um item na mochila do jogador. Ferramenta de desenvolvimento.
+	 *
+	 * Existe porque não há loja, espólio nem recompensa ainda, e sem uma
+	 * maneira de conseguir um item a mochila seria um sistema que ninguém
+	 * consegue exercitar — testes verdes sobre um eixo que o jogador não
+	 * alcança, que é exatamente o defeito que a invariante 11 nomeia.
+	 */
+	bool GiveItem(const FString& ItemId, int32 Quantity);
+
+	/** VESTE no pet do jogador, tirando da mochila. */
+	bool EquipItemOnOwnedPet(const FString& ItemId);
+
+	/** TIRA e devolve à mochila. */
+	bool UnequipItemFromOwnedPet(const FString& ItemId);
+
+	/** USA um consumível da mochila. */
+	bool UseItem(const FString& ItemId);
+
+private:
+
 	/** A altura de repouso do mar, para a onda subir DE algum lugar. */
 	float AguaEmRepousoZ = 0.0f;
 

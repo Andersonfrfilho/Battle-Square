@@ -3,6 +3,8 @@
 #include "Data/BattleDataTranslator.h"
 
 #include "Balance/PetTypeCatalog.h"
+#include "Balance/PetBiologyCatalog.h"
+#include "Balance/ItemCatalog.h"
 #include "Battle/FluidRegistry.h"
 #include "Balance/PetTypeIdentity.h"
 
@@ -75,6 +77,23 @@ void FBattleDataTranslator::TranslatePet(
 	FPetState& OutBattleState,
 	FPetPresentationInfo& OutPresentation)
 {
+	// DELEGA, e não repete: dois corpos de tradução concordariam até a
+	// primeira edição, e a divergência apareceria como um pet que joga
+	// diferente conforme quem o montou.
+	TranslatePetWithItems(Source, TArray<FString>(), PetId, Side, Column, Row,
+		OutBattleState, OutPresentation);
+}
+
+void FBattleDataTranslator::TranslatePetWithItems(
+	const FLoadedPetRecord& Source,
+	const TArray<FString>& EquippedItemIds,
+	uint8 PetId,
+	uint8 Side,
+	uint8 Column,
+	uint8 Row,
+	FPetState& OutBattleState,
+	FPetPresentationInfo& OutPresentation)
+{
 	// attack/defense/speed/maxHealth: cópia direta, sem conversão — já
 	// chegam inteiros do backend (T18, tasks.md).
 	OutBattleState = FPetState();
@@ -111,6 +130,9 @@ void FBattleDataTranslator::TranslatePet(
 	OutPresentation.PetId = PetId;
 	OutPresentation.Name = Source.Name;
 	OutPresentation.Type = Source.Type;
+	// A biologia acompanha o tipo: quem guarda a coleção precisa do NOME dos
+	// eixos, e ele não se recupera do número já composto que o núcleo recebeu.
+	OutPresentation.Biology = Source.Biology;
 	OutPresentation.CatalogId = Source.Id;
 
 	// "type" NUNCA entra em FPetState — vira FGameplayTag só aqui, na
@@ -150,11 +172,29 @@ void FBattleDataTranslator::TranslatePet(
 	// sistema seja uma linha e não uma descoberta.
 	{
 		const FPetTypeIdentity ParaResistir = FPetTypeIdentity::Parse(Source.Type);
+		const FPetBiologyCatalog& Biologia = FPetBiologyCatalog::Get();
+
 		if (const FPetElementDefinition* Dele =
 			FPetTypeCatalog::Get().FindElement(ParaResistir.Element))
 		{
-			// A FIRMEZA contra a corrente, do mesmo lugar e pela mesma razão.
-			OutBattleState.FootingPerMille = Dele->FootingPerMille;
+			// A FIRMEZA contra a corrente: o elemento dá a base, a biologia
+			// SOMA. Sem a soma, dois pets do mesmo elemento se firmariam
+			// igual, e a anatomia seria o elemento com outro nome — que é
+			// exatamente o que esta tarefa existe para não ser.
+			// A FIRMEZA: elemento, biologia e ITEM, na mesma soma. O grampo de
+			// rocha existe para provar que o item mexe aqui e não só na
+			// resistência.
+			int32 FirmezaDosItens = 0;
+			for (const FString& QualItem : EquippedItemIds)
+			{
+				if (const FItemDefinition* Vestido = FItemCatalog::Get().Find(QualItem))
+				{
+					FirmezaDosItens += Vestido->FootingPerMille;
+				}
+			}
+
+			OutBattleState.FootingPerMille = Dele->FootingPerMille
+				+ Biologia.FootingFor(Source.Biology) + FirmezaDosItens;
 
 			for (int32 Qual = 1; Qual < static_cast<int32>(EFluidKind::Count); ++Qual)
 			{
@@ -167,8 +207,28 @@ void FBattleDataTranslator::TranslatePet(
 				// diferença de caixa não separa: `FString` no Unreal compara
 				// sem diferenciar maiúscula, e o teste confirma que
 				// `"Lava"` no JSON acha `"lava"` do registro.)
+				const FString NomeDoFluido = FluidRegistry::TraitsOf(Fluido).DebugName;
+
+				// O TERCEIRO ARGUMENTO DEIXA DE SER ZERO, e esta é a linha
+				// inteira para a qual `ComposeFluidResist` foi escrita com o
+				// argumento do item e com prova por valor injetado: para que
+				// este dia fosse uma linha, e não uma descoberta.
+				int32 DosItens = 0;
+				for (const FString& QualItem : EquippedItemIds)
+				{
+					if (const FItemDefinition* Vestido = FItemCatalog::Get().Find(QualItem))
+					{
+						if (const int32* Quanto = Vestido->FluidResists.Find(NomeDoFluido))
+						{
+							DosItens += *Quanto;
+						}
+					}
+				}
+
 				OutBattleState.SetResistPercentFor(Fluido,
-					ComposeFluidResist(DoTraco ? *DoTraco : 0, /*FromItem=*/0));
+					ComposeFluidResist(DoTraco ? *DoTraco : 0,
+						Biologia.ResistFor(Source.Biology, NomeDoFluido),
+						DosItens));
 			}
 		}
 	}
@@ -237,7 +297,7 @@ void FBattleDataTranslator::TranslatePet(
 
 }
 
-int32 FBattleDataTranslator::ComposeFluidResist(int32 DoTraco, int32 DoItem)
+int32 FBattleDataTranslator::ComposeFluidResist(int32 DoTraco, int32 DaBiologia, int32 DoItem)
 {
 	// SOMA, e não o maior dos dois: o item ACRESCENTA ao que a criatura já é.
 	// Tomar o maior faria uma bota de lava não valer nada num pet de Fogo, que
@@ -251,7 +311,11 @@ int32 FBattleDataTranslator::ComposeFluidResist(int32 DoTraco, int32 DoItem)
 	// O ITEM, não: ele só acrescenta. Item que ENFRAQUECE é maldição, e
 	// maldição é outra mecânica — com outra narração e outra forma de sair
 	// dela. Um item mal cadastrado não pode virar uma por acidente.
-	return FMath::Clamp(DoTraco + FMath::Max(DoItem, 0), -100, 100);
+	//
+	// A BIOLOGIA pode ser negativa, como o traço: pelo encharca, e uma biologia
+	// que só somasse bônus seria uma lista de vantagens em vez de um eixo. Sem
+	// custo, todo pet escolheria a mesma pele.
+	return FMath::Clamp(DoTraco + DaBiologia + FMath::Max(DoItem, 0), -100, 100);
 }
 
 void FBattleDataTranslator::TranslateMatchup(
@@ -265,12 +329,34 @@ void FBattleDataTranslator::TranslateMatchup(
 	FPetState& OutRightState,
 	FPetPresentationInfo& OutRightPresentation)
 {
+	// DELEGA: dois corpos de montagem concordariam até a primeira edição, e a
+	// divergência apareceria como uma batalha que resolve diferente conforme
+	// quem a montou — o defeito mais caro de achar que existe.
+	TranslateMatchupWithItems(LeftSource, TArray<FString>(),
+		RightSource, TArray<FString>(), EffectivenessTable,
+		LeftPetId, RightPetId,
+		OutLeftState, OutLeftPresentation, OutRightState, OutRightPresentation);
+}
+
+void FBattleDataTranslator::TranslateMatchupWithItems(
+	const FLoadedPetRecord& LeftSource,
+	const TArray<FString>& LeftItemIds,
+	const FLoadedPetRecord& RightSource,
+	const TArray<FString>& RightItemIds,
+	const FTypeEffectivenessTable& EffectivenessTable,
+	uint8 LeftPetId,
+	uint8 RightPetId,
+	FPetState& OutLeftState,
+	FPetPresentationInfo& OutLeftPresentation,
+	FPetState& OutRightState,
+	FPetPresentationInfo& OutRightPresentation)
+{
 	// Casa de saída PROVISÓRIA. Quem decide de verdade é
 	// FBattleState::PlaceDuelistsAtStartingCells, depois de os pets
 	// entrarem no estado: só lá se sabe o tamanho da grade, e a casa
 	// inicial de um campo 4x6 não é a de um 3x3.
-	TranslatePet(LeftSource, LeftPetId, /*Side=*/0, /*Column=*/0, /*Row=*/0, OutLeftState, OutLeftPresentation);
-	TranslatePet(RightSource, RightPetId, /*Side=*/1, /*Column=*/0, /*Row=*/0, OutRightState, OutRightPresentation);
+	TranslatePetWithItems(LeftSource, LeftItemIds, LeftPetId, /*Side=*/0, /*Column=*/0, /*Row=*/0, OutLeftState, OutLeftPresentation);
+	TranslatePetWithItems(RightSource, RightItemIds, RightPetId, /*Side=*/1, /*Column=*/0, /*Row=*/0, OutRightState, OutRightPresentation);
 
 	// Efetividade é sobre O ATAQUE do lado — o Attack do Left muda pela
 	// efetividade DO TIPO DO LEFT CONTRA O TIPO DO RIGHT, nunca o

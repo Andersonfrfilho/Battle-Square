@@ -48,6 +48,27 @@ namespace
 	 * continua guardado para remontar o payload — este parse é só para o jogo
 	 * usar os nomes.
 	 */
+	/**
+	 * A biologia do JSON canônico.
+	 *
+	 * Eixo ausente fica VAZIO, e vazio soma zero no catálogo: um cadastro que
+	 * só diz a pele não pode ganhar um porte inventado por omissão.
+	 */
+	void ParsePetBiology(const FString& Json, FPetBiology& OutBiology)
+	{
+		TSharedPtr<FJsonObject> Raiz;
+		const TSharedRef<TJsonReader<>> Leitor = TJsonReaderFactory<>::Create(Json);
+		if (!FJsonSerializer::Deserialize(Leitor, Raiz) || !Raiz.IsValid())
+		{
+			return;
+		}
+
+		Raiz->TryGetStringField(TEXT("skin"), OutBiology.Skin);
+		Raiz->TryGetStringField(TEXT("build"), OutBiology.Build);
+		Raiz->TryGetStringField(TEXT("breathing"), OutBiology.Breathing);
+		Raiz->TryGetStringField(TEXT("limbs"), OutBiology.Limbs);
+	}
+
 	void ParsePetMoves(const FString& Json, TArray<FLoadedPetMove>& OutMoves)
 	{
 		OutMoves.Reset();
@@ -116,6 +137,22 @@ namespace
 				*Record.Id, *Record.Name, *Record.Type,
 				Record.Attack, Record.Defense, Record.Speed, Record.MaxHealth,
 				*Record.UpdatedAt);
+		}
+
+		// A BIOLOGIA vem DEPOIS dos golpes, e SÓ quando o payload a trouxe.
+		//
+		// Um pet assinado antes desta feature não tem o campo, e acrescentar
+		// `"biology":{}` a ele mudaria o payload — invalidando a assinatura de
+		// um pet que existe e está correto. Ausente é ausente, não vazio.
+		if (!Record.BiologyCanonicalJson.IsEmpty())
+		{
+			return FString::Printf(
+				TEXT("{\"id\":\"%s\",\"name\":\"%s\",\"type\":\"%s\",\"attack\":%d,\"defense\":%d,\"speed\":%d,\"maxHealth\":%d,\"updatedAt\":\"%s\",\"moves\":%s,\"biology\":%s}"),
+				*Record.Id, *Record.Name, *Record.Type,
+				Record.Attack, Record.Defense, Record.Speed, Record.MaxHealth,
+				*Record.UpdatedAt,
+				Record.MovesCanonicalJson.IsEmpty() ? TEXT("[]") : *Record.MovesCanonicalJson,
+				*Record.BiologyCanonicalJson);
 		}
 
 		return FString::Printf(
@@ -216,10 +253,25 @@ bool FPetDataLoader::LoadVerifiedPets(
 	sqlite3_stmt* Statement = nullptr;
 	bool bMirrorHasMovesColumn = true;
 
+	// A BIOLOGIA ganha o MESMO degrau de tolerância que os golpes ganharam, e
+	// pelo mesmo motivo: o espelho cria a tabela com `IF NOT EXISTS`, então um
+	// já em uso não ganha a coluna sozinho. Recusar aqui deixaria o jogo sem
+	// pet nenhum por causa de um campo que ninguém tinha como ter.
+	bool bMirrorHasBiologyColumn = true;
+
+	const char* SelectWithBiology = "SELECT id, name, type, attack, defense, speed, maxHealth, updatedAt, moves, signature, biology FROM pets";
 	const char* SelectWithMoves = "SELECT id, name, type, attack, defense, speed, maxHealth, updatedAt, moves, signature FROM pets";
 	const char* SelectWithoutMoves = "SELECT id, name, type, attack, defense, speed, maxHealth, updatedAt, signature FROM pets";
 
-	if (sqlite3_prepare_v2(Database, SelectWithMoves, -1, &Statement, nullptr) != SQLITE_OK)
+	if (sqlite3_prepare_v2(Database, SelectWithBiology, -1, &Statement, nullptr) != SQLITE_OK)
+	{
+		bMirrorHasBiologyColumn = false;
+		UE_LOG(LogTemp, Display,
+			TEXT("PetDataLoader: espelho sem a coluna 'biology' — lendo no formato anterior à biologia"));
+	}
+
+	if (!bMirrorHasBiologyColumn
+		&& sqlite3_prepare_v2(Database, SelectWithMoves, -1, &Statement, nullptr) != SQLITE_OK)
 	{
 		bMirrorHasMovesColumn = false;
 		UE_LOG(LogTemp, Display,
@@ -256,6 +308,19 @@ bool FPetDataLoader::LoadVerifiedPets(
 			ParsePetMoves(Record.MovesCanonicalJson, Record.Moves);
 		}
 
+		if (bMirrorHasBiologyColumn)
+		{
+			// AUSENTE é ausente, não vazio: coluna nula deixa o canônico vazio,
+			// e o payload volta a ser o de antes da biologia — que é o que a
+			// assinatura daquele pet espera.
+			if (const unsigned char* BiologyText = sqlite3_column_text(Statement, 10))
+			{
+				Record.BiologyCanonicalJson =
+					UTF8_TO_TCHAR(reinterpret_cast<const char*>(BiologyText));
+				ParsePetBiology(Record.BiologyCanonicalJson, Record.Biology);
+			}
+		}
+
 		const int32 SignatureColumn = bMirrorHasMovesColumn ? 9 : 8;
 		const FString SignatureBase64 = UTF8_TO_TCHAR(reinterpret_cast<const char*>(sqlite3_column_text(Statement, SignatureColumn)));
 
@@ -270,9 +335,21 @@ bool FPetDataLoader::LoadVerifiedPets(
 		//
 		// A tolerância é de MIGRAÇÃO: quando todo pet tiver sido reassinado, o
 		// caminho antigo pode sair.
+		// TRÊS formatos canônicos agora: com biologia, com golpes, e o
+		// original. Um registro adulterado continua falhando nos três, porque
+		// forjar assinatura exige a chave privada — o que a tolerância faz é
+		// não descartar pets que foram assinados quando o campo não existia.
+		//
+		// A do meio é tentada sem a biologia mesmo quando ela veio: um pet com
+		// biologia atribuída depois, e ainda não reassinado, continua jogando.
+		FLoadedPetRecord SemBiologia = Record;
+		SemBiologia.BiologyCanonicalJson.Reset();
+
 		const bool bSignatureValid = bSignatureDecoded
 			&& (BattlePetCrypto::VerifyEd25519Signature(
 					BuildCanonicalPayload(Record, /*bIncludeMoves=*/true), SignatureBytes, Ed25519PublicKeyPem)
+				|| BattlePetCrypto::VerifyEd25519Signature(
+					BuildCanonicalPayload(SemBiologia, /*bIncludeMoves=*/true), SignatureBytes, Ed25519PublicKeyPem)
 				|| BattlePetCrypto::VerifyEd25519Signature(
 					BuildCanonicalPayload(Record, /*bIncludeMoves=*/false), SignatureBytes, Ed25519PublicKeyPem));
 

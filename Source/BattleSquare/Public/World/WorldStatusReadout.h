@@ -23,6 +23,17 @@ struct BATTLESQUARE_API FWorldStatusSnapshot
 
 	/** Negativo quando não há nenhum inimigo de quem medir distância. */
 	float DistanceToNearestUnits = -1.0f;
+
+	/**
+	 * O que o pet do jogador está VESTINDO, pelo nome que se lê.
+	 *
+	 * Nomes, e não ids: `bota_de_lava` é o que o save guarda, e mostrá-lo na
+	 * tela seria vazar a chave interna para quem joga.
+	 */
+	TArray<FString> EquippedItemNames;
+
+	/** O que há na MOCHILA, já como "Nome ×3". */
+	TArray<FString> BackpackLines;
 };
 
 /**

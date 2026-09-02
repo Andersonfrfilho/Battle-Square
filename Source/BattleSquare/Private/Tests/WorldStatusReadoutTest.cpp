@@ -130,3 +130,73 @@ bool FWorldReadoutNeverFakesZeroDistanceTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+// ---------------------------------------------------------------------------
+// I6 e B1 na tela — e o contrapeso que decide: a linha SOME quando não há nada.
+//
+// Item que ninguém vê é item que ninguém equipa. Mas uma linha fixa dizendo
+// "nada equipado" ensinaria a ignorá-la justo no dia em que ela passasse a ter
+// conteúdo — e o painel tem teto de 12 linhas, então cada linha inútil empurra
+// para fora uma que importa.
+// ---------------------------------------------------------------------------
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FWorldReadoutShowsItemsAndBiologyTest,
+	"BattleSquare.World.Readout.ShowsItemsAndBiology",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FWorldReadoutShowsItemsAndBiologyTest::RunTest(const FString& Parameters)
+{
+	FWorldStatusSnapshot Retrato = RetratoComPet(10, 3);
+	Retrato.OwnedPet.BiologySkin = TEXT("escamosa");
+	Retrato.OwnedPet.BiologyBuild = TEXT("corpulento");
+	Retrato.EquippedItemNames.Add(TEXT("Bota de lava"));
+	Retrato.BackpackLines.Add(TEXT("Unguento termal x3"));
+
+	const TArray<FWorldStatusLine> Linhas = FWorldStatusReadout::Build(Retrato);
+
+	TestTrue(TEXT("a biologia aparece"), AlgumaLinhaContem(Linhas, TEXT("escamosa")));
+	TestTrue(TEXT("os DOIS eixos informados aparecem"),
+		AlgumaLinhaContem(Linhas, TEXT("corpulento")));
+	TestTrue(TEXT("o que ele veste aparece"),
+		AlgumaLinhaContem(Linhas, TEXT("Bota de lava")));
+	TestTrue(TEXT("a mochila aparece com a quantidade"),
+		AlgumaLinhaContem(Linhas, TEXT("Unguento termal x3")));
+
+	// PELO NOME, nunca pelo id: `bota_de_lava` é chave interna, e vê-la na tela
+	// é o cadastro vazando para quem joga.
+	TestTrue(TEXT("e NUNCA pelo id interno"),
+		!AlgumaLinhaContem(Linhas, TEXT("bota_de_lava")));
+
+	return true;
+}
+
+// CONTRAPESO — sem item e sem biologia, NENHUMA das linhas aparece.
+//
+// Sem este teste, uma implementação que sempre desenhasse as três linhas
+// passaria no de cima, e o painel de um pet recém-capturado nasceria com três
+// linhas vazias empurrando os adversários para fora da tela.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FWorldReadoutHidesEmptyItemLinesTest,
+	"BattleSquare.World.Readout.HidesEmptyItemLines",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FWorldReadoutHidesEmptyItemLinesTest::RunTest(const FString& Parameters)
+{
+	const FWorldStatusSnapshot Retrato = RetratoComPet(10, 3);
+	const TArray<FWorldStatusLine> Linhas = FWorldStatusReadout::Build(Retrato);
+
+	TestTrue(TEXT("sem biologia, nao ha linha de biologia"),
+		!AlgumaLinhaContem(Linhas, TEXT("biologia:")));
+	TestTrue(TEXT("sem item vestido, nao ha linha de vestindo"),
+		!AlgumaLinhaContem(Linhas, TEXT("vestindo:")));
+	TestTrue(TEXT("sem mochila, nao ha linha de mochila"),
+		!AlgumaLinhaContem(Linhas, TEXT("mochila:")));
+
+	// E o painel continua dizendo o que sempre disse: o contrapeso não pode
+	// virar "não mostra nada".
+	TestTrue(TEXT("mas o pet continua aparecendo"),
+		AlgumaLinhaContem(Linhas, TEXT("Faísca")));
+
+	return true;
+}

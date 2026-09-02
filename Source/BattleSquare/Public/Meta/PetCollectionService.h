@@ -53,4 +53,18 @@ public:
 	static FWorldMapPins LoadMapPins(const FString& SlotName);
 
 	static void SaveMapPins(const FString& SlotName, const FWorldMapPins& Pins);
+
+	/**
+	 * A MOCHILA e o que está vestido — carregados e gravados JUNTOS.
+	 *
+	 * Juntos porque são dois estados do MESMO item: equipar tira de um e põe
+	 * no outro. Gravar um sem o outro deixaria uma bota vestida que não saiu
+	 * da mochila, ou uma que saiu e não vestiu ninguém — e o total, que é o
+	 * invariante da feature, deixaria de bater.
+	 */
+	static void LoadBackpack(const FString& SlotName,
+		TArray<FBackpackStack>& OutBackpack, TArray<FEquippedItem>& OutEquipped);
+
+	static void SaveBackpack(const FString& SlotName,
+		const TArray<FBackpackStack>& Backpack, const TArray<FEquippedItem>& Equipped);
 };

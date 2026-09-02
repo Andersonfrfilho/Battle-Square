@@ -9,6 +9,7 @@
 #include "Misc/Paths.h"
 #include "Balance/TypeEffectivenessTable.h"
 #include "Net/BattleSquareGameMode.h"
+#include "Meta/PetCollectionService.h"
 #include "Misc/DateTime.h"
 
 namespace
@@ -52,7 +53,33 @@ bool FEncounterMatchAssembler::AssembleFromEncounter(const FEncounterMatchParams
 			TEXT("EncounterMatchAssembler: tabela de efetividade nao carregou — combate neutro"));
 	}
 
-	FBattleDataTranslator::TranslateMatchup(*PlayerRecord, *EncounterRecord, Efetividade,
+	// OS ITENS DO JOGADOR ENTRAM NA BATALHA.
+	//
+	// Sem esta leitura, o sistema inteiro seria uma soma que ninguém pede: a
+	// bota de lava existiria no save, apareceria no painel, e o pet entraria
+	// no combate descalço. É a invariante 11 — regra sem chamador em produção
+	// é regra que não existe —, e ela custou uma feature inteira de testes
+	// verdes antes de virar invariante.
+	//
+	// O ENCONTRO não veste nada: ele é um pet selvagem, e dar-lhe equipamento
+	// exigiria um sistema de espólio que ninguém pediu. Lista vazia é
+	// exatamente isso, e não uma omissão.
+	TArray<FBackpackStack> Mochila;
+	TArray<FEquippedItem> Vestidos;
+	FPetCollectionService::LoadBackpack(Params.PetCollectionSlotName, Mochila, Vestidos);
+
+	TArray<FString> ItensDoJogador;
+	for (const FEquippedItem& Vestido : Vestidos)
+	{
+		if (Vestido.PetCatalogId.Equals(PlayerRecord->Id, ESearchCase::IgnoreCase))
+		{
+			ItensDoJogador.Add(Vestido.ItemId);
+		}
+	}
+
+	FBattleDataTranslator::TranslateMatchupWithItems(
+		*PlayerRecord, ItensDoJogador,
+		*EncounterRecord, TArray<FString>(), Efetividade,
 		/*LeftPetId=*/1, /*RightPetId=*/2,
 		PlayerPet, PlayerPresentation, EncounterPet, EncounterPresentation);
 

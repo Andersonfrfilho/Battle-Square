@@ -1,0 +1,32 @@
+{
+ "_comment": "Os ITENS. Cada um tem uma NATUREZA: 'equipamento' age enquanto vestido, 'consumivel' age uma vez e a quantidade cai. O cadastro diz qual — nao ha adivinhacao por nome. Resistencia e firmeza somam na MESMA conta da biologia e do elemento, em ComposeFluidResist.",
+ "_comment_o_catalogo_e_pequeno_de_proposito": "Nasce com o que PROVA a regra, e nao com um mundo inteiro de itens. A bota de lava e o aceite escrito da tarefa; os outros dois cobrem o consumivel e a firmeza. Que itens o jogo tera de verdade e decisao do dono, e sera perguntado.",
+ "_comment_numeros": "Balanceamento, e portanto do dono. O item so SOMA — negativo e ignorado, porque item que enfraquece e maldicao, e maldicao e outra mecanica, com outra narracao e outra forma de sair dela.",
+
+ "itens": [
+  {
+   "id": "bota_de_lava",
+   "nome": "Bota de lava",
+   "natureza": "equipamento",
+   "_por_que": "o aceite da tarefa: o MESMO pet atravessa a lava com ela e nao atravessa sem",
+   "resiste": { "lava": 60 },
+   "firmeza": 0
+  },
+  {
+   "id": "grampo_de_rocha",
+   "nome": "Grampo de rocha",
+   "natureza": "equipamento",
+   "_por_que": "prova que o item mexe na FIRMEZA, e nao so na resistencia",
+   "resiste": {},
+   "firmeza": 250
+  },
+  {
+   "id": "unguento_termal",
+   "nome": "Unguento termal",
+   "natureza": "consumivel",
+   "_por_que": "prova o gasto: usar duas vezes com quantidade 1 falha na segunda",
+   "resiste": { "agua termal": 50 },
+   "firmeza": 0
+  }
+ ]
+}

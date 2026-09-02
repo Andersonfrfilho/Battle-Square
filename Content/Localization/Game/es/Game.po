@@ -4,8 +4,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Game\n"
-"POT-Creation-Date: 2026-09-02 20:40\n"
-"PO-Revision-Date: 2026-09-02 20:40\n"
+"POT-Creation-Date: 2026-09-02 21:06\n"
+"PO-Revision-Date: 2026-09-02 21:06\n"
 "Language-Team: \n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
@@ -161,36 +161,36 @@ msgid "Ações: 0 de 3 — escolha o tipo"
 msgstr ""
 
 #. Key:	AtributoSubiu
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1711)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1711)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1720)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1720)
 msgctxt "PetAttributes,AtributoSubiu"
 msgid "{Pet}: {Atributo} {Antes} → {Depois}"
 msgstr ""
 
 #. Key:	GolpeDesbloqueado
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1744)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1744)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1753)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1753)
 msgctxt "PetAttributes,GolpeDesbloqueado"
 msgid "{Pet} desbloqueou {Golpe}!"
 msgstr ""
 
 #. Key:	GolpeUsado
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2409)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2409)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2418)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2418)
 msgctxt "BattleNarration,GolpeUsado"
 msgid "— usou {Move}"
 msgstr ""
 
 #. Key:	SuperEfetivo
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2422)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2422)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2431)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2431)
 msgctxt "BattleNarration,SuperEfetivo"
 msgid "É super efetivo!"
 msgstr ""
 
 #. Key:	PoucoEfetivo
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2428)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2428)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2437)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2437)
 msgctxt "BattleNarration,PoucoEfetivo"
 msgid "Não é muito efetivo..."
 msgstr ""
@@ -839,6 +839,34 @@ msgctxt "MapaDoMundo,LegendaEscuro"
 msgid "o escuro é o que você ainda não viu"
 msgstr ""
 
+#. Key:	SuaMochila
+#. SourceLocation:	Source/BattleSquare/Private/World/WorldStatusReadout.cpp(103)
+#: Source/BattleSquare/Private/World/WorldStatusReadout.cpp(103)
+msgctxt "WorldStatus,SuaMochila"
+msgid "mochila: {Itens}"
+msgstr ""
+
+#. Key:	MundoVazio
+#. SourceLocation:	Source/BattleSquare/Private/World/WorldStatusReadout.cpp(112)
+#: Source/BattleSquare/Private/World/WorldStatusReadout.cpp(112)
+msgctxt "WorldStatus,MundoVazio"
+msgid "Nenhum adversário por perto"
+msgstr ""
+
+#. Key:	AdversariosSemDistancia
+#. SourceLocation:	Source/BattleSquare/Private/World/WorldStatusReadout.cpp(121)
+#: Source/BattleSquare/Private/World/WorldStatusReadout.cpp(121)
+msgctxt "WorldStatus,AdversariosSemDistancia"
+msgid "{Quantos} adversário(s) no mundo"
+msgstr ""
+
+#. Key:	Adversarios
+#. SourceLocation:	Source/BattleSquare/Private/World/WorldStatusReadout.cpp(131)
+#: Source/BattleSquare/Private/World/WorldStatusReadout.cpp(131)
+msgctxt "WorldStatus,Adversarios"
+msgid "{Quantos} adversário(s) — o mais perto a {Metros} m"
+msgstr ""
+
 #. Key:	SemPet
 #. SourceLocation:	Source/BattleSquare/Private/World/WorldStatusReadout.cpp(29)
 #: Source/BattleSquare/Private/World/WorldStatusReadout.cpp(29)
@@ -860,24 +888,17 @@ msgctxt "WorldStatus,SeusAtributos"
 msgid "{Musculatura} {ValorMusculatura} · {Personalidade} {ValorPersonalidade} · {Camuflagem} {ValorCamuflagem} · {Voo} {ValorVoo} · {Subsolo} {ValorSubsolo}"
 msgstr ""
 
-#. Key:	MundoVazio
-#. SourceLocation:	Source/BattleSquare/Private/World/WorldStatusReadout.cpp(63)
-#: Source/BattleSquare/Private/World/WorldStatusReadout.cpp(63)
-msgctxt "WorldStatus,MundoVazio"
-msgid "Nenhum adversário por perto"
+#. Key:	SuaBiologia
+#. SourceLocation:	Source/BattleSquare/Private/World/WorldStatusReadout.cpp(77)
+#: Source/BattleSquare/Private/World/WorldStatusReadout.cpp(77)
+msgctxt "WorldStatus,SuaBiologia"
+msgid "biologia: {Eixos}"
 msgstr ""
 
-#. Key:	AdversariosSemDistancia
-#. SourceLocation:	Source/BattleSquare/Private/World/WorldStatusReadout.cpp(72)
-#: Source/BattleSquare/Private/World/WorldStatusReadout.cpp(72)
-msgctxt "WorldStatus,AdversariosSemDistancia"
-msgid "{Quantos} adversário(s) no mundo"
-msgstr ""
-
-#. Key:	Adversarios
-#. SourceLocation:	Source/BattleSquare/Private/World/WorldStatusReadout.cpp(82)
-#: Source/BattleSquare/Private/World/WorldStatusReadout.cpp(82)
-msgctxt "WorldStatus,Adversarios"
-msgid "{Quantos} adversário(s) — o mais perto a {Metros} m"
+#. Key:	SeusItens
+#. SourceLocation:	Source/BattleSquare/Private/World/WorldStatusReadout.cpp(93)
+#: Source/BattleSquare/Private/World/WorldStatusReadout.cpp(93)
+msgctxt "WorldStatus,SeusItens"
+msgid "vestindo: {Itens}"
 msgstr ""
 

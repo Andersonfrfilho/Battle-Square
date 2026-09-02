@@ -56,6 +56,8 @@
 #include "World/CrossingMesh.h"
 #include "World/FerryActor.h"
 #include "World/RiverMesh.h"
+#include "Meta/BackpackService.h"
+#include "Balance/ItemCatalog.h"
 #include "World/WaterFooting.h"
 #include "World/TerrainMesh.h"
 #include "World/TrailMesh.h"
@@ -1509,6 +1511,48 @@ void ABattleSquareGameMode::RefreshWorldStatus()
 		? MenorDistancia
 		: -1.0f;
 
+	// OS ITENS: o que o pet veste e o que há na mochila.
+	//
+	// Lidos do save AQUI, e não dentro do readout: o readout é puro — recebe um
+	// retrato e devolve texto —, e é isso que lhe dá teste sem abrir o editor.
+	// Fazê-lo ler save trocaria essa prova por uma que precisa de disco.
+	if (Retrato.bHasOwnedPet)
+	{
+		TArray<FBackpackStack> Mochila;
+		TArray<FEquippedItem> Vestidos;
+		FPetCollectionService::LoadBackpack(PetCollectionSlotName, Mochila, Vestidos);
+
+		{
+			for (const FEquippedItem& Vestido : Vestidos)
+			{
+				if (!Vestido.PetCatalogId.Equals(Retrato.OwnedPet.CatalogId,
+					ESearchCase::IgnoreCase))
+				{
+					continue;
+				}
+
+				const FString& Qual = Vestido.ItemId;
+				const FItemDefinition* Definicao = FItemCatalog::Get().Find(Qual);
+
+				// Nome, e não id: `bota_de_lava` é chave interna, e mostrá-la
+				// vazaria o cadastro para quem joga. Item sem cadastro aparece
+				// pelo id mesmo — some-lo esconderia do jogador um item que
+				// ele de fato está vestindo.
+				Retrato.EquippedItemNames.Add(
+					(Definicao && !Definicao->Name.IsEmpty()) ? Definicao->Name : Qual);
+			}
+
+			for (const FBackpackStack& Pilha : Mochila)
+			{
+				const FItemDefinition* Definicao = FItemCatalog::Get().Find(Pilha.ItemId);
+				Retrato.BackpackLines.Add(FString::Printf(TEXT("%s x%d"),
+					(Definicao && !Definicao->Name.IsEmpty())
+						? *Definicao->Name : *Pilha.ItemId,
+					Pilha.Quantity));
+			}
+		}
+	}
+
 	// Chaves FIXAS e consecutivas: a linha se reescreve no lugar em vez de
 	// empilhar. Empilhando, o painel encheria sozinho em segundos e engoliria
 	// tudo o que a batalha tem a dizer.
@@ -2340,6 +2384,131 @@ void ABattleSquareGameMode::MaintainEncounterPopulation()
 // A especialidade é DELIBERADA: nada nela acontece por estar parado no lugar.
 // Fora do Shipping por compilação, como o resto das ferramentas de
 // desenvolvimento — quando houver barra no mundo, o botão substitui isto.
+namespace
+{
+	/**
+	 * Carrega, muta e grava a mochila em UMA passada.
+	 *
+	 * As duas metades — o que está guardado e o que está vestido — andam
+	 * juntas: equipar tira de uma e põe na outra. Ler uma, gravar, e depois
+	 * ler a outra deixaria uma bota vestida que não saiu da mochila.
+	 */
+	bool MexerNaMochila(const FString& Slot,
+		TFunctionRef<bool(UPetCollectionSaveGame&)> Mudanca)
+	{
+		UPetCollectionSaveGame* Save = NewObject<UPetCollectionSaveGame>();
+		FPetCollectionService::LoadBackpack(Slot, Save->Backpack, Save->Equipped);
+
+		if (!Mudanca(*Save))
+		{
+			// Recusa NÃO GRAVA. Gravar assim mesmo persistiria um estado que a
+			// regra acabou de rejeitar, e o jogador veria a recusa na tela com
+			// o save já mudado.
+			return false;
+		}
+
+		FPetCollectionService::SaveBackpack(Slot, Save->Backpack, Save->Equipped);
+		return true;
+	}
+}
+
+bool ABattleSquareGameMode::GiveItem(const FString& ItemId, int32 Quantity)
+{
+	const FItemDefinition* Definicao = FItemCatalog::Get().Find(ItemId);
+	if (!Definicao)
+	{
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("item desconhecido: %s"), *ItemId),
+			6.0f, FColor::Red, /*Key=*/-1);
+		return false;
+	}
+
+	const bool bDeu = MexerNaMochila(PetCollectionSlotName,
+		[&ItemId, Quantity](UPetCollectionSaveGame& Save)
+		{
+			FBackpackService::Add(&Save, ItemId, Quantity);
+			return true;
+		});
+
+	if (bDeu)
+	{
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("+%d %s na mochila"), Quantity, *Definicao->Name),
+			6.0f, FColor::Green, /*Key=*/-1);
+	}
+
+	return bDeu;
+}
+
+bool ABattleSquareGameMode::EquipItemOnOwnedPet(const FString& ItemId)
+{
+	if (!bHasCachedOwnedPet)
+	{
+		FBattleDebugScreen::Show(TEXT("voce ainda nao tem pet para vestir"),
+			6.0f, FColor::Red, /*Key=*/-1);
+		return false;
+	}
+
+	const FString DoPet = CachedOwnedPet.CatalogId;
+	const bool bVestiu = MexerNaMochila(PetCollectionSlotName,
+		[&ItemId, &DoPet](UPetCollectionSaveGame& Save)
+		{
+			return FBackpackService::Equip(&Save, DoPet, ItemId);
+		});
+
+	// A RECUSA APARECE, e diz o motivo provável. Falhar calado faria o jogador
+	// clicar de novo achando que o clique não pegou.
+	FBattleDebugScreen::Show(
+		bVestiu
+			? FString::Printf(TEXT("vestiu %s"), *ItemId)
+			: FString::Printf(TEXT("nao vestiu %s — sem o item, ou sem slot livre"), *ItemId),
+		6.0f, bVestiu ? FColor::Green : FColor::Orange, /*Key=*/-1);
+
+	return bVestiu;
+}
+
+bool ABattleSquareGameMode::UnequipItemFromOwnedPet(const FString& ItemId)
+{
+	if (!bHasCachedOwnedPet)
+	{
+		return false;
+	}
+
+	const FString DoPet = CachedOwnedPet.CatalogId;
+	const bool bTirou = MexerNaMochila(PetCollectionSlotName,
+		[&ItemId, &DoPet](UPetCollectionSaveGame& Save)
+		{
+			return FBackpackService::Unequip(&Save, DoPet, ItemId);
+		});
+
+	FBattleDebugScreen::Show(
+		bTirou
+			? FString::Printf(TEXT("tirou %s — voltou para a mochila"), *ItemId)
+			: FString::Printf(TEXT("o pet nao veste %s"), *ItemId),
+		6.0f, bTirou ? FColor::Green : FColor::Orange, /*Key=*/-1);
+
+	return bTirou;
+}
+
+bool ABattleSquareGameMode::UseItem(const FString& ItemId)
+{
+	const bool bUsou = MexerNaMochila(PetCollectionSlotName,
+		[&ItemId](UPetCollectionSaveGame& Save)
+		{
+			return FBackpackService::Consume(&Save, ItemId);
+		});
+
+	// A FALHA APARECE, e este é o aceite da I5: gastar em silêncio um item que
+	// não existe é o jogador achando que usou.
+	FBattleDebugScreen::Show(
+		bUsou
+			? FString::Printf(TEXT("usou %s"), *ItemId)
+			: FString::Printf(TEXT("nao usou %s — nao tem, ou nao e consumivel"), *ItemId),
+		6.0f, bUsou ? FColor::Green : FColor::Orange, /*Key=*/-1);
+
+	return bUsou;
+}
+
 #if !UE_BUILD_SHIPPING
 namespace
 {
@@ -2428,6 +2597,68 @@ namespace
 					World ? World->GetAuthGameMode<ABattleSquareGameMode>() : nullptr)
 				{
 					GameMode->LearnSpecialtyOfCurrentField();
+				}
+			}));
+
+	// OS ITENS pelo console. É o caminho que existe hoje: não há loja, espólio
+	// nem recompensa, e sem uma maneira de conseguir um item a mochila seria um
+	// sistema que ninguém consegue exercitar.
+	FAutoConsoleCommandWithWorldAndArgs GDarItemCommand(
+		TEXT("bs.DarItem"),
+		TEXT("bs.DarItem <id> [quantos] — põe o item na sua mochila."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(
+			[](const TArray<FString>& Args, UWorld* World)
+			{
+				ABattleSquareGameMode* GameMode =
+					World ? World->GetAuthGameMode<ABattleSquareGameMode>() : nullptr;
+				if (GameMode && Args.Num() >= 1)
+				{
+					// Sem quantidade é UM. Zero seria um comando que não faz
+					// nada e não diz que não fez.
+					GameMode->GiveItem(Args[0],
+						Args.Num() >= 2 ? FMath::Max(1, FCString::Atoi(*Args[1])) : 1);
+				}
+			}));
+
+	FAutoConsoleCommandWithWorldAndArgs GVestirCommand(
+		TEXT("bs.Vestir"),
+		TEXT("bs.Vestir <id> — veste o item no seu pet, tirando-o da mochila."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(
+			[](const TArray<FString>& Args, UWorld* World)
+			{
+				ABattleSquareGameMode* GameMode =
+					World ? World->GetAuthGameMode<ABattleSquareGameMode>() : nullptr;
+				if (GameMode && Args.Num() >= 1)
+				{
+					GameMode->EquipItemOnOwnedPet(Args[0]);
+				}
+			}));
+
+	FAutoConsoleCommandWithWorldAndArgs GTirarCommand(
+		TEXT("bs.Tirar"),
+		TEXT("bs.Tirar <id> — tira o item e devolve à mochila."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(
+			[](const TArray<FString>& Args, UWorld* World)
+			{
+				ABattleSquareGameMode* GameMode =
+					World ? World->GetAuthGameMode<ABattleSquareGameMode>() : nullptr;
+				if (GameMode && Args.Num() >= 1)
+				{
+					GameMode->UnequipItemFromOwnedPet(Args[0]);
+				}
+			}));
+
+	FAutoConsoleCommandWithWorldAndArgs GUsarCommand(
+		TEXT("bs.Usar"),
+		TEXT("bs.Usar <id> — usa um consumível da mochila."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(
+			[](const TArray<FString>& Args, UWorld* World)
+			{
+				ABattleSquareGameMode* GameMode =
+					World ? World->GetAuthGameMode<ABattleSquareGameMode>() : nullptr;
+				if (GameMode && Args.Num() >= 1)
+				{
+					GameMode->UseItem(Args[0]);
 				}
 			}));
 }

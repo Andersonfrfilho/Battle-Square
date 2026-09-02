@@ -179,3 +179,38 @@ void FPetCollectionService::SaveMapPins(const FString& SlotName, const FWorldMap
 		Save.MapPins = Pins;
 	});
 }
+
+void FPetCollectionService::LoadBackpack(const FString& SlotName,
+	TArray<FBackpackStack>& OutBackpack, TArray<FEquippedItem>& OutEquipped)
+{
+	OutBackpack.Reset();
+	OutEquipped.Reset();
+
+	if (!UGameplayStatics::DoesSaveGameExist(SlotName, /*UserIndex=*/0))
+	{
+		return;
+	}
+
+	if (const UPetCollectionSaveGame* SaveGame = Cast<UPetCollectionSaveGame>(
+		UGameplayStatics::LoadGameFromSlot(SlotName, /*UserIndex=*/0)))
+	{
+		// Save gravado antes desta feature carrega com as duas listas VAZIAS,
+		// que é exatamente o estado de quem nunca pegou item nenhum — e não um
+		// erro que devesse impedir de jogar.
+		OutBackpack = SaveGame->Backpack;
+		OutEquipped = SaveGame->Equipped;
+	}
+}
+
+void FPetCollectionService::SaveBackpack(const FString& SlotName,
+	const TArray<FBackpackStack>& Backpack, const TArray<FEquippedItem>& Equipped)
+{
+	MutarSave(SlotName, [&Backpack, &Equipped](UPetCollectionSaveGame& Save)
+	{
+		// AS DUAS METADES NA MESMA GRAVAÇÃO. Gravar uma sem a outra deixaria
+		// uma bota vestida que não saiu da mochila, ou uma que saiu e não
+		// vestiu ninguém — e o total deixaria de bater.
+		Save.Backpack = Backpack;
+		Save.Equipped = Equipped;
+	});
+}

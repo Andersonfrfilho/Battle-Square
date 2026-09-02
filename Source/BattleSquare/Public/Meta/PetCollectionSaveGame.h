@@ -28,6 +28,26 @@ struct FOwnedPetInstance
 	UPROPERTY()
 	FString Type;
 
+	/**
+	 * A BIOLOGIA do pet, nos quatro eixos, como texto.
+	 *
+	 * VAZIO é pet de coleção antiga, e o save tem de continuar carregando: um
+	 * campo novo que invalidasse a coleção salva apagaria os pets de quem já
+	 * jogava. `UPROPERTY` ausente no arquivo antigo desserializa como vazio,
+	 * que é exatamente "não informado".
+	 */
+	UPROPERTY()
+	FString BiologySkin;
+
+	UPROPERTY()
+	FString BiologyBuild;
+
+	UPROPERTY()
+	FString BiologyBreathing;
+
+	UPROPERTY()
+	FString BiologyLimbs;
+
 	// Gancho para Níveis, Experiência e Evolução (próxima feature) — só
 	// existe aqui e é incrementado no caso P2 (vitória redundante);
 	// nenhuma lógica de nível/evolução nesta feature.
@@ -88,6 +108,46 @@ struct BATTLESQUARE_API FTrainerProfile
 	TArray<FString> Specialties;
 };
 
+/**
+ * Uma PILHA da mochila: um item, e quantos.
+ *
+ * A quantidade é da PILHA, não do item. Cinco poções são uma linha com
+ * `Quantity = 5`, e não cinco linhas — senão a mochila de quem junta coisa vira
+ * uma lista que não cabe na tela, e procurar um item nela deixa de ser
+ * possível.
+ */
+USTRUCT()
+struct BATTLESQUARE_API FBackpackStack
+{
+	GENERATED_BODY()
+
+	/** O `Id` do catálogo. Estável: renomear quebra mochila já salva. */
+	UPROPERTY()
+	FString ItemId;
+
+	UPROPERTY()
+	int32 Quantity = 0;
+};
+
+/**
+ * Um item VESTIDO num pet.
+ *
+ * Guarda o pet pelo `CatalogId` porque é o que a coleção já usa para achar um
+ * pet. Guardar um índice amarraria o equipamento à ORDEM da lista, e capturar
+ * um pet novo trocaria a bota de dono sem ninguém pedir.
+ */
+USTRUCT()
+struct BATTLESQUARE_API FEquippedItem
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FString PetCatalogId;
+
+	UPROPERTY()
+	FString ItemId;
+};
+
 UCLASS()
 class BATTLESQUARE_API UPetCollectionSaveGame : public USaveGame
 {
@@ -118,6 +178,27 @@ public:
 	 */
 	UPROPERTY()
 	FWorldDiscovery Discovery;
+
+	/**
+	 * A MOCHILA: o que o jogador carrega, e quantos de cada.
+	 *
+	 * No MESMO save, pelo mesmo motivo do treinador e do mapa: dois arquivos
+	 * dessincronizam. Save gravado antes disto existir carrega com a mochila
+	 * VAZIA — que é exatamente o estado de quem nunca pegou item nenhum, e não
+	 * um erro.
+	 */
+	UPROPERTY()
+	TArray<FBackpackStack> Backpack;
+
+	/**
+	 * O que está VESTIDO, e em quem.
+	 *
+	 * Separado da mochila porque são dois ESTADOS do mesmo item: equipar tira
+	 * de lá e põe aqui. Guardar o item nos dois lugares o faria existir duas
+	 * vezes, e a mesma bota vestiria cinco pets.
+	 */
+	UPROPERTY()
+	TArray<FEquippedItem> Equipped;
 
 	/**
 	 * As marcações que o jogador escreveu no mapa.

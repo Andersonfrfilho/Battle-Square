@@ -56,6 +56,55 @@ TArray<FWorldStatusLine> FWorldStatusReadout::Build(const FWorldStatusSnapshot& 
 				{ TEXT("Subsolo"), FPetMoveRequirements::GetAttributeLabel(TEXT("underground")) },
 				{ TEXT("ValorSubsolo"), FText::AsNumber(Pet.SkillProficiency[FPetAttributeProgression::Underground]) },
 			}), FColor::White });
+
+		// A BIOLOGIA na tela, e só quando ela existe.
+		//
+		// Sem esta linha, dois pets do mesmo elemento aguentam a lava de
+		// formas diferentes e o jogador não tem como saber por quê: ele leria
+		// o mesmo elemento nos dois e concluiria que o jogo é inconsistente.
+		// Uma linha fixa dizendo "biologia: nenhuma" nos pets antigos seria
+		// ruído — a ausência não decide nada, então não ocupa altura.
+		const FString Biologia = FString::Join(
+			TArray<FString>(TArray<FString>{
+				Pet.BiologySkin, Pet.BiologyBuild,
+				Pet.BiologyBreathing, Pet.BiologyLimbs }
+				.FilterByPredicate([](const FString& Eixo) { return !Eixo.IsEmpty(); })),
+			TEXT(" · "));
+
+		if (!Biologia.IsEmpty())
+		{
+			Linhas.Add({ FText::Format(
+				LOCTEXT("SuaBiologia", "biologia: {Eixos}"),
+				FFormatNamedArguments{
+					{ TEXT("Eixos"), FText::FromString(Biologia) },
+				}), FColor(180, 220, 180) });
+		}
+	}
+
+	// O QUE ELE VESTE, e o que há para vestir.
+	//
+	// Item que ninguém vê é item que ninguém equipa: sem estas linhas, a bota
+	// de lava decide a travessia e o jogador não tem onde ler que ela existe.
+	// Some quando não há nada — linha fixa dizendo "nada equipado" ensinaria a
+	// ignorá-la justo no dia em que ela passasse a ter conteúdo.
+	if (Snapshot.EquippedItemNames.Num() > 0)
+	{
+		Linhas.Add({ FText::Format(
+			LOCTEXT("SeusItens", "vestindo: {Itens}"),
+			FFormatNamedArguments{
+				{ TEXT("Itens"), FText::FromString(
+					FString::Join(Snapshot.EquippedItemNames, TEXT(" · "))) },
+			}), FColor(220, 200, 140) });
+	}
+
+	if (Snapshot.BackpackLines.Num() > 0)
+	{
+		Linhas.Add({ FText::Format(
+			LOCTEXT("SuaMochila", "mochila: {Itens}"),
+			FFormatNamedArguments{
+				{ TEXT("Itens"), FText::FromString(
+					FString::Join(Snapshot.BackpackLines, TEXT(" · "))) },
+			}), FColor(180, 180, 200) });
 	}
 
 	if (Snapshot.EncountersAlive <= 0)

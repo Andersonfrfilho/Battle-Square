@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Balance/PetBiologyCatalog.h"
 #include "GameplayTagContainer.h"
 #include "Battle/BattleState.h"
 #include "Data/PetDataLoader.h"
@@ -36,6 +37,16 @@ struct FPetPresentationInfo
 	// FString direto, sem reconstruir a partir do nome da tag.
 	UPROPERTY()
 	FString Type;
+
+	/**
+	 * A BIOLOGIA do pet, como o cadastro a trouxe.
+	 *
+	 * Viaja na apresentação, e não no estado do núcleo, porque o núcleo já
+	 * recebe o EFEITO dela (resistência e firmeza já compostas) e nunca precisa
+	 * saber que existe uma pele. Quem precisa do nome é a coleção e a tela.
+	 */
+	FPetBiology Biology;
+
 
 	// T4 (colecao-e-captura, DP-colecao-03): id do registro de catálogo
 	// (FLoadedPetRecord::Id) preservado até aqui — é o que permite
@@ -116,6 +127,28 @@ public:
 		FPetState& OutBattleState,
 		FPetPresentationInfo& OutPresentation);
 
+	/**
+	 * O mesmo, com os ITENS que aquele pet está vestindo.
+	 *
+	 * Sobrecarga, e não um parâmetro a mais em toda chamada: os itens moram no
+	 * SAVE, e o tradutor não conhece save — quem sabe os dois é a montagem da
+	 * partida. Quem monta sem coleção (o teste, a arena de treino) continua
+	 * chamando a de cima e recebendo o pet sem item, que é o comportamento de
+	 * sempre.
+	 *
+	 * Os ids vêm do catálogo de itens; id desconhecido soma zero e não derruba
+	 * — um erro de digitação no cadastro não pode tirar o pet da partida.
+	 */
+	static void TranslatePetWithItems(
+		const FLoadedPetRecord& Source,
+		const TArray<FString>& EquippedItemIds,
+		uint8 PetId,
+		uint8 Side,
+		uint8 Column,
+		uint8 Row,
+		FPetState& OutBattleState,
+		FPetPresentationInfo& OutPresentation);
+
 	// T3 (escala-pets-skills, design.md — DP-escala-01): traduz os DOIS
 	// lados de uma partida ao mesmo tempo, pré-multiplicando o Attack de
 	// cada lado pela efetividade do tipo dele contra o tipo do oponente.
@@ -124,21 +157,47 @@ public:
 	// por tipo — só Attack). O núcleo (BattleSim) nunca sabe que tipo
 	// existe: o Attack que ele recebe já chega efetivo.
 	/**
-	 * COMPÕE a resistência a um fluido: o traço dá a BASE, o item SOMA.
+	 * COMPÕE a resistência a um fluido: o traço dá a BASE, biologia e item SOMAM.
 	 *
 	 * Pura e pública porque é a regra, e a regra precisa de prova própria — o
 	 * item ainda não existe como sistema (não há cadastro, save nem equipar),
 	 * e sem esta função o ponto onde ele somaria seria uma descoberta no dia em
 	 * que alguém o criasse, em vez de uma linha.
 	 *
-	 * Presa entre 0 e 100: acima de 100 o dano viraria negativo, e curar quem
-	 * pisa na lava é o oposto do que a regra promete.
+	 * A BIOLOGIA pode ser NEGATIVA, e é isso que faz a escolha dela ter custo:
+	 * pelo encharca, e uma biologia que só somasse bônus seria uma lista de
+	 * vantagens em vez de um eixo. O ITEM continua preso em não-negativo — item
+	 * mal cadastrado não pode ABRIR uma fraqueza que o pet não tem.
+	 *
+	 * Presa entre -100 e 100: acima de 100 o dano viraria negativo, e curar
+	 * quem pisa na lava é o oposto do que a regra promete.
 	 */
-	static int32 ComposeFluidResist(int32 FromTrait, int32 FromItem);
+	static int32 ComposeFluidResist(int32 FromTrait, int32 FromBiology, int32 FromItem);
 
 	static void TranslateMatchup(
 		const FLoadedPetRecord& LeftSource,
 		const FLoadedPetRecord& RightSource,
+		const FTypeEffectivenessTable& EffectivenessTable,
+		uint8 LeftPetId,
+		uint8 RightPetId,
+		FPetState& OutLeftState,
+		FPetPresentationInfo& OutLeftPresentation,
+		FPetState& OutRightState,
+		FPetPresentationInfo& OutRightPresentation);
+
+	/**
+	 * O mesmo, com os itens que CADA lado está vestindo.
+	 *
+	 * Sobrecarga pela mesma razão de `TranslatePetWithItems`: os itens moram no
+	 * save, e só quem monta a partida conhece os dois. Quem monta sem coleção
+	 * continua chamando a de cima e recebendo pets sem item — o comportamento
+	 * de sempre.
+	 */
+	static void TranslateMatchupWithItems(
+		const FLoadedPetRecord& LeftSource,
+		const TArray<FString>& LeftItemIds,
+		const FLoadedPetRecord& RightSource,
+		const TArray<FString>& RightItemIds,
 		const FTypeEffectivenessTable& EffectivenessTable,
 		uint8 LeftPetId,
 		uint8 RightPetId,

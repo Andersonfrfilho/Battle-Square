@@ -1585,6 +1585,15 @@ void ABattleArena::RegisterOwnPetInCollection()
 	Instance.Name = Presentation->Name;
 	Instance.Type = Presentation->Type;
 
+	// A BIOLOGIA entra na coleção junto com o pet. Sem isto, ela decidiria a
+	// batalha em que ele foi capturado e desapareceria depois — o mesmo pet
+	// resistiria diferente antes e depois de entrar na coleção, e nada na tela
+	// explicaria a mudança.
+	Instance.BiologySkin = Presentation->Biology.Skin;
+	Instance.BiologyBuild = Presentation->Biology.Build;
+	Instance.BiologyBreathing = Presentation->Biology.Breathing;
+	Instance.BiologyLimbs = Presentation->Biology.Limbs;
+
 	if (FPetCollectionService::CaptureIfNew(PetCollectionSlotName, Instance))
 	{
 		FBattleDebugScreen::Show(

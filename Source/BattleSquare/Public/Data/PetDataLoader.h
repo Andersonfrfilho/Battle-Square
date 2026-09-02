@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 
+#include "Balance/PetBiologyCatalog.h"
+
 // T17 (tasks.md): lê o espelho local (produzido por apps/worker-pet-sync),
 // reverifica a assinatura de CADA registro antes de aceitar — defesa em
 // profundidade contra adulteração pós-sync (PETDB-10, design.md). Vive em
@@ -80,6 +82,26 @@ struct FLoadedPetRecord
 
 	/** O JSON exatamente como veio, para remontar o payload assinado. */
 	FString MovesCanonicalJson;
+
+	/**
+	 * A BIOLOGIA do pet, quando o cadastro a traz.
+	 *
+	 * Vazia é cadastro ANTIGO, e isso é assinatura válida — não dado faltando.
+	 * O dado do pet é assinado, e nomes antigos continuam valendo porque
+	 * recusá-los invalidaria pets que existem.
+	 */
+	FPetBiology Biology;
+
+	/**
+	 * O JSON da biologia como veio, para remontar o payload assinado.
+	 *
+	 * VAZIO significa que o campo não estava no payload, e aí ele não entra na
+	 * remontagem: acrescentar `"biology":{}` a um pet assinado sem biologia
+	 * mudaria o payload dele e invalidaria a assinatura DELE. É a mesma lição
+	 * que os golpes já pagaram, e por isso a biologia entra no FIM, depois dos
+	 * golpes.
+	 */
+	FString BiologyCanonicalJson;
 };
 
 class BATTLESQUARE_API FPetDataLoader

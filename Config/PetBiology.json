@@ -1,0 +1,71 @@
+{
+ "_comment": "A BIOLOGIA do pet, em EIXOS. Dois pets do mesmo elemento resistem diferente porque a biologia deles difere — sem isto, anatomia seria o elemento com outro nome. Cada eixo soma à base que o elemento dá; a soma acontece em ComposeFluidResist, que tem prova própria. Eixo AUSENTE no cadastro soma ZERO: pet assinado antes desta feature não pode mudar de resistência sem uma linha do cadastro ter mudado.",
+ "_comment_numeros": "Os números são decisão de BALANCEAMENTO, e portanto do dono do jogo. Estão aqui para a regra existir e ser mensurável. Resistência é PORCENTAGEM e aceita negativo — negativo é FRAQUEZA, e é ela que faz a escolha de biologia ter custo. Firmeza é em partes por mil, e se compara com a força da corrente.",
+
+ "pele": [
+  {
+   "nome": "escamosa",
+   "_por_que": "a escama fecha a superficie: a agua escorre e o quente demora a passar",
+   "resiste": { "agua doce": 20, "agua salgada": 20, "agua termal": 25, "lava": 10 },
+   "firmeza": 0
+  },
+  {
+   "nome": "peluda",
+   "_por_que": "o pelo encharca e pesa — quente ele ate protege, molhado ele atrapalha",
+   "resiste": { "agua doce": -20, "agua salgada": -20, "agua de pantano": -25, "agua termal": 15 },
+   "firmeza": -50
+  },
+  {
+   "nome": "lisa",
+   "_por_que": "nada tem, nada atrapalha: e a pele que nao decide nada, e por isso e a padrao",
+   "resiste": {},
+   "firmeza": 0
+  },
+  {
+   "nome": "couracada",
+   "_por_que": "a placa aguenta o que queima e afunda o que a veste",
+   "resiste": { "lava": 40, "lama": 20, "agua termal": 30 },
+   "firmeza": 120
+  },
+  {
+   "nome": "viscosa",
+   "_por_que": "o muco e a defesa de quem vive na agua parada, e escorrega na rocha",
+   "resiste": { "agua de pantano": 40, "agua de caverna": 30, "lama": 35, "lava": -30 },
+   "firmeza": -80
+  }
+ ],
+
+ "porte": [
+  { "nome": "miudo", "_por_que": "leve demais para a corrente respeitar", "firmeza": -120 },
+  { "nome": "medio", "_por_que": "o porte que nao decide nada", "firmeza": 0 },
+  { "nome": "corpulento", "_por_que": "massa e o que a agua tem de vencer", "firmeza": 200 }
+ ],
+
+ "respiracao": [
+  {
+   "nome": "pulmao",
+   "_por_que": "submerge, mas a agua funda cobra",
+   "resiste": { "agua doce": -10, "agua salgada": -10 },
+   "submergeSemCusto": false
+  },
+  {
+   "nome": "branquia",
+   "_por_que": "a agua e onde ele respira: fundo nao e perigo, e casa",
+   "resiste": { "agua doce": 30, "agua salgada": 30, "agua de caverna": 30 },
+   "submergeSemCusto": true
+  },
+  {
+   "nome": "ambos",
+   "_por_que": "anfibio: nao ganha o que a branquia ganha, nao perde o que o pulmao perde",
+   "resiste": { "agua doce": 15, "agua salgada": 15 },
+   "submergeSemCusto": true
+  }
+ ],
+
+ "apoio": [
+  { "nome": "patas", "_por_que": "o apoio que nao decide nada", "firmeza": 0 },
+  { "nome": "nadadeiras", "_por_que": "na agua ele manda; em terra ele se arrasta", "firmeza": 150, "resiste": { "agua doce": 20, "agua salgada": 20 } },
+  { "nome": "asas", "_por_que": "quem sai do chao nao tem no que se firmar", "firmeza": -150 },
+  { "nome": "rastejante", "_por_que": "o corpo inteiro encostado e muito no que se segurar", "firmeza": 100, "resiste": { "lama": 25 } }
+ ]
+}

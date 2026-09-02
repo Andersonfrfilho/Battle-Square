@@ -48,7 +48,7 @@ de medição mais eficiente que este projeto tem; **facilite o trabalho dele.**
 
 | Recurso | Para que serve |
 |---|---|
-| **Grade desenhada no mundo** | cada casa com `(coluna,linha)`, **o que ela é** (ÁGUA azul, DANO vermelho, BÔNUS verde, BLOQUEADA cinza) e quem está nela; casa ocupada fica amarela. Torna posição e direção legíveis — teria mostrado na hora que "Baixo" andava para a direita, e mostra a coabitação sem explicação |
+| **Grade desenhada no mundo** | cada casa com `(coluna,linha)`, **o que ela é** (ÁGUA azul, DANO vermelho, BÔNUS verde, BLOQUEADA cinza) e quem está nela; casa ocupada fica amarela. Torna posição e direção legíveis — teria mostrado na hora que "Baixo" andava para a direita, e mostra quem foi BARRADO na casa disputada (lados opostos não coabitam mais: `EncontroNoMesmoPonto` barra os dois e machuca os dois) |
 | **Movimento deslizando** | o pet ANDA até a casa nova, e o olhar acompanha durante o percurso. Teleporte não conta a história: quem vê só o antes e o depois não sabe se ele andou, se foi empurrado, nem em que ordem |
 | **Indicador de fase** | `reproduzindo fase 3 de 11`, que desfaz a impressão de "fez tudo de uma vez" |
 | **Painel de texto** | o que cada lado escolheu e onde cada pet terminou |
@@ -202,7 +202,8 @@ a consultar em vez de caçar o mais recente.
 ```bash
 ./Tools/audit_determinism.sh && ./Tools/audit_no_recalculation.sh
 ./Tools/audit_localizable_text.sh   # texto do jogador precisa ser coletável
-./Tools/audit_test_helper_names.sh  # L-042: helper homônimo vira sobrecarga em unity build
+./Tools/audit_test_helper_names.sh  # L-042: helper homonimo vira sobrecarga em unity build
+./Tools/audit_anonymous_namespace_names.sh  # L-045: o mesmo, em variavel de PRODUCAO
 ./Tools/probe_isolation.sh
 ./Tools/sync_module_manifest.sh   # L-025: manifesto defasado faz teste novo sumir da contagem
 ```

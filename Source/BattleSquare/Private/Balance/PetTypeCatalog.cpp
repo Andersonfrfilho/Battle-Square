@@ -12,7 +12,20 @@
 
 namespace
 {
-	const FPetTypeCatalog* GOverride = nullptr;
+	/**
+	 * NOME PRÓPRIO, e não `GTypeOverride`.
+	 *
+	 * Namespace anônimo NÃO isola em unity build: os arquivos viram uma unidade
+	 * de tradução só, os anônimos se fundem, e três `GTypeOverride` de tipos
+	 * diferentes viram uma redefinição. É a L-042 — que eu conhecia como regra
+	 * de helper de TESTE — valendo para variável de PRODUÇÃO.
+	 *
+	 * E o modo de falhar é pior que não compilar: enquanto o agrupamento do
+	 * unity build não os juntar, tudo compila e a instalação de um override
+	 * pode acabar lida por OUTRO catálogo — que devolve um catálogo vazio, e o
+	 * elemento "some" sem nada acusar.
+	 */
+	const FPetTypeCatalog* GTypeOverride = nullptr;
 
 	/**
 	 * Nome da malha da crista → a forma que o código conhece.
@@ -208,9 +221,9 @@ bool FPetTypeCatalog::LoadFromJson(const FString& FilePath, FPetTypeCatalog& Out
 
 const FPetTypeCatalog& FPetTypeCatalog::Get()
 {
-	if (GOverride)
+	if (GTypeOverride)
 	{
-		return *GOverride;
+		return *GTypeOverride;
 	}
 
 	static FPetTypeCatalog Carregado;
@@ -227,7 +240,7 @@ const FPetTypeCatalog& FPetTypeCatalog::Get()
 
 void FPetTypeCatalog::OverrideForTesting(const FPetTypeCatalog* Catalog)
 {
-	GOverride = Catalog;
+	GTypeOverride = Catalog;
 }
 
 const FPetElementDefinition* FPetTypeCatalog::FindElement(const FString& Name) const

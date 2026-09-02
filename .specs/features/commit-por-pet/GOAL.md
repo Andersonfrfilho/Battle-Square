@@ -28,8 +28,9 @@ nenhum teste alcança.
 
 Enquanto qualquer caixa estiver aberta, o objetivo **continua**.
 
-Trocar `[⛔]` por `[ ]` ABRE esta feature — é decisão do usuário, e até lá
-`goal_status.sh` segue apontando para `itens-e-biologia`.
+**PARADA, à espera de decisão do usuário.** Trocar `[⛔]` por `[ ]` nas caixas
+acima é o que abre a feature — e até lá `goal_status.sh` não a elege como
+próxima.
 
 ## Não pare entre tarefas
 

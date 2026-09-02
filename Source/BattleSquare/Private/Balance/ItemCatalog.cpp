@@ -11,7 +11,20 @@
 
 namespace
 {
-	const FItemCatalog* GOverride = nullptr;
+	/**
+	 * NOME PRÓPRIO, e não `GItemOverride`.
+	 *
+	 * Namespace anônimo NÃO isola em unity build: os arquivos viram uma unidade
+	 * de tradução só, os anônimos se fundem, e três `GItemOverride` de tipos
+	 * diferentes viram uma redefinição. É a L-042 — que eu conhecia como regra
+	 * de helper de TESTE — valendo para variável de PRODUÇÃO.
+	 *
+	 * E o modo de falhar é pior que não compilar: enquanto o agrupamento do
+	 * unity build não os juntar, tudo compila e a instalação de um override
+	 * pode acabar lida por OUTRO catálogo — que devolve um catálogo vazio, e o
+	 * elemento "some" sem nada acusar.
+	 */
+	const FItemCatalog* GItemOverride = nullptr;
 
 	/**
 	 * Natureza desconhecida vira EQUIPAMENTO, que é a inócua.
@@ -30,9 +43,9 @@ namespace
 
 const FItemCatalog& FItemCatalog::Get()
 {
-	if (GOverride)
+	if (GItemOverride)
 	{
-		return *GOverride;
+		return *GItemOverride;
 	}
 
 	static FItemCatalog Carregado;
@@ -108,7 +121,7 @@ const FItemCatalog& FItemCatalog::Get()
 
 void FItemCatalog::OverrideForTesting(const FItemCatalog* Catalog)
 {
-	GOverride = Catalog;
+	GItemOverride = Catalog;
 }
 
 const FItemDefinition* FItemCatalog::Find(const FString& Id) const

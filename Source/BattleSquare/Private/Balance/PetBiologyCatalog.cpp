@@ -11,7 +11,20 @@
 
 namespace
 {
-	const FPetBiologyCatalog* GOverride = nullptr;
+	/**
+	 * NOME PRÓPRIO, e não `GBiologyOverride`.
+	 *
+	 * Namespace anônimo NÃO isola em unity build: os arquivos viram uma unidade
+	 * de tradução só, os anônimos se fundem, e três `GBiologyOverride` de tipos
+	 * diferentes viram uma redefinição. É a L-042 — que eu conhecia como regra
+	 * de helper de TESTE — valendo para variável de PRODUÇÃO.
+	 *
+	 * E o modo de falhar é pior que não compilar: enquanto o agrupamento do
+	 * unity build não os juntar, tudo compila e a instalação de um override
+	 * pode acabar lida por OUTRO catálogo — que devolve um catálogo vazio, e o
+	 * elemento "some" sem nada acusar.
+	 */
+	const FPetBiologyCatalog* GBiologyOverride = nullptr;
 
 	/**
 	 * Um eixo inteiro, do JSON.
@@ -87,9 +100,9 @@ namespace
 
 const FPetBiologyCatalog& FPetBiologyCatalog::Get()
 {
-	if (GOverride)
+	if (GBiologyOverride)
 	{
-		return *GOverride;
+		return *GBiologyOverride;
 	}
 
 	static FPetBiologyCatalog Carregado;
@@ -122,7 +135,7 @@ const FPetBiologyCatalog& FPetBiologyCatalog::Get()
 
 void FPetBiologyCatalog::OverrideForTesting(const FPetBiologyCatalog* Catalog)
 {
-	GOverride = Catalog;
+	GBiologyOverride = Catalog;
 }
 
 const FPetBiologyTrait* FPetBiologyCatalog::FindSkin(const FString& Name) const

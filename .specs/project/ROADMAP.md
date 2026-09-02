@@ -192,10 +192,14 @@ escorrega, atrasa, ou deixa passar.
 
 **A arena é o LUGAR** — ✅ CONCLUÍDO (30/08/2026) — a arena nasce do pedaço de
 mapa onde o encontro aconteceu, e não de um sorteio em `Arenas.json`. Árvore vira
-casa bloqueada, rio vira água funda, margem segue o clima. ⚠️ **Há uma
-duplicação por conferir:** a outra frente entregou "a arena veste o bioma de onde
-o encontro aconteceu (item 16)" no mesmo dia — dois sistemas decidindo a mesma
-coisa, e ninguém verificou se concordam.
+casa bloqueada, rio vira água funda, margem segue o clima. **Duplicação
+conferida (02/09/2026): não há sobreposição.** `EncounterMatchAssembler` decide o
+TABULEIRO (bloqueio, água) a partir de `ArenaFromWorld`; `ABattleArena` decide a
+APARÊNCIA (mata, serra, paleta) a partir do bioma do lugar. Campos diferentes,
+escritores diferentes, testes diferentes — ver
+`.specs/features/arenas-variadas/ACHADOS-duplicacao-bioma.md`, que também registra
+uma assimetria menor ainda por medir: os dois caminhos amostram o mundo em pontos
+diferentes (o inimigo do encontro contra o pawn do jogador).
 
 **Mapa por descoberta** — ✅ CONCLUÍDO (30–31/08/2026, três fatias) — o mapa
 deixou de ser espelho do mundo e virou registro do que se andou. Traços de

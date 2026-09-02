@@ -264,7 +264,8 @@ find "$HOME/Library/Logs/Unreal Engine/BattleSquareEditor" Saved/Logs -newer <ma
 
 **Descoberto:** 2026-08-25, durante T6 (fase de movimento).
 **Causa:** `ApplyMovement` recebe uma ação por LADO, não por PET — reflexo direto de `FTurnCommit` ser por lado (design.md, contrato de rede de v1). Com uma única direção por lado, dois aliados partindo de posições diferentes **nunca** convergem para o mesmo destino — é matematicamente inatingível, não uma lacuna de teste esquecida.
-**O que existe:** o código de detecção de colisão (`DestinationClaimsBySide` em `BattlePhaseMovement.cpp`) está implementado e correto, mas fica morto/inalcançável pela interface pública atual.
+**Mecanismo, medido em 02/09/2026:** o `break` no fim do laço de pets de `CollectIntent` faz só o PRIMEIRO pet vivo de cada lado receber a ação. Some com o `break` sem endereçar por pet e todos os aliados recebem a MESMA direção — o que ainda não os faz convergir de casas diferentes.
+**O que existe (revisado em 02/09/2026):** `DestinationClaimsBySide` **não existe mais**. Quem detecta é `ClaimsByCell`, em `BattlePhaseMovement.cpp`, que agrupa a casa FINAL de cada pet vivo e barra TODOS os pretendentes quando dois ou mais querem a mesma casa (`PetsBarrados` + `EmitBlocked`), com `EBattleEventType::EncontroNoMesmoPonto`. O caminho está **vivo e provado** para lados opostos (`SameCellEncounterTest.cpp`: `BlocksBoth`, `HurtsBoth`, `WalkingIntoStandingOpponent`, e o teste de coabitação convertido `OpposingSidesCannotCoexist`). Inalcançável é só o ramo ENTRE ALIADOS — e é isso, e só isso, que BTL-05 pede.
 **O que eu quase fiz:** escrever um teste que passava sem exercitar esse caminho, e chamá-lo de cobertura de BTL-05. Corrigido antes de rodar — o teste agora documenta a lacuna e emite `AddWarning`, em vez de fingir prova.
 **Resolução:** adiada para M3, junto da expansão do contrato de rede para commit por pet (não por lado). Não bloqueia v1: o requisito é estrutural para N pets, e v1 é 1 pet por lado por definição da spec.
 
@@ -932,3 +933,43 @@ certa.**
 Lição além do caso: quando um teste depende de um dado ser ENCONTRADO, afirmar
 que ele foi encontrado custa duas linhas e aponta a causa de erros que ainda
 nem existem.
+
+### L-045: NAMESPACE ANÔNIMO NÃO ISOLA — e isso vale para PRODUÇÃO, não só teste
+
+**Descoberto:** 02/09/2026, ao abrir `commit-por-pet`.
+
+Três catálogos declaravam `const FXCatalog* GOverride = nullptr;` cada um no
+seu `namespace { }`: `PetTypeCatalog`, `PetBiologyCatalog` e `ItemCatalog`.
+
+Em **unity build** os arquivos viram uma unidade de tradução só, os namespaces
+anônimos se **fundem**, e três ponteiros de tipos diferentes com o mesmo nome
+são uma redefinição.
+
+**O modo de falhar é pior que não compilar.** Enquanto o agrupamento do unity
+build não os juntar, tudo compila — e instalar o override de um catálogo pode
+acabar sendo lido por OUTRO, que devolve um catálogo vazio. O sintoma que isso
+produziu foi `"o elemento sumiu do catálogo"` num teste que falhava sozinho e
+passava depois, **sem nada ter mudado**. Eu atribuí isso a binário defasado
+(L-043) e segui em frente; a explicação estava errada, ou no mínimo incompleta.
+
+Só apareceu como erro de compilação quando um arquivo de teste NOVO mudou o
+agrupamento do unity build e juntou os três. **O defeito não nasceu ali — ele
+ficou visível ali.**
+
+**Eu conhecia a L-042 como regra de HELPER DE TESTE.** Ela é a mesma coisa do
+outro lado da fronteira, e nenhuma das cinco auditorias cobria o lado de
+produção.
+
+`Tools/audit_anonymous_namespace_names.sh` nasceu daqui, e foi **provada contra
+o defeito**: reintroduzi a colisão, ela acusou nomeando os dois arquivos;
+restaurei, ela passou. Auditoria que nunca viu o defeito que diz pegar é
+esperança, não guarda.
+
+⚠️ **`grep -P` não existe no macOS.** A primeira versão da auditoria acusava e
+não dizia ONDE, porque o `grep -P` saía com erro sem procurar. `awk` com
+comparação exata de campo faz o mesmo sem depender de PCRE. É primo do
+`timeout`, que retorna 127 sem executar.
+
+**Regra:** variável de arquivo em `namespace { }` leva nome PRÓPRIO, derivado do
+que ela guarda (`GBiologyOverride`, não `GOverride`). E a auditoria roda junto
+com as outras cinco.

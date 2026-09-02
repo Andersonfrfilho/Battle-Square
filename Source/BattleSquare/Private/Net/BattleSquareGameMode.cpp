@@ -53,6 +53,7 @@
 #include "World/RiverMesh.h"
 #include "World/WaterFooting.h"
 #include "World/TerrainMesh.h"
+#include "World/TrailMesh.h"
 #include "World/TrainingFieldRules.h"
 #include "Balance/PetTypeCatalog.h"
 #include "Meta/PetMoveRequirements.h"
@@ -1630,6 +1631,15 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 			if (Rios)
 			{
 				Rios->BuildFrom(*Assado);
+			}
+
+			// AS TRILHAS por último entre as três: elas atravessam a água (56
+			// travessias), e a ponte só faz sentido com o rio já no lugar.
+			ATrailMesh* Trilhas = World->SpawnActor<ATrailMesh>(
+				ATrailMesh::StaticClass(), Onde, FRotator::ZeroRotator, Parametros);
+			if (Trilhas)
+			{
+				Trilhas->BuildFrom(*Assado);
 			}
 		}
 	}

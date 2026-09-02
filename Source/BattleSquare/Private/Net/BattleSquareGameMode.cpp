@@ -50,6 +50,7 @@
 #include "World/IslandBakedPlan.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "World/AqueductMesh.h"
 #include "World/CrossingMesh.h"
 #include "World/RiverMesh.h"
 #include "World/WaterFooting.h"
@@ -1650,6 +1651,14 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 			if (Travessias)
 			{
 				Travessias->BuildFrom(*Assado);
+			}
+
+			// OS AQUEDUTOS: a obra que leva agua a vila sem agua perto.
+			AAqueductMesh* Aquedutos = World->SpawnActor<AAqueductMesh>(
+				AAqueductMesh::StaticClass(), Onde, FRotator::ZeroRotator, Parametros);
+			if (Aquedutos)
+			{
+				Aquedutos->BuildFrom(*Assado);
 			}
 		}
 	}

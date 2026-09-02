@@ -247,6 +247,25 @@ struct BATTLESQUARE_API FBakedBrook
 	float HalfWidthUnits = 0.0f;
 };
 
+/**
+ * Um AQUEDUTO: a obra que leva água até a vila que não tem nenhuma perto.
+ *
+ * Guarda a QUEDA junto da linha. Sem ela o aqueduto vira um cano mágico, e some
+ * justamente o que o torna interessante — a obra tem de descer, e descer é o
+ * que faz a água andar.
+ */
+USTRUCT()
+struct BATTLESQUARE_API FBakedAqueduct
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	TArray<FVector2D> PointsUnits;
+
+	UPROPERTY()
+	float DropUnits = 0.0f;
+};
+
 /** Uma fonte: o olho d'água e o poço que ele forma. */
 USTRUCT()
 struct BATTLESQUARE_API FBakedSpring
@@ -426,7 +445,7 @@ public:
 	TArray<FBakedPolyline> UnderwaterLinks;
 
 	UPROPERTY()
-	TArray<FBakedPolyline> Aqueducts;
+	TArray<FBakedAqueduct> Aqueducts;
 
 	/** A altura no índice de grade, sem o consumidor refazer a conta do índice. */
 	float HeightAtCell(int32 Column, int32 Row) const;

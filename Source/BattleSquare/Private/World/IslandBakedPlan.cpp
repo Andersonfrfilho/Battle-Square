@@ -410,9 +410,10 @@ namespace IslandBakedPlan
 		Out.Aqueducts.Reset();
 		for (const AqueductLayout::FAqueduct& Aqueduto : AqueductLayout::Plan())
 		{
-			FBakedPolyline Linha;
-			Linha.PointsUnits = Aqueduto.PointsUnits;
-			Out.Aqueducts.Add(MoveTemp(Linha));
+			FBakedAqueduct Assado;
+			Assado.PointsUnits = Aqueduto.PointsUnits;
+			Assado.DropUnits = Aqueduto.DropUnits;
+			Out.Aqueducts.Add(MoveTemp(Assado));
 		}
 	}
 

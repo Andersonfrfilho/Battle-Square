@@ -7,6 +7,7 @@
 #include "Net/BattleSquareGameMode.h"
 #include "World/AqueductLayout.h"
 #include "World/TrailLayout.h"
+#include "World/WorldBudget.h"
 
 float UIslandBakedPlan::HeightAtCell(int32 Column, int32 Row) const
 {
@@ -64,8 +65,83 @@ namespace IslandBakedPlan
 		return Padrao ? Padrao->GetWorldScenerySeedForMap() : 0;
 	}
 
+	FIslandParameters GatherParameters()
+	{
+		const EIslandBiome Bioma = IslandGeography::IslandBiome();
+
+		FIslandParameters Parametros;
+		Parametros.LandRadiusUnits = IslandGeography::LandRadiusUnits();
+		Parametros.CoastShape = static_cast<uint8>(IslandGeography::CoastShape());
+		Parametros.Biome = static_cast<uint8>(Bioma);
+		Parametros.ScenerySeed = WorldScenerySeed();
+		Parametros.WaterCoverage = WorldBudget::WaterCoverage(Bioma);
+		Parametros.GroveCount = WorldBudget::GroveCount(Bioma);
+		Parametros.HiddenClearingCount = WorldBudget::HiddenClearingCount(Bioma);
+		Parametros.BreederCount = WorldBudget::BreederCount(Bioma);
+		Parametros.FarmsPerSettlement = WorldBudget::FarmsPerSettlement(Bioma);
+		Parametros.TendedOrchardCount = WorldBudget::TendedOrchardCount(Bioma);
+		Parametros.WildOrchardCount = WorldBudget::WildOrchardCount(Bioma);
+		Parametros.RoadsideShopCount = WorldBudget::RoadsideShopCount(Bioma);
+		Parametros.CampCount = WorldBudget::CampCount(Bioma);
+		Parametros.RuinCount = WorldBudget::RuinCount(Bioma);
+		Parametros.StraightGalleryShare = WorldBudget::StraightGalleryShare(Bioma);
+		Parametros.GraveyardsPerSettlement = WorldBudget::GraveyardsPerSettlement(Bioma);
+		Parametros.ForgottenGraveyardCount = WorldBudget::ForgottenGraveyardCount(Bioma);
+		Parametros.ForestDensity = WorldBudget::ForestDensity(Bioma);
+		return Parametros;
+	}
+
+	uint32 HashParameters(const FIslandParameters& Parametros)
+	{
+		// Percorre a REFLEXÃO em vez de listar campo a campo. Uma lista à parte
+		// envelhece calada: o campo novo entra na struct, ninguém o acrescenta
+		// aqui, e a guarda passa a aprovar um assado que já não corresponde.
+		uint32 Resumo = 0;
+		for (TFieldIterator<FProperty> Campo(FIslandParameters::StaticStruct());
+			Campo; ++Campo)
+		{
+			const void* Valor = Campo->ContainerPtrToValuePtr<void>(&Parametros);
+			Resumo = HashCombine(Resumo, Campo->GetValueTypeHash(Valor));
+			// O NOME entra junto: sem ele, trocar dois campos de mesmo tipo e
+			// mesmo valor de lugar não mudaria resumo nenhum.
+			//
+			// E entra como TEXTO, nunca como `FName`. O resumo de um `FName` é
+			// o índice dele na tabela de nomes do PROCESSO, e essa tabela é
+			// montada em ordem diferente a cada execução: o resumo saía
+			// diferente ao assar e ao carregar, com os parâmetros idênticos.
+			// Uma guarda que acusa divergência toda vez é uma guarda ignorada.
+			Resumo = HashCombine(Resumo, GetTypeHash(Campo->GetName()));
+		}
+		return Resumo;
+	}
+
+	TArray<FString> DescribeParameterDivergence(
+		const FIslandParameters& Assado, const FIslandParameters& Agora)
+	{
+		TArray<FString> Divergiram;
+		for (TFieldIterator<FProperty> Campo(FIslandParameters::StaticStruct());
+			Campo; ++Campo)
+		{
+			const void* DoAssado = Campo->ContainerPtrToValuePtr<void>(&Assado);
+			const void* DeAgora = Campo->ContainerPtrToValuePtr<void>(&Agora);
+			if (!Campo->Identical(DoAssado, DeAgora))
+			{
+				FString ValorAssado;
+				FString ValorAgora;
+				Campo->ExportTextItem_Direct(ValorAssado, DoAssado, nullptr, nullptr, PPF_None);
+				Campo->ExportTextItem_Direct(ValorAgora, DeAgora, nullptr, nullptr, PPF_None);
+				Divergiram.Add(FString::Printf(TEXT("%s: assado %s, agora %s"),
+					*Campo->GetName(), *ValorAssado, *ValorAgora));
+			}
+		}
+		return Divergiram;
+	}
+
 	void BakeInto(UIslandBakedPlan& Out)
 	{
+		Out.Parameters = GatherParameters();
+		Out.ParameterHash = HashParameters(Out.Parameters);
+
 		Out.HeightGridSide = HeightGridSide();
 		Out.LandRadiusUnits = IslandGeography::LandRadiusUnits();
 

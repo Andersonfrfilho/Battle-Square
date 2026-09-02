@@ -39,6 +39,82 @@
  */
 
 /**
+ * OS PARÂMETROS QUE GERARAM O ASSADO.
+ *
+ * O modo de falhar desta feature é silencioso: alguém muda o `WorldBudget`, o
+ * raio da ilha ou a forma da costa, e o assado continua respondendo — o mundo
+ * passa a ser de uma configuração que não existe mais, e nada quebra.
+ *
+ * Por isso os parâmetros viajam DENTRO do assado, e não só o resumo deles. O
+ * resumo diz que algo mudou; só os valores dizem O QUÊ, e "reasse porque algo
+ * mudou" manda a pessoa procurar sozinha o que ela já poderia ter lido.
+ *
+ * Campo novo aqui entra automaticamente no resumo e na mensagem de divergência:
+ * as duas coisas percorrem a reflexão desta struct, e não uma lista à parte que
+ * alguém teria de lembrar de atualizar.
+ */
+USTRUCT()
+struct BATTLESQUARE_API FIslandParameters
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	float LandRadiusUnits = 0.0f;
+
+	UPROPERTY()
+	uint8 CoastShape = 0;
+
+	UPROPERTY()
+	uint8 Biome = 0;
+
+	/** A semente do cenário do mundo — é ela que cava cada caverna. */
+	UPROPERTY()
+	int32 ScenerySeed = 0;
+
+	UPROPERTY()
+	float WaterCoverage = 0.0f;
+
+	UPROPERTY()
+	int32 GroveCount = 0;
+
+	UPROPERTY()
+	int32 HiddenClearingCount = 0;
+
+	UPROPERTY()
+	int32 BreederCount = 0;
+
+	UPROPERTY()
+	int32 FarmsPerSettlement = 0;
+
+	UPROPERTY()
+	int32 TendedOrchardCount = 0;
+
+	UPROPERTY()
+	int32 WildOrchardCount = 0;
+
+	UPROPERTY()
+	int32 RoadsideShopCount = 0;
+
+	UPROPERTY()
+	int32 CampCount = 0;
+
+	UPROPERTY()
+	int32 RuinCount = 0;
+
+	UPROPERTY()
+	float StraightGalleryShare = 0.0f;
+
+	UPROPERTY()
+	int32 GraveyardsPerSettlement = 0;
+
+	UPROPERTY()
+	int32 ForgottenGraveyardCount = 0;
+
+	UPROPERTY()
+	float ForestDensity = 0.0f;
+};
+
+/**
  * Uma polilinha.
  *
  * Existe porque `TArray<TArray<FVector2D>>` não é serializável pela reflexão da
@@ -237,6 +313,10 @@ public:
 	UPROPERTY()
 	uint32 ParameterHash = 0;
 
+	/** Os valores por extenso, para a guarda poder NOMEAR o que divergiu. */
+	UPROPERTY()
+	FIslandParameters Parameters;
+
 	/** O lado da grade de alturas, em casas. */
 	UPROPERTY()
 	int32 HeightGridSide = 0;
@@ -307,6 +387,27 @@ namespace IslandBakedPlan
 	 * chama `Load()`.
 	 */
 	BATTLESQUARE_API void BakeInto(UIslandBakedPlan& Out);
+
+	/** Lê os parâmetros vigentes do jogo — os de AGORA, não os do assado. */
+	BATTLESQUARE_API FIslandParameters GatherParameters();
+
+	/**
+	 * O resumo dos parâmetros.
+	 *
+	 * Percorre a reflexão da struct, então campo acrescentado lá entra aqui sem
+	 * ninguém lembrar — que é o modo pelo qual uma guarda dessas apodrece.
+	 */
+	BATTLESQUARE_API uint32 HashParameters(const FIslandParameters& Parameters);
+
+	/**
+	 * OS PARÂMETROS QUE DIVERGIRAM entre dois conjuntos, por nome.
+	 *
+	 * Existe porque "reasse, algo mudou" manda a pessoa procurar sozinha o que
+	 * ela já poderia ter lido. Percorre a reflexão, então campo novo aparece
+	 * aqui sem ninguém lembrar.
+	 */
+	BATTLESQUARE_API TArray<FString> DescribeParameterDivergence(
+		const FIslandParameters& Baked, const FIslandParameters& Current);
 
 	/** Carrega o assado gravado. Devolve nulo se ele não existir. */
 	BATTLESQUARE_API UIslandBakedPlan* Load();

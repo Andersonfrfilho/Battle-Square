@@ -47,6 +47,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Character.h"
 #include "Engine/StaticMeshActor.h"
+#include "World/IslandBakedPlan.h"
+#include "World/TerrainMesh.h"
 #include "World/TrainingFieldRules.h"
 #include "Balance/PetTypeCatalog.h"
 #include "Meta/PetMoveRequirements.h"
@@ -1600,6 +1602,21 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 	const float RaioDaTerra = IslandGeography::LandRadiusUnits();
 	WorldGroundZ = Onde.Z;
 	RefreshRegionResidency();
+
+	// O RELEVO vem antes de tudo o que se apoia nele. Sem terreno o rio flutua,
+	// a trilha não sobe nada e o barranco não barra ninguém — e até aqui a
+	// altura calculada nunca virava geometria.
+	ATerrainMesh* Relevo = World->SpawnActor<ATerrainMesh>(
+		ATerrainMesh::StaticClass(), Onde, FRotator::ZeroRotator, Parametros);
+	if (Relevo)
+	{
+		// Pela porta COM guarda: assado de outra configuração faria a ilha
+		// subir inteira, parecendo certa, sendo de um mundo que já não existe.
+		if (const UIslandBakedPlan* Assado = IslandBakedPlan::LoadForWorld())
+		{
+			Relevo->BuildFrom(*Assado);
+		}
+	}
 
 	// A ÁGUA fecha o mundo. Vem junto da mata porque as duas dependem do mesmo
 	// chão: a margem tem de coincidir com a borda da terra, e calcular a

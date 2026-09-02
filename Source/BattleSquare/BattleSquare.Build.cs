@@ -35,6 +35,7 @@ public class BattleSquare : ModuleRules
 			"ApplicationCore",
 			// T2 (escala-pets-skills): FTypeEffectivenessTable::LoadFromJson
 			// consome a tabela de efetividade de um arquivo JSON local.
+			"ProceduralMeshComponent",
 			"Json",
 			"JsonUtilities"
 		});

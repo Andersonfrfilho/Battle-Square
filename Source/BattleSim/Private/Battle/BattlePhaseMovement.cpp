@@ -482,6 +482,67 @@ void BattlePhases::ApplyMovement(
 		}
 	}
 
+	// Passo 4b: A CORRENTE CARREGA.
+	//
+	// Depois do movimento voluntário e ANTES do dano de casa, e a ordem é o que
+	// dá sentido: quem a água leva para dentro da lava se queima na casa onde
+	// PAROU, não na de onde saiu.
+	//
+	// Só onde ela corre DEMAIS — o limiar é o mesmo que o traçado usa para
+	// dizer onde há corredeira. Num fio manso ninguém é arrastado, e é isso que
+	// faz atravessar um rio calmo continuar sendo escolha e não sorte.
+	for (FPetState& Pet : State.Pets)
+	{
+		if (!Pet.IsAlive())
+		{
+			continue;
+		}
+
+		// QUEM VOA escapa; QUEM SUBMERGE, NÃO — e esta é uma diferença
+		// deliberada em relação ao dano de casa, que usa `IsOffTheGround` para
+		// os dois. O dano é do CHÃO, e quem não pisa nele não o sente. A
+		// corrente é a ÁGUA: estar submerso é estar mais dentro dela, não
+		// menos. Tratar submergir como fuga faria mergulhar num rio deixar de
+		// ter preço.
+		if ((Pet.PostureFlags & static_cast<uint16>(EBattlePostureFlags::Flying)) != 0)
+		{
+			continue;
+		}
+
+		const int32 Forca = State.FlowStrengthAt(Pet.Column, Pet.Row);
+		if (Forca <= BattleArenaConstants::CurrentCarriesAbovePerMille)
+		{
+			continue;
+		}
+
+		int8 EmColuna = 0;
+		int8 EmLinha = 0;
+		GetDirectionDelta(State.FlowDirectionAt(Pet.Column, Pet.Row), EmColuna, EmLinha);
+
+		const int32 ParaColuna = static_cast<int32>(Pet.Column) + EmColuna;
+		const int32 ParaLinha = static_cast<int32>(Pet.Row) + EmLinha;
+
+		// Fora da grade, casa fechada ou casa ocupada: a corrente empurra
+		// contra e ele FICA. Levar um pet para cima de outro criaria duas
+		// criaturas na mesma casa por um caminho que não é a trombada — e a
+		// trombada tem regras próprias que este empurrão não sabe aplicar.
+		if (!State.IsInside(ParaColuna, ParaLinha)
+			|| State.CellLayout[State.CellIndex(ParaColuna, ParaLinha)]
+				== static_cast<uint8>(ECellProperty::Blocked)
+			|| IsCellOccupied(State, ParaColuna, ParaLinha, Pet))
+		{
+			continue;
+		}
+
+		const uint8 DeOnde = PackCell(Pet.Column, Pet.Row);
+		Pet.Column = static_cast<uint8>(ParaColuna);
+		Pet.Row = static_cast<uint8>(ParaLinha);
+
+		// NARRADO como movimento, porque foi movimento — e um pet que muda de
+		// casa sem frase parece defeito a quem está olhando.
+		EmitMoved(OutTrace, SlotIndex, Pet, DeOnde, PackCell(Pet.Column, Pet.Row));
+	}
+
 	// Passo 5 (Arenas Variadas, design.md — DP-arena-02): dano de casa,
 	// avaliado ao fim DESTE slot, pela posição atual de cada pet vivo —
 	// já depois do movimento acima ter sido aplicado (ou a mesma posição

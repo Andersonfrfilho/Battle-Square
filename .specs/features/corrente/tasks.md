@@ -23,7 +23,7 @@ grade de casas.
 A força sai de `BedGradientAtProgress` em partes por mil (mediana 56, máximo
 329), inteira, pela disciplina das densidades.
 
-## C2 — A corrente EMPURRA
+## C2 — A corrente EMPURRA ✅ FEITO
 > 🤖 Modelo: `sonnet`
 
 Quem está em água corrente é levado, no fim do slot, uma casa rio abaixo — se a
@@ -34,8 +34,20 @@ dele não é novidade — o escorregão do gelo já faz isso, e o empurrão da
 trombada também. Um terceiro caminho de movimento involuntário teria as próprias
 regras de colisão e a própria narração.
 
-*Aceite:* o pet desce o rio sozinho. Contrapeso: em água parada não anda, e um
-pet pesado o bastante fica.
+**O limiar não é meu:** a corrente carrega onde ela corre acima de 40 por mil,
+que é `FreshWater::RapidsGradient()` — a definição que o traçado já usa para
+dizer onde há corredeira. Escolher um número novo criaria duas fronteiras para
+a mesma ideia.
+
+**Não há resistência POR PET, e é declarado:** o jogo não tem peso nem firmeza,
+e reaproveitar `Defense` (que vai de 0 a 1000) contra uma força em partes por
+mil seria comparar escalas que não se falam. Quem resiste é o LUGAR: água mansa
+não carrega ninguém. Uma resistência por criatura precisa de um número novo, e
+isso é tarefa própria.
+
+**Quem voa escapa; quem SUBMERGE, não** — diferença deliberada em relação ao
+dano de casa. O dano é do CHÃO; a corrente é a ÁGUA, e estar submerso é estar
+mais dentro dela.
 
 ## C3 — Subir a correnteza custa
 > 🤖 Modelo: `sonnet`

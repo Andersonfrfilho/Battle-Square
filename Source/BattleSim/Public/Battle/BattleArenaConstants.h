@@ -13,6 +13,21 @@ namespace BattleArenaConstants
 	// cada slot (design.md, DP-arena-02).
 	constexpr int32 CellDamageAmount = 5;
 
+	/**
+	 * A partir de que força a corrente CARREGA quem está nela, em partes por
+	 * mil do declive do leito.
+	 *
+	 * Quarenta, e o número não é meu: é `FreshWater::RapidsGradient()`, que já
+	 * é a definição do traçado para "água correndo demais" — a mesma que decide
+	 * onde há corredeira no mapa. Escolher um limiar novo aqui criaria duas
+	 * fronteiras para a mesma ideia, e elas concordariam até a primeira edição.
+	 *
+	 * A correspondência tem teste do lado de BattleSquare, que é onde o
+	 * traçado mora: o núcleo não pode consultá-lo, então o que guarda os dois
+	 * números juntos é uma prova, e não a esperança de alguém lembrar.
+	 */
+	constexpr int32 CurrentCarriesAbovePerMille = 40;
+
 	// Percentual de fortalecimento de quem ocupa uma casa de buff —
 	// aplicado ao Attack de quem ataca a partir dela, e ao Defense de
 	// quem é alvo estando nela (design.md — buff é contextual, não dois

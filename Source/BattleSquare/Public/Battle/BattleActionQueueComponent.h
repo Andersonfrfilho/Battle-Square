@@ -107,6 +107,24 @@ public:
 	FTurnCommit BuildCommit() const;
 
 	/**
+	 * DE QUEM é a fila — o pet a quem estas ações pertencem.
+	 *
+	 * A fila montava um commit SEM DONO, e isso bastava enquanto "o commit da
+	 * esquerda" identificasse alguém. Com dois aliados não identifica mais.
+	 *
+	 * Escolher para qual pet é a ação é escolher DONO, não regra: a tela
+	 * continua sem decidir nada (DP-ui-01) — ela diz de quem é, e a regra
+	 * continua aqui, com o teste dela.
+	 *
+	 * Zero é "ainda não atribuído", e o `BuildCommit` o traduz para o sentinela
+	 * do commit. Um dono ausente não pode virar o pet 0 por acidente.
+	 */
+	void SetOwningPetId(uint8 PetId) { OwningPetId = PetId; }
+
+	UFUNCTION(BlueprintPure, Category = "Battle|ActionQueue")
+	int32 GetOwningPetId() const { return static_cast<int32>(OwningPetId); }
+
+	/**
 	 * Repõe ações confirmadas guardadas fora daqui.
 	 *
 	 * Existe para o rascunho POR JOGADOR: trocar de jogador controlado não
@@ -137,6 +155,9 @@ public:
 	FBattleActionQueueCommittedSignature OnCommitted;
 
 private:
+	/** Zero é "ainda não atribuído" — ver `SetOwningPetId`. */
+	uint8 OwningPetId = 0;
+
 	UPROPERTY()
 	TArray<FBattleAction> ConfirmedActions;
 

@@ -265,7 +265,7 @@ confunde com garantia.
 
 ---
 
-## CP8 — Quem joga escolhe ação POR PET, e a tela diz de quem é
+## CP8 — Quem joga escolhe ação POR PET, e a tela diz de quem é ✅ FEITO
 > 🤖 Modelo: `sonnet`
 
 **Dependências:** CP3, CP7.

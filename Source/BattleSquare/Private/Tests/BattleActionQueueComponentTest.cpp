@@ -323,3 +323,89 @@ bool FQueueWithoutUnlockListAllowsEveryMoveTest::RunTest(const FString& Paramete
 
 	return true;
 }
+
+// ---------------------------------------------------------------------------
+// CP8 — A FILA TEM DONO.
+//
+// Ela montava um commit SEM dono, e isso bastava enquanto "o commit da
+// esquerda" identificasse alguém. Com dois aliados não identifica mais.
+//
+// Escolher para qual pet é a ação é escolher DONO, não regra: a tela continua
+// sem decidir nada (DP-ui-01).
+// ---------------------------------------------------------------------------
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FBattleActionQueueCarriesTheOwnerTest,
+	"BattleSquare.ActionQueue.CarriesTheOwner",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FBattleActionQueueCarriesTheOwnerTest::RunTest(const FString& Parameters)
+{
+	UBattleActionQueueComponent* Fila = NewObject<UBattleActionQueueComponent>();
+	Fila->SetOwningPetId(3);
+
+	TestEqual(TEXT("a fila sabe de quem e"), Fila->GetOwningPetId(), 3);
+	TestEqual(TEXT("e o commit leva o dono"),
+		static_cast<int32>(Fila->BuildCommit().PetId), 3);
+
+	return true;
+}
+
+// CONTRAPESO — FILA SEM DONO NÃO VIRA O PET 0.
+//
+// Zero é "ainda não atribuído", e traduzi-lo para o pet 0 faria uma fila que
+// ninguém endereçou jogar pelo primeiro pet do tabuleiro. O jogador veria o pet
+// dele fazer algo que ele não pediu, e nada apontaria a fila anônima.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FBattleActionQueueWithoutOwnerIsNotPetZeroTest,
+	"BattleSquare.ActionQueue.WithoutOwnerIsNotPetZero",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FBattleActionQueueWithoutOwnerIsNotPetZeroTest::RunTest(const FString& Parameters)
+{
+	UBattleActionQueueComponent* Fila = NewObject<UBattleActionQueueComponent>();
+
+	TestEqual(TEXT("sem dono, o commit sai com o SENTINELA"),
+		static_cast<int32>(Fila->BuildCommit().PetId), 0xFF);
+
+	return true;
+}
+
+// DUAS FILAS, DOIS DONOS, DUAS ESCOLHAS — e é o aceite da task.
+//
+// O defeito PARECERIA: os dois aliados andam sempre juntos, como antes desta
+// feature. E sem a linha no painel ninguém saberia se foi escolha ou limitação.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FBattleActionQueueTwoAlliesTwoChoicesTest,
+	"BattleSquare.ActionQueue.TwoAlliesTwoChoices",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FBattleActionQueueTwoAlliesTwoChoicesTest::RunTest(const FString& Parameters)
+{
+	UBattleActionQueueComponent* FilaA = NewObject<UBattleActionQueueComponent>();
+	UBattleActionQueueComponent* FilaB = NewObject<UBattleActionQueueComponent>();
+	FilaA->SetOwningPetId(1);
+	FilaB->SetOwningPetId(2);
+
+	FilaA->SelectActionType(EActionType::Mover);
+	FilaA->SelectDirection(EBattleDirection::Esquerda);
+	FilaB->SelectActionType(EActionType::Mover);
+	FilaB->SelectDirection(EBattleDirection::Direita);
+
+	const FTurnCommit CommitA = FilaA->BuildCommit();
+	const FTurnCommit CommitB = FilaB->BuildCommit();
+
+	TestEqual(TEXT("o aliado A vai para a ESQUERDA"),
+		static_cast<int32>(CommitA.Actions[0].Direction),
+		static_cast<int32>(EBattleDirection::Esquerda));
+	TestEqual(TEXT("e o aliado B para a DIREITA, no mesmo turno"),
+		static_cast<int32>(CommitB.Actions[0].Direction),
+		static_cast<int32>(EBattleDirection::Direita));
+
+	// E CADA COMMIT SABE DE QUEM É. Duas escolhas diferentes sem dono seriam
+	// duas ações que o resolvedor não saberia a quem aplicar.
+	TestEqual(TEXT("com o dono A"), static_cast<int32>(CommitA.PetId), 1);
+	TestEqual(TEXT("e o dono B"), static_cast<int32>(CommitB.PetId), 2);
+
+	return true;
+}

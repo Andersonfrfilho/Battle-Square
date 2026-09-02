@@ -185,8 +185,22 @@ void UBattleActionSelectorWidget::LogClick(const TCHAR* Rotulo)
 	// a pessoa viu o botão reagir. Se o clique aparece no painel e a ação não
 	// muda nada, o defeito está depois do clique; se nem o clique aparece, o
 	// widget nem está recebendo. Uma rodada, duas respostas.
+	// E DE QUAL PET foi o clique. Com um pet por lado, "clique: Atacar" bastava
+	// para saber quem agiu; com dois aliados, a mesma linha deixa de dizer
+	// isso — e o defeito que ela existe para diagnosticar (a ação não mudou
+	// nada) passaria a ter duas explicações indistinguíveis: a regra falhou,
+	// ou a ação foi para o outro pet.
+	//
+	// Some quando não há dono, em vez de escrever "pet 0": fila sem dono é
+	// estado de montagem, e inventar um número ali seria uma resposta errada a
+	// uma pergunta que ninguém fez.
+	const int32 DoQualPet = BoundQueue ? BoundQueue->GetOwningPetId() : 0;
+
 	FBattleDebugScreen::Show(
-		FString::Printf(TEXT("clique: %s"), Rotulo), 10.0f, FColor::White, /*Key=*/-1);
+		DoQualPet != 0
+			? FString::Printf(TEXT("clique: %s — pet %d"), Rotulo, DoQualPet)
+			: FString::Printf(TEXT("clique: %s"), Rotulo),
+		10.0f, FColor::White, /*Key=*/-1);
 }
 
 void UBattleActionSelectorWidget::OnClickAguardar() { LogClick(TEXT("Aguardar")); BeginSelectingType(EActionType::Aguardar); }

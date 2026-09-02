@@ -4,8 +4,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Game\n"
-"POT-Creation-Date: 2026-09-02 21:06\n"
-"PO-Revision-Date: 2026-09-02 21:06\n"
+"POT-Creation-Date: 2026-09-02 22:48\n"
+"PO-Revision-Date: 2026-09-02 22:48\n"
 "Language-Team: \n"
 "Language: pt-BR\n"
 "MIME-Version: 1.0\n"
@@ -175,22 +175,22 @@ msgid "{Pet} desbloqueou {Golpe}!"
 msgstr "{Pet} desbloqueou {Golpe}!"
 
 #. Key:	GolpeUsado
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2418)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2418)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2419)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2419)
 msgctxt "BattleNarration,GolpeUsado"
 msgid "— usou {Move}"
 msgstr "— usou {Move}"
 
 #. Key:	SuperEfetivo
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2431)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2431)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2432)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2432)
 msgctxt "BattleNarration,SuperEfetivo"
 msgid "É super efetivo!"
 msgstr "É super efetivo!"
 
 #. Key:	PoucoEfetivo
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2437)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2437)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2438)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2438)
 msgctxt "BattleNarration,PoucoEfetivo"
 msgid "Não é muito efetivo..."
 msgstr "Não é muito efetivo..."

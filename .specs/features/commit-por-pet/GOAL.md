@@ -20,11 +20,12 @@ nenhum teste alcança.
 - [x] **CP5** — o `AddWarning` de BTL-05 virou PROVA, e não sobrou aviso nenhum
 - [x] **CP6** — o desempate entre aliados está medido e decidido por `PetId`
 - [x] **CP7** — o fio carrega N pets, e a auditoria do commit cobre o tipo novo
-- [ ] **CP8** — quem joga escolhe ação POR PET, e a tela diz de quem é qual
+- [x] **CP8** — quem joga escolhe ação POR PET, e a tela diz de quem é qual
 - [x] O grep por `AddWarning` em `Source/` não acha mais BTL-05
 - [ ] Bateria completa verde (hoje **866** depois da CP5; o número só sobe)
-- [ ] As cinco auditorias limpas, mais `audit_no_commit_replication.sh`
-- [ ] Um commit por task, cada um com o motivo — não só o quê
+- [x] As auditorias limpas — SETE agora, com `audit_anonymous_namespace_names.sh`
+      que nasceu nesta feature (L-045)
+- [x] Um commit por task, cada um com o motivo — não só o quê
 
 Enquanto qualquer caixa estiver aberta, o objetivo **continua**.
 

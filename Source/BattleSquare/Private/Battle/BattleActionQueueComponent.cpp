@@ -114,6 +114,15 @@ bool UBattleActionQueueComponent::Commit()
 FTurnCommit UBattleActionQueueComponent::BuildCommit() const
 {
 	FTurnCommit Commit;
+
+	// O DONO vai junto. Sem ele o commit chega ao resolvedor sem endereço e é
+	// ignorado em silêncio — a escolha do jogador sumiria entre o clique e a
+	// regra, que é o pior lugar para uma ação sumir.
+	//
+	// Zero (não atribuído) vira o sentinela do commit em vez de virar o pet 0:
+	// uma fila que ninguém endereçou não pode acabar jogando pelo primeiro pet.
+	Commit.PetId = (OwningPetId != 0) ? OwningPetId : 0xFF;
+
 	for (int32 Index = 0; Index < FTurnCommit::ActionsPerTurn; ++Index)
 	{
 		Commit.Actions[Index] = ConfirmedActions.IsValidIndex(Index) ? ConfirmedActions[Index] : FBattleAction();

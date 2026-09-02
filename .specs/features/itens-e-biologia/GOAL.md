@@ -11,16 +11,16 @@ resiste diferente de si mesmo **pelo item que veste**.
 ## PRONTO é isto, e nada menos
 
 - [x] **B1** — a biologia existe, tem quatro eixos e chega à batalha
-- [ ] **I1** — o item existe como cadastro
-- [ ] **I2** — a mochila guarda, com quantidade de pilha
-- [ ] **I3** — equipar tira da mochila, desequipar devolve
-- [ ] **I4** — o item soma na resistência
-- [ ] **I5** — o consumível gasta, e a falha aparece
-- [ ] **I6** — o item na tela
-- [ ] O grep fora de `/Tests/` acha quem EQUIPA um item
-- [ ] Bateria completa verde (hoje **843**; o número só sobe)
-- [ ] As cinco auditorias limpas
-- [ ] Um commit por task, cada um com o motivo — não só o quê
+- [x] **I1** — o item existe como cadastro
+- [x] **I2** — a mochila guarda, com quantidade de pilha
+- [x] **I3** — equipar tira da mochila, desequipar devolve
+- [x] **I4** — o item soma na resistência
+- [x] **I5** — o consumível gasta, e a falha aparece
+- [x] **I6** — o item na tela
+- [x] O grep fora de `/Tests/` acha quem EQUIPA um item
+- [x] Bateria completa verde — **858**, zero falhas, zero crash
+- [x] As cinco auditorias limpas
+- [x] Um commit por task, cada um com o motivo — não só o quê
 
 Enquanto qualquer caixa estiver aberta, o objetivo **continua**.
 

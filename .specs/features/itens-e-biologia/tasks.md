@@ -12,7 +12,7 @@ diferente. **Feito e provado no tradutor**, que é o caminho de produção.
 
 ---
 
-## I1 — O item existe como CADASTRO
+## I1 — O item existe como CADASTRO ✅ FEITO
 > 🤖 Modelo: `sonnet`
 
 `Config/Items.json` + `FItemCatalog`, espelhando `FPetBiologyCatalog`. Cada item
@@ -28,7 +28,7 @@ cadastrar coisa neste projeto, e a segunda é sempre a que esquece o override.
 registro** — uma segunda grafia seria uma resistência que nunca casa e nunca
 acusa.
 
-## I2 — A MOCHILA guarda, com quantidade
+## I2 — A MOCHILA guarda, com quantidade ✅ FEITO
 > 🤖 Modelo: `sonnet`
 
 `FPetCollectionSaveGame` ganha a mochila: uma lista de `{itemId, quantidade}`.
@@ -41,7 +41,7 @@ uma lista que não cabe na tela.
 carrega** — campo novo que invalidasse a coleção apagaria os pets de quem já
 jogava.
 
-## I3 — EQUIPAR tira da mochila
+## I3 — EQUIPAR tira da mochila ✅ FEITO
 > 🤖 Modelo: `sonnet`
 
 O pet ganha slots; o número vive em `DefaultGame.ini`, como o tamanho da grade
@@ -53,7 +53,7 @@ muda. Sem isso o mesmo item existe duas vezes e a mesma bota veste cinco pets.
 *Contrapeso obrigatório:* equipar num slot ocupado **devolve o que estava lá**,
 e não o apaga.
 
-## I4 — O item SOMA na resistência
+## I4 — O item SOMA na resistência ✅ FEITO
 > 🤖 Modelo: `sonnet` — a menor de todas
 
 O terceiro argumento de `ComposeFluidResist` deixa de ser `0`.
@@ -64,7 +64,7 @@ não fosse uma descoberta.
 
 *Aceite:* o MESMO pet com a bota atravessa a lava e sem ela, não.
 
-## I5 — O consumível GASTA
+## I5 — O consumível GASTA ✅ FEITO
 > 🤖 Modelo: `sonnet`
 
 Usar um consumível baixa a quantidade; zerou, sai da mochila.
@@ -73,7 +73,7 @@ Usar um consumível baixa a quantidade; zerou, sai da mochila.
 **aparece** — gastar em silêncio um item que não existe é o jogador achando que
 usou.
 
-## I6 — O item na TELA
+## I6 — O item na TELA ✅ FEITO
 > 🤖 Modelo: `sonnet`
 
 Painel do mundo diz o que está equipado; a barra de botões deixa equipar.

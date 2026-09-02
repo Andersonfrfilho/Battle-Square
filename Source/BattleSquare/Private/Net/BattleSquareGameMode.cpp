@@ -52,6 +52,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "World/AqueductMesh.h"
 #include "World/GroundUseActor.h"
+#include "World/Pantheon.h"
 #include "World/CrossingMesh.h"
 #include "World/RiverMesh.h"
 #include "World/WaterFooting.h"
@@ -1863,6 +1864,57 @@ void ABattleSquareGameMode::BuildResidentChunk(const FIntPoint& Pedaco)
 	ResidentChunks.Add(Pedaco, Mata);
 }
 
+void ABattleSquareGameMode::AnunciarSagradoPerto(
+	const UIslandBakedPlan& Assado, const FVector2D& Onde)
+{
+	// O MAIS PERTO, e só se estiver perto o bastante para se estar NELE.
+	//
+	// O alcance sai da meia-extensão da própria mancha, com folga: um alcance
+	// fixo anunciaria uma ruína pequena de longe e uma grande só em cima dela.
+	constexpr float FolgaDoAlcance = 3.0f;
+
+	const FBakedGroundUse* MaisPerto = nullptr;
+	float MenorDistancia = TNumericLimits<float>::Max();
+
+	for (const FBakedGroundUse& Mancha : Assado.GroundUses)
+	{
+		if (Mancha.Use != EGroundUse::Templo && Mancha.Use != EGroundUse::Ruina)
+		{
+			continue;
+		}
+
+		const float Distancia = FVector2D::Distance(Mancha.CenterUnits, Onde);
+		if (Distancia > Mancha.HalfExtentUnits * FolgaDoAlcance)
+		{
+			continue;
+		}
+
+		if (Distancia < MenorDistancia)
+		{
+			MenorDistancia = Distancia;
+			MaisPerto = &Mancha;
+		}
+	}
+
+	if (!MaisPerto)
+	{
+		// Apaga a linha ao sair. Deixada, ela diria que se está num templo
+		// que ficou para trás — e o painel passaria a mentir sobre o lugar.
+		FBattleDebugScreen::Show(TEXT(""), 0.0f, FColor::White, /*Key=*/749);
+		return;
+	}
+
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("%s de %s"),
+			AGroundUseActor::UseDebugName(MaisPerto->Use),
+			Pantheon::DebugName(MaisPerto->Deity)),
+		0.0f,
+		MaisPerto->Use == EGroundUse::Templo
+			? FColor(240, 230, 180)
+			: FColor(170, 150, 130),
+		/*Key=*/749);
+}
+
 int32 ABattleSquareGameMode::ConstruirUsosDoSolo(
 	const UIslandBakedPlan& Assado, const FActorSpawnParameters& Parametros)
 {
@@ -1989,6 +2041,14 @@ void ABattleSquareGameMode::RefreshRegionResidency()
 		// promessa quebrada que esvazia as 56 travessias do traçado.
 		const EWaterFooting Chao = WaterFooting::At(*TracadoAssado, Onde);
 		AplicarChaoMolhado(Jogador, Chao);
+
+		// O SAGRADO SE ANUNCIA DE PERTO.
+		//
+		// Um templo alto no horizonte diz "há algo ali"; só o painel diz DE
+		// QUEM ele é. Sem o nome, os cinco templos são cinco torres brancas
+		// iguais, e o panteão inteiro — que o mapa deveria ensinar — não chega
+		// ao jogador. A carta nomeia cada um; o mundo tem de nomear também.
+		AnunciarSagradoPerto(*TracadoAssado, Onde);
 
 		FBattleDebugScreen::Show(
 			FString::Printf(TEXT("pisando: %s (passo %.0f%%)"),

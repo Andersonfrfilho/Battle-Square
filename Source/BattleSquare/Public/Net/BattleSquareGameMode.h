@@ -341,6 +341,9 @@ private:
 	UPROPERTY()
 	int32 UsosDoSoloConstruidos = 0;
 
+	/** Diz no painel de que deus é o templo ou a ruína em que se está. */
+	void AnunciarSagradoPerto(const class UIslandBakedPlan& Assado, const FVector2D& Onde);
+
 	/** Ergue os usos do solo do assado. Devolve quantos. */
 	int32 ConstruirUsosDoSolo(const class UIslandBakedPlan& Assado,
 		const struct FActorSpawnParameters& Parametros);

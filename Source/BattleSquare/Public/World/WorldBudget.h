@@ -58,6 +58,19 @@ namespace WorldBudget
 	BATTLESQUARE_API int32 RuinCount(EIslandBiome Biome);
 
 	/**
+	 * QUE FRAÇÃO das galerias pode ir em linha reta.
+	 *
+	 * Reta não é defeito por existir: fratura de calcário às vezes é reta
+	 * mesmo, e uma rede em que NADA é reto lê tão fabricada quanto uma em que
+	 * tudo é. O defeito era a proporção — 123 de 158, porque a costura riscava
+	 * enquanto o gerador cavava.
+	 *
+	 * É parâmetro de bioma porque a rocha muda: calcário fraturado do pântano
+	 * abre galeria reta com frequência, o basalto da geleira quase nunca.
+	 */
+	BATTLESQUARE_API float StraightGalleryShare(EIslandBiome Biome);
+
+	/**
 	 * Quanto a mata é densa, como multiplicador da densidade base.
 	 *
 	 * Zero é bioma sem árvore: o deserto e a geleira não têm mata para adensar,

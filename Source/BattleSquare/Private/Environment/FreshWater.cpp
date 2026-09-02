@@ -1665,6 +1665,90 @@ FreshWater::ENavigability FreshWater::NavigabilityForHalfWidth(float HalfWidthUn
 	return ENavigability::APe;
 }
 
+namespace FreshWater
+{
+namespace
+{
+	// UMA GALERIA SE CAVA, NUNCA SE RISCA.
+	//
+	// Ligar dois pontos com um segmento é exatamente o desenho reto que esta
+	// rede veio substituir. Galeria de calcário não vai em linha: ela segue
+	// fratura, e o que sai é caminho torto.
+	//
+	// É a caminhada aleatória com ruído COERENTE: cada passo mira o destino
+	// mas é empurrado pelo ruído da POSIÇÃO. Sorteio independente daria
+	// tremor; ruído da posição dá curva, e a mesma pedra dá sempre a mesma
+	// curva.
+	//
+	// Esta função existe porque a mesma cavação era necessária em dois lugares
+	// e só um dos dois a tinha (L-032): a emenda entre cavernas cavava, e a
+	// emenda entre BACIAS — 123 das 158 passagens — riscava. O comentário
+	// dizendo "cava, não risca" estava escrito quarenta linhas abaixo do bloco
+	// que riscava.
+	TArray<FVector2D> CavarGaleria(const FVector2D& DaBoca, const FVector2D& ParaABoca)
+	{
+		const float Raio = IslandGeography::LandRadiusUnits();
+
+		// PARTE DELAS FICA RETA MESMO, e isso é escolha, não descuido.
+		//
+		// Fratura de calcário às vezes É reta, e uma rede em que nada é reto
+		// lê tão fabricada quanto uma em que tudo é. Quem manda na proporção é
+		// o bioma: rocha fraturada abre galeria reta com frequência, basalto
+		// quase nunca.
+		//
+		// O sorteio sai da GEOMETRIA das duas pontas, não da ordem em que as
+		// emendas foram montadas: assim a mesma passagem é sempre a mesma,
+		// mesmo que alguém mude a ordem do laço.
+		const uint32 Semente = BattleSpread::SeedFromText(FString::Printf(
+			TEXT("galeria-reta|%d|%d|%d|%d"),
+			FMath::RoundToInt(DaBoca.X), FMath::RoundToInt(DaBoca.Y),
+			FMath::RoundToInt(ParaABoca.X), FMath::RoundToInt(ParaABoca.Y)));
+
+		if (BattleSpread::Fraction(Semente, 0)
+			< WorldBudget::StraightGalleryShare(IslandGeography::IslandBiome()))
+		{
+			return TArray<FVector2D>({ DaBoca, ParaABoca });
+		}
+
+		const float Distancia = static_cast<float>(FVector2D::Distance(DaBoca, ParaABoca));
+		// A CURVA É DESLOCAMENTO LATERAL, NÃO CAMINHADA COM MIRA.
+		//
+		// Eu tinha escrito a caminhada: cada passo mira o destino e o ruído
+		// empurra. Ela não curva, e a medição provou — 23 das 25 retas eram
+		// caminhadas, não sorteios. O motivo é que a mira do passo seguinte
+		// DESFAZ o empurrão do anterior; os desvios se cancelam e sobra a reta
+		// que a mira sempre apontou. Aumentar o número de passos não muda nada,
+		// e eu tentei isso antes de medir.
+		//
+		// O que curva é andar ao longo do eixo e sair DE LADO por um ruído da
+		// posição, com a amplitude indo a zero nas duas pontas — que é o que
+		// prende a galeria nas bocas sem precisar de mira nenhuma.
+		const FVector2D Eixo = (ParaABoca - DaBoca).GetSafeNormal();
+		const FVector2D DeLado(-Eixo.Y, Eixo.X);
+
+		const int32 Passos = FMath::Max(7,
+			FMath::CeilToInt(Distancia / (Raio * PassoDaGaleria)));
+
+		TArray<FVector2D> Galeria;
+		Galeria.Add(DaBoca);
+
+		for (int32 Avanco = 1; Avanco < Passos; ++Avanco)
+		{
+			const float Quanto = static_cast<float>(Avanco) / static_cast<float>(Passos);
+			const FVector2D NoEixo = FMath::Lerp(DaBoca, ParaABoca, Quanto);
+
+			// Meio seno: zero nas bocas, cheio no meio do vão.
+			const float Amplitude = FMath::Sin(Quanto * PI) * Distancia * TorceAGaleria * 0.5f;
+
+			Galeria.Add(NoEixo + DeLado * EmpurraoOrganico(NoEixo, 1.0f).X * Amplitude);
+		}
+
+		Galeria.Add(ParaABoca);
+		return Galeria;
+	}
+}
+}
+
 TArray<FreshWater::FUnderwaterLink> FreshWater::PlanUnderwaterLinks()
 {
 	// A REDE SUBTERRÂNEA, pelo mesmo algoritmo da bacia — e é aqui que o
@@ -1923,8 +2007,8 @@ FMath::RoundToInt(Plan().Num() * SubsoloSobreSuperficie),
 
 			FUnderwaterLink Passagem;
 			Passagem.Navigability = ENavigability::BarcoPequeno;
-			Passagem.PointsUnits.Add(Rios[Qual].PointsUnits[0]);
-			Passagem.PointsUnits.Add(PointAtProgress(Rios[Vizinho], Aonde));
+			Passagem.PointsUnits = CavarGaleria(Rios[Qual].PointsUnits[0],
+				PointAtProgress(Rios[Vizinho], Aonde));
 			Passagens.Add(MoveTemp(Passagem));
 
 			Dono[Raiz(Qual)] = Raiz(Vizinho);
@@ -1933,44 +2017,10 @@ FMath::RoundToInt(Plan().Num() * SubsoloSobreSuperficie),
 
 	for (const TPair<uint64, TPair<int32, int32>>& Emenda : MaisPerto)
 	{
-		// A emenda CAVA, não risca.
-		//
-		// Ligar dois pontos com um segmento é exatamente o desenho reto que
-		// esta rede veio substituir — eu consertei o gerador e recriei o
-		// defeito na costura. Galeria de calcário não vai em linha: ela segue
-		// fratura, e o que sai é caminho torto.
-		//
-		// É a caminhada aleatória com ruído COERENTE: cada passo mira o destino
-		// mas é empurrado pelo ruído da posição. Sorteio independente daria
-		// tremor; ruído da posição dá curva, e a mesma pedra dá sempre a mesma
-		// curva.
-		const FVector2D DaBoca = Nos[Emenda.Value.Key];
-		const FVector2D ParaABoca = Nos[Emenda.Value.Value];
-
-		const float Distancia = static_cast<float>(FVector2D::Distance(DaBoca, ParaABoca));
-		const int32 Passos = FMath::Max(3,
-			FMath::CeilToInt(Distancia / (Raio * PassoDaGaleria)));
-
 		FUnderwaterLink Passagem;
 		Passagem.Navigability = ENavigability::BarcoPequeno;
-		Passagem.PointsUnits.Add(DaBoca);
-
-		FVector2D NaGaleria = DaBoca;
-		for (int32 Avanco = 1; Avanco < Passos; ++Avanco)
-		{
-			const FVector2D ParaOAlvo = (ParaABoca - NaGaleria).GetSafeNormal();
-
-			// A mira APERTA no fim: perto do destino o ruído perde peso, senão
-			// a galeria passa do ponto e volta.
-			const float Quanto = static_cast<float>(Avanco) / static_cast<float>(Passos);
-			const FVector2D Rumo = (ParaOAlvo
-				+ EmpurraoOrganico(NaGaleria, TorceAGaleria * (1.0f - Quanto))).GetSafeNormal();
-
-			NaGaleria += Rumo * (Distancia / static_cast<float>(Passos));
-			Passagem.PointsUnits.Add(NaGaleria);
-		}
-
-		Passagem.PointsUnits.Add(ParaABoca);
+		Passagem.PointsUnits = CavarGaleria(Nos[Emenda.Value.Key],
+			Nos[Emenda.Value.Value]);
 		Passagens.Add(MoveTemp(Passagem));
 	}
 

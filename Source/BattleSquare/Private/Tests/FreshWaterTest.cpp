@@ -2,6 +2,7 @@
 
 #include "Environment/CaveSystem.h"
 #include "Environment/FreshWater.h"
+#include "World/WorldBudget.h"
 
 #include "Environment/IslandFeatureLayout.h"
 #include "Environment/IslandGeography.h"
@@ -710,6 +711,80 @@ bool FFreshWaterGrottoPlanIsStableTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("e sempre no mesmo raio"),
 			Segunda[Indice].RadiusUnits, Primeira[Indice].RadiusUnits);
 	}
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FFreshWaterGalleriesAreNotStraightTest,
+	"BattleSquare.Environment.FreshWater.NenhumaGaleriaEhReta",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FFreshWaterGalleriesAreNotStraightTest::RunTest(const FString& Parameters)
+{
+	// Galeria de calcário segue fratura, e fratura não é régua. Uma passagem
+	// reta entre duas bocas é o desenho que esta rede inteira veio substituir.
+	//
+	// Mas reta não é defeito por EXISTIR — fratura às vezes é reta mesmo, e
+	// uma rede em que nada é reto lê tão fabricada quanto uma em que tudo é.
+	// O defeito era a PROPORÇÃO: 123 de 158, porque a costura riscava enquanto
+	// o gerador cavava, com o comentário "a emenda cava, não risca" escrito
+	// quarenta linhas abaixo do bloco que riscava.
+	//
+	// Por isso o teste cobra o TETO do parâmetro do bioma, não zero. Cobrar
+	// zero congelaria uma decisão de arte num teste, e a decisão é do bioma.
+	const TArray<FreshWater::FUnderwaterLink> Passagens = FreshWater::PlanUnderwaterLinks();
+
+	TestTrue(TEXT("existe galeria para medir"), Passagens.Num() > 0);
+
+	int32 Retas = 0;
+	for (const FreshWater::FUnderwaterLink& Passagem : Passagens)
+	{
+		if (Passagem.PointsUnits.Num() < 2)
+		{
+			continue;
+		}
+
+		float Andado = 0.0f;
+		for (int32 Passo = 1; Passo < Passagem.PointsUnits.Num(); ++Passo)
+		{
+			Andado += static_cast<float>(FVector2D::Distance(
+				Passagem.PointsUnits[Passo - 1], Passagem.PointsUnits[Passo]));
+		}
+
+		const float EmLinha = static_cast<float>(FVector2D::Distance(
+			Passagem.PointsUnits[0], Passagem.PointsUnits.Last()));
+
+		// Vão curto demais não tem espaço para curva nenhuma, e cobrá-la ali
+		// seria exigir tremor.
+		if (EmLinha < IslandGeography::LandRadiusUnits() * 0.02f)
+		{
+			continue;
+		}
+
+		if (Andado / EmLinha < 1.02f)
+		{
+			++Retas;
+		}
+	}
+
+	int32 Medidas = 0;
+	for (const FreshWater::FUnderwaterLink& Passagem : Passagens)
+	{
+		if (Passagem.PointsUnits.Num() >= 2
+			&& FVector2D::Distance(Passagem.PointsUnits[0], Passagem.PointsUnits.Last())
+				>= IslandGeography::LandRadiusUnits() * 0.02f)
+		{
+			++Medidas;
+		}
+	}
+
+	// Uma folga sobre o parâmetro, porque o sorteio é por passagem: com poucas
+	// dezenas de galerias a fração medida oscila em torno da pedida, e um teste
+	// que reprova por essa oscilação reprova o acaso, não o gerador.
+	const float Teto = WorldBudget::StraightGalleryShare(IslandGeography::IslandBiome()) + 0.12f;
+
+	TestTrue(TEXT("a maioria das galerias e cavada, nao riscada"),
+		Medidas == 0 || static_cast<float>(Retas) / static_cast<float>(Medidas) <= Teto);
 
 	return true;
 }

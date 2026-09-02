@@ -22,6 +22,33 @@ namespace FaixasDoTerreno
 	constexpr float FracaoDoCume = 0.6f;
 }
 
+float UIslandBakedPlan::HeightAt(const FVector2D& Onde) const
+{
+	if (HeightGridSide < 2 || LandRadiusUnits <= 0.0f)
+	{
+		return 0.0f;
+	}
+
+	const float Casa = (2.0f * LandRadiusUnits) / (HeightGridSide - 1);
+	const float EmCasas_X = (Onde.X + LandRadiusUnits) / Casa;
+	const float EmCasas_Y = (Onde.Y + LandRadiusUnits) / Casa;
+
+	// Presa à grade: fora dela não há chão, e extrapolar inventaria terra no
+	// mar aberto — que é como uma vila já nasceu fora da ilha neste projeto.
+	const int32 Coluna = FMath::Clamp(FMath::FloorToInt(EmCasas_X), 0, HeightGridSide - 2);
+	const int32 Linha = FMath::Clamp(FMath::FloorToInt(EmCasas_Y), 0, HeightGridSide - 2);
+
+	const float FracaoX = FMath::Clamp(EmCasas_X - Coluna, 0.0f, 1.0f);
+	const float FracaoY = FMath::Clamp(EmCasas_Y - Linha, 0.0f, 1.0f);
+
+	const float Baixo = FMath::Lerp(
+		HeightAtCell(Coluna, Linha), HeightAtCell(Coluna + 1, Linha), FracaoX);
+	const float Cima = FMath::Lerp(
+		HeightAtCell(Coluna, Linha + 1), HeightAtCell(Coluna + 1, Linha + 1), FracaoX);
+
+	return FMath::Lerp(Baixo, Cima, FracaoY);
+}
+
 float UIslandBakedPlan::CoastRadiusAt(float RumoRadianos) const
 {
 	if (CoastRadiusByDegree.Num() == 0)

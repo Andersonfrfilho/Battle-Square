@@ -48,6 +48,7 @@
 #include "GameFramework/Character.h"
 #include "Engine/StaticMeshActor.h"
 #include "World/IslandBakedPlan.h"
+#include "World/RiverMesh.h"
 #include "World/TerrainMesh.h"
 #include "World/TrainingFieldRules.h"
 #include "Balance/PetTypeCatalog.h"
@@ -1617,6 +1618,16 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 			Relevo->BuildFrom(*Assado);
 			RelevoDoMundo = Relevo;
 			TracadoAssado = Assado;
+
+			// A ÁGUA CORRENTE vem logo depois do relevo, e nunca antes: a
+			// lâmina se assenta na altura do chão, e sem chão ela sairia toda
+			// no zero — a bacia inteira boiando num plano.
+			ARiverMesh* Rios = World->SpawnActor<ARiverMesh>(
+				ARiverMesh::StaticClass(), Onde, FRotator::ZeroRotator, Parametros);
+			if (Rios)
+			{
+				Rios->BuildFrom(*Assado);
+			}
 		}
 	}
 

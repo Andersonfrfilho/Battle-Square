@@ -73,6 +73,10 @@ private:
 	UPROPERTY()
 	TArray<float> BuiltHeightUnits;
 
+	/** O assado de que esta superfície saiu — a fonte da altura que ela desenha. */
+	UPROPERTY()
+	TObjectPtr<const UIslandBakedPlan> SourcePlan;
+
 	UPROPERTY()
 	int32 GridSide = 0;
 

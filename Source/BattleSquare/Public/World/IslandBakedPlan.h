@@ -412,6 +412,17 @@ public:
 	/** A altura no índice de grade, sem o consumidor refazer a conta do índice. */
 	float HeightAtCell(int32 Column, int32 Row) const;
 
+	/**
+	 * A altura do chão numa posição qualquer, interpolada entre as quatro
+	 * casas em volta.
+	 *
+	 * Mora aqui, e não no ator do relevo, porque o rio, a trilha e a travessia
+	 * precisam da MESMA altura que a superfície desenha. Cada um com a sua
+	 * interpolação daria quatro chãos que concordam até a primeira edição — e
+	 * a divergência apareceria como rio flutuando alguns centímetros.
+	 */
+	float HeightAt(const FVector2D& PositionUnits) const;
+
 	/** Onde a terra acaba no rumo dado. Interpola entre os graus vizinhos. */
 	float CoastRadiusAt(float BearingRadians) const;
 

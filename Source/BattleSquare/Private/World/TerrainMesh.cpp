@@ -73,34 +73,15 @@ float ATerrainMesh::BuiltHeightAtCell(int32 Column, int32 Row) const
 
 float ATerrainMesh::BuiltHeightAt(const FVector2D& Onde) const
 {
-	if (GridSide < 2 || CellSizeUnits <= 0.0f)
-	{
-		return 0.0f;
-	}
-
-	const float Raio = CellSizeUnits * (GridSide - 1) * 0.5f;
-	const float EmCasas_X = (Onde.X + Raio) / CellSizeUnits;
-	const float EmCasas_Y = (Onde.Y + Raio) / CellSizeUnits;
-
-	// Presa à grade: fora dela não há malha, e extrapolar inventaria chão no
-	// mar aberto — que é como uma vila já nasceu fora da ilha neste projeto.
-	const int32 Coluna = FMath::Clamp(FMath::FloorToInt(EmCasas_X), 0, GridSide - 2);
-	const int32 Linha = FMath::Clamp(FMath::FloorToInt(EmCasas_Y), 0, GridSide - 2);
-
-	const float FracaoX = FMath::Clamp(EmCasas_X - Coluna, 0.0f, 1.0f);
-	const float FracaoY = FMath::Clamp(EmCasas_Y - Linha, 0.0f, 1.0f);
-
-	const float Baixo = FMath::Lerp(
-		BuiltHeightAtCell(Coluna, Linha), BuiltHeightAtCell(Coluna + 1, Linha), FracaoX);
-	const float Cima = FMath::Lerp(
-		BuiltHeightAtCell(Coluna, Linha + 1), BuiltHeightAtCell(Coluna + 1, Linha + 1),
-		FracaoX);
-
-	return FMath::Lerp(Baixo, Cima, FracaoY);
+	// Delega ao assado: a superfície é erguida a partir dele, então perguntar
+	// a ele é perguntar ao que a malha desenha. Uma segunda interpolação aqui
+	// seria um segundo chão, e os dois concordariam até a primeira edição.
+	return SourcePlan ? SourcePlan->HeightAt(Onde) : 0.0f;
 }
 
 int32 ATerrainMesh::BuildFrom(const UIslandBakedPlan& Assado)
 {
+	SourcePlan = &Assado;
 	GridSide = Assado.HeightGridSide;
 	if (GridSide < 2 || !Surface)
 	{

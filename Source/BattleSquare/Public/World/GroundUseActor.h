@@ -44,6 +44,9 @@ public:
 	/** De que deus, quando é templo ou ruína. */
 	EDeity GetDeity() const { return Deity; }
 
+	/** O poço deu água. Só faz sentido para `Poco`, e é falso no resto. */
+	bool YieldsWater() const { return bYieldsWater; }
+
 	/** O nome do uso, para o painel. */
 	static const TCHAR* UseDebugName(EGroundUse Use);
 
@@ -59,4 +62,7 @@ private:
 
 	UPROPERTY()
 	EDeity Deity = EDeity::MaeNatureza;
+
+	UPROPERTY()
+	bool bYieldsWater = false;
 };

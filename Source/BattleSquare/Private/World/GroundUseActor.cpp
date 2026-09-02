@@ -29,6 +29,24 @@ namespace UsoDoSolo
 	const TCHAR* Cone = TEXT("/Engine/BasicShapes/Cone.Cone");
 	const TCHAR* Esfera = TEXT("/Engine/BasicShapes/Sphere.Sphere");
 
+	/**
+	 * O poço SECO não é o poço cheio.
+	 *
+	 * O traçado guarda `bYieldsWater` e diz por quê: "um poço seco desenhado
+	 * igual a um cheio é uma promessa que a carta não cumpre". Dez dos doze
+	 * poços desta ilha são secos — desenhá-los todos iguais mandaria o jogador
+	 * atravessar a ilha atrás de água que não existe.
+	 *
+	 * Fica ao lado da tabela, e não dentro dela, porque não é o USO que muda: é
+	 * o estado de uma mancha daquele uso.
+	 */
+	FAparencia AparenciaDoPoco(bool bDaAgua)
+	{
+		return bDaAgua
+			? FAparencia{ Cilindro, EScenaryRole::FreshWater, 0.5f }
+			: FAparencia{ Cilindro, EScenaryRole::Rock, 0.5f };
+	}
+
 	FAparencia AparenciaDe(EGroundUse Uso)
 	{
 		switch (Uso)
@@ -137,8 +155,12 @@ bool AGroundUseActor::ConfigureFor(const FGroundUsePatch& Mancha)
 {
 	Use = Mancha.Use;
 	Deity = Mancha.Deity;
+	bYieldsWater = Mancha.bYieldsWater;
 
-	const UsoDoSolo::FAparencia Aparencia = UsoDoSolo::AparenciaDe(Mancha.Use);
+	const UsoDoSolo::FAparencia Aparencia = (Mancha.Use == EGroundUse::Poco)
+		? UsoDoSolo::AparenciaDoPoco(Mancha.bYieldsWater)
+		: UsoDoSolo::AparenciaDe(Mancha.Use);
+
 	if (!Aparencia.Malha || !Body)
 	{
 		return false;

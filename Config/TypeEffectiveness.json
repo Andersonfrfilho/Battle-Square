@@ -115,6 +115,26 @@
    "attacker": "Terra",
    "defender": "Ar",
    "percent": 50
+  },
+  {
+   "attacker": "Raio",
+   "defender": "Agua",
+   "percent": 150
+  },
+  {
+   "attacker": "Agua",
+   "defender": "Raio",
+   "percent": 50
+  },
+  {
+   "attacker": "Terra",
+   "defender": "Raio",
+   "percent": 150
+  },
+  {
+   "attacker": "Raio",
+   "defender": "Terra",
+   "percent": 50
   }
  ]
 }

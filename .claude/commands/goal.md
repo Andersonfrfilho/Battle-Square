@@ -2,13 +2,21 @@
 description: Retoma o objetivo aberto e trabalha até todas as caixas de PRONTO fecharem
 ---
 
-Leia o GOAL da feature que `$ARGUMENTS` nomeia:
-`.specs/features/$ARGUMENTS/GOAL.md` — ele é o rumo, e vale mais que qualquer
-coisa que você lembre desta conversa.
+`$ARGUMENTS` traz o nome da feature na **primeira palavra**, e o resto é
+instrução avulsa. Não monte caminho com o argumento inteiro: `$ARGUMENTS` pode
+vir com um prompt colado atrás do nome, e concatenar isso produz um caminho que
+não existe.
 
-**Sem argumento:** rode `ls .specs/features/*/GOAL.md`, leia cada um, e continue
-o que tiver caixa de PRONTO aberta. Se houver mais de um, PERGUNTE qual —
-escolher sozinho gastaria a rodada no objetivo errado.
+```bash
+ls -d .specs/features/*/GOAL.md
+```
+
+Escolha o GOAL cuja pasta casa com a primeira palavra de `$ARGUMENTS` e leia-o —
+ele é o rumo, e vale mais que qualquer coisa que você lembre desta conversa.
+
+**Sem argumento, ou se a primeira palavra não casar com pasta nenhuma:** leia
+cada GOAL listado e continue o que tiver caixa de PRONTO aberta. Se houver mais
+de um, PERGUNTE qual — escolher sozinho gastaria a rodada no objetivo errado.
 
 Depois:
 
@@ -18,7 +26,7 @@ Depois:
 3. Continue dali. **Não recomece, não replaneje, não peça confirmação para
    seguir** — o objetivo já foi aprovado quando foi aberto.
 
-Execute `.specs/features/construcao-do-mundo/tasks.md` em ordem, um commit por
+Execute o `tasks.md` da MESMA pasta do GOAL que você leu, em ordem, um commit por
 task, com o motivo no corpo — não só o quê.
 
 As seis invariantes do GOAL reprovam a task independentemente do resto. As duas

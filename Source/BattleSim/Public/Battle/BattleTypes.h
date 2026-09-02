@@ -72,7 +72,19 @@ enum class EActionType : uint8
 	 *
 	 * Ao FIM do enum, pelo mesmo motivo dos anteriores.
 	 */
-	Incendiar
+	Incendiar,
+
+	/**
+	 * ELETRIFICAR: o golpe do RAIO.
+	 *
+	 * No FIM do enum, como Submergir foi: os valores viajam em save, e
+	 * intercalar um renumeraria todos os que vêm depois — pets guardados
+	 * passariam a ter outra ação sem ninguém tocar neles.
+	 *
+	 * É este o golpe que a condução pela água vai usar (F8): quem conduz é o
+	 * GOLPE, porque o núcleo não sabe que tipo existe.
+	 */
+	Eletrificar
 };
 
 // As 8 direções da grade. Defender e Aguardar ignoram a direção.

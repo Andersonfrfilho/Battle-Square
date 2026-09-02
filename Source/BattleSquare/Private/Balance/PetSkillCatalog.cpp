@@ -43,6 +43,11 @@ EActionType FPetSkillCatalog::SkillFromName(const FString& SkillName)
 		return EActionType::Incendiar;
 	}
 
+	if (SkillName.Equals(TEXT("eletrificar"), ESearchCase::IgnoreCase))
+	{
+		return EActionType::Eletrificar;
+	}
+
 	// Nome desconhecido não vira ação nenhuma. Mapear para Aguardar daria ao
 	// pet uma ação que ninguém pediu, e o erro de digitação passaria calado.
 	return EActionType::Aguardar;

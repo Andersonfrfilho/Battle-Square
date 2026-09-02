@@ -8,7 +8,7 @@ que o originou.
 
 ---
 
-## P1 — O aqueduto pode ENTRAR no morro 🧠
+## P1 — O aqueduto pode ENTRAR no morro ✅ FEITO
 > 🤖 Modelo: `opus` — muda uma regra que hoje TEM TESTE afirmando o contrário
 
 > *"pode entrar no morro mas, precisa de sair por túneis ou a estrutura dá a
@@ -19,9 +19,19 @@ envelope garante que a calha nunca entre — e o teste
 `DescendsAndNeverEntersTheHill` afirma isso. Mudar a regra sem mudar o teste
 deixaria a bateria verde sobre a regra velha.
 
-*Aceite:* a calha pode atravessar o morro, e onde atravessa há **túnel** —
-nunca pedra maciça cortada pela água. O teste antigo vira o teste novo, e a
-bateria não passa a mentir.
+**MEDIDO antes de escrever:** numa descida reta, o aqueduto 0 fica com 17 dos
+25 pontos abaixo do chão e o aqueduto 1 com nenhum. Um "túnel" de 17 em 25
+parece cano enterrado — até se lembrar de que **o aqueduto romano corria em sua
+maior parte sob a terra**, e o arco é que era a exceção. A referência de fora
+decidiu.
+
+O envelope saiu: ele satisfazia só a metade "a estrutura dá a volta", e nunca
+precisava de túnel porque inventava altura para escapar do morro. A queda agora
+é a DECLARADA pelo traçado, e é ela que impede a obra de fugir para cima.
+
+`DescendsAndNeverEntersTheHill` **virou** `DescendsAndTunnelsThrough` — deixar o
+antigo verde ao lado do novo faria a bateria provar duas regras que se
+contradizem.
 
 ## P2 — A casa ganha ATRIBUTOS 🧠
 > 🤖 Modelo: `opus` — é o contrato que P3 e P4 consomem

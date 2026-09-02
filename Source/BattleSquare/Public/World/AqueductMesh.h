@@ -33,6 +33,22 @@ public:
 	/** A altura da calha do aqueduto dado, no ponto dado. */
 	float BuiltHeightAt(int32 Aqueduct, int32 Point) const;
 
+	/**
+	 * Este ponto da calha corre por DENTRO do morro — é túnel.
+	 *
+	 * A obra pode atravessar a rocha; o que ela não pode é ser rocha maciça
+	 * cortada pela água. Onde a calha passa abaixo do chão há túnel, e saber
+	 * ONDE é o que permite desenhá-lo, narrá-lo e conferi-lo.
+	 *
+	 * E a referência é de fora, como as outras deste projeto: aqueduto romano
+	 * corria em sua maior parte SOB a terra, e o arco era a exceção — não o
+	 * contrário.
+	 */
+	bool IsTunnelAt(int32 Aqueduct, int32 Point) const;
+
+	/** Quantos pontos de todos os aquedutos correm em túnel. */
+	int32 GetTunnelPointCount() const { return TunnelPointCount; }
+
 	/** Quanto a calha passa acima do chão mais alto do percurso. */
 	static float ClearanceUnits();
 
@@ -51,4 +67,11 @@ private:
 
 	UPROPERTY()
 	TArray<int32> FirstPointOf;
+
+	/** Se cada ponto erguido corre por dentro do morro, na mesma ordem. */
+	UPROPERTY()
+	TArray<bool> BuiltIsTunnel;
+
+	UPROPERTY()
+	int32 TunnelPointCount = 0;
 };

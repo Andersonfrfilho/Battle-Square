@@ -23,7 +23,7 @@ testado.
 
 ## PRONTO é isto, e nada menos
 
-- [ ] **P1** — o aqueduto pode entrar no morro, saindo por túnel; e o teste que
+- [x] **P1** — o aqueduto pode entrar no morro, saindo por túnel; e o teste que
       afirma o contrário vira o teste novo
 - [ ] **P2** — a casa ganha atributos, com a medição de o que é do fluido e o
       que é da casa

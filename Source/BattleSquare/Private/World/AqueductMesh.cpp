@@ -45,6 +45,17 @@ AAqueductMesh::AAqueductMesh()
 	Channel->bUseComplexAsSimpleCollision = true;
 }
 
+bool AAqueductMesh::IsTunnelAt(int32 Qual, int32 Ponto) const
+{
+	if (!FirstPointOf.IsValidIndex(Qual))
+	{
+		return false;
+	}
+
+	const int32 Indice = FirstPointOf[Qual] + Ponto;
+	return BuiltIsTunnel.IsValidIndex(Indice) ? BuiltIsTunnel[Indice] : false;
+}
+
 float AAqueductMesh::BuiltHeightAt(int32 Qual, int32 Ponto) const
 {
 	if (!FirstPointOf.IsValidIndex(Qual))
@@ -65,8 +76,10 @@ int32 AAqueductMesh::BuildFrom(const UIslandBakedPlan& Assado)
 
 	Channel->ClearAllMeshSections();
 	BuiltHeights.Reset();
+	BuiltIsTunnel.Reset();
 	FirstPointOf.Reset();
 	BuiltAqueductCount = 0;
+	TunnelPointCount = 0;
 
 	const float Meia = AqueductLayout::HalfWidthUnits();
 
@@ -81,31 +94,25 @@ int32 AAqueductMesh::BuildFrom(const UIslandBakedPlan& Assado)
 			continue;
 		}
 
-		// A CALHA É UM ENVELOPE, montado DE TRÁS PARA A FRENTE.
+		// A CALHA DESCE DIREITO, e onde o morro sobe acima dela há TÚNEL.
 		//
-		// Ela tem de cumprir duas coisas ao mesmo tempo: nunca subir (água não
-		// sobe o morro sozinha) e nunca entrar no morro. Uma reta do começo ao
-		// fim cumpre a primeira e falha a segunda — MEDIDO: no aqueduto 0, a
-		// reta passava a 4.103,9 onde o chão está a 4.168,5, porque ela desce
-		// mais depressa que o terreno naquele trecho.
+		// Ela já foi um ENVELOPE que contornava tudo por cima, justamente para
+		// nunca entrar na rocha. Isso satisfazia metade do que a obra é — "a
+		// estrutura dá a volta" — e deixava a outra metade sem existir.
 		//
-		// Andando do FIM para o começo e tomando o máximo entre "o chão daqui
-		// mais a folga" e "a altura do ponto seguinte", as duas condições saem
-		// juntas por construção. A altura de partida deixa de ser escolhida:
-		// ela é o que o terreno obriga.
-		TArray<float> AlturaDoPonto;
-		AlturaDoPonto.SetNumZeroed(Pontos);
-
-		AlturaDoPonto[Pontos - 1] =
+		// A referência é de fora, como as outras deste projeto: o aqueduto
+		// romano corria em sua MAIOR PARTE sob a terra, e o arco era a
+		// exceção. Uma obra que só contorna é uma obra que não sabe furar.
+		//
+		// A SAÍDA fica acima do chão sempre: ela entrega água à vila, e uma
+		// boca enterrada não entrega nada.
+		const float NoFim =
 			Assado.HeightAt(Obra.PointsUnits.Last()) + Aqueduto::FolgaDaCalha;
 
-		for (int32 Ponto = Pontos - 2; Ponto >= 0; --Ponto)
-		{
-			AlturaDoPonto[Ponto] = FMath::Max(
-				Assado.HeightAt(Obra.PointsUnits[Ponto]) + Aqueduto::FolgaDaCalha,
-				AlturaDoPonto[Ponto + 1]);
-		}
-
+		// A entrada é a saída MAIS A QUEDA DECLARADA. A queda é do traçado, e
+		// respeitá-la é o que impede a obra de inventar altura para escapar do
+		// morro — que era exatamente o que o envelope fazia.
+		const float NoComeco = NoFim + FMath::Max(Obra.DropUnits, 1.0f);
 		TArray<FVector> Vertices;
 		TArray<int32> Triangulos;
 		TArray<FVector2D> Uvs;
@@ -124,8 +131,16 @@ int32 AAqueductMesh::BuildFrom(const UIslandBakedPlan& Assado)
 			Rumo.Normalize();
 
 			const float AoLongo = static_cast<float>(Ponto) / (Pontos - 1);
-			const float Altura = AlturaDoPonto[Ponto];
+			const float Altura = FMath::Lerp(NoComeco, NoFim, AoLongo);
 			BuiltHeights.Add(Altura);
+
+			// TÚNEL é onde o chão passa por cima da calha.
+			const bool bEmTunel = Altura < Assado.HeightAt(Aqui);
+			BuiltIsTunnel.Add(bEmTunel);
+			if (bEmTunel)
+			{
+				++TunnelPointCount;
+			}
 
 			const FVector2D Lado(-Rumo.Y, Rumo.X);
 			const FVector2D Esquerda = Aqui - Lado * Meia;
@@ -168,7 +183,8 @@ int32 AAqueductMesh::BuildFrom(const UIslandBakedPlan& Assado)
 	}
 
 	FBattleDebugScreen::Show(
-		FString::Printf(TEXT("MUNDO: %d aquedutos"), BuiltAqueductCount),
+		FString::Printf(TEXT("MUNDO: %d aquedutos, %d pontos em tunel"),
+			BuiltAqueductCount, TunnelPointCount),
 		30.0f, FColor(180, 180, 200), Aqueduto::ChaveDoPainel);
 
 	return BuiltAqueductCount;

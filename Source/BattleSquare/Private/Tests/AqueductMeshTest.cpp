@@ -88,11 +88,11 @@ bool FAqueductMeshBuildsEveryOneTest::RunTest(const FString& Parameters)
 	return true;
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAqueductMeshDescendsAndNeverEntersTheHillTest,
-	"BattleSquare.AqueductMesh.DescendsAndNeverEntersTheHill",
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAqueductMeshDescendsAndTunnelsThroughTest,
+	"BattleSquare.AqueductMesh.DescendsAndTunnelsThrough",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FAqueductMeshDescendsAndNeverEntersTheHillTest::RunTest(const FString& Parameters)
+bool FAqueductMeshDescendsAndTunnelsThroughTest::RunTest(const FString& Parameters)
 {
 	const UIslandBakedPlan* Assado = IslandBakedPlan::Load();
 	if (!Assado)
@@ -105,6 +105,11 @@ bool FAqueductMeshDescendsAndNeverEntersTheHillTest::RunTest(const FString& Para
 	AAqueductMesh* Obras = Mundo->SpawnActor<AAqueductMesh>();
 	Obras->BuildFrom(*Assado);
 
+	// ESTE TESTE SUBSTITUI `DescendsAndNeverEntersTheHill`, e a substituição é
+	// o ponto da tarefa. Aquele afirmava que a calha NUNCA entra no morro — e
+	// a regra mudou: ela pode, e onde entra há TÚNEL. Deixar o antigo verde ao
+	// lado do novo faria a bateria provar duas regras que se contradizem, e
+	// uma delas estaria mentindo em silêncio.
 	for (int32 Qual = 0; Qual < Assado->Aqueducts.Num(); ++Qual)
 	{
 		const FBakedAqueduct& Obra = Assado->Aqueducts[Qual];
@@ -113,44 +118,92 @@ bool FAqueductMeshDescendsAndNeverEntersTheHillTest::RunTest(const FString& Para
 			continue;
 		}
 
-		// DESCE, ponto a ponto e nunca sobe. Água não sobe o morro sozinha, e
-		// um aqueduto que sobe em algum trecho é um cano mágico.
+		// DESCE, e isso não mudou: água não sobe o morro sozinha, e é a única
+		// coisa que o túnel não pode comprar.
 		for (int32 Ponto = 1; Ponto < Obra.PointsUnits.Num(); ++Ponto)
 		{
-			const float Antes = Obras->BuiltHeightAt(Qual, Ponto - 1);
-			const float Agora = Obras->BuiltHeightAt(Qual, Ponto);
-
-			if (Agora > Antes + KINDA_SMALL_NUMBER)
+			if (Obras->BuiltHeightAt(Qual, Ponto)
+				> Obras->BuiltHeightAt(Qual, Ponto - 1) + KINDA_SMALL_NUMBER)
 			{
 				AddError(FString::Printf(
-					TEXT("o aqueduto %d SOBE no ponto %d (%.1f para %.1f)"),
-					Qual, Ponto, Antes, Agora));
+					TEXT("o aqueduto %d SOBE no ponto %d"), Qual, Ponto));
 				Mundo->DestroyWorld(false);
 				return false;
 			}
 		}
 
-		// E DESCE DE VERDADE: começo igual ao fim passaria no laço acima com a
-		// calha perfeitamente horizontal.
-		const float NoComeco = Obras->BuiltHeightAt(Qual, 0);
-		const float NoFim = Obras->BuiltHeightAt(Qual, Obra.PointsUnits.Num() - 1);
-		TestTrue(*FString::Printf(TEXT("o aqueduto %d desce de verdade"), Qual),
-			NoComeco - NoFim > 0.0f);
+		// A QUEDA É A DECLARADA. Sem isto, a obra inventaria altura para
+		// escapar do morro — que é exatamente o que o envelope antigo fazia, e
+		// por isso ele nunca precisava de túnel.
+		const float Caiu = Obras->BuiltHeightAt(Qual, 0)
+			- Obras->BuiltHeightAt(Qual, Obra.PointsUnits.Num() - 1);
+		TestEqual(*FString::Printf(TEXT("o aqueduto %d cai o que declarou"), Qual),
+			Caiu, Obra.DropUnits, 1.0f);
 
-		// NUNCA ENTRA NO MORRO: enterrado, ele some, e a contagem continua 2.
+		// ONDE ESTÁ ABAIXO DO CHÃO, É TÚNEL — a marcação e a geometria têm de
+		// concordar. Um ponto enterrado e não marcado é rocha maciça cortada
+		// pela água, que é o que a obra não pode ser.
 		for (int32 Ponto = 0; Ponto < Obra.PointsUnits.Num(); ++Ponto)
 		{
-			const float NoChao = Assado->HeightAt(Obra.PointsUnits[Ponto]);
-			if (Obras->BuiltHeightAt(Qual, Ponto) <= NoChao)
+			const bool bAbaixo = Obras->BuiltHeightAt(Qual, Ponto)
+				< Assado->HeightAt(Obra.PointsUnits[Ponto]);
+
+			if (bAbaixo != Obras->IsTunnelAt(Qual, Ponto))
 			{
 				AddError(FString::Printf(
-					TEXT("o aqueduto %d esta enterrado no ponto %d (calha %.1f, chao %.1f)"),
-					Qual, Ponto, Obras->BuiltHeightAt(Qual, Ponto), NoChao));
+					TEXT("aqueduto %d, ponto %d: abaixo do chao=%d, marcado como ")
+					TEXT("tunel=%d — a marcacao nao bate com a geometria"),
+					Qual, Ponto, bAbaixo ? 1 : 0,
+					Obras->IsTunnelAt(Qual, Ponto) ? 1 : 0));
 				Mundo->DestroyWorld(false);
 				return false;
 			}
 		}
+
+		// A SAÍDA entrega água à vila, e boca enterrada não entrega nada.
+		TestFalse(*FString::Printf(TEXT("a saida do aqueduto %d nao e tunel"), Qual),
+			Obras->IsTunnelAt(Qual, Obra.PointsUnits.Num() - 1));
 	}
+
+	Mundo->DestroyWorld(false);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAqueductMeshIsNotAllTunnelTest,
+	"BattleSquare.AqueductMesh.IsNotAllTunnel",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FAqueductMeshIsNotAllTunnelTest::RunTest(const FString& Parameters)
+{
+	const UIslandBakedPlan* Assado = IslandBakedPlan::Load();
+	if (!Assado)
+	{
+		AddError(TEXT("o assado nao existe — rode ./Tools/bake_island.sh"));
+		return false;
+	}
+
+	UWorld* Mundo = ProvaDoAqueduto::MundoDeTeste();
+	AAqueductMesh* Obras = Mundo->SpawnActor<AAqueductMesh>();
+	Obras->BuildFrom(*Assado);
+
+	// O CONTRAPESO, e sem ele "pode entrar no morro" viraria "é um cano
+	// enterrado": uma regra que pusesse tudo debaixo da terra passaria no
+	// teste acima, com a marcação batendo perfeitamente com a geometria, e
+	// nenhum aqueduto apareceria na tela.
+	int32 PontosAoTodo = 0;
+	for (const FBakedAqueduct& Obra : Assado->Aqueducts)
+	{
+		PontosAoTodo += Obra.PointsUnits.Num();
+	}
+
+	if (PontosAoTodo == 0)
+	{
+		AddError(TEXT("nao ha aqueduto para conferir"));
+		return false;
+	}
+
+	TestTrue(TEXT("existe trecho fora do morro"),
+		Obras->GetTunnelPointCount() < PontosAoTodo);
 
 	Mundo->DestroyWorld(false);
 	return true;

@@ -50,6 +50,7 @@
 #include "World/IslandBakedPlan.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "World/CrossingMesh.h"
 #include "World/RiverMesh.h"
 #include "World/WaterFooting.h"
 #include "World/TerrainMesh.h"
@@ -1640,6 +1641,15 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 			if (Trilhas)
 			{
 				Trilhas->BuildFrom(*Assado);
+			}
+
+			// AS TRAVESSIAS por último: elas são a obra onde a trilha encontra
+			// a água, e precisam das duas já no lugar.
+			ACrossingMesh* Travessias = World->SpawnActor<ACrossingMesh>(
+				ACrossingMesh::StaticClass(), Onde, FRotator::ZeroRotator, Parametros);
+			if (Travessias)
+			{
+				Travessias->BuildFrom(*Assado);
 			}
 		}
 	}

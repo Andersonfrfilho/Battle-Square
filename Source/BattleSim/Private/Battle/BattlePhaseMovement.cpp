@@ -518,7 +518,15 @@ void BattlePhases::ApplyMovement(
 		//
 		// Enquanto ninguém cobrasse isto, a lava era cenário colorido: o
 		// registro sabia que ela custa 12 e nada acontecia.
-		Pet.PendingDamage +=
-			FluidRegistry::DamagePerSlot(State.FluidAt(Pet.Column, Pet.Row));
+		const EFluidKind Fluido = State.FluidAt(Pet.Column, Pet.Row);
+		const int32 Bruto = FluidRegistry::DamagePerSlot(Fluido);
+		if (Bruto > 0)
+		{
+			// A RESISTÊNCIA desconta aqui, e só a do fluido: a brasa acima não
+			// é fluido, e resistir a lava não pode fazer ninguém pisar em
+			// brasa de graça. Inteiro, como tudo no núcleo.
+			const int32 Sobra = 100 - Pet.ResistPercentFor(Fluido);
+			Pet.PendingDamage += (Bruto * Sobra) / 100;
+		}
 	}
 }

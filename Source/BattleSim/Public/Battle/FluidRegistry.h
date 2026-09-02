@@ -125,6 +125,14 @@ struct BATTLESIM_API FFluidTraits
 	const TCHAR* DebugName = TEXT("?");
 };
 
+/**
+ * O array de resistência em `FPetState` tem tamanho fixo, porque a reflexão da
+ * engine não aceita `EFluidKind::Count` como dimensão. Esta guarda é o que
+ * impede o nono fluido de nascer sem lugar onde ser resistido — silenciosamente.
+ */
+static_assert(static_cast<int32>(EFluidKind::Count) <= 8,
+	"Acrescentou um fluido? Aumente FPetState::FluidResistPercent junto.");
+
 namespace FluidRegistry
 {
 	/** O que este fluido é. Fluido desconhecido devolve a linha de `Nenhum`. */

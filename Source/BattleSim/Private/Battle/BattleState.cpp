@@ -62,6 +62,14 @@ uint64 FBattleState::ComputeHash() const
 		Hash = CombineBattleHash(Hash, static_cast<uint64>(static_cast<int64>(Pet->ActiveEffectPercent)));
 		Hash = CombineBattleHash(Hash, Pet->ActiveEffectSlotsRemaining);
 
+		// A RESISTÊNCIA entra no hash: dois pets iguais, um com bota de lava e
+		// outro sem, são dois estados diferentes — e a diferença só aparece no
+		// slot em que alguém pisa na lava, tarde demais para o hash servir.
+		for (int32 Qual = 0; Qual < 8; ++Qual)
+		{
+			Hash = CombineBattleHash(Hash, Pet->FluidResistPercent[Qual]);
+		}
+
 		Hash = CombineBattleHash(Hash, Pet->PostureFlags);
 		Hash = CombineBattleHash(Hash, Pet->Traits);
 	}

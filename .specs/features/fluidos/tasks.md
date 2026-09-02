@@ -77,12 +77,28 @@ padrão** daquela fundura, e o que machuca fica vermelho. Uma casa de lava veste
 hoje o material da água, porque material novo exige asset autorado — e sem o
 nome, a casa mais perigosa do campo pareceria a mais inofensiva.
 
-## F5 — Itens e resistências
-> 🤖 Modelo: `sonnet`
+## F5 — Itens e resistências ✅ FEITO
 
-O que o usuário chamou de "itens que farão diferença entre eles": proteção
-contra um fluido específico.
-*Aceite:* com o item, o dano da lava não vem; sem ele, vem.
+**Não existia sistema de itens nem de resistência em nenhum dos dois módulos**
+— medido antes de escrever. Isso decidiu a forma: o núcleo carrega o NÚMERO
+(`FluidResistPercent`, um por fluido), e de onde ele vem — item, traço da
+espécie, bênção de templo — é decisão da camada de cima. É a mesma fronteira
+que faz o Attack chegar pré-multiplicado pela efetividade de tipo.
+
+**Porcentagem, não booleano de imunidade.** O jogo já fala em porcentagem em
+todo lugar (efetividade, escorregão, atraso), e um booleano fecharia a porta
+para "resiste um pouco" sem ganhar nada.
+
+Presa entre 0 e 100: acima de 100 o dano viraria negativo, e curar quem pisa na
+lava é o oposto do que a regra promete.
+
+**Resistir a um fluido não protege de outro, nem da brasa** — a casa de dano
+não é fluido, e a bota de lava não pode ser armadura geral, senão o primeiro
+item do jogo seria o último.
+
+O array tem tamanho fixo (a reflexão não aceita `EFluidKind::Count` como
+dimensão), com `static_assert` guardando: o nono fluido não nasce sem lugar
+onde ser resistido.
 
 ## F6 — O mundo declara seus fluidos
 > 🤖 Modelo: `sonnet`

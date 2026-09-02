@@ -313,6 +313,40 @@ struct FPetState
 		return (PostureFlags & static_cast<uint16>(Flag)) != 0;
 	}
 
+	/**
+	 * RESISTÊNCIA A FLUIDO, em porcentagem, uma entrada por fluido.
+	 *
+	 * Zero é não resistir; 100 é não sentir. Porcentagem, e não booleano de
+	 * imunidade, porque o jogo já fala em porcentagem em todo lugar
+	 * (efetividade de tipo, escorregão, atraso) — e um booleano fecharia a
+	 * porta para "resiste um pouco" sem ganhar nada em troca.
+	 *
+	 * **O núcleo não sabe de ONDE ela vem.** Item, traço da espécie, bênção de
+	 * templo: quem decide é a camada de cima, e o que chega aqui é o número —
+	 * exatamente como o Attack já chega pré-multiplicado pela efetividade de
+	 * tipo, que o núcleo também nunca aprendeu a existir.
+	 */
+	UPROPERTY()
+	uint8 FluidResistPercent[8] = { 0 };
+
+	/** Quanto este pet resiste ao fluido dado, de 0 a 100. */
+	int32 ResistPercentFor(EFluidKind Fluid) const
+	{
+		const int32 Qual = static_cast<int32>(Fluid);
+		return (Qual >= 0 && Qual < 8) ? FluidResistPercent[Qual] : 0;
+	}
+
+	/** Põe a resistência, presa entre 0 e 100 — acima de 100 curaria. */
+	void SetResistPercentFor(EFluidKind Fluid, int32 Percent)
+	{
+		const int32 Qual = static_cast<int32>(Fluid);
+		if (Qual >= 0 && Qual < 8)
+		{
+			FluidResistPercent[Qual] =
+				static_cast<uint8>(FMath::Clamp(Percent, 0, 100));
+		}
+	}
+
 	bool HasTrait(EPetTrait Trait) const
 	{
 		return (Traits & static_cast<uint8>(Trait)) != 0;

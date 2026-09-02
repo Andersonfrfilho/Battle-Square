@@ -85,3 +85,59 @@ toda água como uma. Hoje o mundo tem seis fluidos e trata todos igual.
 Fecha o achado #9 da construção do mundo. Hoje a altura da balsa vem da lâmina;
 com o registro, ela pode vir do empuxo.
 *Aceite:* um corpo mais denso que o fluido não boia nele.
+
+---
+
+## F8 — A ÁGUA CONDUZ 🧠
+> 🤖 Modelo: `opus` — é regra de área nova, e mexe na fronteira do núcleo
+
+**Pedido do usuário:** *"molhar não machuca, mas se o pet for elétrico ele vai
+sofrer alterações, pois os poderes elétricos onde estiver molhado conduzem
+energia — então se ele soltar um poder molhado, quem estiver no molhado e em um
+condutor direto vai sofrer o dano."*
+
+É o primeiro poder que o registro de fluidos torna possível, e o que dá sentido
+a `bIsWater` existir.
+
+### A restrição que molda o desenho
+
+`BattleDataTranslator` diz, com todas as letras: **"o núcleo nunca sabe que tipo
+existe — o Attack que ele recebe já chega efetivo."** Elétrico é TIPO, e tipo
+vive fora do `BattleSim`.
+
+Então a condução **não pode perguntar se o pet é elétrico**. Ela é propriedade
+do GOLPE — um `bConduz` por movimento, que o tradutor liga a partir do tipo,
+do mesmo jeito que a efetividade já chega pré-multiplicada. O núcleo resolve
+área e dano sem nunca aprender o que é eletricidade.
+
+Movimento já carrega dado próprio para dentro do núcleo (`MoveDrainPercents`,
+`MoveEffectStats`), então o lugar existe.
+
+### O que o registro ganha
+
+`ConductivityPerMille` — mais um campo, com referência de fora como os outros:
+água salgada conduz muito mais que doce; pântano, carregado de minerais, fica
+no meio; termal também. Lava conduz (rocha fundida é iônica), e isso importa
+porque ela já machuca por outro motivo — as duas coisas somam pelo mesmo cano
+(invariante 7).
+
+### A área: CONDUTOR DIRETO
+
+"Quem estiver no molhado **e em um condutor direto**" é uma pergunta de
+componente conexo: alaga-se a partir da casa do lançador por casas de fluido
+condutor adjacentes. Duas poças que não se tocam são dois circuitos, e quem
+está na outra não leva.
+
+**Isto é grafo, não raio de distância.** Uma poça a duas casas de distância mas
+ligada por um fio de água leva; uma encostada mas separada por chão seco, não.
+
+*Aceite:*
+- lançador molhado em água + golpe que conduz → todos na mesma poça levam;
+- alguém numa poça SEPARADA não leva (o contrapeso, invariante 9);
+- lançador em chão seco → ninguém leva, nem quem está na água;
+- golpe que NÃO conduz na mesma situação → ninguém leva.
+
+### Decisão em aberto
+
+Se o próprio lançador leva o dano que ele conduziu. Fisicamente sim; como jogo,
+é o que separa "poder forte" de "poder com preço". **Não decidir sozinho.**

@@ -2230,6 +2230,30 @@ void ABattleArena::DrawDebugGrid() const
 				break;
 			}
 
+			// A SUBSTÂNCIA na etiqueta, quando não é a padrão daquela fundura.
+			//
+			// Uma casa de LAVA veste hoje o material da água, porque material
+			// novo exige asset autorado — e a mais perigosa do campo pareceria
+			// a mais inofensiva, que é exatamente contra o que a regra da lama
+			// avisa aqui em cima. Enquanto o material não existe, o NOME é o
+			// que impede o jogador a descobrir a lava perdendo vida.
+			//
+			// Só o que DIVERGE do padrão aparece: escrever "água doce" em toda
+			// casa de água encheria a grade de uma palavra que não decide nada.
+			const EFluidKind Fluido = CurrentState.FluidAt(Column, Row);
+			if (Fluido != FBattleState::DefaultFluidFor(Propriedade))
+			{
+				NomeDaCasa += FString::Printf(TEXT(" %s"),
+					FluidRegistry::TraitsOf(Fluido).DebugName);
+
+				// E o que MACHUCA fica vermelho, seja qual for a fundura por
+				// baixo: a cor é o que se lê antes da palavra.
+				if (FluidRegistry::DamagePerSlot(Fluido) > 0)
+				{
+					CorDoTerreno = FColor(230, 70, 40);
+				}
+			}
+
 			// O PRAZO na etiqueta. Gelo sem contagem faz o jogador planejar
 			// em cima de um terreno que já vai embora — e descobrir isso no
 			// slot seguinte é o mesmo que a regra não existir para ele.

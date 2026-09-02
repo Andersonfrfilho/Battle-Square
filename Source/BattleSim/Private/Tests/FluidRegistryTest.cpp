@@ -62,12 +62,12 @@ bool FFluidRegistryLavaIsNotWaterTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("nao se submerge na lava"),
 		FluidRegistry::AllowsSubmerge(EFluidKind::Lava));
 	TestTrue(TEXT("estar na lava custa"),
-		FluidRegistry::DamagePerTurn(EFluidKind::Lava) > 0);
+		FluidRegistry::DamagePerSlot(EFluidKind::Lava) > 0);
 
 	// E a água não machuca: molhar não é queimar. Sem esta linha, um dano
 	// global posto por engano em todos os fluidos passaria despercebido.
 	TestEqual(TEXT("estar na agua doce nao custa"),
-		FluidRegistry::DamagePerTurn(EFluidKind::AguaDoce), 0);
+		FluidRegistry::DamagePerSlot(EFluidKind::AguaDoce), 0);
 
 	// LAMA também não é água, e também não se submerge: afundar em lama não é
 	// mergulhar, é atolar. Ela é o caso que um `bIsWater` frouxo pegaria junto.

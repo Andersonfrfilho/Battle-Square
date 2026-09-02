@@ -86,9 +86,9 @@ namespace FluidRegistry
 		return RegistroDosFluidos::LinhaDe(Fluido).bIsWater;
 	}
 
-	int32 DamagePerTurn(EFluidKind Fluido)
+	int32 DamagePerSlot(EFluidKind Fluido)
 	{
-		return RegistroDosFluidos::LinhaDe(Fluido).DamagePerTurn;
+		return RegistroDosFluidos::LinhaDe(Fluido).DamagePerSlot;
 	}
 
 	bool FloatsOn(int32 DensidadeDoCorpo, EFluidKind Fluido)

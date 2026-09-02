@@ -46,12 +46,25 @@ Requisito de skill passa a poder pedir substância, não só fundura.
 *Aceite:* um poder que exige água funciona nas cinco águas e falha na lava;
 um que exige lava falha em todas as águas.
 
-## F4 — O dano de estar dentro
-> 🤖 Modelo: `sonnet`
+## F4 — O dano de estar dentro ✅ FEITO
 
-`DamagePerTurn` deixa de ser um número guardado e passa a acontecer.
-*Aceite:* um pet que termina o turno na lava perde vida; na água, não.
-*Motivo:* enquanto ninguém aplica, a lava é cenário colorido — é L-041.
+O dano entra pelo **mesmo cano** do dano de casa que já existia: mesmo
+acumulador `PendingDamage`, mesma guarda de `IsOffTheGround()`, mesmo evento em
+F5. Um segundo caminho teria as próprias regras de morte e a própria narração.
+
+**O campo foi RENOMEADO por causa da medição.** Ele se chamava
+`DamagePerTurn`, e o laço onde ele cai roda **por slot** — três por turno. O
+dano de casa que já existia (`CellDamageAmount`) é por slot; dois danos de
+terreno em relógios diferentes seriam um defeito esperando, porque o jogador
+aprenderia o custo de um e erraria o do outro. Agora é `DamagePerSlot`.
+
+Voar escapa (a casa só alcança quem pisa nela); **camuflar não** — quem se
+esconde continua em pé no mesmo lugar.
+
+Na tela: a substância aparece na etiqueta da casa **só quando diverge do
+padrão** daquela fundura, e o que machuca fica vermelho. Uma casa de lava veste
+hoje o material da água, porque material novo exige asset autorado — e sem o
+nome, a casa mais perigosa do campo pareceria a mais inofensiva.
 
 ## F5 — Itens e resistências
 > 🤖 Modelo: `sonnet`

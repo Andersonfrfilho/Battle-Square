@@ -2,6 +2,7 @@
 
 #include "Battle/BattlePhases.h"
 #include "Battle/BattleState.h"
+#include "Battle/FluidRegistry.h"
 #include "Battle/BattleEvent.h"
 #include "Battle/BattleArenaConstants.h"
 
@@ -497,10 +498,27 @@ void BattlePhases::ApplyMovement(
 		// DP-ia-04: voar e submergir tiram o pet do CHÃO, e a casa só alcança
 		// quem está pisando nela. Camuflar não conta — quem se esconde
 		// continua em pé no mesmo lugar. O INCORPÓREO nunca esteve nele.
-		if (!Pet.IsOffTheGround()
-			&& State.CellLayout[State.CellIndex(Pet.Column, Pet.Row)] == static_cast<uint8>(ECellProperty::Damage))
+		if (Pet.IsOffTheGround())
+		{
+			continue;
+		}
+
+		if (State.CellLayout[State.CellIndex(Pet.Column, Pet.Row)]
+			== static_cast<uint8>(ECellProperty::Damage))
 		{
 			Pet.PendingDamage += BattleArenaConstants::CellDamageAmount;
 		}
+
+		// O FLUIDO cobra pelo MESMO cano, e é de propósito.
+		//
+		// Mesmo acumulador, mesma guarda de quem está fora do chão, mesmo
+		// evento em F5. Um segundo caminho de dano teria as próprias regras de
+		// morte e a própria narração — e duas delas concordam até a primeira
+		// edição, que é como este projeto já perdeu três tardes.
+		//
+		// Enquanto ninguém cobrasse isto, a lava era cenário colorido: o
+		// registro sabia que ela custa 12 e nada acontecia.
+		Pet.PendingDamage +=
+			FluidRegistry::DamagePerSlot(State.FluidAt(Pet.Column, Pet.Row));
 	}
 }

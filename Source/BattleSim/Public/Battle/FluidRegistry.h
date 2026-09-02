@@ -99,12 +99,18 @@ struct BATTLESIM_API FFluidTraits
 	bool bAllowsSubmerge = false;
 
 	/**
-	 * Dano por turno a quem está DENTRO, sem proteção.
+	 * Dano por SLOT a quem está DENTRO, sem proteção.
 	 *
 	 * Zero na água: molhar não machuca. É o campo que faz da lava uma decisão
 	 * em vez de um cenário colorido.
+	 *
+	 * Por SLOT, e não por turno — o nome foi corrigido quando a medição
+	 * mostrou onde ele cairia. O dano de casa que já existe
+	 * (`CellDamageAmount`) é cobrado uma vez por slot, e são três slots por
+	 * turno. Dois danos de terreno em relógios diferentes seriam um defeito
+	 * esperando: o jogador aprenderia o custo de um e erraria o do outro.
 	 */
-	int32 DamagePerTurn = 0;
+	int32 DamagePerSlot = 0;
 
 	/**
 	 * É ÁGUA, de qualquer procedência.
@@ -130,8 +136,8 @@ namespace FluidRegistry
 	/** Atalho: este fluido é água, de qualquer procedência? */
 	BATTLESIM_API bool IsWater(EFluidKind Fluid);
 
-	/** Atalho: quanto custa estar dentro dele por um turno, sem proteção. */
-	BATTLESIM_API int32 DamagePerTurn(EFluidKind Fluid);
+	/** Atalho: quanto custa estar dentro dele por um slot, sem proteção. */
+	BATTLESIM_API int32 DamagePerSlot(EFluidKind Fluid);
 
 	/**
 	 * O que BOIA sobre o quê.

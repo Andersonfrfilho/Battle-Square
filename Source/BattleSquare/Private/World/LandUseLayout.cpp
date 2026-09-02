@@ -38,6 +38,7 @@ namespace
 	/** Templo e ruína, em lotes de vila. A ruína é menor: dela sobrou pouco. */
 	constexpr float TemploEmLotes = 0.34f;
 	constexpr float RuinaEmLotes = 0.22f;
+	constexpr float CemiterioEmLotes = 0.30f;
 	constexpr float AlcanceDoLencol = 0.16f;
 
 	/** Quantos bosques e quantas clareiras a ilha tem. */
@@ -584,6 +585,145 @@ namespace
 					Manchas.Add(Ruina);
 					break;
 				}
+			}
+		}
+
+		// OS CEMITÉRIOS DA VILA, e por que eles ficam do lado contrário da água.
+		//
+		// Não é superstição, é saneamento: ninguém enterra rio ACIMA de onde
+		// bebe, e vilas fazem isso desde muito antes de saberem por quê. Aqui a
+		// regra vira uma amarra que o gerador consegue verificar — o cemitério
+		// sai na direção OPOSTA à da água mais perto.
+		//
+		// E o que ele diz a quem chega é curto: quem mora aqui já morreu aqui.
+		// Uma vila sem cemitério é um acampamento.
+		{
+			const int32 Quantos = WorldBudget::GraveyardsPerSettlement(
+				IslandGeography::IslandBiome());
+
+			const TArray<FSettlementPlacement> Assentamentos = RegionLayout::Plan();
+
+			for (int32 Qual = 0; Qual < Assentamentos.Num(); ++Qual)
+			{
+				const FSettlementPlacement& Assentamento = Assentamentos[Qual];
+				const float Clareira =
+					VillageLayout::ClearingHalfExtentUnitsFor(Assentamento.Kind);
+
+				// DE ONDE VEM A ÁGUA desta vila. Sem achar nenhuma, não há lado
+				// oposto a respeitar, e o cemitério não teria regra — então ele
+				// não nasce, em vez de nascer em lugar arbitrário.
+				FVector2D DaAgua = FVector2D::ZeroVector;
+				float MaisPerto = TNumericLimits<float>::Max();
+
+				for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
+				{
+					if (Curso.PointsUnits.Num() < 2)
+					{
+						continue;
+					}
+
+					float Aonde = 0.0f;
+					const float Ate = FreshWater::NearestOn(
+						Curso, Assentamento.CenterUnits, Aonde);
+
+					if (Ate < MaisPerto)
+					{
+						MaisPerto = Ate;
+						DaAgua = FreshWater::PointAtProgress(Curso, Aonde);
+					}
+				}
+
+				if (MaisPerto == TNumericLimits<float>::Max())
+				{
+					continue;
+				}
+
+				const FVector2D ParaLongeDaAgua =
+					(Assentamento.CenterUnits - DaAgua).GetSafeNormal();
+
+				if (ParaLongeDaAgua.IsNearlyZero())
+				{
+					continue;
+				}
+
+				for (int32 Indice = 0; Indice < Quantos; ++Indice)
+				{
+					const uint32 Semente = BattleSpread::SeedFromText(FString::Printf(
+						TEXT("cemiterio-%d-%d"), Qual, Indice));
+
+					// PERTO, mas fora da clareira: cemitério dentro da praça é
+					// praça, e do outro lado da ilha é romaria.
+					const float Quanto = Clareira * BattleSpread::Between(
+						1.4f, 2.1f, BattleSpread::Fraction(Semente, 0));
+
+					// Um desvio pequeno em volta do rumo oposto, para dois
+					// cemitérios da mesma vila não caírem um sobre o outro.
+					const float Desvio = BattleSpread::Between(-34.0f, 34.0f,
+						BattleSpread::Fraction(Semente, 1));
+
+					const FVector2D Rumo = ParaLongeDaAgua.GetRotated(Desvio);
+					const FVector2D Onde = Assentamento.CenterUnits + Rumo * Quanto;
+
+					if (!IslandGeography::IsOnLand(Onde))
+					{
+						continue;
+					}
+
+					FGroundUsePatch Cemiterio;
+					Cemiterio.Use = EGroundUse::Cemiterio;
+					Cemiterio.CenterUnits = Onde;
+					Cemiterio.HalfExtentUnits = Lote * CemiterioEmLotes;
+					Manchas.Add(Cemiterio);
+				}
+			}
+		}
+
+		// E OS CEMITÉRIOS ESQUECIDOS, que não são os outros em tamanho menor.
+		//
+		// O da vila é serviço; este é VESTÍGIO — alguém foi enterrado onde não
+		// há mais vila nenhuma. É o único que carrega história em vez de
+		// função, e por isso ele nasce ao lado de uma RUÍNA: um templo caído
+		// com um cemitério junto conta que ali houve gente, e conta melhor do
+		// que qualquer placa contaria.
+		{
+			TArray<int32> Ruinas;
+			for (int32 Indice = 0; Indice < Manchas.Num(); ++Indice)
+			{
+				if (Manchas[Indice].Use == EGroundUse::Ruina)
+				{
+					Ruinas.Add(Indice);
+				}
+			}
+
+			const int32 Quantos = FMath::Min(Ruinas.Num(),
+				WorldBudget::ForgottenGraveyardCount(IslandGeography::IslandBiome()));
+
+			for (int32 Indice = 0; Indice < Quantos; ++Indice)
+			{
+				const FGroundUsePatch& Ruina = Manchas[Ruinas[Indice]];
+
+				const uint32 Semente = BattleSpread::SeedFromText(
+					FString::Printf(TEXT("cemiterio-esquecido-%d"), Indice));
+
+				const float Rumo = BattleSpread::Between(0.0f, 360.0f,
+					BattleSpread::Fraction(Semente, 0));
+
+				// ENCOSTADO na ruína, não dentro dela: um cemitério que ocupa o
+				// mesmo chão do templo apaga os dois.
+				const FVector2D Onde = Ruina.CenterUnits
+					+ DoRumo(Rumo, Ruina.HalfExtentUnits + Lote * CemiterioEmLotes * 1.3f);
+
+				if (!IslandGeography::IsOnLand(Onde))
+				{
+					continue;
+				}
+
+				FGroundUsePatch Cemiterio;
+				Cemiterio.Use = EGroundUse::CemiterioEsquecido;
+				Cemiterio.CenterUnits = Onde;
+				Cemiterio.HalfExtentUnits = Lote * CemiterioEmLotes * 0.8f;
+				Cemiterio.Deity = Ruina.Deity;
+				Manchas.Add(Cemiterio);
 			}
 		}
 

@@ -237,6 +237,8 @@ bool FIslandMapDumpTest::RunTest(const FString& Parameters)
 			break;
 		case EGroundUse::Templo:          Nome = TEXT("templo"); break;
 		case EGroundUse::Ruina:           Nome = TEXT("ruina"); break;
+		case EGroundUse::Cemiterio:       Nome = TEXT("cemiterio"); break;
+		case EGroundUse::CemiterioEsquecido: Nome = TEXT("cemiterio-esquecido"); break;
 		default: break;
 		}
 

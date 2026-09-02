@@ -673,3 +673,152 @@ bool FLandUseARuinaEstaEsquecidaTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FLandUseGraveyardIsAwayFromWaterTest,
+	"BattleSquare.LandUse.OCemiterioFicaDoLadoContrarioDaAgua",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FLandUseGraveyardIsAwayFromWaterTest::RunTest(const FString& Parameters)
+{
+	// Ninguém enterra rio ACIMA de onde bebe. É regra sanitária real, e é a
+	// única coisa que faz o cemitério ter um lugar em vez de um sorteio.
+	const TArray<FGroundUsePatch> Manchas = LandUseLayout::Plan();
+
+	int32 Quantos = 0;
+	for (const FGroundUsePatch& Mancha : Manchas)
+	{
+		if (Mancha.Use != EGroundUse::Cemiterio)
+		{
+			continue;
+		}
+
+		++Quantos;
+
+		// DE QUEM ELE É, o teste não tem como saber — e não precisa.
+		//
+		// Duas versões anteriores tentaram descobrir: a primeira refazendo a
+		// escolha de rio do gerador, a segunda elegendo a vila mais perto. As
+		// duas reprovaram desenho certo, porque um cemitério de posto de
+		// fronteira pode cair mais perto da vila vizinha, e aí todas as contas
+		// passam a ser sobre a vila errada.
+		//
+		// O que a regra afirma é que EXISTE uma vila para a qual ele serve:
+		// fora da clareira dela, perto dela, e mais longe da água do que ela.
+		// Sem dono eleito não há desempate para errar.
+		float DoCemiterioAteAAgua = TNumericLimits<float>::Max();
+		for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
+		{
+			if (Curso.PointsUnits.Num() >= 2)
+			{
+				float Aonde = 0.0f;
+				DoCemiterioAteAAgua = FMath::Min(DoCemiterioAteAAgua,
+					FreshWater::NearestOn(Curso, Mancha.CenterUnits, Aonde));
+			}
+		}
+
+		bool bServeAAlguem = false;
+		for (const FSettlementPlacement& Assentamento : RegionLayout::Plan())
+		{
+			const float Clareira =
+				VillageLayout::ClearingHalfExtentUnitsFor(Assentamento.Kind);
+			const float Ate = FVector2D::Distance(
+				Mancha.CenterUnits, Assentamento.CenterUnits);
+
+			if (Ate <= Clareira || Ate >= Clareira * 3.0f)
+			{
+				continue;
+			}
+
+			float DaVilaAteAAgua = TNumericLimits<float>::Max();
+			for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
+			{
+				if (Curso.PointsUnits.Num() >= 2)
+				{
+					float Aonde = 0.0f;
+					DaVilaAteAAgua = FMath::Min(DaVilaAteAAgua,
+						FreshWater::NearestOn(Curso, Assentamento.CenterUnits, Aonde));
+				}
+			}
+
+			if (DoCemiterioAteAAgua > DaVilaAteAAgua)
+			{
+				bServeAAlguem = true;
+				break;
+			}
+		}
+
+		TestTrue(TEXT("o cemiterio serve uma vila, e fica do lado seco dela"),
+			bServeAAlguem);
+	}
+
+	TestTrue(TEXT("toda vila tem o seu"),
+		Quantos >= RegionLayout::Plan().Num() - 1);
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FLandUseForgottenGraveyardSitsByARuinTest,
+	"BattleSquare.LandUse.OCemiterioEsquecidoFicaJuntoDaRuina",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FLandUseForgottenGraveyardSitsByARuinTest::RunTest(const FString& Parameters)
+{
+	// Ele não é o cemitério da vila em tamanho menor: é vestígio, não serviço.
+	// Sozinho no mato ele seria só mais um ponto; ao lado de um templo caído
+	// ele conta que ali houve gente.
+	const TArray<FGroundUsePatch> Manchas = LandUseLayout::Plan();
+
+	int32 Quantos = 0;
+	for (const FGroundUsePatch& Mancha : Manchas)
+	{
+		if (Mancha.Use != EGroundUse::CemiterioEsquecido)
+		{
+			continue;
+		}
+
+		++Quantos;
+
+		const FGroundUsePatch* Vizinha = nullptr;
+		float Ate = TNumericLimits<float>::Max();
+		for (const FGroundUsePatch& Outra : Manchas)
+		{
+			if (Outra.Use != EGroundUse::Ruina)
+			{
+				continue;
+			}
+
+			const float Quanto = FVector2D::Distance(
+				Mancha.CenterUnits, Outra.CenterUnits);
+			if (Quanto < Ate)
+			{
+				Ate = Quanto;
+				Vizinha = &Outra;
+			}
+		}
+
+		TestNotNull(TEXT("existe uma ruina ao lado"), Vizinha);
+		if (Vizinha == nullptr)
+		{
+			continue;
+		}
+
+		// Encostado, e não em cima: um cemitério no mesmo chão do templo
+		// apagaria os dois.
+		TestTrue(TEXT("encostado na ruina"),
+			Ate < Vizinha->HalfExtentUnits + Mancha.HalfExtentUnits * 4.0f);
+		TestTrue(TEXT("e nao em cima dela"),
+			Ate > Vizinha->HalfExtentUnits);
+
+		// E longe de gente viva, pela mesma razão que a ruína está.
+		for (const FSettlementPlacement& Assentamento : RegionLayout::Plan())
+		{
+			TestTrue(TEXT("o esquecido nao tem vila em volta"),
+				FVector2D::Distance(Mancha.CenterUnits, Assentamento.CenterUnits)
+					> VillageLayout::ClearingHalfExtentUnitsFor(Assentamento.Kind) * 3.0f);
+		}
+	}
+
+	TestTrue(TEXT("existe cemiterio esquecido"), Quantos > 0);
+
+	return true;
+}

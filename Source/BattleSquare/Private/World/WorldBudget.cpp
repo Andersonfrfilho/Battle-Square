@@ -28,6 +28,8 @@ namespace
 		int32 Acampamentos = 6;
 		int32 Ruinas = 4;
 		float GaleriaReta = 0.15f;
+		int32 CemiteriosPorAssentamento = 1;
+		int32 CemiteriosEsquecidos = 1;
 	};
 
 	FOrcamento Do(EIslandBiome Biome)
@@ -46,6 +48,7 @@ namespace
 			Orcamento.Acampamentos = 3;
 			Orcamento.Ruinas = 6;
 			Orcamento.GaleriaReta = 0.28f;
+			Orcamento.CemiteriosEsquecidos = 2;
 			break;
 
 		case EIslandBiome::Desert:
@@ -64,6 +67,7 @@ namespace
 			Orcamento.Acampamentos = 9;
 			Orcamento.Ruinas = 7;
 			Orcamento.GaleriaReta = 0.20f;
+			Orcamento.CemiteriosEsquecidos = 2;
 			break;
 
 		case EIslandBiome::Glacier:
@@ -121,3 +125,5 @@ int32 WorldBudget::RoadsideShopCount(EIslandBiome Biome) { return Do(Biome).Loja
 int32 WorldBudget::CampCount(EIslandBiome Biome) { return Do(Biome).Acampamentos; }
 int32 WorldBudget::RuinCount(EIslandBiome Biome) { return Do(Biome).Ruinas; }
 float WorldBudget::StraightGalleryShare(EIslandBiome Biome) { return Do(Biome).GaleriaReta; }
+int32 WorldBudget::GraveyardsPerSettlement(EIslandBiome Biome) { return Do(Biome).CemiteriosPorAssentamento; }
+int32 WorldBudget::ForgottenGraveyardCount(EIslandBiome Biome) { return Do(Biome).CemiteriosEsquecidos; }

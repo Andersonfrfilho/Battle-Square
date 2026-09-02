@@ -70,6 +70,12 @@ namespace WorldBudget
 	 */
 	BATTLESQUARE_API float StraightGalleryShare(EIslandBiome Biome);
 
+	/** Quantos cemitérios cada assentamento tem. */
+	BATTLESQUARE_API int32 GraveyardsPerSettlement(EIslandBiome Biome);
+
+	/** E quantos ficaram para trás, sem vila nenhuma em volta. */
+	BATTLESQUARE_API int32 ForgottenGraveyardCount(EIslandBiome Biome);
+
 	/**
 	 * Quanto a mata é densa, como multiplicador da densidade base.
 	 *

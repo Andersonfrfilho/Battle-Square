@@ -141,7 +141,32 @@ enum class EGroundUse : uint8
 	 * Um lugar que já foi importante e deixou de ser conta uma história que
 	 * ninguém precisou escrever.
 	 */
-	Ruina
+	Ruina,
+
+	/**
+	 * CEMITÉRIO da vila: infraestrutura, e a mais silenciosa que existe.
+	 *
+	 * Fica PERTO do assentamento e na direção OPOSTA à da água. Não é
+	 * superstição: ninguém enterra rio acima de onde bebe, e essa é uma regra
+	 * sanitária real, velha como as vilas. Aqui ela vira uma amarra que o
+	 * gerador consegue verificar.
+	 *
+	 * O que ele diz a quem chega é curto e não precisa de texto: quem mora
+	 * aqui já morreu aqui. Uma vila sem cemitério é um acampamento.
+	 */
+	Cemiterio,
+
+	/**
+	 * CEMITÉRIO ESQUECIDO: alguém foi enterrado onde não há mais vila nenhuma.
+	 *
+	 * É o único que carrega história em vez de função, e por isso ele nasce
+	 * perto das RUÍNAS: um templo caído com um cemitério ao lado conta que ali
+	 * houve gente, e conta melhor do que qualquer placa contaria.
+	 *
+	 * O cemitério da vila e este não são o mesmo lugar em tamanhos diferentes
+	 * — um é serviço, o outro é vestígio.
+	 */
+	CemiterioEsquecido
 };
 
 struct BATTLESQUARE_API FGroundUsePatch

@@ -116,15 +116,32 @@ fluido" pegou as duas perguntas discordando fora da costa — `FluidAt` dizia
 mar não está no traçado como curso (ele é o que sobra depois que a terra acaba),
 então nenhum laço sobre rios o encontraria. Agora fora da costa é FUNDO.
 
-## F7 — A balsa flutua por DENSIDADE
+## F7 — A balsa flutua por DENSIDADE ✅ FEITO
 
-Fecha o achado #9 da construção do mundo. Hoje a altura da balsa vem da lâmina;
-com o registro, ela pode vir do empuxo.
-*Aceite:* um corpo mais denso que o fluido não boia nele.
+Fecha o achado #9 da construção do mundo. A altura vinha da lâmina, e por isso
+a balsa flutuaria igual em qualquer coisa — inclusive num fluido menos denso
+que ela, onde uma balsa de verdade iria ao fundo.
+
+`ConfigureFor` devolve `false` quando ela não boia, e a travessia deixa de
+planejá-la: **uma balsa que afunda não é uma travessia ruim, é uma travessia
+que não existe** — diferente de nascer parada no fundo do rio.
+
+O convés é madeira (600 por mil). O caso que só a densidade pega: um convés de
+pedra (2700) NÃO boia na água doce e BOIA na lava, porque a lava é mais densa
+que ele. Um booleano `bFloats` no convés erraria isso sempre, e erraria calado.
 
 ---
 
-## F8 — A ÁGUA CONDUZ 🧠
+## F8 — A ÁGUA CONDUZ 🧠  ⏸ AGUARDA DECISÃO DE CONTEÚDO
+
+**Bloqueada, e não por técnica:** o elemento **Elétrico não existe** nos sete
+que o jogo tem (Fogo, Água, Planta, Terra, Fantasma, Luz, Ar). Criar um é
+conteúdo, e é decisão do usuário — ou a condução vira um golpe de Água.
+
+O fator de resistência, quando ela vier, **já está decidido pelo código**: o
+eixo de elemento usa 150/100/50, então "resiste ao próprio elemento" é 50.
+Inventar número novo criaria duas escalas de resistência.
+
 > 🤖 Modelo: `opus` — é regra de área nova, e mexe na fronteira do núcleo
 
 **Pedido do usuário:** *"molhar não machuca, mas se o pet for elétrico ele vai

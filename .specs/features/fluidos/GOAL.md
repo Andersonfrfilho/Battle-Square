@@ -24,17 +24,17 @@ Mas:
 
 ## PRONTO é isto, e nada menos
 
-- [ ] **F3** — poderes distinguem substância: um poder que exige água funciona
+- [x] **F3** — poderes distinguem substância: um poder que exige água funciona
       nas cinco águas e falha na lava; um que exige lava falha em todas as águas
-- [ ] **F5** — itens de resistência: com o item, o dano da lava não vem; sem
+- [x] **F5** — itens de resistência: com o item, o dano da lava não vem; sem
       ele, vem. É o que o usuário pediu desde o começo
-- [ ] **F6** — o mundo declara seus fluidos: a água termal perto do vulcão é
+- [x] **F6** — o mundo declara seus fluidos: a água termal perto do vulcão é
       reconhecida como termal, não como doce
-- [ ] **F7** — a balsa flutua por DENSIDADE, e um corpo mais denso que o fluido
+- [x] **F7** — a balsa flutua por DENSIDADE, e um corpo mais denso que o fluido
       não boia nele
-- [ ] Bateria completa verde (hoje **770**; o número só sobe)
-- [ ] As cinco auditorias limpas
-- [ ] Um commit por task, cada um com o motivo — não só o quê
+- [x] Bateria completa verde — **783/783**, zero falhas (era 770)
+- [x] As cinco auditorias limpas
+- [x] Um commit por task, cada um com o motivo — não só o quê
 
 Enquanto qualquer caixa estiver aberta, o objetivo **continua**.
 

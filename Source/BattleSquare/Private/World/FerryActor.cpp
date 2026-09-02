@@ -73,9 +73,23 @@ AFerryActor::AFerryActor()
 	Deck->bFillCollisionUnderneathForNavmesh = false;
 }
 
-void AFerryActor::ConfigureFor(const FVector2D& Meio, const FVector2D& Eixo,
-	float Vao, float LaminaZ)
+bool AFerryActor::ConfigureFor(const FVector2D& Meio, const FVector2D& Eixo,
+	float Vao, float LaminaZ, EFluidKind Fluido)
 {
+	// SÓ HÁ BALSA ONDE ELA BOIA.
+	//
+	// A altura dela vinha da lâmina, e por isso ela flutuaria igual em
+	// qualquer coisa — inclusive num fluido menos denso que ela, onde uma
+	// balsa de verdade iria ao fundo. O empuxo depende dos DOIS lados, e é o
+	// registro que sabe os dois.
+	//
+	// Recusar é diferente de nascer parada: uma balsa que afunda não é uma
+	// travessia ruim, é uma travessia que não existe.
+	if (!FluidRegistry::FloatsOn(DeckDensityPerMille, Fluido))
+	{
+		return false;
+	}
+
 	Center = Meio;
 	Axis = Eixo.IsNearlyZero() ? FVector2D(1.0f, 0.0f) : Eixo.GetSafeNormal();
 	HalfSpanUnits = FMath::Max(Vao, 1.0f) * 0.5f;
@@ -95,6 +109,8 @@ void AFerryActor::ConfigureFor(const FVector2D& Meio, const FVector2D& Eixo,
 		Center.X + Axis.X * OffsetUnits,
 		Center.Y + Axis.Y * OffsetUnits,
 		SurfaceZ + Balsa::BordaLivre));
+
+	return true;
 }
 
 bool AFerryActor::MoverPara(float NovoOffset)

@@ -1664,10 +1664,12 @@ void ABattleSquareGameMode::SpawnWorldScenery()
 					AFerryActor* Embarcacao = World->SpawnActor<AFerryActor>(
 						AFerryActor::StaticClass(), FVector::ZeroVector,
 						FRotator::ZeroRotator, Parametros);
-					if (Embarcacao)
+					// Balsa que nao boia naquele fluido nao vira ator: uma
+					// plataforma no fundo do rio nao e travessia.
+					if (Embarcacao && !Embarcacao->ConfigureFor(Plano.CenterUnits,
+						Plano.AxisUnits, Plano.SpanUnits, Plano.WaterZ, Plano.Fluid))
 					{
-						Embarcacao->ConfigureFor(Plano.CenterUnits, Plano.AxisUnits,
-							Plano.SpanUnits, Plano.WaterZ);
+						Embarcacao->Destroy();
 					}
 				}
 			}

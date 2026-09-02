@@ -103,6 +103,9 @@ public:
 		FVector2D AxisUnits = FVector2D(1.0f, 0.0f);
 		float SpanUnits = 0.0f;
 		float WaterZ = 0.0f;
+
+		/** De que fluido é a água que ela atravessa — é ele que decide o empuxo. */
+		EFluidKind Fluid = EFluidKind::AguaDoce;
 	};
 
 	const TArray<FFerryPlacement>& GetFerryPlacements() const { return FerryPlacements; }

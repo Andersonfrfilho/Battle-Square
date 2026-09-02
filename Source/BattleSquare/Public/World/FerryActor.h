@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Battle/FluidRegistry.h"
 #include "GameFramework/Actor.h"
 #include "FerryActor.generated.h"
 
@@ -40,8 +41,27 @@ public:
 	 * @param SpanUnits    o vão a vencer — ela vai de meio vão a meio vão
 	 * @param WaterZ       a altura da lâmina; a balsa flutua sobre ela
 	 */
-	void ConfigureFor(const FVector2D& CenterUnits, const FVector2D& AxisUnits,
-		float SpanUnits, float WaterZ);
+	/**
+	 * Devolve `false` quando ela NÃO BOIA no fluido dado — e aí não há balsa.
+	 *
+	 * Uma balsa que afunda não é uma balsa parada: é uma travessia que não
+	 * existe. Devolver a resposta é o que permite a travessia deixar de
+	 * planejá-la, em vez de pôr no rio uma plataforma no fundo.
+	 */
+	bool ConfigureFor(const FVector2D& CenterUnits, const FVector2D& AxisUnits,
+		float SpanUnits, float WaterZ, EFluidKind Fluid);
+
+	/**
+	 * A densidade do convés, em partes por mil.
+	 *
+	 * Madeira. É ela que decide onde a balsa pode existir, e por isso é um
+	 * NÚMERO e não um booleano `bFloats`: o que boia depende dos dois lados, e
+	 * a mesma pedra que afunda na água boia na lava.
+	 */
+	int32 GetDeckDensityPerMille() const { return DeckDensityPerMille; }
+
+	/** Troca o material do convés. Balsa de pedra existe — só não em água. */
+	void SetDeckDensityPerMille(int32 Density) { DeckDensityPerMille = Density; }
 
 	UStaticMeshComponent* GetDeck() const { return Deck; }
 
@@ -93,4 +113,8 @@ private:
 
 	UPROPERTY()
 	int32 Heading = 1;
+
+	/** Madeira: 600 por mil, contra os 1000 da água doce. */
+	UPROPERTY()
+	int32 DeckDensityPerMille = 600;
 };

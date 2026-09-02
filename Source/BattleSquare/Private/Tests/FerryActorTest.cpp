@@ -35,7 +35,7 @@ namespace ProvaDaBalsa
 	{
 		AFerryActor* Balsa = Mundo->SpawnActor<AFerryActor>();
 		Balsa->ConfigureFor(FVector2D::ZeroVector, FVector2D(1.0f, 0.0f),
-			VaoDeTeste, LaminaDeTeste);
+			VaoDeTeste, LaminaDeTeste, EFluidKind::AguaDoce);
 		return Balsa;
 	}
 }
@@ -214,6 +214,57 @@ bool FFerryActorBumpsIntoWhatIsInTheWayTest::RunTest(const FString& Parameters)
 		Mundo->DestroyWorld(false);
 		return false;
 	}
+
+	Mundo->DestroyWorld(false);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FFerryActorFloatsByDensityTest,
+	"BattleSquare.FerryActor.FloatsByDensity",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FFerryActorFloatsByDensityTest::RunTest(const FString& Parameters)
+{
+	UWorld* Mundo = ProvaDaBalsa::MundoDeTeste();
+
+	// A ALTURA DELA VINHA DA LÂMINA, e por isso ela flutuaria igual em
+	// qualquer coisa — inclusive num fluido menos denso que ela, onde uma
+	// balsa de verdade iria ao fundo.
+	//
+	// Convés de MADEIRA (600) boia em toda água (988 e acima).
+	AFerryActor* DeMadeira = Mundo->SpawnActor<AFerryActor>();
+	TestTrue(TEXT("balsa de madeira boia na agua doce"),
+		DeMadeira->ConfigureFor(FVector2D::ZeroVector, FVector2D(1.0f, 0.0f),
+			ProvaDaBalsa::VaoDeTeste, ProvaDaBalsa::LaminaDeTeste,
+			EFluidKind::AguaDoce));
+
+	// Convés de PEDRA (2700) afunda na água — e a travessia deixa de existir,
+	// que é diferente de nascer parada no fundo do rio.
+	AFerryActor* DePedra = Mundo->SpawnActor<AFerryActor>();
+	DePedra->SetDeckDensityPerMille(2700);
+
+	TestFalse(TEXT("balsa de pedra NAO boia na agua doce"),
+		DePedra->ConfigureFor(FVector2D::ZeroVector, FVector2D(1.0f, 0.0f),
+			ProvaDaBalsa::VaoDeTeste, ProvaDaBalsa::LaminaDeTeste,
+			EFluidKind::AguaDoce));
+
+	// E O CASO QUE SÓ A DENSIDADE PEGA: a MESMA pedra boia na LAVA, porque a
+	// lava é mais densa que ela. Um booleano `bFloats` no convés erraria isto
+	// sempre, e erraria calado — é a razão de o empuxo depender dos dois lados.
+	AFerryActor* NaLava = Mundo->SpawnActor<AFerryActor>();
+	NaLava->SetDeckDensityPerMille(2700);
+
+	TestTrue(TEXT("a MESMA balsa de pedra boia na lava"),
+		NaLava->ConfigureFor(FVector2D::ZeroVector, FVector2D(1.0f, 0.0f),
+			ProvaDaBalsa::VaoDeTeste, ProvaDaBalsa::LaminaDeTeste,
+			EFluidKind::Lava));
+
+	// O convés padrão é madeira: uma balsa que nascesse densa não boiaria em
+	// rio nenhum, e as 25 do traçado sumiriam de uma vez.
+	const AFerryActor* Padrao = GetDefault<AFerryActor>();
+	TestTrue(TEXT("o conves padrao boia em agua"),
+		FluidRegistry::FloatsOn(Padrao->GetDeckDensityPerMille(),
+			EFluidKind::AguaDoce));
 
 	Mundo->DestroyWorld(false);
 	return true;

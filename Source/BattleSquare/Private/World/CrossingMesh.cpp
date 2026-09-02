@@ -6,6 +6,7 @@
 #include "Environment/ScenaryPalette.h"
 #include "ProceduralMeshComponent.h"
 #include "World/FerryActor.h"
+#include "World/WaterFooting.h"
 #include "World/RiverMesh.h"
 #include "World/TrailLayout.h"
 
@@ -262,6 +263,7 @@ int32 ACrossingMesh::BuildFrom(const UIslandBakedPlan& Assado)
 			Onde2.AxisUnits = Rumo;
 			Onde2.SpanUnits = MeioComprimento * 2.0f;
 			Onde2.WaterZ = NaLamina;
+			Onde2.Fluid = WaterFooting::FluidAt(Assado, Onde.CenterUnits);
 			FerryPlacements.Add(Onde2);
 
 			// Ela entra na conta pelo PLANO, não pelos vértices: a obra dela não

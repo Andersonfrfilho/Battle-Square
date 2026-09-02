@@ -28,13 +28,14 @@ Build/
 .DS_Store
 
 # Configuração local do servidor MCP do Editor (endereço de loopback, por máquina)
-/.claude/
+# O CONTEÚDO, não o diretório: `/.claude/` com barra final impede o git de
+# descer ali, e então a exceção abaixo nunca chega a ser avaliada.
+/.claude/*
 
 # Exceção: comando de projeto é CÓDIGO do projeto, não estado de sessão.
 # Um /goal que só existe nesta máquina não sobrevive a um clone — e sobreviver
 # ao que apaga contexto é a razão de ele existir.
 !/.claude/commands/
-!/.claude/commands/**
 
 # Artefatos binários da localização: gerados por Tools/gather_text.sh a partir
 # do manifesto e dos .po, que SÃO versionados.

@@ -2,8 +2,13 @@
 description: Retoma o objetivo aberto e trabalha até todas as caixas de PRONTO fecharem
 ---
 
-Leia `.specs/features/construcao-do-mundo/GOAL.md` — ele é o rumo, e vale mais
-que qualquer coisa que você lembre desta conversa.
+Leia o GOAL da feature que `$ARGUMENTS` nomeia:
+`.specs/features/$ARGUMENTS/GOAL.md` — ele é o rumo, e vale mais que qualquer
+coisa que você lembre desta conversa.
+
+**Sem argumento:** rode `ls .specs/features/*/GOAL.md`, leia cada um, e continue
+o que tiver caixa de PRONTO aberta. Se houver mais de um, PERGUNTE qual —
+escolher sozinho gastaria a rodada no objetivo errado.
 
 Depois:
 

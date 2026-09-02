@@ -255,6 +255,13 @@ const FPetState* FBattleState::FindPetByIdConst(uint8 PetId) const
 	return nullptr;
 }
 
+FPetState* FBattleState::FindPetById(uint8 PetId)
+{
+	// `const_cast` sobre a versão const, e não um terceiro laço: duas buscas
+	// concordam até alguém acrescentar uma condição a uma delas.
+	return const_cast<FPetState*>(FindPetByIdConst(PetId));
+}
+
 FPetState* FBattleState::FindAlivePetOnSide(uint8 Side)
 {
 	for (FPetState& Pet : Pets)

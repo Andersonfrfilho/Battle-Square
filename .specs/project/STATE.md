@@ -993,6 +993,11 @@ assinatura o compilador é a rede: se a mudança fosse compatível (um parâmetr
 com valor padrão, por exemplo), a chamada pulada compilaria e o defeito só
 apareceria em jogo.
 
+E na SEGUNDA varredura, com `<`/`>` já removidos da conta, duas chamadas ainda
+escaparam: `FBattleAction{ A, B }` tem **chaves**, e a vírgula dentro delas não
+separa argumento do chamador. Chave é a terceira espécie de parêntese, e o
+separador tem de contar `(`, `[` **e** `{` — nunca `<`.
+
 **Regra:** depois de varredura mecânica, **conferir o que sobrou** com uma busca
 independente da que fez a troca — e preferir uma mudança de assinatura que
 QUEBRE a compilação, em vez de uma que aceite os dois formatos. É primo do

@@ -67,7 +67,8 @@ namespace ProvaDaSubida
 	{
 		const FBattleAction Nada;
 		TArray<FBattleEvent> Traco;
-		BattlePhases::ApplyMovement(Estado, Andar(Rumo), Nada, 0, Traco);
+		BattlePhases::ApplyMovement(Estado,
+		BattlePhases::DuelSlotActions(Estado, Andar(Rumo), Nada), 0, Traco);
 		return FIntPoint(Estado.Pets[0].Column, Estado.Pets[0].Row);
 	}
 }
@@ -174,7 +175,7 @@ bool FUpstreamCostIsNarratedTest::RunTest(const FString& Parameters)
 	const FBattleAction Nada;
 	TArray<FBattleEvent> Traco;
 	BattlePhases::ApplyMovement(Estado,
-		ProvaDaSubida::Andar(EBattleDirection::Esquerda), Nada, 0, Traco);
+		BattlePhases::DuelSlotActions(Estado, ProvaDaSubida::Andar(EBattleDirection::Esquerda), Nada), 0, Traco);
 
 	bool bNarrou = false;
 	for (const FBattleEvent& Evento : Traco)

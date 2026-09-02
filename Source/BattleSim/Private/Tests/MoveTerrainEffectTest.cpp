@@ -76,7 +76,8 @@ bool FMoveChangesTerrainOnHitTest::RunTest(const FString& Parameters)
 	TArray<FBattleEvent> Trace;
 
 	FBattleAction Aguardar;
-	BattlePhases::ApplyCombat(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar, 0, Trace);
+	BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar), 0, Trace);
 
 	TestEqual(TEXT("A casa do alvo virou água"),
 		static_cast<int32>(EfeitoDeTerrenoDoGolpeTeste::CasaDoAlvo(State)), static_cast<int32>(ECellProperty::Water));
@@ -104,7 +105,8 @@ bool FMoveWithoutEffectLeavesTerrainAloneTest::RunTest(const FString& Parameters
 
 	TArray<FBattleEvent> Trace;
 	FBattleAction Aguardar;
-	BattlePhases::ApplyCombat(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar, 0, Trace);
+	BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar), 0, Trace);
 
 	TestEqual(TEXT("A casa continua como bônus"),
 		static_cast<int32>(EfeitoDeTerrenoDoGolpeTeste::CasaDoAlvo(State)), static_cast<int32>(ECellProperty::Buff));
@@ -129,7 +131,8 @@ bool FBlockedCellNeverChangesTest::RunTest(const FString& Parameters)
 
 	TArray<FBattleEvent> Trace;
 	FBattleAction Aguardar;
-	BattlePhases::ApplyCombat(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar, 0, Trace);
+	BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar), 0, Trace);
 
 	TestEqual(TEXT("Casa bloqueada continua bloqueada"),
 		static_cast<int32>(EfeitoDeTerrenoDoGolpeTeste::CasaDoAlvo(State)), static_cast<int32>(ECellProperty::Blocked));
@@ -151,19 +154,22 @@ bool FFloodingEnablesSubmergingTest::RunTest(const FString& Parameters)
 	FBattleAction Aguardar;
 
 	// Antes: terra seca, e submergir FALHA.
-	BattlePhases::ApplyPostures(State, Aguardar,
-		FBattleAction{ EActionType::Submergir, EBattleDirection::Nenhuma }, 0, Trace);
+	BattlePhases::ApplyPostures(State,
+		BattlePhases::DuelSlotActions(State, Aguardar,
+			FBattleAction{ EActionType::Submergir, EBattleDirection::Nenhuma }), 0, Trace);
 	TestTrue(TEXT("Em terra seca, submergir falha"),
 		EfeitoDeTerrenoDoGolpeTeste::TemEvento(Trace, EBattleEventType::PosturaFalhou));
 
 	// O golpe alaga a casa do alvo.
 	Trace.Reset();
-	BattlePhases::ApplyCombat(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar, 0, Trace);
+	BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar), 0, Trace);
 
 	// Depois: mesma casa, e agora submergir vale.
 	Trace.Reset();
-	BattlePhases::ApplyPostures(State, Aguardar,
-		FBattleAction{ EActionType::Submergir, EBattleDirection::Nenhuma }, 1, Trace);
+	BattlePhases::ApplyPostures(State,
+		BattlePhases::DuelSlotActions(State, Aguardar,
+			FBattleAction{ EActionType::Submergir, EBattleDirection::Nenhuma }), 1, Trace);
 	TestFalse(TEXT("Depois de alagada, submergir funciona"),
 		EfeitoDeTerrenoDoGolpeTeste::TemEvento(Trace, EBattleEventType::PosturaFalhou));
 

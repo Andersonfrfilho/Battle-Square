@@ -69,14 +69,14 @@ bool FOChaoNaoAlcancaOFantasmaTest::RunTest(const FString&)
 		FBattleState ComCorpo = IncorporeoTeste::CampoCom(Gelo, /*bFantasma=*/false);
 		TArray<FBattleEvent> Traco;
 		BattlePhases::ApplyMovement(ComCorpo,
-			IncorporeoTeste::Andar(EBattleDirection::Cima), Nada, 0, Traco);
+		BattlePhases::DuelSlotActions(ComCorpo, IncorporeoTeste::Andar(EBattleDirection::Cima), Nada), 0, Traco);
 		TestEqual(TEXT("Com corpo, o gelo prende"),
 			IncorporeoTeste::Conta(Traco, EBattleEventType::Escorregou), 1);
 
 		FBattleState Fantasma = IncorporeoTeste::CampoCom(Gelo, /*bFantasma=*/true);
 		TArray<FBattleEvent> Outro;
 		BattlePhases::ApplyMovement(Fantasma,
-			IncorporeoTeste::Andar(EBattleDirection::Cima), Nada, 0, Outro);
+		BattlePhases::DuelSlotActions(Fantasma, IncorporeoTeste::Andar(EBattleDirection::Cima), Nada), 0, Outro);
 		TestEqual(TEXT("O fantasma não escorrega"),
 			IncorporeoTeste::Conta(Outro, EBattleEventType::Escorregou), 0);
 		TestEqual(TEXT("E anda"), Fantasma.Pets[0].Row, static_cast<uint8>(0));
@@ -87,7 +87,7 @@ bool FOChaoNaoAlcancaOFantasmaTest::RunTest(const FString&)
 		FBattleState Fantasma = IncorporeoTeste::CampoCom(Lama, /*bFantasma=*/true);
 		TArray<FBattleEvent> Traco;
 		BattlePhases::ApplyMovement(Fantasma,
-			IncorporeoTeste::Andar(EBattleDirection::Cima), Nada, 0, Traco);
+		BattlePhases::DuelSlotActions(Fantasma, IncorporeoTeste::Andar(EBattleDirection::Cima), Nada), 0, Traco);
 		TestEqual(TEXT("A lama não o atola"),
 			IncorporeoTeste::Conta(Traco, EBattleEventType::AtravessouDevagar), 0);
 		TestEqual(TEXT("Nem o faz escorregar"),
@@ -98,12 +98,14 @@ bool FOChaoNaoAlcancaOFantasmaTest::RunTest(const FString&)
 	{
 		FBattleState Fantasma = IncorporeoTeste::CampoCom(Brasa, /*bFantasma=*/true);
 		TArray<FBattleEvent> Traco;
-		BattlePhases::ApplyMovement(Fantasma, Nada, Nada, 0, Traco);
+		BattlePhases::ApplyMovement(Fantasma,
+		BattlePhases::DuelSlotActions(Fantasma, Nada, Nada), 0, Traco);
 		TestEqual(TEXT("A brasa não o queima"), Fantasma.Pets[0].PendingDamage, 0);
 
 		FBattleState ComCorpo = IncorporeoTeste::CampoCom(Brasa, /*bFantasma=*/false);
 		TArray<FBattleEvent> Outro;
-		BattlePhases::ApplyMovement(ComCorpo, Nada, Nada, 0, Outro);
+		BattlePhases::ApplyMovement(ComCorpo,
+		BattlePhases::DuelSlotActions(ComCorpo, Nada, Nada), 0, Outro);
 		TestEqual(TEXT("Mas queima quem pisa"), ComCorpo.Pets[0].PendingDamage,
 			BattleArenaConstants::CellDamageAmount);
 	}
@@ -128,7 +130,8 @@ bool FAtravessarSoQuemNaoTemCorpoTest::RunTest(const FString&)
 
 	FBattleAction Nada;
 	TArray<FBattleEvent> Traco;
-	BattlePhases::ApplyPostures(ComCorpo, Passar.Actions[0], Nada, 0, Traco);
+	BattlePhases::ApplyPostures(ComCorpo,
+		BattlePhases::DuelSlotActions(ComCorpo, Passar.Actions[0], Nada), 0, Traco);
 
 	TestEqual(TEXT("Quem tem corpo não atravessa"),
 		IncorporeoTeste::Conta(Traco, EBattleEventType::PosturaFalhou), 1);
@@ -139,7 +142,8 @@ bool FAtravessarSoQuemNaoTemCorpoTest::RunTest(const FString&)
 	FBattleState Fantasma = IncorporeoTeste::CampoCom(
 		static_cast<uint8>(ECellProperty::None), /*bFantasma=*/true);
 	TArray<FBattleEvent> Outro;
-	BattlePhases::ApplyPostures(Fantasma, Passar.Actions[0], Nada, 0, Outro);
+	BattlePhases::ApplyPostures(Fantasma,
+		BattlePhases::DuelSlotActions(Fantasma, Passar.Actions[0], Nada), 0, Outro);
 
 	TestEqual(TEXT("O fantasma atravessa"),
 		IncorporeoTeste::Conta(Outro, EBattleEventType::PosturaFalhou), 0);
@@ -169,7 +173,7 @@ bool FAtravessandoOTroncoNaoBarraTest::RunTest(const FString&)
 	// Sem atravessar, o tronco barra — é o comportamento de sempre, e ele
 	// precisa continuar valendo para o fantasma que NÃO gastou a ação.
 	BattlePhases::ApplyMovement(Estado,
-		IncorporeoTeste::Andar(EBattleDirection::Cima), Nada, 0, Traco);
+		BattlePhases::DuelSlotActions(Estado, IncorporeoTeste::Andar(EBattleDirection::Cima), Nada), 0, Traco);
 	TestEqual(TEXT("Sem atravessar, o fantasma esbarra igual"),
 		Estado.Pets[0].Row, static_cast<uint8>(1));
 
@@ -177,7 +181,7 @@ bool FAtravessandoOTroncoNaoBarraTest::RunTest(const FString&)
 	Estado.Pets[0].PostureFlags |= static_cast<uint16>(EBattlePostureFlags::Phasing);
 	TArray<FBattleEvent> Depois;
 	BattlePhases::ApplyMovement(Estado,
-		IncorporeoTeste::Andar(EBattleDirection::Cima), Nada, 1, Depois);
+		BattlePhases::DuelSlotActions(Estado, IncorporeoTeste::Andar(EBattleDirection::Cima), Nada), 1, Depois);
 
 	TestEqual(TEXT("Atravessando, ele passa"), Estado.Pets[0].Row, static_cast<uint8>(0));
 	TestEqual(TEXT("E o tronco CONTINUA em pé"), Estado.CellLayout[Bloqueada],
@@ -244,7 +248,8 @@ bool FOFisicoNaoAlcancaOIncorporeoTest::RunTest(const FString&)
 
 	FBattleAction Nada;
 	TArray<FBattleEvent> Traco;
-	BattlePhases::ApplyCombat(Estado, Soco, Nada, 0, Traco);
+	BattlePhases::ApplyCombat(Estado,
+		BattlePhases::DuelSlotActions(Estado, Soco, Nada), 0, Traco);
 
 	TestEqual(TEXT("O golpe físico erra o fantasma"), Estado.Pets[1].PendingDamage, 0);
 	TestEqual(TEXT("E o feed conta que errou"),
@@ -257,7 +262,8 @@ bool FOFisicoNaoAlcancaOIncorporeoTest::RunTest(const FString&)
 	Magia.Direction = EBattleDirection::Direita;
 
 	TArray<FBattleEvent> ComMagia;
-	BattlePhases::ApplyCombat(Estado, Magia, Nada, 1, ComMagia);
+	BattlePhases::ApplyCombat(Estado,
+		BattlePhases::DuelSlotActions(Estado, Magia, Nada), 1, ComMagia);
 	TestTrue(TEXT("A magia acerta"), Estado.Pets[1].PendingDamage > 0);
 
 	return true;
@@ -280,7 +286,8 @@ bool FALuzDesfazOEsconderijoTest::RunTest(const FString&)
 	FBattleAction Nada;
 
 	TArray<FBattleEvent> Traco;
-	BattlePhases::ApplyPostures(Estado, Iluminar, Nada, 0, Traco);
+	BattlePhases::ApplyPostures(Estado,
+		BattlePhases::DuelSlotActions(Estado, Iluminar, Nada), 0, Traco);
 
 	// A bandeira vai para o ALVO, não para quem iluminou: quem deixa de estar
 	// escondido é ele, e é isso que faz a luz de um pet servir ao golpe que
@@ -296,7 +303,8 @@ bool FALuzDesfazOEsconderijoTest::RunTest(const FString&)
 	Soco.Direction = EBattleDirection::Direita;
 
 	TArray<FBattleEvent> Depois;
-	BattlePhases::ApplyCombat(Estado, Soco, Nada, 0, Depois);
+	BattlePhases::ApplyCombat(Estado,
+		BattlePhases::DuelSlotActions(Estado, Soco, Nada), 0, Depois);
 	TestTrue(TEXT("Revelado, o físico ACERTA o fantasma"),
 		Estado.Pets[1].PendingDamage > 0);
 
@@ -332,12 +340,14 @@ bool FALuzTambemDesfazACamuflagemTest::RunTest(const FString&)
 	FBattleAction Nada;
 
 	TArray<FBattleEvent> SemLuz;
-	BattlePhases::ApplyCombat(Estado, Soco, Nada, 0, SemLuz);
+	BattlePhases::ApplyCombat(Estado,
+		BattlePhases::DuelSlotActions(Estado, Soco, Nada), 0, SemLuz);
 	TestEqual(TEXT("Camuflado, não é alcançado"), Estado.Pets[1].PendingDamage, 0);
 
 	Estado.Pets[1].PostureFlags |= static_cast<uint16>(EBattlePostureFlags::Revealed);
 	TArray<FBattleEvent> ComLuz;
-	BattlePhases::ApplyCombat(Estado, Soco, Nada, 1, ComLuz);
+	BattlePhases::ApplyCombat(Estado,
+		BattlePhases::DuelSlotActions(Estado, Soco, Nada), 1, ComLuz);
 	TestTrue(TEXT("Iluminado, o camuflado é alcançado"),
 		Estado.Pets[1].PendingDamage > 0);
 

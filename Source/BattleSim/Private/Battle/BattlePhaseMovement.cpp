@@ -37,7 +37,7 @@ namespace
 		return false;
 	}
 
-	void CollectIntent(FBattleState& State, uint8 Side, const FBattleAction& Action,
+	void CollectIntent(FBattleState& State, uint8 PetId, const FBattleAction& Action,
 		uint8 SlotIndex, TArray<FBattleEvent>& OutTrace, TArray<FMoveIntent>& OutIntents)
 	{
 		if (Action.Type != EActionType::Mover)
@@ -45,12 +45,20 @@ namespace
 			return;
 		}
 
-		for (FPetState& Pet : State.Pets)
+		// O PET ENDEREÇADO, e não uma varredura por lado que parava no
+		// primeiro. Aquele laço tinha um `break` no fim, e o próprio
+		// comentário dele dizia que era v1: "um único pet vivo por lado".
+		// Enquanto ele existiu, o SEGUNDO aliado nunca coletava intenção —
+		// ficava plantado na casa dele para sempre, e nada na tela dizia por
+		// quê.
 		{
-			if (Pet.Side != Side || !Pet.IsAlive())
+			FPetState* Encontrado = State.FindPetById(PetId);
+			if (!Encontrado || !Encontrado->IsAlive())
 			{
-				continue;
+				return;
 			}
+
+			FPetState& Pet = *Encontrado;
 
 			// DP-ia-04: quem está emergindo do subsolo não anda neste slot.
 			// A intenção nem é coletada — sair daqui como intenção anulada
@@ -58,7 +66,7 @@ namespace
 			// limite da arena", e a causa é outra.
 			if ((Pet.PostureFlags & static_cast<uint16>(EBattlePostureFlags::Emerging)) != 0)
 			{
-				continue;
+				return;
 			}
 
 			// O CHÃO DE BAIXO cobra de quem tenta sair dele.
@@ -96,7 +104,7 @@ namespace
 					Escorregou.ToCell = Escorregou.FromCell;
 					Escorregou.Detail = ChaoDaCasa;
 					OutTrace.Add(Escorregou);
-					continue;
+					return;
 				}
 
 				if (Sorte <= ChanceDeEscorregar + ChanceDeAtrasar)
@@ -175,7 +183,7 @@ namespace
 					Segurou.ToCell = Segurou.FromCell;
 					Segurou.Detail = State.CellLayout[State.CellIndex(Pet.Column, Pet.Row)];
 					OutTrace.Add(Segurou);
-					continue;
+					return;
 				}
 			}
 
@@ -202,12 +210,6 @@ namespace
 				&& State.CellLayout[State.CellIndex(DestColumn, DestRow)] == static_cast<uint8>(ECellProperty::Blocked);
 			Intent.bInsideGrid = bWithinBounds && !Intent.bDestinationIsObstacle;
 			OutIntents.Add(Intent);
-
-			// v1 é 1v1 — um único pet vivo por lado, então este laço
-			// encontra no máximo uma intenção por lado. Mantido como
-			// busca (em vez de índice fixo) para generalizar sem mudar
-			// assinatura quando M3 trouxer múltiplos pets por lado.
-			break;
 		}
 	}
 
@@ -282,16 +284,22 @@ namespace
 
 void BattlePhases::ApplyMovement(
 	FBattleState& State,
-	const FBattleAction& LeftAction,
-	const FBattleAction& RightAction,
+	TArrayView<const FSlotAction> SlotActions,
 	uint8 SlotIndex,
 	TArray<FBattleEvent>& OutTrace)
 {
 	// Passo 1: coletar TODAS as intenções antes de aplicar qualquer uma —
 	// é o que torna o movimento simultâneo de verdade (design.md).
+	//
+	// TODOS os pets endereçados, e não um por lado: é esta linha que torna
+	// ALCANÇÁVEL a detecção de colisão entre aliados que já estava escrita e
+	// testada (`ClaimsByCell`, `PetsBarrados`, `EmitBlocked`). Não há colisão
+	// nova a escrever aqui — havia colisão que ninguém conseguia provocar.
 	TArray<FMoveIntent> Intents;
-	CollectIntent(State, /*Side=*/0, LeftAction, SlotIndex, OutTrace, Intents);
-	CollectIntent(State, /*Side=*/1, RightAction, SlotIndex, OutTrace, Intents);
+	for (const FSlotAction& Qual : SlotActions)
+	{
+		CollectIntent(State, Qual.PetId, Qual.Action, SlotIndex, OutTrace, Intents);
+	}
 
 	// Passos 2–4 (obstáculo, validade de destino, colisão entre aliados) só
 	// têm sentido se alguém tentou se mover — mas o Passo 5 (dano de casa)

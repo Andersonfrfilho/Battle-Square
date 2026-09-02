@@ -79,7 +79,8 @@ bool FWaterQuenchesFireTest::RunTest(const FString& Parameters)
 
 	TArray<FBattleEvent> Trace;
 	FBattleAction Aguardar;
-	BattlePhases::ApplyCombat(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar, 0, Trace);
+	BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar), 0, Trace);
 
 	TestEqual(TEXT("a casa continua agua — a brasa nao pegou"),
 		static_cast<int32>(FogoEFocoTeste::CasaDoAlvo(State)),
@@ -110,7 +111,8 @@ bool FFireStillBurnsOnDryGroundTest::RunTest(const FString& Parameters)
 
 	TArray<FBattleEvent> Trace;
 	FBattleAction Aguardar;
-	BattlePhases::ApplyCombat(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar, 0, Trace);
+	BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar), 0, Trace);
 
 	TestEqual(TEXT("no chao seco a casa vira brasa"),
 		static_cast<int32>(FogoEFocoTeste::CasaDoAlvo(State)),
@@ -140,7 +142,8 @@ bool FLavaDoesNotQuenchFireTest::RunTest(const FString& Parameters)
 
 	TArray<FBattleEvent> Trace;
 	FBattleAction Aguardar;
-	BattlePhases::ApplyCombat(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar, 0, Trace);
+	BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar), 0, Trace);
 
 	TestTrue(TEXT("lava nao apaga fogo"),
 		!FogoEFocoTeste::TemEvento(Trace, EBattleEventType::FogoApagou));
@@ -163,7 +166,8 @@ bool FWaterOnlyQuenchesFireTest::RunTest(const FString& Parameters)
 
 	TArray<FBattleEvent> Trace;
 	FBattleAction Aguardar;
-	BattlePhases::ApplyCombat(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar, 0, Trace);
+	BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar), 0, Trace);
 
 	TestEqual(TEXT("o gelo congela a agua normalmente"),
 		static_cast<int32>(FogoEFocoTeste::CasaDoAlvo(State)),
@@ -194,7 +198,8 @@ bool FDamageBreaksFocusTest::RunTest(const FString& Parameters)
 
 	TArray<FBattleEvent> Trace;
 	FBattleAction Aguardar;
-	BattlePhases::ApplyCombat(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar, 0, Trace);
+	BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar), 0, Trace);
 
 	TestTrue(TEXT("o trace diz que a concentracao quebrou"),
 		FogoEFocoTeste::TemEvento(Trace, EBattleEventType::ConcentracaoQuebrada));
@@ -223,7 +228,8 @@ bool FUnharmedPetKeepsFocusTest::RunTest(const FString& Parameters)
 
 	TArray<FBattleEvent> Trace;
 	FBattleAction Aguardar;
-	BattlePhases::ApplyCombat(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar, 0, Trace);
+	BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar), 0, Trace);
 
 	TestTrue(TEXT("sem dano, o golpe de foco sai inteiro"),
 		State.Pets[1].PendingDamage > 0);
@@ -248,7 +254,8 @@ bool FOrdinaryMoveIgnoresDamageTest::RunTest(const FString& Parameters)
 
 	TArray<FBattleEvent> Trace;
 	FBattleAction Aguardar;
-	BattlePhases::ApplyCombat(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar, 0, Trace);
+	BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar), 0, Trace);
 
 	TestTrue(TEXT("golpe sem foco sai mesmo apanhando muito"),
 		State.Pets[1].PendingDamage > 0);

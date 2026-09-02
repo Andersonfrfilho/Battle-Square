@@ -85,34 +85,37 @@ FBattleResolveResult FBattleResolver::ResolveTurn(
 		// Commit sem dono reconhecível é IGNORADO. Inventar um dono faria uma
 		// ação chegar a quem ninguém escolheu, e o jogador veria o pet dele
 		// fazer algo que ele não pediu.
-		FBattleAction LeftAction;
-		FBattleAction RightAction;
+		// AS AÇÕES DESTE SLOT, uma por pet endereçado.
+		//
+		// Montada aqui, e não dentro de cada fase: as três fases precisam da
+		// MESMA lista, e montá-la três vezes daria três chances de as três
+		// discordarem sobre quem age neste slot.
+		//
+		// Commit sem dono reconhecível não entra. Inventar um dono faria uma
+		// ação chegar a quem ninguém escolheu.
+		TArray<FSlotAction> AcoesDoSlot;
+		AcoesDoSlot.Reserve(Commits.Num());
 
 		for (const FTurnCommit& Commit : Commits)
 		{
-			const FPetState* Dono = State.FindPetByIdConst(Commit.PetId);
-			if (!Dono)
+			if (!State.FindPetByIdConst(Commit.PetId))
 			{
 				continue;
 			}
 
-			if (Dono->Side == 0)
-			{
-				LeftAction = Commit.Actions[SlotIndex];
-			}
-			else if (Dono->Side == 1)
-			{
-				RightAction = Commit.Actions[SlotIndex];
-			}
+			FSlotAction Acao;
+			Acao.PetId = Commit.PetId;
+			Acao.Action = Commit.Actions[SlotIndex];
+			AcoesDoSlot.Add(Acao);
 		}
 
 		// F1 — Declaração. Nada muda; apenas marca o início do slot.
 		EmitTurnBoundary(Trace, EBattleEventType::SlotIniciado, SlotIndex, /*Phase=*/1);
 
 		// F2 → F3 → F4 → F5, sempre nesta ordem (design.md).
-		BattlePhases::ApplyPostures(State, LeftAction, RightAction, SlotIndex, Trace);
-		BattlePhases::ApplyMovement(State, LeftAction, RightAction, SlotIndex, Trace);
-		BattlePhases::ApplyCombat(State, LeftAction, RightAction, SlotIndex, Trace);
+		BattlePhases::ApplyPostures(State, AcoesDoSlot, SlotIndex, Trace);
+		BattlePhases::ApplyMovement(State, AcoesDoSlot, SlotIndex, Trace);
+		BattlePhases::ApplyCombat(State, AcoesDoSlot, SlotIndex, Trace);
 		BattlePhases::ApplyResolution(State, SlotIndex, Trace);
 	}
 

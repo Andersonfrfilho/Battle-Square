@@ -84,7 +84,8 @@ bool FStrongMoveTakesTheWholeFieldTest::RunTest(const FString& Parameters)
 
 	TArray<FBattleEvent> Trace;
 	FBattleAction Aguardar;
-	BattlePhases::ApplyCombat(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar, 0, Trace);
+	BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar), 0, Trace);
 
 	TestEqual(TEXT("as nove casas viraram agua"),
 		CampoInteiroTeste::ContarCasas(State, ECellProperty::Water), 9);
@@ -110,7 +111,8 @@ bool FWeakMoveTakesOneCellTest::RunTest(const FString& Parameters)
 
 	TArray<FBattleEvent> Trace;
 	FBattleAction Aguardar;
-	BattlePhases::ApplyCombat(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar, 0, Trace);
+	BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar), 0, Trace);
 
 	TestEqual(TEXT("um poder abaixo do limiar alaga UMA casa"),
 		CampoInteiroTeste::ContarCasas(State, ECellProperty::Water), 1);
@@ -141,8 +143,10 @@ bool FFieldSizeDecidesTest::RunTest(const FString& Parameters)
 	TArray<FBattleEvent> TracePequena;
 	TArray<FBattleEvent> TraceGrande;
 	FBattleAction Aguardar;
-	BattlePhases::ApplyCombat(Pequena, MakeMoveAction(EActionType::Atacar, 0), Aguardar, 0, TracePequena);
-	BattlePhases::ApplyCombat(Grande, MakeMoveAction(EActionType::Atacar, 0), Aguardar, 0, TraceGrande);
+	BattlePhases::ApplyCombat(Pequena,
+		BattlePhases::DuelSlotActions(Pequena, MakeMoveAction(EActionType::Atacar, 0), Aguardar), 0, TracePequena);
+	BattlePhases::ApplyCombat(Grande,
+		BattlePhases::DuelSlotActions(Grande, MakeMoveAction(EActionType::Atacar, 0), Aguardar), 0, TraceGrande);
 
 	AddInfo(FString::Printf(TEXT("poder %d — 3x3 exige %d, 5x5 exige %d"),
 		Poder, Pequena.PowerToTakeTheField(), Grande.PowerToTakeTheField()));
@@ -171,7 +175,8 @@ bool FWholeFieldSparesObstaclesTest::RunTest(const FString& Parameters)
 
 	TArray<FBattleEvent> Trace;
 	FBattleAction Aguardar;
-	BattlePhases::ApplyCombat(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar, 0, Trace);
+	BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar), 0, Trace);
 
 	TestEqual(TEXT("o obstaculo continua de pe"),
 		static_cast<int32>(State.CellLayout[State.CellIndex(1, 0)]),
@@ -200,7 +205,8 @@ bool FWholeFieldFireStillQuenchedTest::RunTest(const FString& Parameters)
 
 	TArray<FBattleEvent> Trace;
 	FBattleAction Aguardar;
-	BattlePhases::ApplyCombat(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar, 0, Trace);
+	BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, MakeMoveAction(EActionType::Atacar, 0), Aguardar), 0, Trace);
 
 	TestEqual(TEXT("a casa molhada continua agua — a brasa nao pegou nela"),
 		static_cast<int32>(State.CellLayout[State.CellIndex(1, 1)]),

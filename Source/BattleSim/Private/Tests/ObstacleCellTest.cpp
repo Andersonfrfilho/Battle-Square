@@ -86,7 +86,8 @@ bool FObstacleStrongPetFellsItTest::RunTest(const FString& Parameters)
 	Estado.CellLayout[IndiceDaCasa] = static_cast<uint8>(ECellProperty::Blocked);
 
 	TArray<FBattleEvent> Traco;
-	BattlePhases::ApplyMovement(Estado, PassoContraObstaculo(EBattleDirection::Direita), EsperaNoObstaculo(), 0, Traco);
+	BattlePhases::ApplyMovement(Estado,
+		BattlePhases::DuelSlotActions(Estado, PassoContraObstaculo(EBattleDirection::Direita), EsperaNoObstaculo()), 0, Traco);
 
 	TestEqual(TEXT("a casa abriu"), static_cast<int32>(Estado.CellLayout[IndiceDaCasa]),
 		static_cast<int32>(ECellProperty::None));
@@ -119,7 +120,8 @@ bool FObstacleAgilePetClimbsItTest::RunTest(const FString& Parameters)
 	Estado.CellLayout[IndiceDaCasa] = static_cast<uint8>(ECellProperty::Blocked);
 
 	TArray<FBattleEvent> Traco;
-	BattlePhases::ApplyMovement(Estado, PassoContraObstaculo(EBattleDirection::Direita), EsperaNoObstaculo(), 0, Traco);
+	BattlePhases::ApplyMovement(Estado,
+		BattlePhases::DuelSlotActions(Estado, PassoContraObstaculo(EBattleDirection::Direita), EsperaNoObstaculo()), 0, Traco);
 
 	TestEqual(TEXT("o pet esta na casa do obstaculo"), Estado.Pets[0].Column, static_cast<uint8>(2));
 	TestEqual(TEXT("na mesma linha"), Estado.Pets[0].Row, static_cast<uint8>(1));
@@ -154,7 +156,8 @@ bool FObstacleWeakAndSlowPetBumpsTest::RunTest(const FString& Parameters)
 	Estado.CellLayout[IndiceDaCasa] = static_cast<uint8>(ECellProperty::Blocked);
 
 	TArray<FBattleEvent> Traco;
-	BattlePhases::ApplyMovement(Estado, PassoContraObstaculo(EBattleDirection::Direita), EsperaNoObstaculo(), 0, Traco);
+	BattlePhases::ApplyMovement(Estado,
+		BattlePhases::DuelSlotActions(Estado, PassoContraObstaculo(EBattleDirection::Direita), EsperaNoObstaculo()), 0, Traco);
 
 	TestEqual(TEXT("nao saiu do lugar"), Estado.Pets[0].Column, static_cast<uint8>(1));
 	TestEqual(TEXT("o obstaculo continua de pe"), static_cast<int32>(Estado.CellLayout[IndiceDaCasa]),
@@ -186,7 +189,8 @@ bool FObstacleOccupiedIsNeitherFelledNorClimbedTest::RunTest(const FString& Para
 	Estado.CellLayout[IndiceDaCasa] = static_cast<uint8>(ECellProperty::Blocked);
 
 	TArray<FBattleEvent> Traco;
-	BattlePhases::ApplyMovement(Estado, EsperaNoObstaculo(), PassoContraObstaculo(EBattleDirection::Cima), 0, Traco);
+	BattlePhases::ApplyMovement(Estado,
+		BattlePhases::DuelSlotActions(Estado, EsperaNoObstaculo(), PassoContraObstaculo(EBattleDirection::Cima)), 0, Traco);
 
 	TestEqual(TEXT("o obstaculo continua de pe"), static_cast<int32>(Estado.CellLayout[IndiceDaCasa]),
 		static_cast<int32>(ECellProperty::Blocked));
@@ -219,7 +223,8 @@ bool FObstacleFellingOpensThePathInTheSameSlotTest::RunTest(const FString& Param
 	Estado.CellLayout[IndiceDaCasa] = static_cast<uint8>(ECellProperty::Blocked);
 
 	TArray<FBattleEvent> Traco;
-	BattlePhases::ApplyMovement(Estado, PassoContraObstaculo(EBattleDirection::Direita), PassoContraObstaculo(EBattleDirection::Cima), 0, Traco);
+	BattlePhases::ApplyMovement(Estado,
+		BattlePhases::DuelSlotActions(Estado, PassoContraObstaculo(EBattleDirection::Direita), PassoContraObstaculo(EBattleDirection::Cima)), 0, Traco);
 
 	TestEqual(TEXT("a casa abriu"), static_cast<int32>(Estado.CellLayout[IndiceDaCasa]),
 		static_cast<int32>(ECellProperty::None));
@@ -271,7 +276,8 @@ bool FObstacleResolutionOrderIsByPetIdTest::RunTest(const FString& Parameters)
 
 		// O ágil é do lado 0 e o forte do lado 1, montagem nenhuma muda isso.
 		TArray<FBattleEvent> Traco;
-		BattlePhases::ApplyMovement(Estado, PassoDoAgil, PassoDoForte, 0, Traco);
+		BattlePhases::ApplyMovement(Estado,
+		BattlePhases::DuelSlotActions(Estado, PassoDoAgil, PassoDoForte), 0, Traco);
 
 		TestEqual(TEXT("o tronco caiu, em qualquer montagem"),
 			static_cast<int32>(Estado.CellLayout[IndiceDaCasa]),
@@ -304,7 +310,8 @@ bool FObstacleElevatedAttackReachesFlyerTest::RunTest(const FString& Parameters)
 	// Do CHÃO, o golpe físico erra quem voou — a regra que já existia.
 	{
 		TArray<FBattleEvent> Traco;
-		BattlePhases::ApplyCombat(Estado, GolpeNoObstaculo(EBattleDirection::Direita), EsperaNoObstaculo(), 0, Traco);
+		BattlePhases::ApplyCombat(Estado,
+		BattlePhases::DuelSlotActions(Estado, GolpeNoObstaculo(EBattleDirection::Direita), EsperaNoObstaculo()), 0, Traco);
 		TestEqual(TEXT("do chao nao encosta em quem voa"), Estado.Pets[1].PendingDamage, 0);
 		TestTrue(TEXT("e o feed diz que errou"), TracoDoObstaculoTem(Traco, EBattleEventType::AtaqueErrou));
 	}
@@ -313,7 +320,8 @@ bool FObstacleElevatedAttackReachesFlyerTest::RunTest(const FString& Parameters)
 	Estado.CellLayout[Estado.CellIndex(1, 1)] = static_cast<uint8>(ECellProperty::Blocked);
 	{
 		TArray<FBattleEvent> Traco;
-		BattlePhases::ApplyCombat(Estado, GolpeNoObstaculo(EBattleDirection::Direita), EsperaNoObstaculo(), 0, Traco);
+		BattlePhases::ApplyCombat(Estado,
+		BattlePhases::DuelSlotActions(Estado, GolpeNoObstaculo(EBattleDirection::Direita), EsperaNoObstaculo()), 0, Traco);
 		TestTrue(TEXT("de cima do obstaculo o golpe encosta"), Estado.Pets[1].PendingDamage > 0);
 		TestTrue(TEXT("e o feed diz que acertou"), TracoDoObstaculoTem(Traco, EBattleEventType::AtaqueAcertou));
 	}
@@ -347,7 +355,8 @@ bool FObstacleElevatedAttackHitsHarderTest::RunTest(const FString& Parameters)
 		}
 
 		TArray<FBattleEvent> Traco;
-		BattlePhases::ApplyCombat(Estado, GolpeNoObstaculo(EBattleDirection::Direita), EsperaNoObstaculo(), 0, Traco);
+		BattlePhases::ApplyCombat(Estado,
+		BattlePhases::DuelSlotActions(Estado, GolpeNoObstaculo(EBattleDirection::Direita), EsperaNoObstaculo()), 0, Traco);
 		return Estado.Pets[1].PendingDamage;
 	};
 

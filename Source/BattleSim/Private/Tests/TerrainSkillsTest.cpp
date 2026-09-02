@@ -56,9 +56,12 @@ namespace
 	void RunTerrainSlot(FBattleState& State, const FBattleAction& Left, const FBattleAction& Right,
 		TArray<FBattleEvent>& Trace)
 	{
-		BattlePhases::ApplyPostures(State, Left, Right, 0, Trace);
-		BattlePhases::ApplyMovement(State, Left, Right, 0, Trace);
-		BattlePhases::ApplyCombat(State, Left, Right, 0, Trace);
+		BattlePhases::ApplyPostures(State,
+		BattlePhases::DuelSlotActions(State, Left, Right), 0, Trace);
+		BattlePhases::ApplyMovement(State,
+		BattlePhases::DuelSlotActions(State, Left, Right), 0, Trace);
+		BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, Left, Right), 0, Trace);
 		BattlePhases::ApplyResolution(State, 0, Trace);
 	}
 }

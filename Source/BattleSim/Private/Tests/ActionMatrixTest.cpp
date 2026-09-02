@@ -100,8 +100,10 @@ bool FActionMatrixFullFiveByFiveTest::RunTest(const FString& Parameters)
 
 			TArray<FBattleEvent> Trace;
 			// F2 primeiro — postura do alvo precisa estar ativa antes de F4.
-			BattlePhases::ApplyPostures(State, AttackerAction, TargetAction, 0, Trace);
-			BattlePhases::ApplyCombat(State, AttackerAction, MakeMatrixAction(EActionType::Aguardar, EBattleDirection::Nenhuma), 0, Trace);
+			BattlePhases::ApplyPostures(State,
+		BattlePhases::DuelSlotActions(State, AttackerAction, TargetAction), 0, Trace);
+			BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, AttackerAction, MakeMatrixAction(EActionType::Aguardar, EBattleDirection::Nenhuma)), 0, Trace);
 
 			const int32 ActualDamage = State.Pets[1].PendingDamage;
 			const FString CaseLabel = FString::Printf(TEXT("Atk:%s vs Alvo:%s"), ToLabel(AttackerType), ToLabel(TargetType));
@@ -129,7 +131,8 @@ bool FActionMatrixFullFiveByFiveTest::RunTest(const FString& Parameters)
 				BaselineState.Pets.Add(MakeMatrixPet(1, 0, 1, 20, 5));
 				BaselineState.Pets.Add(MakeMatrixPet(2, 1, 2, 10, 5));
 				TArray<FBattleEvent> BaselineTrace;
-				BattlePhases::ApplyCombat(BaselineState, AttackerAction, MakeMatrixAction(EActionType::Aguardar, EBattleDirection::Nenhuma), 0, BaselineTrace);
+				BattlePhases::ApplyCombat(BaselineState,
+		BattlePhases::DuelSlotActions(BaselineState, AttackerAction, MakeMatrixAction(EActionType::Aguardar, EBattleDirection::Nenhuma)), 0, BaselineTrace);
 				const int32 BaselineDamage = BaselineState.Pets[1].PendingDamage;
 
 				bAllPassed &= TestTrue(*FString::Printf(TEXT("[%s] Dano reduzido pela defesa (%d < %d)"), *CaseLabel, ActualDamage, BaselineDamage), ActualDamage < BaselineDamage);

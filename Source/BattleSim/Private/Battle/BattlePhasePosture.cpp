@@ -10,18 +10,23 @@ namespace
 	// do lado é o único pet do lado. A busca por Side, em vez de índice
 	// fixo, é o que deixa a fase pronta para N pets sem mudar assinatura.
 
-	void ApplyPostureForSide(
+	void ApplyPostureForPet(
 		FBattleState& State,
-		uint8 Side,
+		uint8 PetId,
 		const FBattleAction& Action,
 		uint8 SlotIndex,
 		TArray<FBattleEvent>& OutTrace)
 	{
-		FPetState* Pet = State.FindAlivePetOnSide(Side);
-		if (!Pet)
+		// O pet ENDEREÇADO, e não "o pet vivo daquele lado". Com dois aliados,
+		// "o pet da esquerda" deixa de identificar alguém — os dois são a
+		// esquerda, e a busca por lado devolveria sempre o primeiro.
+		FPetState* Pet = State.FindPetById(PetId);
+		if (!Pet || !Pet->IsAlive())
 		{
 			return;
 		}
+
+		const uint8 Side = Pet->Side;
 
 		uint16 AssumedFlag = 0;
 		if (Action.Type == EActionType::Defender)
@@ -151,6 +156,10 @@ namespace
 			// ILUMINAR não é postura de quem a usa: ela marca o OUTRO. Por
 			// isso não passa pelo caminho comum abaixo, que veste a bandeira
 			// em quem agiu — iluminar a si mesmo não revelaria ninguém.
+			// ILUMINAR ainda mira O OUTRO LADO, e continua achando pelo lado
+			// de propósito: a luz não escolhe alvo — ela revela quem estiver
+			// escondido do lado de lá. Endereçar um alvo aqui seria uma
+			// mecânica diferente, com outra narração.
 			FPetState* Alvo = State.FindAlivePetOnSide(Side == 0 ? 1 : 0);
 			if (!Alvo)
 			{
@@ -234,13 +243,41 @@ namespace
 	}
 }
 
+TArray<FSlotAction> BattlePhases::DuelSlotActions(
+	const FBattleState& State,
+	const FBattleAction& LeftAction,
+	const FBattleAction& RightAction)
+{
+	TArray<FSlotAction> Acoes;
+
+	for (uint8 Lado = 0; Lado < 2; ++Lado)
+	{
+		const FPetState* Pet = State.FindAlivePetOnSideConst(Lado);
+		if (!Pet)
+		{
+			continue;
+		}
+
+		FSlotAction Acao;
+		Acao.PetId = Pet->PetId;
+		Acao.Action = (Lado == 0) ? LeftAction : RightAction;
+		Acoes.Add(Acao);
+	}
+
+	return Acoes;
+}
+
 void BattlePhases::ApplyPostures(
 	FBattleState& State,
-	const FBattleAction& LeftAction,
-	const FBattleAction& RightAction,
+	TArrayView<const FSlotAction> SlotActions,
 	uint8 SlotIndex,
 	TArray<FBattleEvent>& OutTrace)
 {
-	ApplyPostureForSide(State, /*Side=*/0, LeftAction, SlotIndex, OutTrace);
-	ApplyPostureForSide(State, /*Side=*/1, RightAction, SlotIndex, OutTrace);
+	// NA ORDEM EM QUE VIERAM. A ordem dos commits é decidida por quem monta a
+	// lista, e o desempate entre aliados é assunto da CP6 — aqui, mudar a
+	// ordem por conta própria criaria uma segunda regra de precedência.
+	for (const FSlotAction& Qual : SlotActions)
+	{
+		ApplyPostureForPet(State, Qual.PetId, Qual.Action, SlotIndex, OutTrace);
+	}
 }

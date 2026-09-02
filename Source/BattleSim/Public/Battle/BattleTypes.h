@@ -146,6 +146,23 @@ struct FTurnCommit
 	FBattleAction Actions[ActionsPerTurn];
 };
 
+/**
+ * A ação DE UM PET num slot — quem age, e o quê.
+ *
+ * As fases recebiam "a ação da esquerda e a da direita", e era isso que fazia
+ * cada fase significar *o pet do lado*. Com dois aliados, "a ação da esquerda"
+ * deixa de identificar alguém: os dois são a esquerda.
+ *
+ * Não vive dentro de `FTurnCommit` porque o commit é do TURNO inteiro (três
+ * slots) e a fase resolve UM slot — dar ao slot a forma do turno obrigaria cada
+ * fase a saber qual índice ler, que é justamente o que o resolvedor já sabe.
+ */
+struct FSlotAction
+{
+	uint8 PetId = 0xFF;
+	FBattleAction Action;
+};
+
 static_assert(sizeof(FBattleAction) == 2, "FBattleAction deve ocupar 2 bytes — ver design.md, custo de rede do commit.");
 
 // Empacota coluna e linha (0..14 cada) num único uint8: 4 bits por eixo.

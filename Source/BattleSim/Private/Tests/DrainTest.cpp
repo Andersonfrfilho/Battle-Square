@@ -55,7 +55,8 @@ bool FDrenarDevolveVidaTest::RunTest(const FString&)
 	FBattleAction Nada;
 	TArray<FBattleEvent> Traco;
 
-	BattlePhases::ApplyCombat(Estado, DrenoTeste::Golpe(), Nada, 0, Traco);
+	BattlePhases::ApplyCombat(Estado,
+		BattlePhases::DuelSlotActions(Estado, DrenoTeste::Golpe(), Nada), 0, Traco);
 
 	const int32 Dano = Estado.Pets[1].PendingDamage;
 	TestTrue(TEXT("O golpe causou dano"), Dano > 0);
@@ -90,7 +91,8 @@ bool FGolpeSemDrenoNaoCuraTest::RunTest(const FString&)
 	FBattleAction Nada;
 	TArray<FBattleEvent> Traco;
 
-	BattlePhases::ApplyCombat(Estado, DrenoTeste::Golpe(), Nada, 0, Traco);
+	BattlePhases::ApplyCombat(Estado,
+		BattlePhases::DuelSlotActions(Estado, DrenoTeste::Golpe(), Nada), 0, Traco);
 	BattlePhases::ApplyResolution(Estado, 0, Traco);
 
 	TestEqual(TEXT("Sem dreno, a vida não sobe"), Estado.Pets[0].Health, 40);
@@ -112,7 +114,8 @@ bool FDrenoNaoPassaDaVidaCheiaTest::RunTest(const FString&)
 	FBattleAction Nada;
 	TArray<FBattleEvent> Traco;
 
-	BattlePhases::ApplyCombat(Estado, DrenoTeste::Golpe(), Nada, 0, Traco);
+	BattlePhases::ApplyCombat(Estado,
+		BattlePhases::DuelSlotActions(Estado, DrenoTeste::Golpe(), Nada), 0, Traco);
 	BattlePhases::ApplyResolution(Estado, 0, Traco);
 
 	TestEqual(TEXT("A vida para no máximo"), Estado.Pets[0].Health, 100);
@@ -135,7 +138,8 @@ bool FDrenoESimultaneoAoDanoTest::RunTest(const FString&)
 	FBattleAction Nada;
 	TArray<FBattleEvent> Traco;
 
-	BattlePhases::ApplyCombat(Estado, DrenoTeste::Golpe(), Nada, 0, Traco);
+	BattlePhases::ApplyCombat(Estado,
+		BattlePhases::DuelSlotActions(Estado, DrenoTeste::Golpe(), Nada), 0, Traco);
 
 	const int32 Curado = Estado.Pets[0].PendingHeal;
 	TestTrue(TEXT("Ele vai curar alguma coisa"), Curado > 0);

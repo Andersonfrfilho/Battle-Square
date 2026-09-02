@@ -251,9 +251,9 @@ namespace
 		return nullptr;
 	}
 
-	void ResolveAttackForSide(
+	void ResolveAttackForPet(
 		FBattleState& State,
-		uint8 AttackerSide,
+		uint8 AttackerPetId,
 		const FBattleAction& Action,
 		uint8 SlotIndex,
 		TArray<FBattleEvent>& OutTrace)
@@ -263,8 +263,11 @@ namespace
 			return;
 		}
 
-		FPetState* Attacker = State.FindAlivePetOnSide(AttackerSide);
-		if (!Attacker)
+		// QUEM ATACA é o pet endereçado. Buscar pelo lado devolveria sempre o
+		// primeiro aliado vivo, e o golpe do segundo sairia da posição do
+		// primeiro — o alvo estaria certo por acaso e o alcance, errado.
+		FPetState* Attacker = State.FindPetById(AttackerPetId);
+		if (!Attacker || !Attacker->IsAlive())
 		{
 			return;
 		}
@@ -707,13 +710,14 @@ namespace
 
 void BattlePhases::ApplyCombat(
 	FBattleState& State,
-	const FBattleAction& LeftAction,
-	const FBattleAction& RightAction,
+	TArrayView<const FSlotAction> SlotActions,
 	uint8 SlotIndex,
 	TArray<FBattleEvent>& OutTrace)
 {
-	ResolveAttackForSide(State, /*AttackerSide=*/0, LeftAction, SlotIndex, OutTrace);
-	ResolveAttackForSide(State, /*AttackerSide=*/1, RightAction, SlotIndex, OutTrace);
+	for (const FSlotAction& Qual : SlotActions)
+	{
+		ResolveAttackForPet(State, Qual.PetId, Qual.Action, SlotIndex, OutTrace);
+	}
 
 	// DP-02: o encontro no mesmo ponto vira golpe MÚTUO, resolvido pelo mesmo
 	// caminho do ataque. F3 registrou o encontro no traço; ler dali evita um

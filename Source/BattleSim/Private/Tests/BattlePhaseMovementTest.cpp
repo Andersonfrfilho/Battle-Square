@@ -50,7 +50,8 @@ bool FBattlePhaseMovementOutOfBoundsBlockedTest::RunTest(const FString& Paramete
 
 	TArray<FBattleEvent> Trace;
 	// Left tenta ir para Cima (Row -1) — fora da grade.
-	BattlePhases::ApplyMovement(State, MoveAction(EBattleDirection::Cima), WaitAction(), 0, Trace);
+	BattlePhases::ApplyMovement(State,
+		BattlePhases::DuelSlotActions(State, MoveAction(EBattleDirection::Cima), WaitAction()), 0, Trace);
 
 	TestEqual(TEXT("Left permanece na mesma casa"), State.Pets[0].Column, static_cast<uint8>(0));
 	TestEqual(TEXT("Left permanece na mesma linha"), State.Pets[0].Row, static_cast<uint8>(0));
@@ -90,7 +91,8 @@ bool FBattlePhaseMovementAllyCollisionIsUnreachableInV1Test::RunTest(const FStri
 	State.Pets.Add(MakeMovementPet(2, 0, 2, 1)); // aliado B
 
 	TArray<FBattleEvent> Trace;
-	BattlePhases::ApplyMovement(State, MoveAction(EBattleDirection::Direita), WaitAction(), 0, Trace);
+	BattlePhases::ApplyMovement(State,
+		BattlePhases::DuelSlotActions(State, MoveAction(EBattleDirection::Direita), WaitAction()), 0, Trace);
 
 	// Confirma o comportamento real de v1: só o primeiro pet vivo do lado
 	// recebe a ação (CollectIntent para na primeira correspondência).
@@ -121,7 +123,8 @@ bool FBattlePhaseMovementOpposingSidesCoexistTest::RunTest(const FString& Parame
 	State.Pets.Add(MakeMovementPet(2, 1, 2, 1)); // Right em (2,1), vai para (1,1)
 
 	TArray<FBattleEvent> Trace;
-	BattlePhases::ApplyMovement(State, MoveAction(EBattleDirection::Direita), MoveAction(EBattleDirection::Esquerda), 0, Trace);
+	BattlePhases::ApplyMovement(State,
+		BattlePhases::DuelSlotActions(State, MoveAction(EBattleDirection::Direita), MoveAction(EBattleDirection::Esquerda)), 0, Trace);
 
 	TestEqual(TEXT("Left continua em (0,1)"), State.Pets[0].Column, static_cast<uint8>(0));
 	TestEqual(TEXT("Right continua em (2,1)"), State.Pets[1].Column, static_cast<uint8>(2));
@@ -153,7 +156,8 @@ bool FBattlePhaseMovementSwapIsAllowedTest::RunTest(const FString& Parameters)
 
 	TArray<FBattleEvent> Trace;
 	// Left vai para a direita (entra em 1,1); Right vai para a esquerda (entra em 0,1) — troca.
-	BattlePhases::ApplyMovement(State, MoveAction(EBattleDirection::Direita), MoveAction(EBattleDirection::Esquerda), 0, Trace);
+	BattlePhases::ApplyMovement(State,
+		BattlePhases::DuelSlotActions(State, MoveAction(EBattleDirection::Direita), MoveAction(EBattleDirection::Esquerda)), 0, Trace);
 
 	TestEqual(TEXT("Left terminou onde Right estava"), State.Pets[0].Column, static_cast<uint8>(1));
 	TestEqual(TEXT("Right terminou onde Left estava"), State.Pets[1].Column, static_cast<uint8>(0));
@@ -176,7 +180,8 @@ bool FBattlePhaseMovementSkipsDeadPetTest::RunTest(const FString& Parameters)
 	State.Pets.Add(MakeMovementPet(2, 1, 2, 2));
 
 	TArray<FBattleEvent> Trace;
-	BattlePhases::ApplyMovement(State, MoveAction(EBattleDirection::Direita), WaitAction(), 0, Trace);
+	BattlePhases::ApplyMovement(State,
+		BattlePhases::DuelSlotActions(State, MoveAction(EBattleDirection::Direita), WaitAction()), 0, Trace);
 
 	TestEqual(TEXT("Pet morto não se move"), State.Pets[0].Column, static_cast<uint8>(1));
 	TestEqual(TEXT("Nenhum evento para pet morto"), Trace.Num(), 0);
@@ -215,7 +220,8 @@ bool FBattlePhaseMovementBlockedCellRejectsMovementTest::RunTest(const FString& 
 	for (int32 Attempt = 0; Attempt < 5; ++Attempt)
 	{
 		TArray<FBattleEvent> Trace;
-		BattlePhases::ApplyMovement(State, MoveAction(EBattleDirection::Direita), WaitAction(), 0, Trace);
+		BattlePhases::ApplyMovement(State,
+		BattlePhases::DuelSlotActions(State, MoveAction(EBattleDirection::Direita), WaitAction()), 0, Trace);
 
 		TestEqual(TEXT("Pet nunca sai da posição original (casa bloqueada)"), State.Pets[0].Column, static_cast<uint8>(1));
 		TestEqual(TEXT("Pet nunca sai da posição original (casa bloqueada)"), State.Pets[0].Row, static_cast<uint8>(1));
@@ -246,7 +252,8 @@ bool FBattlePhaseMovementNeutralArenaNoRegressionTest::RunTest(const FString& Pa
 	State.Pets.Add(MakeMovementPet(2, 1, 2, 2));
 
 	TArray<FBattleEvent> Trace;
-	BattlePhases::ApplyMovement(State, MoveAction(EBattleDirection::Direita), WaitAction(), 0, Trace);
+	BattlePhases::ApplyMovement(State,
+		BattlePhases::DuelSlotActions(State, MoveAction(EBattleDirection::Direita), WaitAction()), 0, Trace);
 
 	TestEqual(TEXT("Pet se move normalmente em arena neutra"), State.Pets[0].Column, static_cast<uint8>(2));
 
@@ -267,7 +274,8 @@ bool FBattlePhaseMovementDamageCellAccumulatesPendingDamageTest::RunTest(const F
 	State.CellLayout[State.CellIndex(1, 1)] = static_cast<uint8>(ECellProperty::Damage);
 
 	TArray<FBattleEvent> Trace;
-	BattlePhases::ApplyMovement(State, WaitAction(), WaitAction(), 0, Trace);
+	BattlePhases::ApplyMovement(State,
+		BattlePhases::DuelSlotActions(State, WaitAction(), WaitAction()), 0, Trace);
 
 	TestTrue(TEXT("PendingDamage acumulado por permanecer na casa de dano"), State.Pets[0].PendingDamage > 0);
 	TestEqual(TEXT("Nenhum evento próprio de dano de casa — F5 é quem emite"), Trace.Num(), 0);
@@ -287,7 +295,8 @@ bool FBattlePhaseMovementNoDamageCellNoPendingDamageTest::RunTest(const FString&
 	State.Pets.Add(MakeMovementPet(1, 0, 1, 1));
 
 	TArray<FBattleEvent> Trace;
-	BattlePhases::ApplyMovement(State, WaitAction(), WaitAction(), 0, Trace);
+	BattlePhases::ApplyMovement(State,
+		BattlePhases::DuelSlotActions(State, WaitAction(), WaitAction()), 0, Trace);
 
 	TestEqual(TEXT("Sem casa de dano, PendingDamage continua zero"), State.Pets[0].PendingDamage, 0);
 

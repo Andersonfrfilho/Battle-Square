@@ -70,7 +70,8 @@ namespace ProvaDaFraqueza
 	{
 		const FBattleAction Nada;
 		TArray<FBattleEvent> Traco;
-		BattlePhases::ApplyMovement(Estado, Nada, Nada, 0, Traco);
+		BattlePhases::ApplyMovement(Estado,
+		BattlePhases::DuelSlotActions(Estado, Nada, Nada), 0, Traco);
 	}
 }
 
@@ -175,7 +176,8 @@ bool FFootingAlsoLetsYouWalkUpstreamTest::RunTest(const FString& Parameters)
 
 	const FBattleAction Nada;
 	TArray<FBattleEvent> Traco;
-	BattlePhases::ApplyMovement(Firme, Subir, Nada, 0, Traco);
+	BattlePhases::ApplyMovement(Firme,
+		BattlePhases::DuelSlotActions(Firme, Subir, Nada), 0, Traco);
 
 	TestEqual(TEXT("quem tem firmeza sobe a correnteza"),
 		static_cast<int32>(Firme.Pets[0].Column), 0);

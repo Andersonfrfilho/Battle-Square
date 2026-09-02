@@ -36,8 +36,8 @@ namespace
 		TArray<FBattleEvent> Trace;
 
 		FBattleAction Aguardar;
-		BattlePhases::ApplyCombat(State, MakeMoveAction(EActionType::Atacar, IndiceUsado),
-			Aguardar, 0, Trace);
+		BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, MakeMoveAction(EActionType::Atacar, IndiceUsado), Aguardar), 0, Trace);
 
 		for (const FPetState& Pet : State.Pets)
 		{

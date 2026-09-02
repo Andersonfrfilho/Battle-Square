@@ -47,7 +47,8 @@ bool FBattlePhasePostureAssumesFlagsTest::RunTest(const FString& Parameters)
 	FBattleState State = MakePostureTwoPetState();
 	TArray<FBattleEvent> Trace;
 
-	BattlePhases::ApplyPostures(State, MakeAction(EActionType::Defender), MakeAction(EActionType::Esquivar), 0, Trace);
+	BattlePhases::ApplyPostures(State,
+		BattlePhases::DuelSlotActions(State, MakeAction(EActionType::Defender), MakeAction(EActionType::Esquivar)), 0, Trace);
 
 	TestEqual(TEXT("Left assumiu Defending"), State.Pets[0].PostureFlags, static_cast<uint8>(EBattlePostureFlags::Defending));
 	TestEqual(TEXT("Right assumiu Dodging"), State.Pets[1].PostureFlags, static_cast<uint8>(EBattlePostureFlags::Dodging));
@@ -72,7 +73,8 @@ bool FBattlePhasePostureIgnoresNonPostureActionsTest::RunTest(const FString& Par
 	FBattleState State = MakePostureTwoPetState();
 	TArray<FBattleEvent> Trace;
 
-	BattlePhases::ApplyPostures(State, MakeAction(EActionType::Atacar), MakeAction(EActionType::Aguardar), 0, Trace);
+	BattlePhases::ApplyPostures(State,
+		BattlePhases::DuelSlotActions(State, MakeAction(EActionType::Atacar), MakeAction(EActionType::Aguardar)), 0, Trace);
 
 	TestEqual(TEXT("Left sem postura"), State.Pets[0].PostureFlags, static_cast<uint8>(0));
 	TestEqual(TEXT("Right sem postura"), State.Pets[1].PostureFlags, static_cast<uint8>(0));
@@ -96,7 +98,8 @@ bool FBattlePhasePostureDoesNotLeakAcrossSlotsTest::RunTest(const FString& Param
 	TArray<FBattleEvent> TraceSlot0;
 
 	// Slot 0: Left defende.
-	BattlePhases::ApplyPostures(State, MakeAction(EActionType::Defender), MakeAction(EActionType::Aguardar), 0, TraceSlot0);
+	BattlePhases::ApplyPostures(State,
+		BattlePhases::DuelSlotActions(State, MakeAction(EActionType::Defender), MakeAction(EActionType::Aguardar)), 0, TraceSlot0);
 	TestEqual(TEXT("Left defendendo no slot 0"), State.Pets[0].PostureFlags, static_cast<uint8>(EBattlePostureFlags::Defending));
 
 	// F5 do slot 0 expira a postura — é responsabilidade de T8, simulada
@@ -105,7 +108,8 @@ bool FBattlePhasePostureDoesNotLeakAcrossSlotsTest::RunTest(const FString& Param
 
 	// Slot 1: ninguém declara postura.
 	TArray<FBattleEvent> TraceSlot1;
-	BattlePhases::ApplyPostures(State, MakeAction(EActionType::Aguardar), MakeAction(EActionType::Aguardar), 1, TraceSlot1);
+	BattlePhases::ApplyPostures(State,
+		BattlePhases::DuelSlotActions(State, MakeAction(EActionType::Aguardar), MakeAction(EActionType::Aguardar)), 1, TraceSlot1);
 
 	TestEqual(TEXT("Left não está mais defendendo no slot 1"), State.Pets[0].PostureFlags, static_cast<uint8>(0));
 	TestEqual(TEXT("F2 sozinha não emite evento se ninguém assume postura"), TraceSlot1.Num(), 0);
@@ -125,7 +129,8 @@ bool FBattlePhasePostureSkipsDeadPetTest::RunTest(const FString& Parameters)
 	State.Pets[0].Health = 0; // Left morto
 
 	TArray<FBattleEvent> Trace;
-	BattlePhases::ApplyPostures(State, MakeAction(EActionType::Defender), MakeAction(EActionType::Aguardar), 0, Trace);
+	BattlePhases::ApplyPostures(State,
+		BattlePhases::DuelSlotActions(State, MakeAction(EActionType::Defender), MakeAction(EActionType::Aguardar)), 0, Trace);
 
 	TestEqual(TEXT("Pet morto não assume postura"), State.Pets[0].PostureFlags, static_cast<uint8>(0));
 	TestEqual(TEXT("Nenhum evento para pet morto"), Trace.Num(), 0);

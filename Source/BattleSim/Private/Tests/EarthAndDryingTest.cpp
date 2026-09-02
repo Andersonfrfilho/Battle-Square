@@ -58,7 +58,7 @@ bool FEscavarErgueBarreiraTest::RunTest(const FString&)
 	TArray<FBattleEvent> Traco;
 
 	BattlePhases::ApplyPostures(Estado,
-		TerraTeste::Cavar(EBattleDirection::Direita), Nada, 0, Traco);
+		BattlePhases::DuelSlotActions(Estado, TerraTeste::Cavar(EBattleDirection::Direita), Nada), 0, Traco);
 
 	const int32 Frente = Estado.CellIndex(1, 1);
 	TestEqual(TEXT("A casa à frente virou barreira"), Estado.CellLayout[Frente],
@@ -90,7 +90,7 @@ bool FEscavarNaoEnterraNinguemTest::RunTest(const FString&)
 	FBattleAction Nada;
 	TArray<FBattleEvent> Traco;
 	BattlePhases::ApplyPostures(Estado,
-		TerraTeste::Cavar(EBattleDirection::Direita), Nada, 0, Traco);
+		BattlePhases::DuelSlotActions(Estado, TerraTeste::Cavar(EBattleDirection::Direita), Nada), 0, Traco);
 
 	TestEqual(TEXT("A casa ocupada não vira barreira"),
 		Estado.CellLayout[Estado.CellIndex(1, 1)],
@@ -103,7 +103,7 @@ bool FEscavarNaoEnterraNinguemTest::RunTest(const FString&)
 	FBattleState NaBorda = TerraTeste::Duelo();
 	TArray<FBattleEvent> Outro;
 	BattlePhases::ApplyPostures(NaBorda,
-		TerraTeste::Cavar(EBattleDirection::Esquerda), Nada, 0, Outro);
+		BattlePhases::DuelSlotActions(NaBorda, TerraTeste::Cavar(EBattleDirection::Esquerda), Nada), 0, Outro);
 	TestEqual(TEXT("Fora da grade recusa"),
 		TerraTeste::Conta(Outro, EBattleEventType::PosturaFalhou), 1);
 
@@ -135,7 +135,8 @@ bool FSecarApagaAAguaTest::RunTest(const FString&)
 
 		FBattleAction Nada;
 		TArray<FBattleEvent> Traco;
-		BattlePhases::ApplyCombat(Estado, Golpe, Nada, 0, Traco);
+		BattlePhases::ApplyCombat(Estado,
+		BattlePhases::DuelSlotActions(Estado, Golpe, Nada), 0, Traco);
 
 		TestEqual(TEXT("A casa secou"), Estado.CellLayout[Casa],
 			static_cast<uint8>(ECellProperty::None));
@@ -171,7 +172,8 @@ bool FSecarNaoEOMesmoQueNadaTest::RunTest(const FString&)
 
 	FBattleAction Nada;
 	TArray<FBattleEvent> Traco;
-	BattlePhases::ApplyCombat(Estado, Golpe, Nada, 0, Traco);
+	BattlePhases::ApplyCombat(Estado,
+		BattlePhases::DuelSlotActions(Estado, Golpe, Nada), 0, Traco);
 
 	TestEqual(TEXT("Golpe comum NÃO seca a casa"), Estado.CellLayout[Casa],
 		static_cast<uint8>(ECellProperty::Water));

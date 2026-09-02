@@ -16,12 +16,28 @@ struct FBattleState;
 
 namespace BattlePhases
 {
+	/**
+	 * As ações de UM DUELO neste slot, endereçadas ao pet vivo de cada lado.
+	 *
+	 * É a tradução da forma de dois lados para a de pets endereçados, num
+	 * lugar só — a mesma razão de `FBattleResolver::DuelCommits`. Escrita em
+	 * cada chamador, seria a mesma regra em vinte e quatro arquivos.
+	 *
+	 * ⚠️ Existe enquanto a forma de DOIS LADOS ainda existir. Quando os testes
+	 * de fase passarem a endereçar pet por pet (é o que a CP5 começa), esta
+	 * função perde o último chamador e sai — função de tradução que sobrevive
+	 * à tradução vira um segundo jeito de fazer a mesma coisa.
+	 */
+	TArray<FSlotAction> DuelSlotActions(
+		const FBattleState& State,
+		const FBattleAction& LeftAction,
+		const FBattleAction& RightAction);
+
 	// F2 — Postura. Aplica Defender/Esquivar no PostureFlags de quem
 	// declarou essas ações neste slot. Não toca em posição nem em vida.
 	void ApplyPostures(
 		FBattleState& State,
-		const FBattleAction& LeftAction,
-		const FBattleAction& RightAction,
+		TArrayView<const FSlotAction> SlotActions,
 		uint8 SlotIndex,
 		TArray<FBattleEvent>& OutTrace);
 
@@ -32,8 +48,7 @@ namespace BattlePhases
 	// troca de casas é permitida.
 	void ApplyMovement(
 		FBattleState& State,
-		const FBattleAction& LeftAction,
-		const FBattleAction& RightAction,
+		TArrayView<const FSlotAction> SlotActions,
 		uint8 SlotIndex,
 		TArray<FBattleEvent>& OutTrace);
 
@@ -44,8 +59,7 @@ namespace BattlePhases
 	// morrem os dois (BTL-07).
 	void ApplyCombat(
 		FBattleState& State,
-		const FBattleAction& LeftAction,
-		const FBattleAction& RightAction,
+		TArrayView<const FSlotAction> SlotActions,
 		uint8 SlotIndex,
 		TArray<FBattleEvent>& OutTrace);
 

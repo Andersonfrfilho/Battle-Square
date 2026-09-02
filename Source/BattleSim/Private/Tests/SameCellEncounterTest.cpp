@@ -47,9 +47,12 @@ namespace
 	void EncounterRunSlot(FBattleState& State, const FBattleAction& Left, const FBattleAction& Right,
 		TArray<FBattleEvent>& Trace, uint8 SlotIndex = 0)
 	{
-		BattlePhases::ApplyPostures(State, Left, Right, SlotIndex, Trace);
-		BattlePhases::ApplyMovement(State, Left, Right, SlotIndex, Trace);
-		BattlePhases::ApplyCombat(State, Left, Right, SlotIndex, Trace);
+		BattlePhases::ApplyPostures(State,
+		BattlePhases::DuelSlotActions(State, Left, Right), SlotIndex, Trace);
+		BattlePhases::ApplyMovement(State,
+		BattlePhases::DuelSlotActions(State, Left, Right), SlotIndex, Trace);
+		BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, Left, Right), SlotIndex, Trace);
 		BattlePhases::ApplyResolution(State, SlotIndex, Trace);
 	}
 

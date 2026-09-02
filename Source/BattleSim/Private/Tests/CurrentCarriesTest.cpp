@@ -49,7 +49,8 @@ namespace ProvaDaCorrente
 	{
 		const FBattleAction Nada;
 		TArray<FBattleEvent> Traco;
-		BattlePhases::ApplyMovement(Estado, Nada, Nada, 0, Traco);
+		BattlePhases::ApplyMovement(Estado,
+		BattlePhases::DuelSlotActions(Estado, Nada, Nada), 0, Traco);
 	}
 }
 

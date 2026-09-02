@@ -120,7 +120,7 @@ entra no hash (medido em `ComputeHash`), então uma divergência aqui não é
 
 ---
 
-## CP4 — As fases agem sobre o pet ENDEREÇADO
+## CP4 — As fases agem sobre o pet ENDEREÇADO ✅ FEITO
 > 🤖 Modelo: `sonnet` — a forma foi decidida em CP3
 
 **Dependências:** CP3.

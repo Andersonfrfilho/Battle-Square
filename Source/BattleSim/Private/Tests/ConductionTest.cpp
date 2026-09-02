@@ -78,7 +78,8 @@ namespace ProvaDaConducao
 
 		const FBattleAction Nada;
 		TArray<FBattleEvent> Traco;
-		BattlePhases::ApplyCombat(Estado, Ataque, Nada, 0, Traco);
+		BattlePhases::ApplyCombat(Estado,
+		BattlePhases::DuelSlotActions(Estado, Ataque, Nada), 0, Traco);
 	}
 }
 

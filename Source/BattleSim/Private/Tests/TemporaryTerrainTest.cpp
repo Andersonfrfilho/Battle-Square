@@ -266,7 +266,8 @@ bool FGolpeDeGeloNegaOTerrenoEDepoisDevolveTest::RunTest(const FString&)
 
 	FBattleAction Nada;
 	TArray<FBattleEvent> Traco;
-	BattlePhases::ApplyCombat(Estado, Ataque, Nada, 0, Traco);
+	BattlePhases::ApplyCombat(Estado,
+		BattlePhases::DuelSlotActions(Estado, Ataque, Nada), 0, Traco);
 
 	TestEqual(TEXT("O golpe congelou a casa dele"), Estado.CellLayout[Casa],
 		static_cast<uint8>(ECellProperty::Ice));
@@ -310,7 +311,8 @@ bool FNoGeloEscorregaEPerdeOMovimentoTest::RunTest(const FString&)
 
 	FBattleAction Nada;
 	TArray<FBattleEvent> Traco;
-	BattlePhases::ApplyMovement(Estado, Andar, Nada, 0, Traco);
+	BattlePhases::ApplyMovement(Estado,
+		BattlePhases::DuelSlotActions(Estado, Andar, Nada), 0, Traco);
 
 	TestEqual(TEXT("Ficou onde estava"), Estado.Pets[0].Row, static_cast<uint8>(1));
 	TestEqual(TEXT("E foi narrado como escorregão"),
@@ -324,7 +326,8 @@ bool FNoGeloEscorregaEPerdeOMovimentoTest::RunTest(const FString&)
 	// Depois do degelo ele anda de novo — o gelo prende, não aleija.
 	TArray<FBattleEvent> Depois;
 	BattlePhases::ApplyResolution(Estado, 0, Depois);
-	BattlePhases::ApplyMovement(Estado, Andar, Nada, 1, Depois);
+	BattlePhases::ApplyMovement(Estado,
+		BattlePhases::DuelSlotActions(Estado, Andar, Nada), 1, Depois);
 
 	TestEqual(TEXT("Derretido, o movimento volta"),
 		Estado.Pets[0].Row, static_cast<uint8>(0));
@@ -493,7 +496,8 @@ bool FLamaDaNosTresDesfechosTest::RunTest(const FString&)
 
 		FBattleAction Nada;
 		TArray<FBattleEvent> Traco;
-		BattlePhases::ApplyMovement(Estado, Andar, Nada, 0, Traco);
+		BattlePhases::ApplyMovement(Estado,
+		BattlePhases::DuelSlotActions(Estado, Andar, Nada), 0, Traco);
 
 		if (TerrenoQuePassaTeste::ContaEventos(Traco, EBattleEventType::Escorregou) > 0)
 		{
@@ -560,7 +564,8 @@ bool FChaoComumNaoConsomeSorteioTest::RunTest(const FString&)
 
 	FBattleAction Nada;
 	TArray<FBattleEvent> Traco;
-	BattlePhases::ApplyMovement(Estado, Andar, Nada, 0, Traco);
+	BattlePhases::ApplyMovement(Estado,
+		BattlePhases::DuelSlotActions(Estado, Andar, Nada), 0, Traco);
 
 	TestEqual(TEXT("O gerador não andou"), Estado.Random.State, AntesDoPasso);
 

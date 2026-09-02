@@ -1250,4 +1250,7 @@ struct FBattleState
 	 * `IsAlive()`. Filtrar aqui faria a ação sumir sem passar por elas.
 	 */
 	BATTLESIM_API const FPetState* FindPetByIdConst(uint8 PetId) const;
+
+	/** O mesmo, podendo mexer. Ao lado do const, e não numa terceira busca. */
+	BATTLESIM_API FPetState* FindPetById(uint8 PetId);
 };

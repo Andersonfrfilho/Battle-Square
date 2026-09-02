@@ -58,7 +58,8 @@ bool FBattlePhaseCombatDirectionalHitTest::RunTest(const FString& Parameters)
 	State.Pets.Add(MakeCombatant(2, 1, 2, 1, /*Attack=*/10, /*Defense=*/5)); // à direita de 1
 
 	TArray<FBattleEvent> Trace;
-	BattlePhases::ApplyCombat(State, Attack(EBattleDirection::Direita), Wait(), 0, Trace);
+	BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, Attack(EBattleDirection::Direita), Wait()), 0, Trace);
 
 	TestEqual(TEXT("Dano acumulado no alvo (20 - 5 = 15)"), State.Pets[1].PendingDamage, 15);
 	TestEqual(TEXT("Vida do alvo NÃO muda em F4"), State.Pets[1].Health, 100);
@@ -89,7 +90,8 @@ bool FBattlePhaseCombatMissTest::RunTest(const FString& Parameters)
 	State.Pets.Add(MakeCombatant(2, 1, 2, 2, 10, 5)); // duas casas: fora de alcance
 
 	TArray<FBattleEvent> Trace;
-	BattlePhases::ApplyCombat(State, Attack(EBattleDirection::Direita), Wait(), 0, Trace);
+	BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, Attack(EBattleDirection::Direita), Wait()), 0, Trace);
 
 	TestEqual(TEXT("Nenhum dano acumulado"), State.Pets[1].PendingDamage, 0);
 	TestEqual(TEXT("Um evento emitido"), Trace.Num(), 1);
@@ -113,7 +115,8 @@ bool FBattlePhaseCombatDodgeNullifiesAttackTest::RunTest(const FString& Paramete
 	State.Pets.Add(Dodger);
 
 	TArray<FBattleEvent> Trace;
-	BattlePhases::ApplyCombat(State, Attack(EBattleDirection::Direita), Wait(), 0, Trace);
+	BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, Attack(EBattleDirection::Direita), Wait()), 0, Trace);
 
 	TestEqual(TEXT("Nenhum dano — esquiva anulou"), State.Pets[1].PendingDamage, 0);
 	TestTrue(TEXT("Evento é Esquivou"), Trace[0].Type == EBattleEventType::Esquivou);
@@ -136,7 +139,8 @@ bool FBattlePhaseCombatMagicIgnoresDodgeTest::RunTest(const FString& Parameters)
 	State.Pets.Add(Dodger);
 
 	TArray<FBattleEvent> Trace;
-	BattlePhases::ApplyCombat(State, Magic(EBattleDirection::Direita), Wait(), 0, Trace);
+	BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, Magic(EBattleDirection::Direita), Wait()), 0, Trace);
 
 	// Magia: Attack(20) * 150% / 100 - Defense(5) = 30 - 5 = 25
 	TestEqual(TEXT("Magia acerta apesar da esquiva"), State.Pets[1].PendingDamage, 25);
@@ -160,7 +164,8 @@ bool FBattlePhaseCombatDefendReducesPhysicalDamageTest::RunTest(const FString& P
 	State.Pets.Add(Defender);
 
 	TArray<FBattleEvent> Trace;
-	BattlePhases::ApplyCombat(State, Attack(EBattleDirection::Direita), Wait(), 0, Trace);
+	BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, Attack(EBattleDirection::Direita), Wait()), 0, Trace);
 
 	// DefesaEfetiva = 10 * 150 / 100 = 15. Dano = max(1, 20 - 15) = 5.
 	TestEqual(TEXT("Dano reduzido pela defesa ativa"), State.Pets[1].PendingDamage, 5);
@@ -183,7 +188,8 @@ bool FBattlePhaseCombatDefendReducesMagicDamageTest::RunTest(const FString& Para
 	State.Pets.Add(Defender);
 
 	TArray<FBattleEvent> Trace;
-	BattlePhases::ApplyCombat(State, Magic(EBattleDirection::Direita), Wait(), 0, Trace);
+	BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, Magic(EBattleDirection::Direita), Wait()), 0, Trace);
 
 	// DefesaEfetiva = 10 * 150 / 100 = 15. Magia = 20*150/100 - 15 = 30 - 15 = 15.
 	TestEqual(TEXT("Defesa reduz dano de magia também"), State.Pets[1].PendingDamage, 15);
@@ -205,7 +211,8 @@ bool FBattlePhaseCombatMinimumDamageTest::RunTest(const FString& Parameters)
 	State.Pets.Add(MakeCombatant(2, 1, 2, 1, /*Attack=*/10, /*Defense=*/999));
 
 	TArray<FBattleEvent> Trace;
-	BattlePhases::ApplyCombat(State, Attack(EBattleDirection::Direita), Wait(), 0, Trace);
+	BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, Attack(EBattleDirection::Direita), Wait()), 0, Trace);
 
 	TestEqual(TEXT("Dano nunca cai abaixo do mínimo (1)"), State.Pets[1].PendingDamage, 1);
 	TestTrue(TEXT("Dano mínimo nunca é zero ou negativo"), State.Pets[1].PendingDamage > 0);
@@ -239,7 +246,8 @@ bool FBattlePhaseCombatCoabitingOpponentIsValidTargetTest::RunTest(const FString
 	TArray<FBattleEvent> Trace;
 	// Direção que aponta para o vazio: o golpe acerta assim mesmo, porque o
 	// alvo é escolhido pela ADJACÊNCIA, não pela mira.
-	BattlePhases::ApplyCombat(State, Attack(EBattleDirection::Cima), Wait(), 0, Trace);
+	BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, Attack(EBattleDirection::Cima), Wait()), 0, Trace);
 
 	TestTrue(TEXT("A direção não impede o acerto"),
 		Trace[0].Type == EBattleEventType::AtaqueAcertou);
@@ -263,7 +271,8 @@ bool FBattlePhaseCombatDamageIsAccumulatedNotAppliedTest::RunTest(const FString&
 	const int32 HealthBefore = State.Pets[1].Health;
 
 	TArray<FBattleEvent> Trace;
-	BattlePhases::ApplyCombat(State, Attack(EBattleDirection::Direita), Wait(), 0, Trace);
+	BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, Attack(EBattleDirection::Direita), Wait()), 0, Trace);
 
 	TestEqual(TEXT("Health não mudou mesmo com dano altíssimo acumulado"), State.Pets[1].Health, HealthBefore);
 	TestTrue(TEXT("PendingDamage registrou o dano de verdade"), State.Pets[1].PendingDamage > 0);
@@ -286,7 +295,8 @@ bool FBattlePhaseCombatSkipsDeadTargetTest::RunTest(const FString& Parameters)
 	State.Pets.Add(DeadTarget);
 
 	TArray<FBattleEvent> Trace;
-	BattlePhases::ApplyCombat(State, Attack(EBattleDirection::Direita), Wait(), 0, Trace);
+	BattlePhases::ApplyCombat(State,
+		BattlePhases::DuelSlotActions(State, Attack(EBattleDirection::Direita), Wait()), 0, Trace);
 
 	TestTrue(TEXT("Sem alvo vivo, o ataque erra"), Trace[0].Type == EBattleEventType::AtaqueErrou);
 	TestEqual(TEXT("Nenhum dano ao pet morto"), State.Pets[1].PendingDamage, 0);

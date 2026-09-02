@@ -517,16 +517,26 @@ struct FBattleState
 			return false;
 		}
 
-		// A substância só tem o que dizer quando a skill exige ÁGUA: é o único
-		// requisito de terreno que hoje um fluido pode desmentir. Exigir que
-		// todo requisito consulte o registro faria `escavar` pedir permissão a
-		// um fluido que não existe naquela casa.
-		const uint8 Exigido = SkillTerrainRequirement[
-			FMath::Clamp(static_cast<int32>(Action), 0, 15)];
+		const int32 Slot = FMath::Clamp(static_cast<int32>(Action), 0, 15);
+		const EFluidKind Aqui = FluidAt(Column, Row);
 
-		if (IsAnyWater(Exigido))
+		// A SUBSTÂNCIA DECLARADA manda, quando há uma. Um poder que exige lava
+		// falha em toda água, e falha sem precisar listar quais águas existem —
+		// que é o mesmo motivo de o requisito de fundura ser dado e não `if`.
+		const uint8 FluidoExigido = SkillFluidRequirement[Slot];
+		if (FluidoExigido != static_cast<uint8>(EFluidKind::Nenhum))
 		{
-			return FluidRegistry::AllowsSubmerge(FluidAt(Column, Row));
+			return Aqui == static_cast<EFluidKind>(FluidoExigido);
+		}
+
+		// Sem substância declarada, vale a que a FUNDURA implica: skill que
+		// pede terreno de água exige um fluido em que se possa entrar. É o
+		// único requisito de terreno que hoje um fluido pode desmentir —
+		// exigir que todo requisito consulte o registro faria `escavar` pedir
+		// permissão a um fluido que não existe naquela casa.
+		if (IsAnyWater(SkillTerrainRequirement[Slot]))
+		{
+			return FluidRegistry::AllowsSubmerge(Aqui);
 		}
 
 		return true;
@@ -611,6 +621,21 @@ struct FBattleState
 
 	UPROPERTY()
 	uint8 SkillTerrainLevel[16] = { 0 };
+
+	/**
+	 * A SUBSTÂNCIA que a skill exige — o eixo da fundura tem o seu par.
+	 *
+	 * Paralelo a `SkillTerrainRequirement`, e pelo mesmo motivo que ele existe:
+	 * `escavar` não precisou de um `if` no núcleo, e um poder que só funcione
+	 * na LAVA também não vai precisar. É uma linha de configuração.
+	 *
+	 * Zero (`Nenhum`) quer dizer "sem exigência de substância" — e aí vale a
+	 * regra que a FUNDURA implica: skill que pede terreno de água exige um
+	 * fluido em que se possa entrar. Foi assim que submergir deixou de valer na
+	 * lava, e continua sendo assim sem ninguém declarar nada.
+	 */
+	UPROPERTY()
+	uint8 SkillFluidRequirement[16] = { 0 };
 
 	/**
 	 * O que o CHÃO faz com quem tenta sair dele, em porcentagem.
@@ -750,6 +775,22 @@ struct FBattleState
 		if (Indice >= 0 && Indice < 16)
 		{
 			SkillTerrainRequirement[Indice] = static_cast<uint8>(Terrain);
+		}
+	}
+
+	/**
+	 * Exige uma SUBSTÂNCIA desta skill.
+	 *
+	 * Independente do requisito de fundura: um poder pode exigir lava sem
+	 * dizer nada sobre quanta lava, e outro pode exigir água FUNDA sem se
+	 * importar com qual água. Os dois eixos se combinam quando ambos existem.
+	 */
+	void RequireFluidForSkill(EActionType Action, EFluidKind Fluid)
+	{
+		const int32 Indice = static_cast<int32>(Action);
+		if (Indice >= 0 && Indice < 16)
+		{
+			SkillFluidRequirement[Indice] = static_cast<uint8>(Fluid);
 		}
 	}
 

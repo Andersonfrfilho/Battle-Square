@@ -73,6 +73,11 @@ uint64 FBattleState::ComputeHash() const
 	{
 		Hash = CombineBattleHash(Hash, SkillTerrainRequirement[Indice]);
 		Hash = CombineBattleHash(Hash, SkillTerrainLevel[Indice]);
+
+		// A substância exigida entra no hash junto da fundura exigida: são a
+		// mesma configuração de regra, e duas partidas em que um poder exige
+		// coisas diferentes são duas partidas diferentes.
+		Hash = CombineBattleHash(Hash, SkillFluidRequirement[Indice]);
 		Hash = CombineBattleHash(Hash, TerrainSlipPercent[Indice]);
 		Hash = CombineBattleHash(Hash, TerrainSlowPercent[Indice]);
 		Hash = CombineBattleHash(Hash, TerrainDriesTo[Indice]);

@@ -39,12 +39,23 @@ diferentes sendo idênticas. Seria dessincronia fantasma, das piores de achar.
 dois eixos. Não são duas cópias da regra — são as duas perguntas que a casa
 responde.
 
-## F3 — Poderes que distinguem fluido
-> 🤖 Modelo: `sonnet`
+## F3 — Poderes que distinguem fluido ✅ FEITO
 
-Requisito de skill passa a poder pedir substância, não só fundura.
-*Aceite:* um poder que exige água funciona nas cinco águas e falha na lava;
-um que exige lava falha em todas as águas.
+`SkillFluidRequirement[16]`, paralelo a `SkillTerrainRequirement` — o cano que
+já existia (invariante 7). Um poder que só funciona na lava é uma LINHA de
+configuração, e não uma exceção dentro da fase, pelo mesmo motivo que `escavar`
+não precisou de um `if` no núcleo.
+
+**Os dois eixos são independentes e se combinam.** Um poder pode exigir água
+FUNDA *e* que ela seja termal: se a substância declarada apagasse o requisito de
+fundura, um poder de água termal funcionaria numa poça.
+
+Zero quer dizer "sem exigência de substância", e aí vale a regra que a fundura
+implica — foi assim que submergir passou a recusar a lava na F2, e continua
+sendo assim sem ninguém declarar nada.
+
+O poder que exige lava falha em toda água **sem listar quais águas existem**: a
+sexta que alguém acrescentar já nasce recusada.
 
 ## F4 — O dano de estar dentro ✅ FEITO
 

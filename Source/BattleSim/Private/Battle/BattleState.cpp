@@ -88,6 +88,22 @@ uint64 FBattleState::ComputeHash() const
 		Hash = CombineBattleHash(Hash, CellProperty);
 	}
 
+	// O FLUIDO entra no hash, e entra DERIVADO — nunca o array cru.
+	//
+	// `CellFluid` pode estar vazia querendo dizer "tudo no padrão", e uma lista
+	// materializada só de zeros quer dizer exatamente a mesma coisa. Somando o
+	// array cru, os dois estados dariam assinaturas diferentes sendo idênticos
+	// — e o hash existe para pegar divergência de verdade, não a forma de
+	// guardar. Seria uma dessincronia fantasma, das piores de achar.
+	for (int32 Linha = 0; Linha < static_cast<int32>(GridRows); ++Linha)
+	{
+		for (int32 Coluna = 0; Coluna < static_cast<int32>(GridColumns); ++Coluna)
+		{
+			Hash = CombineBattleHash(Hash,
+				static_cast<uint64>(static_cast<uint8>(FluidAt(Coluna, Linha))));
+		}
+	}
+
 	// O PRAZO entra no hash junto com o terreno. Duas partidas com o mesmo
 	// tabuleiro, uma com gelo que derrete no próximo slot e outra com gelo que
 	// dura três, são duas partidas diferentes — e sem isto teriam a mesma

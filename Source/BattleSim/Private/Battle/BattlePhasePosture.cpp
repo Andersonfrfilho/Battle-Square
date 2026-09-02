@@ -198,8 +198,10 @@ namespace
 		// Era "submergir exige água", escrito aqui — e por isso `escavar`, que
 		// quer pedra, nunca pôde existir sem editar este arquivo. Agora a
 		// montagem declara o que cada ação exige, e este ponto só confere.
-		if (!State.TerrainAllowsSkill(Action.Type,
-			State.CellLayout[State.CellIndex(Pet->Column, Pet->Row)]))
+		// Pela casa, e não pela propriedade solta: a casa responde pelos DOIS
+		// eixos, e é assim que submergir deixa de valer numa casa de lava
+		// marcada como água funda — o que passava antes, e passava calado.
+		if (!State.CellAllowsSkill(Action.Type, Pet->Column, Pet->Row))
 		{
 			// Falha ALTA, com evento próprio. Silenciosamente virar Aguardar
 			// deixaria o jogador achando que a skill não funciona, quando o

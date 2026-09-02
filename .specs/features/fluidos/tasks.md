@@ -14,16 +14,30 @@ distingue nada — que era o estado de onde se partiu.
 
 ---
 
-## F2 — A casa sabe de que fluido ela é 🧠
-> 🤖 Modelo: `opus` — é o contrato entre o tabuleiro e o registro
+## F2 — A casa sabe de que fluido ela é ✅ FEITO
 
-Hoje o registro responde *sobre* um fluido, e ninguém diz que a casa X tem o
-fluido Y. Sem isto o eixo novo não toca o jogo.
+**A decisão foi MEDIDA, não escolhida por gosto.** A arena é montada casa a
+casa: `FWorldFeatureSample` carrega uma `Location`, e o layout sai de
+`CellLayoutIndex(Coluna, Linha)` — casas diferentes recebem propriedades
+diferentes do mundo. Derivar o fluido do bioma da arena tornaria impossível
+**para sempre** uma batalha na beira do vulcão com água termal de um lado e
+lava do outro. Campo por casa, então.
 
-*Decisão em aberto:* o fluido entra em `FBattleState` como campo por casa
-(custa memória e entra no hash) ou é derivado do bioma da arena (barato, mas
-uma arena não pode ter dois fluidos). **Medir antes de escolher.**
-*Aceite:* `Submergir` recusa numa casa de lava marcada como água funda.
+E ele custa quase nada: `CellFluid` é um quarto array paralelo a `CellLayout`,
+que já tinha três — o próprio código justifica o padrão ("terreno que passa são
+três informações"). Um byte por casa, teto de 225.
+
+**Vazia quer dizer "tudo no padrão".** Uma arena comum não paga um byte por
+casa para dizer que água é água; quem tem lava materializa a lista.
+
+O hash soma o fluido **DERIVADO**, nunca o array cru — lista vazia e lista de
+zeros querem dizer a mesma coisa, e somando o cru elas dariam assinaturas
+diferentes sendo idênticas. Seria dessincronia fantasma, das piores de achar.
+
+`TerrainAllowsSkill` continua sendo o eixo da FUNDURA e não mudou de assinatura
+(11 chamadas em teste ficaram intactas); `CellAllowsSkill` é a conjunção dos
+dois eixos. Não são duas cópias da regra — são as duas perguntas que a casa
+responde.
 
 ## F3 — Poderes que distinguem fluido
 > 🤖 Modelo: `sonnet`

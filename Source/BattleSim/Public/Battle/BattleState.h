@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Battle/BattleRandom.h"
 #include "Battle/BattleTypes.h"
+#include "Battle/FluidRegistry.h"
 #include "BattleState.generated.h"
 
 /**
@@ -415,6 +416,121 @@ struct FBattleState
 
 	UPROPERTY()
 	TArray<uint8> CellRevertsTo;
+
+	/**
+	 * DE QUE FLUIDO cada casa é feita — o eixo da SUBSTÂNCIA.
+	 *
+	 * Paralelo a `CellLayout`, como as duas listas acima, e pelo mesmo motivo:
+	 * são perguntas diferentes sobre a mesma casa. `CellLayout` diz QUANTA água
+	 * há; esta diz DE QUE ela é feita. Uma poça de lava e um rio de lava são a
+	 * mesma substância em funduras diferentes.
+	 *
+	 * **Pode ficar VAZIA, e vazia quer dizer "tudo no padrão".** Zero numa casa
+	 * quer dizer o mesmo: o fluido que a fundura daquela casa implica. Assim uma
+	 * arena comum não paga um byte por casa para dizer que a água é água, e
+	 * quem tem lava materializa a lista.
+	 *
+	 * Quem lê pergunta a `FluidAt`, nunca a este array — é lá que o padrão
+	 * mora, num lugar só.
+	 */
+	UPROPERTY()
+	TArray<uint8> CellFluid;
+
+	/**
+	 * O fluido que uma fundura implica, quando ninguém disse outra coisa.
+	 *
+	 * A ilha é de água doce, então é ela o padrão. O gelo fica de fora de
+	 * propósito: nele se PISA, não se entra — quem está sobre o gelo não está
+	 * dentro de fluido nenhum, e é isso que faz o escorregão dele ser regra de
+	 * chão e não de líquido.
+	 */
+	static EFluidKind DefaultFluidFor(uint8 CellProperty)
+	{
+		switch (static_cast<ECellProperty>(CellProperty))
+		{
+			case ECellProperty::Water:
+			case ECellProperty::ShallowWater: return EFluidKind::AguaDoce;
+			case ECellProperty::Mud:          return EFluidKind::Lama;
+			default:                          return EFluidKind::Nenhum;
+		}
+	}
+
+	/** De que fluido esta casa é feita. */
+	EFluidKind FluidAt(int32 Column, int32 Row) const
+	{
+		const int32 Indice = CellIndex(Column, Row);
+
+		if (CellFluid.IsValidIndex(Indice)
+			&& CellFluid[Indice] != static_cast<uint8>(EFluidKind::Nenhum))
+		{
+			return static_cast<EFluidKind>(CellFluid[Indice]);
+		}
+
+		return CellLayout.IsValidIndex(Indice)
+			? DefaultFluidFor(CellLayout[Indice])
+			: EFluidKind::Nenhum;
+	}
+
+	/**
+	 * Põe um fluido numa casa, materializando a lista se preciso.
+	 *
+	 * Ninguém mexe em `CellFluid` à mão: a lista nasce do tamanho de
+	 * `CellLayout`, e duas listas paralelas de tamanhos diferentes seriam um
+	 * índice válido numa e inválido na outra.
+	 */
+	void SetFluidAt(int32 Column, int32 Row, EFluidKind Fluid)
+	{
+		const int32 Indice = CellIndex(Column, Row);
+		if (!CellLayout.IsValidIndex(Indice))
+		{
+			return;
+		}
+
+		if (CellFluid.Num() != CellLayout.Num())
+		{
+			CellFluid.SetNumZeroed(CellLayout.Num());
+		}
+
+		CellFluid[Indice] = static_cast<uint8>(Fluid);
+	}
+
+	/**
+	 * ESTA CASA permite a skill — os DOIS eixos.
+	 *
+	 * Fundura **e** substância. `TerrainAllowsSkill` continua respondendo só
+	 * pela fundura, e esta compõe com o registro dos fluidos; não são duas
+	 * cópias da mesma regra, são as duas perguntas que a casa responde.
+	 *
+	 * É por aqui que submergir deixa de valer numa casa de lava marcada como
+	 * água funda — que passava antes, e passava calado.
+	 */
+	bool CellAllowsSkill(EActionType Action, int32 Column, int32 Row) const
+	{
+		const int32 Indice = CellIndex(Column, Row);
+		if (!CellLayout.IsValidIndex(Indice))
+		{
+			return false;
+		}
+
+		if (!TerrainAllowsSkill(Action, CellLayout[Indice]))
+		{
+			return false;
+		}
+
+		// A substância só tem o que dizer quando a skill exige ÁGUA: é o único
+		// requisito de terreno que hoje um fluido pode desmentir. Exigir que
+		// todo requisito consulte o registro faria `escavar` pedir permissão a
+		// um fluido que não existe naquela casa.
+		const uint8 Exigido = SkillTerrainRequirement[
+			FMath::Clamp(static_cast<int32>(Action), 0, 15)];
+
+		if (IsAnyWater(Exigido))
+		{
+			return FluidRegistry::AllowsSubmerge(FluidAt(Column, Row));
+		}
+
+		return true;
+	}
 
 	/**
 	 * Põe terreno na casa, com prazo.

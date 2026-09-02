@@ -130,6 +130,24 @@ bool FPetTypeCatalog::LoadFromJson(const FString& FilePath, FPetTypeCatalog& Out
 			(*Objeto)->TryGetNumberField(TEXT("tiltDegrees"), Tombo);
 			Elemento.TiltDegrees = static_cast<float>(Tombo);
 
+			// Ausente é ZERO: elemento que não diz nada não resiste a nada, e
+			// esse é o inócuo — nunca uma imunidade dada por engano.
+			const TSharedPtr<FJsonObject>* Resistencias = nullptr;
+			if ((*Objeto)->TryGetObjectField(TEXT("resists"), Resistencias)
+				&& Resistencias && Resistencias->IsValid())
+			{
+				for (const TPair<FString, TSharedPtr<FJsonValue>>& Par
+					: (*Resistencias)->Values)
+				{
+					double Quanto = 0.0;
+					if (Par.Value.IsValid() && Par.Value->TryGetNumber(Quanto))
+					{
+						Elemento.FluidResists.Add(Par.Key,
+							FMath::Clamp(static_cast<int32>(Quanto), 0, 100));
+					}
+				}
+			}
+
 			// Ausente é falso: elemento que não diz nada não conduz.
 			(*Objeto)->TryGetBoolField(TEXT("conducts"), Elemento.bConducts);
 

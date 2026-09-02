@@ -3,6 +3,7 @@
 #include "Data/BattleDataTranslator.h"
 
 #include "Balance/PetTypeCatalog.h"
+#include "Battle/FluidRegistry.h"
 #include "Balance/PetTypeIdentity.h"
 
 #include "Battle/BattleArenaConstants.h"
@@ -140,6 +141,35 @@ void FBattleDataTranslator::TranslatePet(
 	// não pode conhecer texto (AD-012); a tela precisa do nome e não pode
 	// recalcular dano (audit_no_recalculation.sh). Cada lado recebe o que usa,
 	// e nada além.
+	// A RESISTÊNCIA A FLUIDO: o traço dá a base, o item soma.
+	//
+	// A base vem do ELEMENTO, pelo mesmo caminho do Incorpóreo — o núcleo
+	// guarda o número, a camada de fora guarda o significado. O item ainda não
+	// existe como sistema, então soma ZERO aqui; o ponto onde ele entra é
+	// `ComposeFluidResist`, que tem prova própria justamente para que criar o
+	// sistema seja uma linha e não uma descoberta.
+	{
+		const FPetTypeIdentity ParaResistir = FPetTypeIdentity::Parse(Source.Type);
+		if (const FPetElementDefinition* Dele =
+			FPetTypeCatalog::Get().FindElement(ParaResistir.Element))
+		{
+			for (int32 Qual = 1; Qual < static_cast<int32>(EFluidKind::Count); ++Qual)
+			{
+				const EFluidKind Fluido = static_cast<EFluidKind>(Qual);
+				const int32* DoTraco =
+					Dele->FluidResists.Find(FluidRegistry::TraitsOf(Fluido).DebugName);
+
+				// A chave é o nome do fluido NO REGISTRO — uma segunda grafia
+				// seria uma resistência que nunca casa e nunca acusa. (A
+				// diferença de caixa não separa: `FString` no Unreal compara
+				// sem diferenciar maiúscula, e o teste confirma que
+				// `"Lava"` no JSON acha `"lava"` do registro.)
+				OutBattleState.SetResistPercentFor(Fluido,
+					ComposeFluidResist(DoTraco ? *DoTraco : 0, /*FromItem=*/0));
+			}
+		}
+	}
+
 	// O ELEMENTO decide se os golpes conduzem, e a decisão acontece AQUI —
 	// onde o tipo ainda é conhecido. O núcleo nunca aprende o que é "Raio":
 	// ele recebe uma bandeira por golpe, do mesmo jeito que recebe o Attack já
@@ -196,6 +226,14 @@ void FBattleDataTranslator::TranslatePet(
 			: 0;
 	}
 
+}
+
+int32 FBattleDataTranslator::ComposeFluidResist(int32 DoTraco, int32 DoItem)
+{
+	// SOMA, e não o maior dos dois: o item ACRESCENTA ao que a criatura já é.
+	// Tomar o maior faria uma bota de lava não valer nada num pet de Fogo, que
+	// é justamente o pet que mais a usaria.
+	return FMath::Clamp(FMath::Max(DoTraco, 0) + FMath::Max(DoItem, 0), 0, 100);
 }
 
 void FBattleDataTranslator::TranslateMatchup(

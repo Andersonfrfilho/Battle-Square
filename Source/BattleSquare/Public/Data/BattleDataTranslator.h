@@ -123,6 +123,19 @@ public:
 	// que não mudam (Defense/Speed/MaxHealth/Health nunca são alterados
 	// por tipo — só Attack). O núcleo (BattleSim) nunca sabe que tipo
 	// existe: o Attack que ele recebe já chega efetivo.
+	/**
+	 * COMPÕE a resistência a um fluido: o traço dá a BASE, o item SOMA.
+	 *
+	 * Pura e pública porque é a regra, e a regra precisa de prova própria — o
+	 * item ainda não existe como sistema (não há cadastro, save nem equipar),
+	 * e sem esta função o ponto onde ele somaria seria uma descoberta no dia em
+	 * que alguém o criasse, em vez de uma linha.
+	 *
+	 * Presa entre 0 e 100: acima de 100 o dano viraria negativo, e curar quem
+	 * pisa na lava é o oposto do que a regra promete.
+	 */
+	static int32 ComposeFluidResist(int32 FromTrait, int32 FromItem);
+
 	static void TranslateMatchup(
 		const FLoadedPetRecord& LeftSource,
 		const FLoadedPetRecord& RightSource,

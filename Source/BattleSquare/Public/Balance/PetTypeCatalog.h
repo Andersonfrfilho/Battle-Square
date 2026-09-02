@@ -31,6 +31,18 @@ struct BATTLESQUARE_API FPetElementDefinition
 	 * Ausente é FALSO. Elemento que não diz nada não conduz, e é o inócuo.
 	 */
 	bool bConducts = false;
+
+	/**
+	 * QUANTO este elemento resiste a cada fluido, por nome de fluido.
+	 *
+	 * É o "traço" da criatura, e ele vem do ELEMENTO pela mesma razão que o
+	 * Incorpóreo vem: o núcleo guarda o efeito (um número), a camada de fora
+	 * guarda o significado (o elemento se chama Fogo, e por isso aguenta lava).
+	 *
+	 * Mapa, e não bitmask de traço: resistência é PORCENTAGEM POR FLUIDO, e um
+	 * bit por fluido daria oito traços que só sabem dizer sim ou não.
+	 */
+	TMap<FString, int32> FluidResists;
 };
 
 /** Uma ESCOLA: o que a magia dela faz, e a malha que diz isso na tela. */

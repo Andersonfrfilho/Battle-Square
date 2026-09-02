@@ -52,7 +52,10 @@
    "tiltDegrees": -6,
    "skills": [
     "incendiar"
-   ]
+   ],
+   "resists": {
+    "Lava": 50
+   }
   },
   {
    "name": "Agua",

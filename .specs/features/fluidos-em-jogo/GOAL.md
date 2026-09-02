@@ -29,7 +29,7 @@ tocam**. O trabalho é encanamento, e a única decisão de conteúdo é a G3.
       com água TERMAL, longe dele com doce, e casa seca sem fluido
 - [x] **G2** — o tradutor liga a condução: pet de Raio eletrifica a poça numa
       partida real; pet de Fogo, não
-- [ ] **G3** — a resistência tem origem (**pergunte antes**: item, traço, ou
+- [x] **G3** — a resistência tem origem (**pergunte antes**: item, traço, ou
       as duas)
 - [ ] **G4** — a prova na tela, com roteiro do que só o olho vê
 - [ ] O grep acima deixa de vir vazio — e essa é a prova de que o objetivo

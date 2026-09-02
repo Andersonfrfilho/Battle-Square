@@ -82,7 +82,7 @@ justamente o que se atravessa de través.
 balsa parada para sempre no meio do rio, e travessia que não termina não é
 travessia — é armadilha silenciosa.
 
-## C5 — O mundo aberto
+## C5 — O mundo aberto ✅ FEITO
 > 🤖 Modelo: `sonnet`
 
 `WaterFooting` diz hoje que a água atrasa. Com sentido, ela atrasa **de um
@@ -90,7 +90,7 @@ lado** e ajuda do outro.
 
 *Aceite:* atravessar o mesmo rio nos dois sentidos dá resultados diferentes.
 
-## C6 — A prova na tela
+## C6 — A prova na tela ✅ FEITO
 > 🤖 Modelo: `sonnet`
 
 Corrente que ninguém vê é corrente que o jogador descobre sendo empurrado.

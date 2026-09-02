@@ -33,13 +33,13 @@ E o mais importante: **quase tudo já existe.**
 - [x] **C3** — subir a correnteza custa mais que descer; de lado, nem um nem
       outro
 - [x] **C4** — a balsa sente a corrente
-- [ ] **C5** — o mundo aberto: o mesmo rio nos dois sentidos dá resultados
+- [x] **C5** — o mundo aberto: o mesmo rio nos dois sentidos dá resultados
       diferentes
-- [ ] **C6** — a prova na tela: painel e grade dizem o rumo
-- [ ] O grep fora de `/Tests/` acha quem PÕE a corrente numa casa
-- [ ] Bateria completa verde (hoje **800**; o número só sobe)
-- [ ] As cinco auditorias limpas
-- [ ] Um commit por task, cada um com o motivo — não só o quê
+- [x] **C6** — a prova na tela: painel e grade dizem o rumo
+- [x] O grep fora de `/Tests/` acha quem PÕE a corrente numa casa
+- [x] Bateria completa verde (hoje **800**; o número só sobe)
+- [x] As cinco auditorias limpas
+- [x] Um commit por task, cada um com o motivo — não só o quê
 
 Enquanto qualquer caixa estiver aberta, o objetivo **continua**.
 

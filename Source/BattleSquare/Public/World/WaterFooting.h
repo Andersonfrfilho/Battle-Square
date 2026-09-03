@@ -40,6 +40,36 @@ namespace WaterFooting
 		const FVector2D& PositionUnits);
 
 	/**
+	 * O que o pé encontra PARA QUEM TEM ESTA ALTURA.
+	 *
+	 * A água não é funda: ela é funda **para alguém**. Um pet miúdo se molha
+	 * onde um corpulento passa seco, e a mesma poça é vau para um e nado para
+	 * o outro.
+	 *
+	 * `At` sem altura continua existindo e usa a altura padrão — é o mundo
+	 * perguntando "e para uma pessoa comum?", que é a pergunta certa quando
+	 * ninguém em particular está pisando.
+	 */
+	BATTLESQUARE_API EWaterFooting AtForHeight(const UIslandBakedPlan& Baked,
+		const FVector2D& PositionUnits, float HeightUnits);
+
+	/**
+	 * A CINTURA de quem tem esta altura — o limiar entre andar e nadar.
+	 *
+	 * **40% da altura**, e não uma constante. As três âncoras que este projeto
+	 * tinha brigavam entre si — o limiar do traçado (100), a meia-altura da
+	 * cápsula do jogador (88), e a fundura das travessias de vau (todas abaixo
+	 * de 94) —, e nenhuma podia ganhar sem tornar as outras erradas.
+	 *
+	 * Como fração, elas param de brigar: cada uma vira a resposta certa para
+	 * uma altura diferente.
+	 */
+	BATTLESQUARE_API float WaistDepthUnitsFor(float HeightUnits);
+
+	/** A altura de uma pessoa comum deste mundo, para quem não disse a sua. */
+	BATTLESQUARE_API float DefaultHeightUnits();
+
+	/**
 	 * Quanto o passo rende aqui, como fração do passo em terra.
 	 *
 	 * Fração, e não velocidade em unidades: número absoluto escolhido quando só

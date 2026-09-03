@@ -126,9 +126,17 @@ bool FIslandMapDumpTest::RunTest(const FString& Parameters)
 		{
 			const float Onde2 = static_cast<float>(Passo) / Passos;
 			const FVector2D Onde = FreshWater::PointAtProgress(Rios[Indice], Onde2);
-			Json += FString::Printf(TEXT("%s[%.0f,%.0f,%.0f]"),
+			// QUATRO números por ponto: x, y, meia-largura e FUNDURA.
+			//
+			// A fundura entrou aqui porque o despejo é por onde se INVESTIGA, e
+			// ela faltava: eu media o mundo por este arquivo enquanto o jogo
+			// lia o assado, e as duas coisas contavam histórias diferentes. Um
+			// despejo que não mostra o que o jogo usa faz medir a coisa errada
+			// com confiança.
+			Json += FString::Printf(TEXT("%s[%.0f,%.0f,%.0f,%.0f]"),
 				Passo == 0 ? TEXT("") : TEXT(","), Onde.X, Onde.Y,
-				FreshWater::HalfWidthAtProgress(Rios[Indice], Onde2));
+				FreshWater::HalfWidthAtProgress(Rios[Indice], Onde2),
+				FreshWater::DepthAtProgress(Rios[Indice], Onde2));
 		}
 
 		const FVector2D NoLago =

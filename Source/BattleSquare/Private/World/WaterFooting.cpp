@@ -47,8 +47,21 @@ namespace ChaoMolhado
 	 * medição era mais grossa que a coisa que ela precisava enxergar, que é o
 	 * defeito que neste projeto já se disfarçou de quatro outros.
 	 */
+	/**
+	 * Dentro da calha, e QUANTO FUNDO no trecho que molhou.
+	 *
+	 * A fundura sai do MESMO laço da largura, e não de uma segunda varredura:
+	 * duas varreduras poderiam achar trechos diferentes como "o mais perto", e
+	 * aí a largura falaria de um lugar e a fundura de outro — as duas
+	 * verdadeiras, e a conclusão errada.
+	 *
+	 * `FunduraNoPonto` pode devolver zero: é o córrego e a fonte, que não têm
+	 * fundura por ponto. Zero ali significa "não sei", e quem lê decide — não
+	 * "raso", que seria uma resposta inventada.
+	 */
 	bool DentroDaCalha(const TArray<FVector2D>& Pontos, const FVector2D& Onde,
-		TFunctionRef<float(int32)> MeiaLarguraNoPonto, float& MeiaLarguraAchada)
+		TFunctionRef<float(int32)> MeiaLarguraNoPonto, float& MeiaLarguraAchada,
+		TFunctionRef<float(int32)> FunduraNoPonto, float& FunduraAchada)
 	{
 		bool bMolhou = false;
 		for (int32 Ponto = 0; Ponto + 1 < Pontos.Num(); ++Ponto)
@@ -68,6 +81,30 @@ namespace ChaoMolhado
 			if (FVector2D::DistSquared(NoTrecho, Onde) <= Meia * Meia)
 			{
 				MeiaLarguraAchada = FMath::Max(MeiaLarguraAchada, Meia);
+
+				// A FUNDURA DA PONTA MAIS PERTO, e não a maior das duas.
+				//
+				// Eu tinha escrito "a mais funda das duas pontas, pelo mesmo
+				// motivo da largura", e a MEDIÇÃO derrubou: o traçado escolhe
+				// a travessia pela fundura NO PONTO, e o pé lia o trecho. As
+				// duas leituras são defensáveis, e é por isso que ter as duas
+				// é o defeito — a travessia de vau em (40544,-44884) está a
+				// 1812 unidades de um rio de 1808 de meia-largura, ou seja
+				// DENTRO DA CALHA POR QUATRO UNIDADES, e a outra ponta do
+				// trecho é bem mais funda.
+				//
+				// A largura fica com o MÁXIMO porque ela decide se molhou —
+				// e molhar na beira do trecho mais largo é molhar. A fundura
+				// fica com o ponto porque ela decide se PASSA, e quem passa
+				// pisa onde está, não na outra ponta.
+				const float ProporcaoNoTrecho = FVector2D::Distance(
+					Pontos[Ponto], NoTrecho)
+					/ FMath::Max(1.0f, FVector2D::Distance(Pontos[Ponto], Pontos[Ponto + 1]));
+
+				FunduraAchada = FMath::Max(FunduraAchada,
+					FMath::Lerp(FunduraNoPonto(Ponto), FunduraNoPonto(Ponto + 1),
+						FMath::Clamp(ProporcaoNoTrecho, 0.0f, 1.0f)));
+
 				bMolhou = true;
 			}
 		}
@@ -86,7 +123,38 @@ namespace WaterFooting
 	constexpr uint8 ETravessiaVau =
 		static_cast<uint8>(TrailLayout::ECrossingKind::Vau);
 
+	float DefaultHeightUnits()
+	{
+		// 176 unidades — a cápsula do jogador tem 88 de meia-altura, e é a
+		// única altura que este mundo mede hoje. Quando os pets tiverem
+		// altura própria, ela entra por `AtForHeight` sem mexer aqui.
+		return 176.0f;
+	}
+
+	float WaistDepthUnitsFor(float HeightUnits)
+	{
+		// QUARENTA POR CENTO, e a fração é o conserto de uma briga.
+		//
+		// Havia três âncoras e nenhuma podia ganhar: 100 (o limiar do
+		// traçado), 88 (a meia-altura da cápsula) e "abaixo de 94" (a fundura
+		// das trinta travessias de vau). Escolher uma tornaria as outras duas
+		// erradas.
+		//
+		// Como fração da altura, as três viram a mesma regra medida em pessoas
+		// diferentes — e uma criatura miúda passa a se molhar onde uma
+		// corpulenta passa seca, que é o que se vê num rio de verdade.
+		constexpr float DaAlturaAteACintura = 0.40f;
+
+		return FMath::Max(0.0f, HeightUnits) * DaAlturaAteACintura;
+	}
+
 	EWaterFooting At(const UIslandBakedPlan& Assado, const FVector2D& Onde)
+	{
+		return AtForHeight(Assado, Onde, DefaultHeightUnits());
+	}
+
+	EWaterFooting AtForHeight(const UIslandBakedPlan& Assado, const FVector2D& Onde,
+		float Altura)
 	{
 		// FORA DA COSTA É MAR, e mar é FUNDO.
 		//
@@ -107,27 +175,70 @@ namespace WaterFooting
 		// rio está no rio. Parar na primeira água encontrada faria o resultado
 		// depender da ordem do assado, que é desempate disfarçado de regra.
 		float MaiorMeiaLargura = 0.0f;
+		float MaiorFundura = 0.0f;
+
+		// DE QUE ÁGUA veio a largura, e não só quanto ela mede.
+		//
+		// Sem isto, córrego e poço de fonte caem na mesma regra de largura — e
+		// os dois são coisas opostas: um fio que se pisa, e uma bacia funda.
+		bool bAchouCorrego = false;
+		bool bAchouFonte = false;
 
 		for (const FBakedRiver& Curso : Assado.Rivers)
 		{
 			float Meia = 0.0f;
+			float Fundo = 0.0f;
 			if (ChaoMolhado::DentroDaCalha(Curso.PointsUnits, Onde,
 				[&Curso](int32 Ponto)
 				{
 					return Curso.HalfWidthUnits.IsValidIndex(Ponto)
 						? Curso.HalfWidthUnits[Ponto] : 0.0f;
-				}, Meia))
+				}, Meia,
+				[&Curso](int32 Ponto)
+				{
+					return Curso.DepthUnits.IsValidIndex(Ponto)
+						? Curso.DepthUnits[Ponto] : 0.0f;
+				}, Fundo))
 			{
 				MaiorMeiaLargura = FMath::Max(MaiorMeiaLargura, Meia);
+				MaiorFundura = FMath::Max(MaiorFundura, Fundo);
 			}
 
-			// Lago e poço são água PARADA e funda — e é onde a queda cai.
+			// LAGO E POÇO SÃO ÁGUA PARADA E FUNDA — e agora eles dizem QUANTO.
+			//
+			// Antes contribuíam largura e nenhuma fundura, e caíam na regra de
+			// largura junto com o córrego. Isso passou despercebido enquanto a
+			// consulta às travessias respondia por eles; ao removê-la (M5), o
+			// buraco apareceu: a travessia de vau em (40544,-44884) está a
+			// 6122 unidades do lago do rio 52, cuja meia-largura é 7000 — ou
+			// seja, DENTRO do lago — e nenhum rio a molha (o mais perto passa a
+			// 1812 de um trecho de 1808).
+			//
+			// O poço tem fundura assada (`PlungePoolDepthUnits`); o lago não
+			// tem uma própria, e a do curso no progresso do lago já a carrega —
+			// é lá que a barriga funda entra em `DepthAtProgress`.
 			if (Curso.bHasLake
 				&& FVector2D::Distance(Onde, Curso.LakeCenterUnits)
 					<= FreshWater::LakeHalfWidthUnits())
 			{
 				MaiorMeiaLargura =
 					FMath::Max(MaiorMeiaLargura, FreshWater::LakeHalfWidthUnits());
+
+				// A fundura do PONTO DO CURSO mais perto do centro do lago: a
+				// barriga do lago já está em `DepthAtProgress`, e ler dali é
+				// ler a mesma fonte que o resto.
+				float NoLago = 0.0f;
+				for (int32 Ponto = 0; Ponto < Curso.DepthUnits.Num(); ++Ponto)
+				{
+					if (Curso.PointsUnits.IsValidIndex(Ponto)
+						&& FVector2D::Distance(Curso.PointsUnits[Ponto],
+							Curso.LakeCenterUnits) <= FreshWater::LakeHalfWidthUnits())
+					{
+						NoLago = FMath::Max(NoLago, Curso.DepthUnits[Ponto]);
+					}
+				}
+
+				MaiorFundura = FMath::Max(MaiorFundura, NoLago);
 			}
 
 			if (Curso.bHasFall
@@ -136,16 +247,23 @@ namespace WaterFooting
 			{
 				MaiorMeiaLargura =
 					FMath::Max(MaiorMeiaLargura, Curso.PlungePoolHalfWidthUnits);
+				MaiorFundura =
+					FMath::Max(MaiorFundura, Curso.PlungePoolDepthUnits);
 			}
 		}
 
 		for (const FBakedBrook& Corrego : Assado.Brooks)
 		{
 			float Meia = 0.0f;
+			float Fundo = 0.0f;
 			if (ChaoMolhado::DentroDaCalha(Corrego.PointsUnits, Onde,
-				[&Corrego](int32) { return Corrego.HalfWidthUnits; }, Meia))
+				[&Corrego](int32) { return Corrego.HalfWidthUnits; }, Meia,
+				// O córrego NÃO TEM fundura por ponto, e zero aqui é "não
+				// sei" — quem lê cai na largura, como o traçado já faz.
+				[](int32) { return 0.0f; }, Fundo))
 			{
 				MaiorMeiaLargura = FMath::Max(MaiorMeiaLargura, Meia);
+				bAchouCorrego = true;
 			}
 		}
 
@@ -154,6 +272,7 @@ namespace WaterFooting
 			if (FVector2D::Distance(Onde, Fonte.CenterUnits) <= Fonte.PoolHalfWidthUnits)
 			{
 				MaiorMeiaLargura = FMath::Max(MaiorMeiaLargura, Fonte.PoolHalfWidthUnits);
+				bAchouFonte = true;
 			}
 		}
 
@@ -162,33 +281,68 @@ namespace WaterFooting
 			return EWaterFooting::Seco;
 		}
 
-		// ONDE SE PASSA A PÉ, quem diz é o TRAÇADO — as travessias que ele
-		// marcou como vau. Não é a largura.
+		// A FUNDURA DECIDE, quando ela é conhecida.
 		//
-		// Eu tinha escrito "a largura decide" e MEDI: nenhum ponto de rio
-		// saía vau, porque a meia-largura mínima é 481 e o limiar do a-pé é
-		// 30% da calha do rio. O traçado escolhe o vau pela FUNDURA no ponto
-		// (todas as 30 abaixo de 94 unidades), que é coisa que a largura não
-		// diz — e um rio largo e raso existe.
+		// ## O que estava aqui, e por que sai
 		//
-		// Consultar as travessias é ler a regra onde ela mora, em vez de
-		// reconstruí-la aqui e ter duas que concordam até a primeira edição.
-		for (const FBakedCrossing& Travessia : Assado.Crossings)
+		// Antes, quem dizia onde se passa a pé era o TRAÇADO: percorria-se as
+		// travessias marcadas como vau e perguntava-se se este ponto era uma
+		// delas. O comentário explicava a escolha — *"o traçado escolhe o vau
+		// pela FUNDURA no ponto, que é coisa que a largura não diz"*.
+		//
+		// Ou seja: a consulta às travessias era uma PROCURAÇÃO da fundura,
+		// feita quando a fundura não existia. Agora ela existe (M3), e vem no
+		// assado ponto a ponto.
+		//
+		// Manter as duas seria ter duas respostas para "posso passar aqui?" —
+		// e a do traçado só sabe responder nos 37 pontos que ele marcou,
+		// enquanto o jogador pisa em qualquer lugar do rio.
+		//
+		// ## E agora a resposta depende de QUEM pergunta
+		//
+		// A água não é funda: ela é funda para alguém. Passou da cintura,
+		// nada; abaixo dela, anda.
+		if (MaiorFundura > 0.0f)
 		{
-			if (Travessia.Kind != static_cast<uint8>(ETravessiaVau))
-			{
-				continue;
-			}
-
-			if (FVector2D::DistSquared(Onde, Travessia.CenterUnits)
-				<= MaiorMeiaLargura * MaiorMeiaLargura)
-			{
-				return EWaterFooting::Vau;
-			}
+			return MaiorFundura <= WaistDepthUnitsFor(Altura)
+				? EWaterFooting::Vau
+				: EWaterFooting::Fundo;
 		}
 
-		// O CÓRREGO se atravessa a pé em qualquer ponto — é o que o separa do
-		// rio, que precisa de obra. A largura decide AQUI, e só aqui.
+		// SEM FUNDURA CONHECIDA, e aqui está o CÓRREGO e a FONTE.
+		//
+		// Nenhum dos dois tem fundura por ponto, porque nenhum dos dois tem
+		// curso com progresso e declive — não há o que variar neles.
+		//
+		// **E o córrego se atravessa a pé em qualquer ponto.** É o que o separa
+		// do rio, que precisa de obra. Isto estava escrito no comentário e NÃO
+		// no código: a afirmação vivia à sombra da consulta às travessias, que
+		// devolvia vau ali por outro caminho. Ao remover aquela consulta —
+		// procuração da fundura, morta na M5 —, tirei junto a única coisa que
+		// dizia "aqui se passa".
+		//
+		// Medido: a travessia de vau em (13577,-37678) está a 187 unidades de
+		// um córrego e a 3149 do rio mais perto. O pé achou água funda num
+		// lugar onde o traçado promete passagem, e a culpa era desta omissão.
+		// O CÓRREGO É VAU, e ponto. Não é a largura dele que decide: é o que ele
+		// É. Um fio que liga uma fonte a um rio se atravessa em qualquer lugar,
+		// e foi por isso que o traçado marcou vau ali.
+		if (bAchouCorrego)
+		{
+			return EWaterFooting::Vau;
+		}
+
+		// O POÇO DA FONTE é o oposto: bacia parada, e funda. Cair na regra de
+		// largura junto com o córrego faria a nascente e o fio que sai dela
+		// serem a mesma coisa.
+		if (bAchouFonte)
+		{
+			return EWaterFooting::Fundo;
+		}
+
+		// E o que sobra é água sem fundura conhecida que não é nem córrego nem
+		// fonte — assado antigo, gravado antes da M3. A largura é o que resta,
+		// e é a mesma medida que o mundo usava antes desta feature.
 		return FreshWater::NavigabilityForHalfWidth(MaiorMeiaLargura)
 			== FreshWater::ENavigability::APe
 			? EWaterFooting::Vau
@@ -209,6 +363,14 @@ namespace WaterFooting
 		// encontrada faria o resultado depender da ordem do assado, que é
 		// desempate disfarçado de regra.
 		float MaiorMeiaLargura = 0.0f;
+		float MaiorFundura = 0.0f;
+
+		// DE QUE ÁGUA veio a largura, e não só quanto ela mede.
+		//
+		// Sem isto, córrego e poço de fonte caem na mesma regra de largura — e
+		// os dois são coisas opostas: um fio que se pisa, e uma bacia funda.
+		bool bAchouCorrego = false;
+		bool bAchouFonte = false;
 		EFluidKind Achado = EFluidKind::Nenhum;
 
 		for (const FBakedRiver& Curso : Assado.Rivers)
@@ -245,8 +407,13 @@ namespace WaterFooting
 		for (const FBakedBrook& Corrego : Assado.Brooks)
 		{
 			float Meia = 0.0f;
+			// `FluidAt` pergunta DE QUE fluido é a água, não quanto ela funda.
+			// A fundura entra e sai ignorada — dar-lhe um nome de variável
+			// seria fingir que alguém a lê.
+			float FunduraIgnorada = 0.0f;
 			if (ChaoMolhado::DentroDaCalha(Corrego.PointsUnits, Onde,
-				[&Corrego](int32) { return Corrego.HalfWidthUnits; }, Meia)
+				[&Corrego](int32) { return Corrego.HalfWidthUnits; }, Meia,
+				[](int32) { return 0.0f; }, FunduraIgnorada)
 				&& Meia > MaiorMeiaLargura)
 			{
 				MaiorMeiaLargura = Meia;
@@ -276,6 +443,14 @@ namespace WaterFooting
 		// na primeira encontrada faria o resultado depender da ordem do
 		// assado, que é desempate disfarçado de regra.
 		float MaiorMeiaLargura = 0.0f;
+		float MaiorFundura = 0.0f;
+
+		// DE QUE ÁGUA veio a largura, e não só quanto ela mede.
+		//
+		// Sem isto, córrego e poço de fonte caem na mesma regra de largura — e
+		// os dois são coisas opostas: um fio que se pisa, e uma bacia funda.
+		bool bAchouCorrego = false;
+		bool bAchouFonte = false;
 		FVector2D Rumo = FVector2D::ZeroVector;
 
 		for (const FBakedRiver& Curso : Assado.Rivers)

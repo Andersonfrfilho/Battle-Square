@@ -331,3 +331,304 @@ bool FWaterFootingNeverStopsTheWalkerTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+// ---------------------------------------------------------------------------
+// M5 — A CINTURA É 40% DA ALTURA DE QUEM PISA.
+//
+// A água não é funda: ela é funda PARA ALGUÉM. É a diferença que é o aceite —
+// um valor só não prova fórmula nenhuma, porque uma constante disfarçada de
+// função devolve o mesmo número para todo mundo.
+// ---------------------------------------------------------------------------
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FWaterFootingWaistIsAFractionTest,
+	"BattleSquare.WaterFooting.WaistIsAFractionOfHeight",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FWaterFootingWaistIsAFractionTest::RunTest(const FString& Parameters)
+{
+	const float Miudo = WaterFooting::WaistDepthUnitsFor(100.0f);
+	const float Corpulento = WaterFooting::WaistDepthUnitsFor(250.0f);
+
+	AddInfo(FString::Printf(TEXT("cintura: miudo (100) %.0f, corpulento (250) %.0f"),
+		Miudo, Corpulento));
+
+	TestTrue(TEXT("quem e mais alto tem a cintura mais alta"), Corpulento > Miudo);
+	TestEqual(TEXT("e ela e 40% da altura"), Miudo, 40.0f, 0.01f);
+
+	// ALTURA ZERO OU NEGATIVA não vira cintura negativa: um dado ruim de
+	// cadastro faria toda água virar funda, e o pet ficaria preso na margem
+	// sem nada dizer por quê.
+	TestEqual(TEXT("altura zero da cintura zero, nunca negativa"),
+		WaterFooting::WaistDepthUnitsFor(-50.0f), 0.0f, 0.01f);
+
+	return true;
+}
+
+// O ACEITE — DOIS PETS, A MESMA ÁGUA, RESPOSTAS DIFERENTES.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FWaterFootingHeightDecidesTest,
+	"BattleSquare.WaterFooting.HeightDecidesWhoWades",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FWaterFootingHeightDecidesTest::RunTest(const FString& Parameters)
+{
+	const UIslandBakedPlan* Assado = IslandBakedPlan::Load();
+	if (!Assado)
+	{
+		AddError(TEXT("o assado nao existe — rode ./Tools/bake_island.sh"));
+		return false;
+	}
+
+	// PERGUNTA À FUNÇÃO, em vez de prever pela `DepthUnits`.
+	//
+	// A primeira versão escolhia o ponto comparando `Curso.DepthUnits[Ponto]`
+	// com as duas cinturas — e reprovou: `AtForHeight` usa a MAIOR fundura do
+	// TRECHO (as duas pontas), não a do ponto. Eu previa um número e media
+	// outro.
+	//
+	// Achar a discordância usando a própria função é imune a isso: seja qual
+	// for a fundura que ela consulte, o que se afirma é que duas alturas
+	// discordam no mesmo lugar.
+	constexpr float AlturaMiuda = 120.0f;
+	constexpr float AlturaGrande = 320.0f;
+
+	FVector2D OndeDiscordam = FVector2D::ZeroVector;
+	bool bAchou = false;
+
+	for (const FBakedRiver& Curso : Assado->Rivers)
+	{
+		for (const FVector2D& Ponto : Curso.PointsUnits)
+		{
+			if (WaterFooting::AtForHeight(*Assado, Ponto, AlturaMiuda)
+				!= WaterFooting::AtForHeight(*Assado, Ponto, AlturaGrande))
+			{
+				OndeDiscordam = Ponto;
+				bAchou = true;
+				break;
+			}
+		}
+
+		if (bAchou)
+		{
+			break;
+		}
+	}
+
+	if (!bAchou)
+	{
+		AddError(TEXT("nenhum ponto do tracado separa as duas alturas — "
+			"a cintura nao esta decidindo nada"));
+		return false;
+	}
+
+	const EWaterFooting ParaOMiudo =
+		WaterFooting::AtForHeight(*Assado, OndeDiscordam, AlturaMiuda);
+	const EWaterFooting ParaOGrande =
+		WaterFooting::AtForHeight(*Assado, OndeDiscordam, AlturaGrande);
+
+	AddInfo(FString::Printf(
+		TEXT("em (%.0f,%.0f) — miudo (cintura %.0f): %s; grande (cintura %.0f): %s"),
+		OndeDiscordam.X, OndeDiscordam.Y,
+		WaterFooting::WaistDepthUnitsFor(AlturaMiuda),
+		WaterFooting::DebugName(ParaOMiudo),
+		WaterFooting::WaistDepthUnitsFor(AlturaGrande),
+		WaterFooting::DebugName(ParaOGrande)));
+
+	// E O SENTIDO IMPORTA: o miúdo é quem não passa. "Diferente" sozinho
+	// passaria também se o grande afundasse e o miúdo andasse, que seria a
+	// regra invertida.
+	TestTrue(TEXT("o MIUDO nao passa"), ParaOMiudo == EWaterFooting::Fundo);
+	TestTrue(TEXT("e o GRANDE passa, na MESMA agua"),
+		ParaOGrande == EWaterFooting::Vau);
+
+	return true;
+}
+
+// CONTRAPESO — QUEM NÃO DIZ A ALTURA se comporta como antes.
+//
+// `At` sem altura é o mundo perguntando "e para uma pessoa comum?", que é a
+// pergunta certa quando ninguém em particular está pisando. Se ela mudasse de
+// resposta, todo chamador que não conhece pets teria mudado de comportamento
+// sem uma linha de código sua ter mudado.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FWaterFootingDefaultHeightTest,
+	"BattleSquare.WaterFooting.DefaultHeightIsTheOrdinaryPerson",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FWaterFootingDefaultHeightTest::RunTest(const FString& Parameters)
+{
+	const UIslandBakedPlan* Assado = IslandBakedPlan::Load();
+	if (!Assado)
+	{
+		AddError(TEXT("o assado nao existe"));
+		return false;
+	}
+
+	// Vinte pontos espalhados: `At` e `AtForHeight` com a altura padrão têm de
+	// dar a MESMA resposta em todos.
+	int32 Conferidos = 0;
+	int32 Iguais = 0;
+
+	for (const FBakedRiver& Curso : Assado->Rivers)
+	{
+		if (Curso.PointsUnits.IsEmpty() || Conferidos >= 20)
+		{
+			continue;
+		}
+
+		const FVector2D Onde = Curso.PointsUnits[Curso.PointsUnits.Num() / 2];
+		++Conferidos;
+
+		if (WaterFooting::At(*Assado, Onde)
+			== WaterFooting::AtForHeight(*Assado, Onde,
+				WaterFooting::DefaultHeightUnits()))
+		{
+			++Iguais;
+		}
+	}
+
+	TestEqual(TEXT("At sem altura e At com a altura padrao concordam"),
+		Iguais, Conferidos);
+	TestTrue(TEXT("e algo foi conferido"), Conferidos > 0);
+
+	return true;
+}
+
+// SONDA — o que o pé encontra na travessia que discorda.
+//
+// Escrita porque quatro deduções a partir do despejo erraram a causa: o
+// despejo grava `lagoX/lagoY` para TODO rio, tenha ele lago ou não, e eu li
+// "dentro do lago" onde o código lê `bHasLake` e não conta aquele rio.
+//
+// Perguntar ao código é a única leitura que não precisa de tradução.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FWaterFootingProbeTheFordTest,
+	"BattleSquare.WaterFooting.ProbeTheDisagreeingFord",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FWaterFootingProbeTheFordTest::RunTest(const FString& Parameters)
+{
+	const UIslandBakedPlan* Assado = IslandBakedPlan::Load();
+	if (!Assado)
+	{
+		AddError(TEXT("o assado nao existe"));
+		return false;
+	}
+
+	for (const FBakedCrossing& Travessia : Assado->Crossings)
+	{
+		if (Travessia.Kind != 0)
+		{
+			continue;
+		}
+
+		const EWaterFooting Chao = WaterFooting::At(*Assado, Travessia.CenterUnits);
+		if (Chao != EWaterFooting::Fundo)
+		{
+			continue;
+		}
+
+		// ACHOU a que discorda — agora diz TUDO o que o pé viu ali.
+		AddInfo(FString::Printf(TEXT("=== vau em (%.0f,%.0f), fundura gravada %.0f ==="),
+			Travessia.CenterUnits.X, Travessia.CenterUnits.Y, Travessia.DepthUnits));
+
+		AddInfo(FString::Printf(TEXT("fluido: %s"),
+			FluidRegistry::TraitsOf(
+				WaterFooting::FluidAt(*Assado, Travessia.CenterUnits)).DebugName));
+
+		// A CALHA DO RIO, que a primeira versão desta sonda esqueceu — e era
+		// justamente o ramo que eu nunca tinha inspecionado. Sonda que não
+		// mostra o caminho principal é sonda que confirma a hipótese errada.
+		for (int32 Qual = 0; Qual < Assado->Rivers.Num(); ++Qual)
+		{
+			const FBakedRiver& Curso = Assado->Rivers[Qual];
+
+			for (int32 Ponto = 0; Ponto + 1 < Curso.PointsUnits.Num(); ++Ponto)
+			{
+				if (!Curso.HalfWidthUnits.IsValidIndex(Ponto + 1))
+				{
+					continue;
+				}
+
+				const float Meia = FMath::Max(
+					Curso.HalfWidthUnits[Ponto], Curso.HalfWidthUnits[Ponto + 1]);
+
+				const FVector2D NoTrecho = FMath::ClosestPointOnSegment2D(
+					Travessia.CenterUnits, Curso.PointsUnits[Ponto],
+					Curso.PointsUnits[Ponto + 1]);
+
+				const float Ate = FVector2D::Distance(NoTrecho, Travessia.CenterUnits);
+				if (Ate <= Meia)
+				{
+					AddInfo(FString::Printf(
+						TEXT("  CALHA do rio %d trecho %d: dist %.0f <= meia %.0f, "
+							 "funduras %.0f e %.0f"),
+						Qual, Ponto, Ate, Meia,
+						Curso.DepthUnits.IsValidIndex(Ponto) ? Curso.DepthUnits[Ponto] : -1.0f,
+						Curso.DepthUnits.IsValidIndex(Ponto + 1) ? Curso.DepthUnits[Ponto + 1] : -1.0f));
+				}
+			}
+
+			if (Curso.bHasLake)
+			{
+				const float Ate = FVector2D::Distance(
+					Travessia.CenterUnits, Curso.LakeCenterUnits);
+				if (Ate <= FreshWater::LakeHalfWidthUnits())
+				{
+					AddInfo(FString::Printf(
+						TEXT("  LAGO do rio %d a %.0f (raio %.0f)"),
+						Qual, Ate, FreshWater::LakeHalfWidthUnits()));
+				}
+			}
+
+			if (Curso.bHasFall)
+			{
+				const float Ate = FVector2D::Distance(
+					Travessia.CenterUnits, Curso.FallCenterUnits);
+				if (Ate <= Curso.PlungePoolHalfWidthUnits)
+				{
+					AddInfo(FString::Printf(
+						TEXT("  POCO do rio %d a %.0f (raio %.0f, fundura %.0f)"),
+						Qual, Ate, Curso.PlungePoolHalfWidthUnits,
+						Curso.PlungePoolDepthUnits));
+				}
+			}
+		}
+
+		for (int32 Qual = 0; Qual < Assado->Brooks.Num(); ++Qual)
+		{
+			const FBakedBrook& Corrego = Assado->Brooks[Qual];
+			for (int32 Ponto = 0; Ponto + 1 < Corrego.PointsUnits.Num(); ++Ponto)
+			{
+				const FVector2D NoTrecho = FMath::ClosestPointOnSegment2D(
+					Travessia.CenterUnits, Corrego.PointsUnits[Ponto],
+					Corrego.PointsUnits[Ponto + 1]);
+
+				const float Ate = FVector2D::Distance(NoTrecho, Travessia.CenterUnits);
+				if (Ate <= Corrego.HalfWidthUnits)
+				{
+					AddInfo(FString::Printf(TEXT("  CORREGO %d: dist %.0f <= meia %.0f"),
+						Qual, Ate, Corrego.HalfWidthUnits));
+				}
+			}
+		}
+
+		AddInfo(FString::Printf(TEXT("  cintura padrao: %.1f"),
+			WaterFooting::WaistDepthUnitsFor(WaterFooting::DefaultHeightUnits())));
+
+		for (int32 Qual = 0; Qual < Assado->Springs.Num(); ++Qual)
+		{
+			const float Ate = FVector2D::Distance(
+				Travessia.CenterUnits, Assado->Springs[Qual].CenterUnits);
+			if (Ate <= Assado->Springs[Qual].PoolHalfWidthUnits)
+			{
+				AddInfo(FString::Printf(TEXT("  FONTE %d a %.0f (raio %.0f)"),
+					Qual, Ate, Assado->Springs[Qual].PoolHalfWidthUnits));
+			}
+		}
+
+		// A sonda NÃO reprova: ela existe para dizer o que há, e sai assim que
+		// achar a primeira. Reprovar aqui duplicaria o teste que já reprova.
+		return true;
+	}
+
+	AddInfo(TEXT("nenhum vau caiu em agua funda"));
+	return true;
+}

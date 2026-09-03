@@ -1142,3 +1142,61 @@ junto alguma coisa que varia pelo mesmo eixo?* Se arrasta, normalize por ela.
 `geracao-procedural-de-mapas.md` nomeia): a largura vem do assado, pela mesma
 função que o mundo usa, e o que se compara continua sendo a saída da função
 testada.
+
+### L-051: a PROCURAÇÃO esconde discordâncias, e cortá-la revela todas de uma vez
+
+**Descoberto:** 02–03/09/2026, na M5 de `a-carta-muda-uma-vez`.
+
+`WaterFooting::At` respondia "posso passar aqui?" percorrendo as travessias que
+o traçado marcou como vau. O comentário justificava: *"o traçado escolhe o vau
+pela FUNDURA no ponto, que é coisa que a largura não diz"*.
+
+Era uma **procuração**: o pé perguntava ao traçado em vez de olhar a água,
+porque a fundura não existia. Quando ela passou a existir (M3) e a procuração
+foi cortada, **seis discordâncias apareceram em sequência** — cada uma
+invisível enquanto a anterior estivesse na frente:
+
+| # | quem discordava | sobre o quê |
+|---|---|---|
+| 1 | gerador × traçado | de onde vem a fundura (M4) |
+| 2 | traçado × pé | o limiar do vau — 100 cravado contra 40% da altura |
+| 3 | traçado × pé | fundura do ponto ou do trecho |
+| 4 | pé × mundo | "o córrego é vau" estava no comentário e não no código |
+| 5 | pé × mundo | lago e poço davam largura e nenhuma fundura |
+| 6 | traçado × pé | **o que é "estar dentro do rio"** — distância à linha contra varredura por trechos |
+
+**Uma procuração não gera conflito: ela produz uma concordância que não
+significa nada.** Enquanto um só sistema responde, os dois nunca divergem — e a
+ausência de divergência se lê como correção.
+
+**O sinal de que existe procuração:** um sistema consulta o RESULTADO de outro
+onde poderia consultar o DADO. Se o comentário justifica isso dizendo "porque
+tal informação não existe", ele está datando a si mesmo.
+
+E a contagem de pontes mediu a honestidade das réguas: **0 → 1 → 3 → 4**, uma a
+mais a cada régua consertada. O `0 pontes` nunca foi decisão de arte — era o
+sintoma de um traçado que enxergava menos água do que existe.
+
+### L-052: o despejo é TRADUÇÃO, e eu o tratei como estado
+
+**Na mesma investigação, quatro deduções erradas seguidas**, todas por ler
+`Saved/IslandMap.json` como se fosse o que o jogo vê:
+
+| o que eu li | o que era |
+|---|---|
+| "a travessia tem fundura 0, logo é rasa" | o despejo **não gravava fundura**; eu media um campo do traçado, não do mundo |
+| "está dentro do lago do rio 52" | o despejo grava `lagoX/lagoY` para TODO rio, tenha lago ou não — o código lê `bHasLake` |
+| "nenhum rio molha (1812 > 1808)" | eu media o trecho 19→20; o código usa o 20→21, com meia-largura **1829** |
+| "não há lago, poço nem fonte, logo não há água" | a minha própria sonda não reportava a CALHA DO RIO — o ramo principal |
+
+**O incompleto se lê como conclusivo.** Cada número que o despejo mostrava era
+verdadeiro sobre alguma coisa — só não sobre a coisa que eu investigava.
+
+**O conserto foi perguntar ao código** (uma sonda que chama as mesmas funções
+que o jogo chama), e ela respondeu de primeira. O `CLAUDE.md` já ordena as
+ferramentas por eficácia e põe "inspecionar o estado vivo" acima de "ler o log";
+eu fui pelo caminho mais fácil primeiro, e ele custou seis rodadas.
+
+⚠️ **E a sonda também nasceu incompleta**, pelo mesmo vício: reportei os casos
+especiais (lago, poço, fonte) e esqueci o caminho comum. Sonda que não mostra o
+ramo principal confirma a hipótese errada por omissão.

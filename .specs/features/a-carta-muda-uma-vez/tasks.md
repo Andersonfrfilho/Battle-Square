@@ -124,7 +124,7 @@ poderia estar lendo e ignorando.
 
 ---
 
-## M5 — A cintura é 40% da ALTURA de quem pisa
+## M5 — A cintura é 40% da ALTURA de quem pisa ✅ FEITO
 > 🤖 Modelo: `sonnet`
 
 **Dependências:** M3.

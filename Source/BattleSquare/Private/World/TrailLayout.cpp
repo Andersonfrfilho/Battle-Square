@@ -1,6 +1,8 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "World/TrailLayout.h"
+
+#include "World/WaterFooting.h"
 #include "World/PlanReentryGuard.h"
 #include "World/VillageLayout.h"
 #include "Environment/IslandGeography.h"
@@ -942,9 +944,21 @@ bool TrailLayout::IsOnTrail(const FVector2D& PositionUnits)
 
 float TrailLayout::WadableDepthUnits()
 {
-	// Um metro. Acima disso ninguém atravessa a pé carregando coisa, e é o
-	// mesmo limite que o combate usa para dizer que a água deixou de ser poça.
-	return 100.0f;
+	// A CINTURA DE UMA PESSOA COMUM, e não mais um metro cravado.
+	//
+	// Era `100.0f`, e o comentário dizia "um metro; acima disso ninguém
+	// atravessa a pé carregando coisa". A intenção estava certa — o limite É a
+	// cintura —, mas cravado em unidades ele valia para uma altura só.
+	//
+	// **E ele passou a DISCORDAR do pé.** Com a cintura em 40% da altura, uma
+	// pessoa de 176 unidades molha a cintura em 70,4 — enquanto o traçado
+	// marcava vau até 100. As duas réguas respondiam "posso passar aqui?" com
+	// números diferentes, e o teste que cobra coerência entre elas reprovou.
+	//
+	// Duas réguas para a mesma pergunta é o defeito que L-032 e L-033 já
+	// custaram. Delegar é o conserto: a regra mora em `WaterFooting`, e o
+	// traçado a lê.
+	return WaterFooting::WaistDepthUnitsFor(WaterFooting::DefaultHeightUnits());
 }
 
 namespace
@@ -993,20 +1007,91 @@ namespace
 	{
 		float MaisFunda = 0.0f;
 
+		// A VARREDURA POR TRECHOS, e não `NearestOn`.
+		//
+		// `NearestOn` mede a distância à LINHA do curso e devolve o progresso;
+		// depois se compara essa distância com a largura NAQUELE progresso. O
+		// pé faz outra coisa: percorre os trechos entre pontos amostrados e
+		// usa a MAIOR largura das duas pontas de cada um.
+		//
+		// São duas maneiras de perguntar "estou dentro do rio?", e elas
+		// discordam na beira. MEDIDO na travessia de (40544,-44884): o traçado
+		// dizia seco (fundura 0) e o pé achava o trecho 20 do rio 55 a 1812 de
+		// distância contra 1829 de meia-largura — molhado, com fundura 80
+		// contra uma cintura de 70,4.
+		//
+		// Duas leituras da mesma água é o defeito que esta feature inteira
+		// combate. Ler igual é o conserto, e a varredura por trechos é a que o
+		// pé usa — o pé é quem pisa.
 		for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
 		{
-			float NoCurso = 0.0f;
-			const float Ate = FreshWater::NearestOn(Curso, Onde, NoCurso);
-			const float Meia = FreshWater::HalfWidthAtProgress(Curso, NoCurso);
+			constexpr int32 Amostras = 41;
 
-			if (Ate <= Meia)
+			for (int32 Ponto = 0; Ponto + 1 < Amostras; ++Ponto)
 			{
-				// A FUNDURA DAQUELE PONTO DO CURSO, e não uma conta sobre a
-				// largura dele. `NoCurso` já é o progresso do ponto mais perto
-				// — a mesma coordenada que a largura usa —, então as duas
-				// falam do mesmo lugar.
-				MaisFunda = FMath::Max(MaisFunda,
-					FreshWater::DepthAtProgress(Curso, NoCurso));
+				const float Daqui = static_cast<float>(Ponto) / (Amostras - 1);
+				const float DaqueleLado = static_cast<float>(Ponto + 1) / (Amostras - 1);
+
+				const FVector2D A = FreshWater::PointAtProgress(Curso, Daqui);
+				const FVector2D B = FreshWater::PointAtProgress(Curso, DaqueleLado);
+
+				const float Meia = FMath::Max(
+					FreshWater::HalfWidthAtProgress(Curso, Daqui),
+					FreshWater::HalfWidthAtProgress(Curso, DaqueleLado));
+
+				const FVector2D NoTrecho = FMath::ClosestPointOnSegment2D(Onde, A, B);
+				if (FVector2D::Distance(NoTrecho, Onde) > Meia)
+				{
+					continue;
+				}
+
+				// A fundura INTERPOLADA na posição, como o pé faz: quem pisa
+				// pisa onde está, não na ponta do trecho.
+				const float NoSegmento = FVector2D::Distance(A, B) > KINDA_SMALL_NUMBER
+					? FVector2D::Distance(A, NoTrecho) / FVector2D::Distance(A, B)
+					: 0.0f;
+
+				MaisFunda = FMath::Max(MaisFunda, FMath::Lerp(
+					FreshWater::DepthAtProgress(Curso, Daqui),
+					FreshWater::DepthAtProgress(Curso, DaqueleLado),
+					FMath::Clamp(NoSegmento, 0.0f, 1.0f)));
+			}
+		}
+
+		// O LAGO E O POÇO DA QUEDA, que o laço dos cursos não alcança.
+		//
+		// `NearestOn` mede a distância à LINHA do curso, e o lago é uma barriga
+		// de 7000 unidades de meia-largura em volta dela: um ponto a 6122 do
+		// centro do lago está DENTRO do lago e a mais de uma calha de distância
+		// da linha. Sem isto, a fundura ali saía zero e o traçado marcava VAU
+		// no meio de um lago.
+		//
+		// Medido: a travessia em (40544,-44884) era exatamente esse caso, e o
+		// pé — que sempre soube do lago — discordava dela. Duas leituras da
+		// mesma água, e a que decidia era a que enxergava menos.
+		for (const FreshWater::FRiverCourse& Curso : FreshWater::Plan())
+		{
+			if (Curso.HasLake())
+			{
+				const FVector2D NoLago =
+					FreshWater::PointAtProgress(Curso, Curso.LakeAtProgress);
+				if (FVector2D::Distance(Onde, NoLago) <= FreshWater::LakeHalfWidthUnits())
+				{
+					MaisFunda = FMath::Max(MaisFunda,
+						FreshWater::DepthAtProgress(Curso, Curso.LakeAtProgress));
+				}
+			}
+
+			if (Curso.HasFall())
+			{
+				const FVector2D NaQueda =
+					FreshWater::PointAtProgress(Curso, Curso.FallAtProgress);
+				if (FVector2D::Distance(Onde, NaQueda)
+					<= FreshWater::PlungePoolHalfWidthUnits(Curso))
+				{
+					MaisFunda = FMath::Max(MaisFunda,
+						FreshWater::PlungePoolDepthUnits(Curso));
+				}
 			}
 		}
 

@@ -45,6 +45,8 @@ restrito **na hora** — a conversa nunca morre.
   contexto. E ele disputa RAM e CPU com o jogo: numa máquina apertada, a
   conversa fica lenta primeiro.
 - Ligue com: `bs.Conversa http://localhost:8080/fala`
+- **Passo a passo completo para o jogador** (com solução de problemas):
+  [`rodando-o-modelo-local.md`](rodando-o-modelo-local.md)
 
 > ✅ O adaptador **já existe**: `Server/conversa/` neste repositório fala o
 > contrato do jogo na frente de qualquer modelo OpenAI-compatível — o

@@ -1,3 +1,6 @@
 # Dependências instaladas não são fonte: o lockfile (commitado) as reproduz
 # byte a byte com `bun install --frozen-lockfile`.
 node_modules/
+
+# O binario compilado e artefato de build, nao fonte: quem distribui e a release.
+dist/

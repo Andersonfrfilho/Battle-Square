@@ -27,6 +27,15 @@ MODEL_NAME=llama-3.3-70b \
 PORT=8080 bun start
 ```
 
+## Distribuir para o jogador
+
+```bash
+bun run build   # gera dist/conversa-server — executável ÚNICO, sem bun
+```
+
+O binário (~60 MB) vai na release do jogo; o jogador segue
+`docs/rodando-o-modelo-local.md`, que fala a língua dele.
+
 ## O contrato
 
 `POST /fala` com o digesto do jogo → `{ "npcSays": "..." }`.

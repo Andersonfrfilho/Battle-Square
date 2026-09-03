@@ -6,7 +6,8 @@
   "scripts": {
     "start": "bun run src/server.ts",
     "test": "bun test",
-    "typecheck": "bun x tsc --noEmit"
+    "typecheck": "bun x tsc --noEmit",
+    "build": "bun build --compile src/server.ts --outfile dist/conversa-server"
   },
   "dependencies": {
     "zod": "^3.23.0"

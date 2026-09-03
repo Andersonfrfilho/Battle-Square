@@ -83,15 +83,18 @@ de ser cenário que só colide.
       ⚠️ **Metade REESCRITA pela decisão 58:** o Portão **não tranca**, porque o
       jogador tem liberdade de viajar para onde quiser. O ranking continua
       existindo e aparecendo; o que ele deixa de ser é uma cancela.
-- [ ] **CI9** — um trabalho real, em que o pet facilita e nunca habilita
+- [x] **CI9** — um trabalho real, em que o pet facilita e nunca habilita
       O jogador **escolhe onde** (decisão 59): Fazenda, Criadouro ou Pomar. É um
       trabalho com três lugares, e o que muda entre eles é qual atributo do pet
       facilita.
-- [ ] O grep por `OnActorBeginOverlap`/`TriggerVolume` fora de `/Tests/` acha o
+- [x] O grep por `OnActorBeginOverlap`/`TriggerVolume` fora de `/Tests/` acha o
       padrão criado em CI2, reaproveitado por CI3–CI6, CI9
-- [ ] Bateria completa verde, zero falhas, zero crash
-- [ ] As cinco auditorias limpas
-- [ ] Um commit por task, cada um com o motivo — não só o quê
+      Medido em 03/09: `Village.cpp` (as portas) e `BattleSquareGameMode.cpp`
+      (quem escuta). CI5, CI6 e CI8 consomem o estado da porta; CI9 usa o
+      traçado (`UseAt`), porque mancha de solo não é prédio.
+- [x] Bateria completa verde, zero falhas, zero crash — **914** em 03/09/2026
+- [x] As cinco auditorias limpas
+- [x] Um commit por task, cada um com o motivo — não só o quê
 
 **Trocar `[⛔]` por `[ ]` é decisão do usuário — o número de configuração
 correspondente precisa existir antes.** Enquanto qualquer caixa estiver

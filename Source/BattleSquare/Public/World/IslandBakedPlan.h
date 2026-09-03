@@ -192,6 +192,25 @@ struct BATTLESQUARE_API FBakedRiver
 	UPROPERTY()
 	TArray<float> HalfWidthUnits;
 
+	/**
+	 * A FUNDURA em cada ponto, na mesma ordem dos pontos.
+	 *
+	 * Assada, e não estimada por quem lê. `TrailLayout` calculava fundura pela
+	 * largura (`largura × 0,065`) e o comentário dela defendia isso dizendo
+	 * que a alternativa seria "uma segunda fonte da mesma verdade" — o que era
+	 * certo enquanto não houvesse fundura de verdade. A partir daqui, é a
+	 * estimativa que seria a segunda fonte.
+	 *
+	 * ⚠️ **Ela VARIA ao longo do curso, e é isso que a largura nunca soube.**
+	 * O declive do leito decide: corredeira é rasa, remanso é fundo. Um trecho
+	 * largo e íngreme é raso, e a estimativa por largura o dava como fundo.
+	 *
+	 * Vazia é assado ANTIGO, gravado antes desta feature — e o hash de
+	 * parâmetros acusa a divergência nomeando o parâmetro.
+	 */
+	UPROPERTY()
+	TArray<float> DepthUnits;
+
 	/** Onde há corredeira, na mesma ordem dos pontos. */
 	UPROPERTY()
 	TArray<bool> bIsRapids;

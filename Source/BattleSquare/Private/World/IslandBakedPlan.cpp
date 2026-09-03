@@ -460,6 +460,11 @@ namespace IslandBakedPlan
 				const FVector2D NoPonto = FreshWater::PointAtProgress(Curso, Onde);
 				Assado.PointsUnits.Add(NoPonto);
 				Assado.HalfWidthUnits.Add(FreshWater::HalfWidthAtProgress(Curso, Onde));
+
+				// A FUNDURA no mesmo laço da largura, e por ponto: duas
+				// varreduras do mesmo curso poderiam divergir na amostragem, e
+				// aí largura e fundura falariam de pontos diferentes.
+				Assado.DepthUnits.Add(FreshWater::DepthAtProgress(Curso, Onde));
 				Assado.bIsRapids.Add(FreshWater::IsRapidsAtProgress(Curso, Onde));
 				Assado.FluidByPoint.Add(static_cast<uint8>(FluidoDaAguaEm(NoPonto)));
 

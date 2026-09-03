@@ -376,6 +376,25 @@ namespace FreshWater
 		/** Quanto a calha engrossa a cada ordem. */
 		constexpr float EngrossaPorOrdem = 1.7f;
 
+	/**
+	 * A fundura de um fio de cabeceira de primeira ordem, na nascente.
+	 *
+	 * 18 unidades — pouco menos de vinte centímetros. É o fio que se pisa sem
+	 * pensar, e é a base de onde tudo cresce por ordem e por percurso.
+	 */
+	constexpr float FundoDoFioDeCabeceira = 18.0f;
+
+	/**
+	 * Quanto da fundura sobra na corredeira mais brava.
+	 *
+	 * Um terço, e não zero: nem a corredeira mais brava fica sem lâmina, e
+	 * fundura zero faria a travessia dizer "seco" no meio do rio.
+	 */
+	constexpr float RasoDaCorredeira = 0.34f;
+
+	/** O lago é quase três vezes mais fundo que o curso que o alimenta. */
+	constexpr float FundoDoLago = 2.8f;
+
 		/**
 		 * E quanto ela engrossa da nascente à foz, mesmo sem galho entrando.
 		 *
@@ -1467,6 +1486,50 @@ namespace FreshWater
 		}
 
 		return Menor;
+	}
+
+	float DepthAtProgress(const FRiverCourse& Course, float Progress)
+	{
+		const float Onde = FMath::Clamp(Progress, 0.0f, 1.0f);
+
+		// A BASE sai da ordem e do progresso, como a largura — pelo mesmo
+		// motivo: a bacia entra pela margem o percurso inteiro.
+		const float PorOrdem =
+			FMath::Pow(EngrossaPorOrdem, static_cast<float>(Course.Order - 1));
+		const float Base = FundoDoFioDeCabeceira * PorOrdem
+			* FMath::Lerp(1.0f / EngrossaAteAFoz, 1.0f, Onde);
+
+		// O DECLIVE É QUEM FAZ A FUNDURA VARIAR, e é o que a estimativa por
+		// largura nunca soube: água que despenca corre RASA sobre a pedra;
+		// água que quase não desce EMPOÇA.
+		//
+		// Sem isto, a fundura seria a largura com outro nome — e um trecho
+		// largo e íngreme sairia fundo, que é o contrário do que acontece.
+		const float Declive = BedGradientAtProgress(Course, Onde);
+		const float Manso = FMath::Clamp(
+			1.0f - Declive / (RapidsGradient() * 2.0f), 0.0f, 1.0f);
+
+		// O piso não é zero: nem a corredeira mais brava fica sem lâmina, e
+		// fundura zero faria a travessia dizer "seco" no meio do rio.
+		const float PeloDeclive = FMath::Lerp(RasoDaCorredeira, 1.0f, Manso);
+
+		// O LAGO é a barriga funda. Ele já é uma barriga na LARGURA, e o mesmo
+		// alcance vale aqui: um lago largo e raso seria uma poça grande.
+		float DoLago = 1.0f;
+		if (Course.HasLake())
+		{
+			const float AteOLago = FMath::Abs(Onde - Course.LakeAtProgress);
+			const float Alcance =
+				AlcanceDoLago() / FMath::Max(1.0f, CourseLengthUnits(Course));
+
+			if (AteOLago < Alcance)
+			{
+				const float Dentro = 1.0f - (AteOLago / Alcance);
+				DoLago = FMath::Lerp(1.0f, FundoDoLago, Dentro * Dentro);
+			}
+		}
+
+		return Base * PeloDeclive * DoLago;
 	}
 
 	float HalfWidthAtProgress(const FRiverCourse& Course, float Progress)

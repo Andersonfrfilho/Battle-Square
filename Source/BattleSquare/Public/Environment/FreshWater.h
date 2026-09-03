@@ -382,7 +382,34 @@ namespace FreshWater
 	 * É AQUI que o lago existe: perto de `LakeRadiusUnits` a função sobe até
 	 * `LakeHalfWidthUnits()` e volta, com transição suave. Lago é largura.
 	 */
-	BATTLESQUARE_API float HalfWidthAtProgress(const FRiverCourse& Course, float Progress);
+		/**
+	 * A FUNDURA da água neste ponto do curso, em unidades.
+	 *
+	 * ## Por que ela existe aqui, e não estimada por quem lê
+	 *
+	 * `TrailLayout` estimava fundura pela LARGURA (`largura × 0,065`), e o
+	 * comentário dela defendia a escolha: *"estimar não é inventar; a
+	 * alternativa seria um campo de profundidade separado, que é uma segunda
+	 * fonte da mesma verdade"*.
+	 *
+	 * **O comentário estava certo, e deixa de estar quando a fundura existe de
+	 * verdade.** A partir daqui, é a estimativa que vira a segunda fonte — e
+	 * por isso ela morre, em vez de virar "fallback". Fallback de fonte de
+	 * verdade é fonte de verdade.
+	 *
+	 * ## O que decide a fundura, e nada disso é novo
+	 *
+	 * - **A ordem e o progresso**, como a largura: fio de cabeceira é raso,
+	 *   tronco perto da foz é fundo.
+	 * - **O DECLIVE DO LEITO**, e é ele que faz a fundura VARIAR: água que
+	 *   despenca corre rasa sobre a pedra; água que quase não desce empoça. É
+	 *   por isso que corredeira é rasa e remanso é fundo, e é a razão de a
+	 *   fundura não poder sair da largura — um trecho largo e íngreme é raso.
+	 * - **O lago**, que é uma barriga funda no meio do curso.
+	 */
+	BATTLESQUARE_API float DepthAtProgress(const FRiverCourse& Course, float Progress);
+
+BATTLESQUARE_API float HalfWidthAtProgress(const FRiverCourse& Course, float Progress);
 
 	/** Se neste raio a água está despencando. */
 	BATTLESQUARE_API bool IsFallAtProgress(const FRiverCourse& Course, float Progress);

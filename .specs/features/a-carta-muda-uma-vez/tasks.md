@@ -87,7 +87,7 @@ números, eles ficam anotados, e a M10 escreve o gabarito novo de uma vez.
 
 ---
 
-## M3 — A FUNDURA existe por ponto no assado
+## M3 — A FUNDURA existe por ponto no assado ✅ FEITO
 > 🤖 Modelo: `opus` 🧠 — muda o formato do assado
 
 **Dependências:** M2 (a rocha decide o leito).

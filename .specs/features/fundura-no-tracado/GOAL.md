@@ -21,18 +21,44 @@ noutro — porque **a fundura mudou, e é o gerador que diz quanto**.
 
 ## PRONTO é isto, e nada menos
 
+> ⚠️ **CINCO DAS SEIS JÁ FORAM FEITAS, em 02–03/09/2026, por
+> `a-carta-muda-uma-vez`.** Aquela feature juntou quatro decisões que mexiam no
+> mesmo gabarito, e a fundura era uma delas — fazê-la aqui em separado
+> reescreveria a carta uma vez a mais, que é exatamente o que a invariante 15
+> de lá existe para impedir. **Não reescrever: ler o que está lá.**
+
 - [⛔] **F1** — os três números medidos: degrau da rocha, passo por curso, cursos de largura constante
-- [⛔] **F2** — a fundura por ponto existe no assado, e quem a decide é o gerador
-- [⛔] **F3** — a estimativa privada do traçado morre, e o traçado LÊ
-- [⛔] **F4** — o poço da queda deixa de ser prato: a rocha ganha degrau
-- [⛔] **F5** — passou da cintura, nada
-- [⛔] **F6** — a fundura na tela
-- [ ] O grep fora de `/Tests/` acha quem LÊ a fundura do assado
-- [ ] O grep não acha `FunduraSobreLargura` em lugar nenhum
-- [ ] Bateria completa verde — o número só sobe
-- [ ] As cinco auditorias limpas
-- [ ] `./Tools/bake_island.sh` verde, com a fundura por ponto no JSON
+      *A única que continua de pé.* A `a-carta-muda-uma-vez` mediu o que ELA
+      precisava (os dezesseis da carta, o poço de 30–51, as três âncoras da
+      cintura), e não estes três.
+- [x] **F2** — a fundura por ponto existe no assado, e quem a decide é o gerador
+      → **M3** de `a-carta-muda-uma-vez` (`d4ded94`). `FBakedRiver::DepthUnits`.
+- [x] **F3** — a estimativa privada do traçado morre, e o traçado LÊ
+      → **M4** (`f1566a3`). `FunduraSobreLargura` não existe mais.
+- [x] **F4** — o poço da queda deixa de ser prato: a rocha ganha degrau
+      → **M2** (`2cd04a8`), e ela foi **REESCRITA antes de uma linha de código**:
+      degrau NA QUEDA recria o ciclo que trava o processo com `abort()`. O que
+      se fez foi dar ESCARPA à rocha, e a água — que já procura onde o leito
+      despenca — achou degraus maiores sozinha. Ler o comentário da M2 antes de
+      mexer aqui.
+- [x] **F5** — passou da cintura, nada
+      → **M5** (`529e225`). A cintura é 40% da altura de quem pisa, e as três
+      âncoras que brigavam pararam de brigar porque nenhuma precisou ganhar.
+- [x] **F6** — a fundura na tela
+      → **M11** (`5abae34`), com o contrapeso: em terra seca a linha **some**,
+      não vai a zero. Roteiro em `docs/verification/a-carta-muda-uma-vez.md`.
+- [x] O grep fora de `/Tests/` acha quem LÊ a fundura do assado
+      Medido em 03/09: `WaterFooting`, `TrailLayout`, `IslandBakedPlan`,
+      `CrossingMesh`, `WorldBoundaryWater`, `FreshWater`, `Volcano`.
+- [x] O grep não acha `FunduraSobreLargura` em lugar nenhum
+      Medido em 03/09: zero ocorrências em `Source/`.
+- [x] Bateria completa verde — o número só sobe
+      **898** em 03/09/2026, 0 falhas, 0 crash.
+- [x] As cinco auditorias limpas
+- [x] `./Tools/bake_island.sh` verde, com a fundura por ponto no JSON
 - [ ] Um commit por task, cada um com o motivo — não só o quê
+      *Fica aberta de propósito:* os commits existem, mas com o nome da OUTRA
+      feature. Quem fechar a F1 fecha esta junto.
 
 Enquanto qualquer caixa estiver aberta, o objetivo **continua**.
 

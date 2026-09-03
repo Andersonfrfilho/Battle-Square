@@ -2,6 +2,8 @@
 
 #include "Battle/DumbOpponentAI.h"
 
+#include "Meta/PlayStyleRules.h"
+
 namespace
 {
 	const EActionType AllActionTypes[] = {
@@ -110,25 +112,38 @@ FTurnCommit FDumbOpponentAI::GenerateRandomValidCommit(const FBattleState& State
 }
 
 FTurnCommit FDumbOpponentAI::GenerateStyledCommit(const FBattleState& State, uint8 Side,
-	FBattleRandom& Random, const TArray<int32>& StyleCounts)
+	FBattleRandom& Random, const TArray<int32>& StyleCounts,
+	const TArray<FStyleTransition>& StyleTransitions)
 {
 	const FPetState* Pet = FindPetOnSide(State, Side);
 
-	// A roleta dos TIPOS, pesada pelo histórico + 1. O menu é o MESMO do bot
-	// uniforme — um segundo menu divergiria dele na primeira skill nova.
-	int32 Total = 0;
-	int32 Pesos[UE_ARRAY_COUNT(AllActionTypes)];
-	for (int32 Indice = 0; Indice < UE_ARRAY_COUNT(AllActionTypes); ++Indice)
-	{
-		const int32 Valor = static_cast<int32>(AllActionTypes[Indice]);
-		Pesos[Indice] = 1 + (StyleCounts.IsValidIndex(Valor)
-			? FMath::Max(0, StyleCounts[Valor]) : 0);
-		Total += Pesos[Indice];
-	}
-
 	FTurnCommit Commit;
+	uint8 Anterior = PlayStyleRules::StartOfTurn;
+
 	for (int32 Slot = 0; Slot < FTurnCommit::ActionsPerTurn; ++Slot)
 	{
+		// TENDÊNCIA × SEQUÊNCIA, em multiplicação — o mesmo desenho de fase ×
+		// lugar da fauna: nenhum fator substitui o outro, e quem "abre
+		// defendendo e fecha atacando" pesa as duas coisas de uma vez. O menu
+		// é o MESMO do bot uniforme — um segundo menu divergiria dele na
+		// primeira skill nova.
+		int32 Total = 0;
+		int32 Pesos[UE_ARRAY_COUNT(AllActionTypes)];
+		for (int32 Indice = 0; Indice < UE_ARRAY_COUNT(AllActionTypes); ++Indice)
+		{
+			const int32 Valor = static_cast<int32>(AllActionTypes[Indice]);
+			const int32 DaTendencia = 1 + (StyleCounts.IsValidIndex(Valor)
+				? FMath::Max(0, StyleCounts[Valor]) : 0);
+			const int32 DaSequencia = 1 + PlayStyleRules::TransitionCount(
+				StyleTransitions, Anterior, static_cast<uint8>(Valor));
+
+			// Suavização nos DOIS fatores: histórico vazio joga uniforme, e
+			// nenhum tipo morre por nunca ter sido usado — estilo é viés,
+			// não mordaça.
+			Pesos[Indice] = DaTendencia * DaSequencia;
+			Total += Pesos[Indice];
+		}
+
 		int32 Restante = Random.NextRange(0, Total - 1);
 		EActionType Escolhido = AllActionTypes[0];
 		for (int32 Indice = 0; Indice < UE_ARRAY_COUNT(AllActionTypes); ++Indice)
@@ -146,6 +161,11 @@ FTurnCommit FDumbOpponentAI::GenerateStyledCommit(const FBattleState& State, uin
 		// (Mover encurralado ainda degrada para Aguardar lá dentro — ação
 		// VÁLIDA vale mais que estilo fiel.)
 		Commit.Actions[Slot] = GenerateActionOfType(State, Pet, Escolhido, Random);
+
+		// O elo da sequência é o que ACONTECEU, não o que se quis: se Mover
+		// degradou para Aguardar, o próximo passo parte de Aguardar — a
+		// simulação segue o jogo real, não a intenção.
+		Anterior = static_cast<uint8>(Commit.Actions[Slot].Type);
 	}
 
 	return Commit;

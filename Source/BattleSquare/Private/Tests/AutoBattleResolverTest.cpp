@@ -3,6 +3,7 @@
 #include "Battle/AutoBattleResolver.h"
 #include "Battle/BattleRandom.h"
 #include "Battle/DumbOpponentAI.h"
+#include "Meta/PlayStyleRules.h"
 #include "Misc/AutomationTest.h"
 
 namespace DefesaAutomaticaTeste
@@ -129,7 +130,7 @@ bool FStyledBotSimulatesThePlayerTest::RunTest(const FString&)
 	for (int32 Rodada = 0; Rodada < 40; ++Rodada)
 	{
 		const FTurnCommit Commit = FDumbOpponentAI::GenerateStyledCommit(
-			Estado, 0, Random, EstiloAgressivo);
+			Estado, 0, Random, EstiloAgressivo, TArray<FStyleTransition>());
 		for (const FBattleAction& Acao : Commit.Actions)
 		{
 			++Total;
@@ -144,7 +145,7 @@ bool FStyledBotSimulatesThePlayerTest::RunTest(const FString&)
 
 	// E o histórico VAZIO joga: estilo nenhum é um estilo, não um erro.
 	const FTurnCommit SemHistorico = FDumbOpponentAI::GenerateStyledCommit(
-		Estado, 0, Random, TArray<int32>());
+		Estado, 0, Random, TArray<int32>(), TArray<FStyleTransition>());
 	TestTrue(TEXT("sem historico, o commit sai valido"),
 		SemHistorico.Actions[0].Type == EActionType::Aguardar
 			|| SemHistorico.Actions[0].Type == EActionType::Mover
@@ -152,6 +153,95 @@ bool FStyledBotSimulatesThePlayerTest::RunTest(const FString&)
 			|| SemHistorico.Actions[0].Type == EActionType::Magia
 			|| SemHistorico.Actions[0].Type == EActionType::Defender
 			|| SemHistorico.Actions[0].Type == EActionType::Esquivar);
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FStyledBotFollowsSequencesTest,
+	"BattleSquare.Battle.DefesaAutomatica.AIASegueASequencia",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FStyledBotFollowsSequencesTest::RunTest(const FString&)
+{
+	// OS PADRÕES DE SEQUÊNCIA (decisão 15-d): "quem abre defendendo e fecha
+	// atacando" tem de ser simulado ASSIM — a abertura pesada em Defender, e
+	// depois de Defender, Atacar. Tendências uniformes de propósito: o que se
+	// mede aqui é SÓ a sequência.
+	const FBattleState Estado =
+		DefesaAutomaticaTeste::DueloParaADefesaAutomatica(200, 200);
+
+	// Peso 31 contra 1, e não 301: com 301 a chance de TODAS as 60 aberturas
+	// defenderem era ~37%, e a asserção "alguma não defende" media a sorte —
+	// a primeira rodada deste teste reprovou exatamente assim. Com 31, a
+	// maioria continua clara (86%) e o resto aparece quase sempre.
+	TArray<FStyleTransition> Sequencias;
+	for (int32 Volta = 0; Volta < 30; ++Volta)
+	{
+		PlayStyleRules::AddTransition(Sequencias,
+			PlayStyleRules::StartOfTurn, static_cast<uint8>(EActionType::Defender));
+		PlayStyleRules::AddTransition(Sequencias,
+			static_cast<uint8>(EActionType::Defender),
+			static_cast<uint8>(EActionType::Atacar));
+	}
+
+	FBattleRandom Random;
+	Random.State = 21;
+
+	int32 AbreDefendendo = 0;
+	int32 DepoisDeDefenderAtaca = 0;
+	int32 VezesQueDefendeuAbrindo = 0;
+	constexpr int32 Rodadas = 60;
+
+	for (int32 Rodada = 0; Rodada < Rodadas; ++Rodada)
+	{
+		const FTurnCommit Commit = FDumbOpponentAI::GenerateStyledCommit(
+			Estado, 0, Random, TArray<int32>(), Sequencias);
+
+		if (Commit.Actions[0].Type == EActionType::Defender)
+		{
+			++AbreDefendendo;
+			++VezesQueDefendeuAbrindo;
+			if (Commit.Actions[1].Type == EActionType::Atacar)
+			{
+				++DepoisDeDefenderAtaca;
+			}
+		}
+	}
+
+	// A abertura domina, e o elo também — maiorias, nunca 100%: a suavização
+	// mantém o resto vivo, e estilo é viés, não roteiro.
+	TestTrue(TEXT("abre defendendo na maioria"), AbreDefendendo > Rodadas / 2);
+	TestTrue(TEXT("e ha aberturas que NAO defendem — vies, nao roteiro"),
+		AbreDefendendo < Rodadas);
+	TestTrue(TEXT("depois de defender, ataca na maioria"),
+		VezesQueDefendeuAbrindo > 0
+			&& DepoisDeDefenderAtaca > VezesQueDefendeuAbrindo / 2);
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPlayStyleTransitionsCountTest,
+	"BattleSquare.Battle.DefesaAutomatica.ASequenciaSeConta",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FPlayStyleTransitionsCountTest::RunTest(const FString&)
+{
+	// A conta pura da sequência: soma acumula no par certo, e o par nunca
+	// visto responde zero — nunca inventa.
+	TArray<FStyleTransition> Sequencias;
+
+	PlayStyleRules::AddTransition(Sequencias, 1, 2);
+	PlayStyleRules::AddTransition(Sequencias, 1, 2);
+	PlayStyleRules::AddTransition(Sequencias, 2, 1);
+
+	TestEqual(TEXT("o par somado acumula"),
+		PlayStyleRules::TransitionCount(Sequencias, 1, 2), 2);
+	TestEqual(TEXT("o par inverso e OUTRO par"),
+		PlayStyleRules::TransitionCount(Sequencias, 2, 1), 1);
+	TestEqual(TEXT("o par nunca visto e zero"),
+		PlayStyleRules::TransitionCount(Sequencias, 3, 4), 0);
+	TestEqual(TEXT("e a lista e esparsa: tres somas, dois pares"),
+		Sequencias.Num(), 2);
 
 	return true;
 }

@@ -102,6 +102,31 @@ struct FOwnedPetInstance
 };
 
 /**
+ * UMA transição do jeito de jogar: depois de `From`, veio `To` — `Count`
+ * vezes (decisão 15-d, os padrões de sequência).
+ *
+ * ESPARSA de propósito: uma matriz achatada `From × To` quebraria o save no
+ * primeiro golpe novo — o enum de ações cresce no FIM, e o passo da matriz
+ * antiga leria a linha errada. O par explícito sobrevive a qualquer
+ * crescimento.
+ */
+USTRUCT()
+struct BATTLESQUARE_API FStyleTransition
+{
+	GENERATED_BODY()
+
+	/** `EActionType` como número; 255 é o INÍCIO do turno ("abro com..."). */
+	UPROPERTY()
+	uint8 From = 0;
+
+	UPROPERTY()
+	uint8 To = 0;
+
+	UPROPERTY()
+	int32 Count = 0;
+};
+
+/**
  * O quanto o jogador JÁ CONHECE um morador (decisão 15).
  *
  * Mora no perfil do TREINADOR porque a relação é do jogador, não do mundo:
@@ -228,6 +253,15 @@ struct BATTLESQUARE_API FTrainerProfile
 	 */
 	UPROPERTY()
 	TArray<int32> ActionStyleCounts;
+
+	/**
+	 * As SEQUÊNCIAS do jeito de jogar: quem abre defendendo e fecha atacando
+	 * é isto aqui — as contagens de "depois de X veio Y", com o início do
+	 * turno como estado próprio. Vazio é jogador sem história de sequência:
+	 * a I.A. cai na tendência simples, que já é dele.
+	 */
+	UPROPERTY()
+	TArray<FStyleTransition> StyleTransitions;
 };
 
 /**

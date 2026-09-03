@@ -34,5 +34,6 @@ public:
 	 * usado — estilo é viés, não mordaça.
 	 */
 	static FTurnCommit GenerateStyledCommit(const FBattleState& State, uint8 Side,
-		FBattleRandom& Random, const TArray<int32>& StyleCounts);
+		FBattleRandom& Random, const TArray<int32>& StyleCounts,
+		const TArray<struct FStyleTransition>& StyleTransitions);
 };

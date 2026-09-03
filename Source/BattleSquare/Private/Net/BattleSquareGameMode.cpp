@@ -86,6 +86,7 @@
 #include "Battle/AutoBattleResolver.h"
 #include "Meta/LeadershipRules.h"
 #include "Meta/PetHealthRules.h"
+#include "Meta/PlayStyleRules.h"
 #include "Meta/PetSaleRules.h"
 #include "Meta/TrainerRankingRules.h"
 #include "Battle/DeterministicSpread.h"
@@ -838,6 +839,11 @@ void ABattleSquareGameMode::HandleWorldBattleStarted(ABattleArena* Arena)
 
 void ABattleSquareGameMode::AccumulatePlayStyle(const FTurnCommit& Commit)
 {
+	// A TENDÊNCIA e a SEQUÊNCIA se colhem juntas, do mesmo commit: separadas,
+	// uma contaria turnos que a outra perdeu, e a simulação somaria dois
+	// jogadores diferentes.
+	uint8 Anterior = PlayStyleRules::StartOfTurn;
+
 	for (const FBattleAction& Acao : Commit.Actions)
 	{
 		const int32 Valor = static_cast<int32>(Acao.Type);
@@ -846,6 +852,10 @@ void ABattleSquareGameMode::AccumulatePlayStyle(const FTurnCommit& Commit)
 			CachedTrainer.ActionStyleCounts.SetNumZeroed(Valor + 1);
 		}
 		++CachedTrainer.ActionStyleCounts[Valor];
+
+		PlayStyleRules::AddTransition(CachedTrainer.StyleTransitions,
+			Anterior, static_cast<uint8>(Acao.Type));
+		Anterior = static_cast<uint8>(Acao.Type);
 	}
 }
 
@@ -1309,7 +1319,7 @@ void ABattleSquareGameMode::ChallengeArena(bool bAutoPlay)
 
 		const uint8 Vencedor = AutoBattleResolver::ResolveBotVsBot(
 			Estado, static_cast<uint64>(Semente) * 2654435761ull + 1,
-			&CachedTrainer.ActionStyleCounts);
+			&CachedTrainer);
 
 		FBattleDebugScreen::Show(
 			FString::Printf(TEXT("(a I.A. jogou por voce, com o seu estilo, contra %s)"),
@@ -1827,7 +1837,7 @@ void ABattleSquareGameMode::RunAutoDefense(int32 Today)
 	// de ação saem do histórico das suas batalhas reais.
 	const uint8 Vencedor = AutoBattleResolver::ResolveBotVsBot(
 		Estado, static_cast<uint64>(SementeDoDia) * 2654435761ull + 1,
-		&CachedTrainer.ActionStyleCounts);
+		&CachedTrainer);
 
 	// O desfecho passa pela MESMA função dos outros caminhos: a defesa
 	// automática vencida paga o mesmo prêmio da jogada — I.A. jogando por

@@ -95,6 +95,13 @@ movimentos de jogo."* Duas metades:
   golpe antigo. Suavização de +1: histórico vazio joga uniforme (estilo nenhum
   é um estilo), e nenhum tipo morre por nunca ter sido usado — estilo é viés,
   não mordaça.
+- **AS SEQUÊNCIAS também (03/09, tarde)**: além da tendência, a I.A. aprende
+  a ORDEM — "depois de X veio Y", com o início do turno como estado próprio
+  ("abro defendendo"). Guardadas esparsas no perfil (matriz achatada quebraria
+  o save no primeiro golpe novo — o enum cresce no fim), colhidas do MESMO
+  commit da tendência, e compostas por MULTIPLICAÇÃO tendência × sequência —
+  o desenho de fase × lugar da fauna. O elo é o que ACONTECEU, não o que se
+  quis: Mover que degradou para Aguardar encadeia como Aguardar.
 - **PRESENTE também escolhe**: `bs.Desafiar auto` deixa a I.A. jogar com você
   ali — e o desfecho passa pela MESMA função da batalha jogada (prêmio, ponto,
   título, fila): conveniência não muda consequência. Os três caminhos (jogado,

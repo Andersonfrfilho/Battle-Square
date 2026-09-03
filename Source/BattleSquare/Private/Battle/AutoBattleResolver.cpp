@@ -3,6 +3,7 @@
 #include "Battle/AutoBattleResolver.h"
 
 #include "Battle/BattleOutcome.h"
+#include "Meta/PetCollectionSaveGame.h"
 #include "Battle/BattleRandom.h"
 #include "Battle/BattleResolver.h"
 #include "Battle/DumbOpponentAI.h"
@@ -19,7 +20,7 @@ namespace
 }
 
 uint8 AutoBattleResolver::ResolveBotVsBot(FBattleState State, uint64 BotSeed,
-	const TArray<int32>* Side0Style)
+	const FTrainerProfile* Side0Profile)
 {
 	// O acaso da IA é PRÓPRIO e semeado por fora: o do estado pertence à
 	// resolução (dano, esquiva), e usar o mesmo para as escolhas faria a
@@ -29,8 +30,9 @@ uint8 AutoBattleResolver::ResolveBotVsBot(FBattleState State, uint64 BotSeed,
 
 	for (int32 Turno = 0; Turno < TetoDeTurnos; ++Turno)
 	{
-		const FTurnCommit Esquerda = Side0Style
-			? FDumbOpponentAI::GenerateStyledCommit(State, /*Side=*/0, BotRandom, *Side0Style)
+		const FTurnCommit Esquerda = Side0Profile
+			? FDumbOpponentAI::GenerateStyledCommit(State, /*Side=*/0, BotRandom,
+				Side0Profile->ActionStyleCounts, Side0Profile->StyleTransitions)
 			: FDumbOpponentAI::GenerateRandomValidCommit(State, /*Side=*/0, BotRandom);
 		const FTurnCommit Direita =
 			FDumbOpponentAI::GenerateRandomValidCommit(State, /*Side=*/1, BotRandom);

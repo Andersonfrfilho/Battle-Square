@@ -42,10 +42,10 @@ comentário previu.
 - [x] **M8** — três mercados-negros, e "bem espalhados" é medido
 - [x] **M9** — a carta aprende a dizer "escondido" sem dizer o quê
 - [x] **M10** — o gabarito novo, escrito UMA VEZ, com o motivo de cada número
-- [ ] **M11** — na tela: fundura, ponte e o que se achou
-- [ ] Bateria completa verde (hoje **873**; o número só sobe)
-- [ ] As sete auditorias limpas
-- [ ] Um commit por task, cada um com o motivo — não só o quê
+- [x] **M11** — na tela: fundura, ponte e o que se achou
+- [x] Bateria completa verde — **898** em 03/09/2026 (eram 873)
+- [x] As sete auditorias limpas
+- [x] Um commit por task, cada um com o motivo — não só o quê
 
 Enquanto qualquer caixa estiver aberta, o objetivo **continua**.
 

@@ -20,8 +20,15 @@ class UStaticMeshComponent;
  * obrigaria as cinco seguintes a repetir o mesmo gatilho — o próprio
  * `tasks.md` avisa que escolher errado aqui custa seis vezes.
  */
-DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnVillageDoorCrossed,
-	EVillageBuilding /*Predio*/, ESettlementKind /*DeQueVila*/, bool /*bEntrou*/);
+/**
+ * O ÍNDICE DA PORTA viaja junto (quarto parâmetro): dois prédios do mesmo tipo
+ * — as quatro casas da vila — precisam ser distinguíveis, senão todo morador
+ * seria o mesmo morador. É o índice em `GetDoors()`, estável para a mesma
+ * vila erguida do mesmo traçado.
+ */
+DECLARE_MULTICAST_DELEGATE_FourParams(FOnVillageDoorCrossed,
+	EVillageBuilding /*Predio*/, ESettlementKind /*DeQueVila*/, bool /*bEntrou*/,
+	int32 /*DoorIndex*/);
 
 /**
  * A vila em pé.

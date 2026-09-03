@@ -73,11 +73,13 @@ bool VillageLayout::HasDoor(EVillageBuilding Predio)
 	{
 	// SEM PORTA, e cada um por um motivo diferente.
 	//
-	// A Casa não tem função — e a regra estava escrita no comentário dela
-	// desde sempre. Palafita e Passarela são casa e rua do Mercado do Lago;
-	// a Chinampa é lavoura flutuante, que é CHÃO e não portal.
-	case EVillageBuilding::Casa:
-	case EVillageBuilding::Palafita:
+	// A Passarela é RUA — ninguém entra numa rua. A Chinampa é lavoura
+	// flutuante: chão, não portal.
+	//
+	// A CASA e a PALAFITA já estiveram aqui, e saíram pela decisão 65:
+	// "jogadores podem visitar casas e conversar com npcs". A regra "casa sem
+	// função não tem porta" CONTINUA valendo — o que mudou é que a casa
+	// ganhou função, e a porta veio junto, no mesmo commit.
 	case EVillageBuilding::Passarela:
 	case EVillageBuilding::Chinampa:
 		return false;

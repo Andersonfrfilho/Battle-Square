@@ -55,6 +55,7 @@
 #include "World/RespawnRules.h"
 #include "World/SchoolTeachings.h"
 #include "World/SchoolyardLayout.h"
+#include "World/VillageResidents.h"
 #include "World/SettlementEconomy.h"
 #include "World/TrailLayout.h"
 #include "GameFramework/Character.h"
@@ -1337,7 +1338,7 @@ void ABattleSquareGameMode::MostrarQuadroDeLicoes()
 }
 
 void ABattleSquareGameMode::AnunciarPortaCruzada(EVillageBuilding Predio,
-	ESettlementKind DeQueVila, bool bEntrou)
+	ESettlementKind DeQueVila, bool bEntrou, int32 DoorIndex)
 {
 	// ENTRAR NÃO É COMPROMETER-SE. Esta função ANUNCIA e não faz mais nada —
 	// não cobra, não cura, não vende. Quem for escrever CI3 a CI9 acrescenta o
@@ -1355,7 +1356,7 @@ void ABattleSquareGameMode::AnunciarPortaCruzada(EVillageBuilding Predio,
 		// que se está num prédio que ficou para trás. O quadro de lições sai
 		// junto: lição na tela fora da escola é o painel mentindo o lugar.
 		FBattleDebugScreen::Show(TEXT(""), 0.0f, FColor::White, /*Key=*/753);
-		for (int32 Chave = 757; Chave <= 765; ++Chave)
+		for (int32 Chave = 757; Chave <= 767; ++Chave)
 		{
 			FBattleDebugScreen::Show(TEXT(""), 0.0f, FColor::White, Chave);
 		}
@@ -1375,6 +1376,23 @@ void ABattleSquareGameMode::AnunciarPortaCruzada(EVillageBuilding Predio,
 	if (Predio == EVillageBuilding::Escola && bHasCachedOwnedPet)
 	{
 		MostrarQuadroDeLicoes();
+	}
+
+	// A CASA TEM GENTE DENTRO (decisão 65): entrar apresenta o morador, e ele
+	// diz uma coisa VERDADEIRA — cada fala do repertório aponta uma mecânica
+	// que existe e tem teste, e nenhuma aponta segredo. O morador é o MESMO a
+	// cada visita: o nome sai da vila e da porta, nunca do relógio.
+	if (Predio == EVillageBuilding::Casa || Predio == EVillageBuilding::Palafita)
+	{
+		const VillageResidents::FResident Morador =
+			VillageResidents::ResidentFor(DeQueVila, DoorIndex);
+
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("casa de %s"), *Morador.Name),
+			0.0f, FColor(220, 200, 255), /*Key=*/766);
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("%s: \"%s\""), *Morador.Name, *Morador.TipLine),
+			0.0f, FColor(200, 220, 200), /*Key=*/767);
 	}
 
 	// O CENTRO DE RECUPERAÇÃO CURA AO ENTRAR, e de graça (decisão 16) — em

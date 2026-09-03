@@ -287,5 +287,5 @@ void AVillage::AnunciarPorta(UPrimitiveComponent* Porta, AActor* Quem, bool bEnt
 	// Nada é cobrado, curado nem vendido neste caminho — quem escuta decide, e
 	// decidir exige um gesto do jogador. Uma vila que cobra por atravessar a
 	// calçada é uma vila que ninguém atravessa duas vezes.
-	OnDoorCrossed.Broadcast(DoorBuildings[Qual], Kind, bEntrou);
+	OnDoorCrossed.Broadcast(DoorBuildings[Qual], Kind, bEntrou, Qual);
 }

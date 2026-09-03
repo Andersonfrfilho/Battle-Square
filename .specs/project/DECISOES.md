@@ -318,6 +318,23 @@ somada à 16 — o hospital cura de graça, e é para lá que se acorda); e bata
 nunca COMEÇA com zero — piso de 1, porque uma luta perdida antes do primeiro
 turno não é luta.
 
+**65. CASAS SE VISITAM, E TÊM GENTE DENTRO.** *"jogadores podem visitar casas
+e conversar com npcs"*. Isso derruba — de propósito — a regra que o código
+carregava: "casa sem função não tem porta". A regra CONTINUA; o que mudou é
+que a casa ganhou função: visitá-la e conversar com quem mora. A porta vem
+junto, no mesmo commit.
+
+O primeiro morador é o mínimo honesto: cada casa (e cada palafita — casa
+sobre a água) tem UM morador fixo, com nome sorteado da geometria do lugar
+(nunca do relógio — vizinho que troca de nome a cada visita não é vizinho), e
+ele diz UMA coisa VERDADEIRA sobre o mundo: cada dica do repertório aponta uma
+mecânica que existe e tem teste. Morador não fala de segredo — a carta conta e
+não aponta, e o vizinho tagarela seria a exceção pela porta dos fundos (J4).
+
+🆕 O diálogo FUNDO — história própria, memória, evolução — já era escopo da
+decisão 15 ("NPCs têm histórias próprias e evolutivas"); esta é a fundação:
+o morador existe, tem nome estável e tem voz.
+
 **64. A ESCOLA É O LUGAR DE APRENDER.** *"na escola você aprende sobre os
 pets, batalhas, aprende golpes e aumenta skill com treinamentos dos seus
 pets"*. Três metades, e cada uma tem um destino:

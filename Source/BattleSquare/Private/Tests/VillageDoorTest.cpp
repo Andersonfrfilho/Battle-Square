@@ -46,16 +46,19 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FVillageDoorOnlyWhereThereIsFunctionTest,
 
 bool FVillageDoorOnlyWhereThereIsFunctionTest::RunTest(const FString&)
 {
-	// A REGRA JÁ ESTAVA ESCRITA, e só no comentário da `Casa`: "casa sem
-	// função não tem porta. Porta que não abre é promessa quebrada." Aqui ela
-	// vira coisa que o teste alcança.
-	TestFalse(TEXT("a Casa nao tem porta"),
+	// A REGRA "casa sem função não tem porta" continua de pé — o que mudou
+	// foi a CASA: a decisão 65 lhe deu função (visitar, conversar com quem
+	// mora), e a porta veio junto. A Palafita é casa sobre a água: mesma
+	// função, mesma porta.
+	TestTrue(TEXT("a Casa TEM porta — a decisao 65 lhe deu funcao"),
 		VillageLayout::HasDoor(EVillageBuilding::Casa));
-	TestFalse(TEXT("nem a Palafita, que e casa sobre a agua"),
+	TestTrue(TEXT("e a Palafita tambem: casa sobre a agua"),
 		VillageLayout::HasDoor(EVillageBuilding::Palafita));
-	TestFalse(TEXT("nem a Passarela, que e rua"),
+
+	// As duas que continuam sem: rua não se entra, lavoura é chão.
+	TestFalse(TEXT("a Passarela segue sem porta — e rua"),
 		VillageLayout::HasDoor(EVillageBuilding::Passarela));
-	TestFalse(TEXT("nem a Chinampa, que e lavoura"),
+	TestFalse(TEXT("e a Chinampa tambem — e lavoura"),
 		VillageLayout::HasDoor(EVillageBuilding::Chinampa));
 
 	// E A OUTRA METADE, que é a que importa: quem tem função tem porta. Sem
@@ -111,8 +114,12 @@ bool FVillageDoorsExistInTheWorldTest::RunTest(const FString&)
 
 	TestTrue(TEXT("ha predio com funcao nesta vila"), ComFuncao > 0);
 	TestEqual(TEXT("uma porta por predio com funcao"), Vila->GetDoors().Num(), ComFuncao);
-	TestTrue(TEXT("e MENOS portas que predios, porque a Casa nao tem"),
-		Vila->GetDoors().Num() < Vila->GetBuiltCount());
+
+	// NUNCA mais portas que prédios: porta sem prédio atrás seria a promessa
+	// quebrada com outra roupa. (Igualdade é legítima desde a decisão 65 — a
+	// vila inicial só tem prédios com função agora.)
+	TestTrue(TEXT("nunca mais portas que predios"),
+		Vila->GetDoors().Num() <= Vila->GetBuiltCount());
 
 	for (int32 Qual = 0; Qual < Vila->GetDoors().Num(); ++Qual)
 	{
@@ -169,7 +176,7 @@ bool FVillageEnteringIsNotCommittingTest::RunTest(const FString&)
 
 	Vila->OnDoorCrossed.AddLambda(
 		[&Entradas, &Saidas, &Ultimo, &DeQual](
-			EVillageBuilding Predio, ESettlementKind Vila, bool bEntrou)
+			EVillageBuilding Predio, ESettlementKind Vila, bool bEntrou, int32)
 		{
 			bEntrou ? ++Entradas : ++Saidas;
 			Ultimo = Predio;

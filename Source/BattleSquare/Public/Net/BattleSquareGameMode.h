@@ -360,7 +360,7 @@ private:
 	 * ninguém atravessa duas vezes.
 	 */
 	void AnunciarPortaCruzada(EVillageBuilding Predio,
-		ESettlementKind DeQueVila, bool bEntrou);
+		ESettlementKind DeQueVila, bool bEntrou, int32 DoorIndex);
 
 	/** A linha da carteira no painel. Chave fixa: é estado, não evento. */
 	void MostrarCarteira() const;

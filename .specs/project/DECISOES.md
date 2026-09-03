@@ -286,6 +286,24 @@ E isto conversa com a **17**: as duas respostas dizem a mesma coisa por lados
 opostos — não se pula distância, e não se é barrado nela. Andar é o custo, e é o
 único.
 
+**60. O Marco vira PONTO DE RENASCIMENTO, e quem cai acorda no hospital.**
+Resolve o que a decisão 17 deixou aberto: o Marco não teleporta ninguém por
+vontade própria — ele marca ONDE se volta quando se perde.
+
+E o lugar é o **Centro de Recuperação**, que casa com a decisão 16: acorda-se
+curado, de graça. O prédio que não tinha porta passa a ser o prédio para onde
+todo mundo é levado.
+
+⚠️ **Isto reabre a 17 por uma fresta, e a fresta tem nome: morrer de
+propósito.** Se acordar levasse de volta à vila natal, morrer seria viagem
+rápida de graça — exatamente o que a 17 proíbe, só que pela porta dos fundos.
+
+Leitura minha, e é a mais barata que fecha a fresta: **acorda-se no Centro de
+Recuperação MAIS PERTO de onde se caiu**, não no de casa. Assim renascer nunca
+poupa caminhada — ele devolve o jogador ao mundo, não ao começo. Se você
+preferir que seja sempre a vila natal, é uma linha, e a fresta é aceita de
+propósito.
+
 **59. O jogador escolhe ONDE trabalhar.** *"ele tem liberdade de escolher"* —
 não há um `EGroundUse` eleito.
 

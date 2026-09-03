@@ -40,10 +40,12 @@ de ser cenário que só colide.
       apagar sem o usuário mandar: é tabela testada, e apagá-la é decisão dele.
 - [ ] **CI4** — Escola especializa pelo prédio, mesma função do console
 - [ ] **CI5** — Mercado vende o pet capturado pela tabela já testada
-- [⛔] **CI6** — ~~Marco de retorno teleporta de verdade, ida e volta~~
-      ⚠️ **A PREMISSA CAIU pela decisão 17, "não existe teletransporte".** O
-      `DECISOES.md` já registrava que esta task "vira outra coisa, ou sai", e
-      ninguém decidiu qual. **É a única pergunta que resta nesta feature.**
+- [ ] **CI6** — ~~Marco de retorno teleporta~~ **o Marco é PONTO DE
+      RENASCIMENTO, e quem cai acorda no hospital**
+      Reescrita pela decisão 60. Ninguém viaja por vontade própria — o Marco
+      diz onde se volta quando se perde, e o lugar é o Centro de Recuperação,
+      curado e de graça (decisão 16). Acorda-se no MAIS PERTO de onde se caiu,
+      para renascer nunca poupar caminhada.
 - [ ] **CI7** — Palafita, Passarela e Chinampa têm cor própria
 - [ ] **CI8** — o ranking existe e aparece ~~e tranca/destranca o Portão~~
       ⚠️ **Metade REESCRITA pela decisão 58:** o Portão **não tranca**, porque o

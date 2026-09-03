@@ -1390,9 +1390,29 @@ void ABattleSquareGameMode::AnunciarPortaCruzada(EVillageBuilding Predio,
 		FBattleDebugScreen::Show(
 			FString::Printf(TEXT("casa de %s"), *Morador.Name),
 			0.0f, FColor(220, 200, 255), /*Key=*/766);
-		FBattleDebugScreen::Show(
-			FString::Printf(TEXT("%s: \"%s\""), *Morador.Name, *Morador.TipLine),
-			0.0f, FColor(200, 220, 200), /*Key=*/767);
+
+		// A CASA NÃO É DO VISITANTE (decisão 65, emendada): só se é recebido
+		// quando o morador está E atende — "se não tiver ninguém, não tem por
+		// que ser convidado". A hora é a do MUNDO, o mesmo relógio do céu; sem
+		// relógio rodando (mundo de teste), o morador atende — travar a visita
+		// num mundo sem tempo seria trancar a mecânica fora do jogo real.
+		const bool bAtende = !CenaDoMundo || !CenaDoMundo->IsDayCycleRunning()
+			|| VillageResidents::IsHomeAtHour(Morador, CenaDoMundo->GetHour());
+
+		if (bAtende)
+		{
+			FBattleDebugScreen::Show(
+				FString::Printf(TEXT("%s: \"%s\""), *Morador.Name, *Morador.TipLine),
+				0.0f, FColor(200, 220, 200), /*Key=*/767);
+		}
+		else
+		{
+			FBattleDebugScreen::Show(
+				FString::Printf(
+					TEXT("ninguem atende — %s costuma estar por volta das %dh"),
+					*Morador.Name, Morador.HomeStartHour),
+				0.0f, FColor::Silver, /*Key=*/767);
+		}
 	}
 
 	// O CENTRO DE RECUPERAÇÃO CURA AO ENTRAR, e de graça (decisão 16) — em

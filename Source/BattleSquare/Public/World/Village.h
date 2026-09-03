@@ -85,6 +85,19 @@ public:
 	/** De que prédio é a porta de índice `Qual`, na mesma ordem de `GetDoors`. */
 	EVillageBuilding GetDoorBuilding(int32 Which) const;
 
+	/**
+	 * As portas DESENHADAS — o vão na fachada, virado para a praça.
+	 *
+	 * Separadas dos gatilhos de propósito: o gatilho AVISA (e é invisível por
+	 * desenho), a porta desenhada CONVIDA — prédio com função se lê de fora,
+	 * sem precisar encostar. A praça fica de fora: ela é chão, e chão não tem
+	 * fachada onde pôr porta.
+	 */
+	const TArray<TObjectPtr<UStaticMeshComponent>>& GetDoorMeshes() const
+	{
+		return DoorMeshes;
+	}
+
 	/** Alguém cruzou uma porta. Quem escuta decide o que isso significa. */
 	FOnVillageDoorCrossed OnDoorCrossed;
 
@@ -133,6 +146,10 @@ private:
 
 	/** De que prédio é cada porta, na mesma ordem. */
 	TArray<EVillageBuilding> DoorBuildings;
+
+	/** Os vãos desenhados nas fachadas. */
+	UPROPERTY()
+	TArray<TObjectPtr<UStaticMeshComponent>> DoorMeshes;
 
 	UFUNCTION()
 	void HandleDoorBegin(UPrimitiveComponent* Porta, AActor* Quem,

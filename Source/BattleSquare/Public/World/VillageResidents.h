@@ -28,8 +28,29 @@ namespace VillageResidents
 
 		/** O que ele diz ao receber visita. Verdade do mundo, sempre. */
 		FString TipLine;
+
+		/**
+		 * QUANDO ele está em casa e atende — porque a casa não é do visitante.
+		 *
+		 * "Às vezes não é legal entrar na casa de todo mundo a hora que
+		 * quiser; se não tiver ninguém, não tem por que ser convidado"
+		 * (decisão 65). A janela é do MORADOR, seedada como o nome: o mesmo
+		 * vizinho atende sempre no mesmo horário, e aprender o horário dele é
+		 * aprender a vila. Pode cruzar a meia-noite.
+		 */
+		int32 HomeStartHour = 0;
+		int32 HomeEndHour = 0;
 	};
 
 	/** O morador da porta `DoorIndex` da vila deste tipo. Sempre o mesmo. */
 	BATTLESQUARE_API FResident ResidentFor(ESettlementKind Kind, int32 DoorIndex);
+
+	/**
+	 * Ele atende a esta hora?
+	 *
+	 * A janela nunca é o dia inteiro NEM dia nenhum (10 a 16 horas): todo
+	 * morador tem hora de estar e hora de não estar — é o que faz a visita
+	 * ser visita, e não um cômodo público.
+	 */
+	BATTLESQUARE_API bool IsHomeAtHour(const FResident& Resident, float Hour);
 }

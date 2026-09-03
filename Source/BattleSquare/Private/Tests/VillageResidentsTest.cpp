@@ -76,3 +76,55 @@ bool FResidentSpeaksTruthAndKeepsSecretsTest::RunTest(const FString&)
 
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FResidentHasHoursAndTheHouseIsNotYoursTest,
+	"BattleSquare.World.Moradores.ACasaNaoEhSua",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FResidentHasHoursAndTheHouseIsNotYoursTest::RunTest(const FString&)
+{
+	// AS DUAS EMENDAS DA DECISÃO 65: "não é legal entrar na casa de todo
+	// mundo a hora que quiser" e "se não tiver ninguém, não tem por que ser
+	// convidado". A janela do morador é a mecânica das duas — e ela nunca é o
+	// dia inteiro NEM dia nenhum: todo morador tem hora de estar e hora de
+	// não estar, senão a visita vira cômodo público (ou porta morta).
+	const ESettlementKind Tipos[] = {
+		ESettlementKind::VilaInicial, ESettlementKind::VilaDoMercado,
+		ESettlementKind::CidadeGrande,
+	};
+
+	for (ESettlementKind Tipo : Tipos)
+	{
+		for (int32 Porta = 0; Porta < 8; ++Porta)
+		{
+			const VillageResidents::FResident Morador =
+				VillageResidents::ResidentFor(Tipo, Porta);
+
+			int32 HorasEmCasa = 0;
+			for (int32 Hora = 0; Hora < 24; ++Hora)
+			{
+				if (VillageResidents::IsHomeAtHour(Morador, static_cast<float>(Hora)))
+				{
+					++HorasEmCasa;
+				}
+			}
+
+			TestTrue(TEXT("todo morador tem hora de ESTAR"), HorasEmCasa > 0);
+			TestTrue(TEXT("e hora de NAO estar — a casa nao e do visitante"),
+				HorasEmCasa < 24);
+		}
+	}
+
+	// A janela que CRUZA a meia-noite funciona: das 20 às 6 é morador que
+	// passa o dia fora — e o teste monta o caso à mão em vez de torcer pelo
+	// sorteio (regra 12).
+	VillageResidents::FResident Noturno;
+	Noturno.HomeStartHour = 20;
+	Noturno.HomeEndHour = 6;
+	TestTrue(TEXT("as 23h o noturno atende"),
+		VillageResidents::IsHomeAtHour(Noturno, 23.0f));
+	TestTrue(TEXT("as 3h tambem"), VillageResidents::IsHomeAtHour(Noturno, 3.0f));
+	TestFalse(TEXT("ao meio-dia nao"), VillageResidents::IsHomeAtHour(Noturno, 12.0f));
+
+	return true;
+}

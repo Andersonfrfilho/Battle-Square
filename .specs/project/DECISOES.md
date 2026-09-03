@@ -335,6 +335,20 @@ não aponta, e o vizinho tagarela seria a exceção pela porta dos fundos (J4).
 decisão 15 ("NPCs têm histórias próprias e evolutivas"); esta é a fundação:
 o morador existe, tem nome estável e tem voz.
 
+**Ampliada em 03/09** (*"acredito que casas devam ter portas, ou outros tipos
+de portas qualquer coisa"*): a porta ganha CORPO — um vão desenhado na fachada,
+virado para a praça, em malha procedural e cor como todo o resto do mundo. O
+gatilho invisível continua sendo quem AVISA; a porta desenhada é quem CONVIDA:
+prédio com função se lê de fora, sem precisar encostar.
+
+**E emendada duas vezes na mesma conversa:** *"às vezes não é legal você
+entrar na casa de todo mundo a hora que quiser"* e *"se não tiver ninguém não
+tem porque você ser convidado"*. A casa NÃO é do visitante: o morador tem
+JANELA de estar em casa (10 a 16 horas por dia, seedada como o nome — nunca o
+dia inteiro, nunca dia nenhum), lida do MESMO relógio do céu. Fora dela,
+ninguém atende — e a recusa diz o horário em que ele costuma estar, para a
+visita frustrada virar plano em vez de porta morta.
+
 **64. A ESCOLA É O LUGAR DE APRENDER.** *"na escola você aprende sobre os
 pets, batalhas, aprende golpes e aumenta skill com treinamentos dos seus
 pets"*. Três metades, e cada uma tem um destino:

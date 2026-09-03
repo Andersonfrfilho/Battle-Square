@@ -237,3 +237,54 @@ bool FVillageLakeBuildingsHaveTheirOwnColorTest::RunTest(const FString&)
 
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FVillageDoorsAreDrawnOnTheFacadeTest,
+	"BattleSquare.World.Vila.APortaSeDesenhaNaFachada",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FVillageDoorsAreDrawnOnTheFacadeTest::RunTest(const FString&)
+{
+	// A PORTA GANHOU CORPO (decisão 65, emendada): o gatilho invisível AVISA,
+	// o vão desenhado CONVIDA. E vão desenhado é componente com MALHA — o
+	// defeito três vezes pago deste projeto é exatamente o componente criado
+	// sem asset, que passa em toda lógica e não existe na tela.
+	UWorld* Mundo = PortaDaVilaTeste::CriarMundoParaAsPortasDaVila();
+	AVillage* Vila = Mundo->SpawnActor<AVillage>();
+	Vila->BuildVillage();
+
+	int32 ComFachada = 0;
+	for (const FVillagePlacement& Peca : VillageLayout::PlanFor(Vila->GetSettlementKind()))
+	{
+		if (VillageLayout::HasDoor(Peca.Building)
+			&& Peca.Building != EVillageBuilding::Praca)
+		{
+			++ComFachada;
+		}
+	}
+
+	TestEqual(TEXT("um vao desenhado por predio com fachada"),
+		Vila->GetDoorMeshes().Num(), ComFachada);
+
+	for (const TObjectPtr<UStaticMeshComponent>& Vao : Vila->GetDoorMeshes())
+	{
+		TestNotNull(TEXT("o vao existe"), Vao.Get());
+		if (!Vao)
+		{
+			continue;
+		}
+
+		TestNotNull(TEXT("e tem MALHA atribuida — sem ela nao existe na tela"),
+			ToRawPtr(Vao->GetStaticMesh()));
+
+		const FVector Escala = Vao->GetRelativeScale3D();
+		TestTrue(TEXT("e a escala nao e zero"),
+			Escala.X > KINDA_SMALL_NUMBER && Escala.Y > KINDA_SMALL_NUMBER
+				&& Escala.Z > KINDA_SMALL_NUMBER);
+
+		TestTrue(TEXT("e ela nasce do chao, nao enterrada"),
+			Vao->GetRelativeLocation().Z > 0.0f);
+	}
+
+	PortaDaVilaTeste::DestruirMundoDasPortasDaVila(Mundo);
+	return true;
+}

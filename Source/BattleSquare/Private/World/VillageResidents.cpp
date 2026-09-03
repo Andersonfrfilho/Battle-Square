@@ -50,5 +50,25 @@ VillageResidents::FResident VillageResidents::ResidentFor(
 		BattleSpread::Below(Semente, 0, UE_ARRAY_COUNT(NomesDeMorador))];
 	Morador.TipLine = FalasDeMorador[
 		BattleSpread::Below(Semente, 1, UE_ARRAY_COUNT(FalasDeMorador))];
+
+	// A janela de estar em casa: começa em qualquer hora e dura de 10 a 16 —
+	// nunca o dia inteiro, nunca dia nenhum. Todo morador tem hora de estar e
+	// hora de não estar, e é isso que faz a visita ser visita.
+	Morador.HomeStartHour = BattleSpread::Below(Semente, 2, 24);
+	Morador.HomeEndHour =
+		(Morador.HomeStartHour + 10 + BattleSpread::Below(Semente, 3, 7)) % 24;
 	return Morador;
+}
+
+bool VillageResidents::IsHomeAtHour(const FResident& Morador, float Hora)
+{
+	const int32 Agora = FMath::FloorToInt(FMath::Fmod(FMath::Max(0.0f, Hora), 24.0f));
+
+	// A janela pode CRUZAR a meia-noite: "das 20 às 6" é morador de dia fora.
+	if (Morador.HomeStartHour <= Morador.HomeEndHour)
+	{
+		return Agora >= Morador.HomeStartHour && Agora < Morador.HomeEndHour;
+	}
+
+	return Agora >= Morador.HomeStartHour || Agora < Morador.HomeEndHour;
 }

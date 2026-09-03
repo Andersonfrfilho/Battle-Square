@@ -33,6 +33,18 @@ namespace Vila
 	constexpr float CalcadaDaPorta = 160.0f;
 
 	/**
+	 * A porta DESENHADA: o vão na fachada (decisão 65, emendada — "casas
+	 * devem ter portas"). O gatilho invisível AVISA; esta CONVIDA — prédio
+	 * com função se lê de fora, sem precisar encostar.
+	 */
+	constexpr float LarguraDaPorta = 130.0f;
+	constexpr float AlturaDaPorta = 250.0f;
+	constexpr float EspessuraDaPorta = 16.0f;
+
+	/** Madeira escura, igual em toda vila: porta é convenção, não identidade. */
+	const FLinearColor CorDaPorta(0.24f, 0.17f, 0.11f);
+
+	/**
 	 * A cor de cada prédio, e ela é INFORMAÇÃO.
 	 *
 	 * O Centro de Recuperação precisa se achar sem placa — é onde se corre
@@ -141,8 +153,13 @@ void AVillage::BuildVillage()
 	{
 		if (Componente) { Componente->DestroyComponent(); }
 	}
+	for (TObjectPtr<UStaticMeshComponent>& Componente : DoorMeshes)
+	{
+		if (Componente) { Componente->DestroyComponent(); }
+	}
 	BuiltMeshes.Reset();
 	BuiltRoofs.Reset();
+	DoorMeshes.Reset();
 
 	if (!BoxMesh)
 	{
@@ -196,6 +213,58 @@ void AVillage::BuildVillage()
 
 			Vila::Pintar(Telhado, Vila::CorDoTelhado(Peca.Building));
 			BuiltRoofs.Add(Telhado);
+		}
+
+		// A PORTA DESENHADA, virada para a PRAÇA — é de lá que se chega, e
+		// porta nos fundos é porta que ninguém acha. A praça fica de fora:
+		// ela é chão, e chão não tem fachada.
+		if (VillageLayout::HasDoor(Peca.Building)
+			&& Peca.Building != EVillageBuilding::Praca)
+		{
+			// A fachada é a FACE dominante no rumo da praça: prédio de quina
+			// (as casas em ±650,±650) ganha a porta numa face, nunca na
+			// aresta — porta na quina é porta em lugar nenhum.
+			const FVector2D RumoDaPraca = Peca.OffsetUnits.IsNearlyZero()
+				? FVector2D(0.0f, 1.0f)
+				: -Peca.OffsetUnits.GetSafeNormal();
+			const bool bFaceEmX = FMath::Abs(RumoDaPraca.X) >= FMath::Abs(RumoDaPraca.Y);
+			const FVector2D Normal = bFaceEmX
+				? FVector2D(FMath::Sign(RumoDaPraca.X), 0.0f)
+				: FVector2D(0.0f, FMath::Sign(RumoDaPraca.Y));
+
+			// A porta cabe no prédio que a recebe: o Marco é estreito e
+			// baixo, e uma porta de tamanho fixo o engoliria.
+			const float Largura = FMath::Min(Vila::LarguraDaPorta,
+				(bFaceEmX ? Peca.HalfExtentUnits.Y : Peca.HalfExtentUnits.X) * 0.9f);
+			const float Altura = FMath::Min(Vila::AlturaDaPorta, Peca.HeightUnits * 0.7f);
+
+			const float MeioLadoDaFace =
+				bFaceEmX ? Peca.HalfExtentUnits.X : Peca.HalfExtentUnits.Y;
+
+			UStaticMeshComponent* Vao = NewObject<UStaticMeshComponent>(this,
+				*FString::Printf(TEXT("Vao_%d"), Indice));
+			Vao->SetupAttachment(VillageRoot);
+			Vao->RegisterComponent();
+			Vao->SetStaticMesh(BoxMesh);
+
+			Vao->SetRelativeScale3D(FVector(
+				(bFaceEmX ? Vila::EspessuraDaPorta : Largura) / Vila::CuboDaEngine,
+				(bFaceEmX ? Largura : Vila::EspessuraDaPorta) / Vila::CuboDaEngine,
+				Altura / Vila::CuboDaEngine));
+
+			// Meio corpo para FORA da parede: rente, o z-fighting a apagaria;
+			// funda, viraria caixa de correio.
+			Vao->SetRelativeLocation(FVector(
+				Peca.OffsetUnits.X + Normal.X * (MeioLadoDaFace + Vila::EspessuraDaPorta * 0.5f),
+				Peca.OffsetUnits.Y + Normal.Y * (MeioLadoDaFace + Vila::EspessuraDaPorta * 0.5f),
+				Altura * 0.5f));
+
+			// Decoração: quem bloqueia é a parede atrás. Porta que empurra
+			// seria a calçada bloqueando com outra roupa.
+			Vao->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+			Vila::Pintar(Vao, Vila::CorDaPorta);
+			DoorMeshes.Add(Vao);
 		}
 
 		// A PORTA, e só onde há função atrás dela.

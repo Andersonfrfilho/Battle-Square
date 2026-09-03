@@ -56,6 +56,7 @@
 #include "World/SchoolTeachings.h"
 #include "World/SchoolyardLayout.h"
 #include "World/VillageResidents.h"
+#include "World/VillagerActor.h"
 #include "World/SettlementEconomy.h"
 #include "World/TrailLayout.h"
 #include "GameFramework/Character.h"
@@ -967,6 +968,7 @@ void ABattleSquareGameMode::SpawnStartingVillage()
 	int32 Predios = 0;
 	int32 Portas = 0;
 	int32 CamposDePatio = 0;
+	int32 Moradores = 0;
 
 	// A REGIÃO inteira, e não só a vila de casa. Uma vila só faz o resto do
 	// mapa ser paisagem: sem academia paga, sem mercado e sem a arena da
@@ -993,6 +995,31 @@ void ABattleSquareGameMode::SpawnStartingVillage()
 		Vila->OnDoorCrossed.AddUObject(this, &ABattleSquareGameMode::AnunciarPortaCruzada);
 
 		Vila->BuildVillage();
+
+		// OS MORADORES NA RUA (decisão 66): um por casa, passeando pela
+		// praça quando a janela deles diz que não estão em casa. A mesma
+		// janela que decide quem atende decide quem se vê — uma fonte só.
+		for (int32 Porta = 0; Porta < Vila->GetDoors().Num(); ++Porta)
+		{
+			const EVillageBuilding Tipo = Vila->GetDoorBuilding(Porta);
+			if (Tipo != EVillageBuilding::Casa && Tipo != EVillageBuilding::Palafita)
+			{
+				continue;
+			}
+
+			AVillagerActor* Morador = World->SpawnActor<AVillagerActor>(
+				AVillagerActor::StaticClass(), Onde, FRotator::ZeroRotator, Parametros);
+			if (!Morador)
+			{
+				continue;
+			}
+
+			// A rua dele é o lote da vila: morador anda pela vila, não pela
+			// mata — a mata é do encontro selvagem.
+			Morador->Configure(Assentamento.Kind, Porta, Onde,
+				VillageLayout::PlotHalfExtentUnitsFor(Assentamento.Kind) * 0.8f);
+			++Moradores;
+		}
 
 		// O PÁTIO DA ESCOLA (decisão 63): os campos de treino da vila, atrás
 		// da escola, na faixa da clareira. É o que torna `bs.Especializar`
@@ -1030,8 +1057,8 @@ void ABattleSquareGameMode::SpawnStartingVillage()
 	// número — e uma vila que erguesse dez prédios com zero portas leria como
 	// vila pronta. É o mesmo motivo de o painel contar predio de pé.
 	FBattleDebugScreen::Show(
-		FString::Printf(TEXT("regiao: %d assentamentos, %d predios, %d portas, %d campos de patio"),
-			Erguidos, Predios, Portas, CamposDePatio),
+		FString::Printf(TEXT("regiao: %d assentamentos, %d predios, %d portas, %d campos, %d moradores"),
+			Erguidos, Predios, Portas, CamposDePatio, Moradores),
 		0.0f, FColor(200, 180, 120), /*Key=*/744);
 }
 
@@ -1182,6 +1209,12 @@ void ABattleSquareGameMode::TickGroundWork()
 	{
 		return;
 	}
+
+	// A CONVERSA NA RUA (decisão 66): o morador que passeia cumprimenta quem
+	// chega perto — a mesma dica que ele daria em casa, porque é a mesma
+	// pessoa. Carona neste tique porque é o passo do painel (0,5 s), e
+	// cumprimentar mais rápido que o painel atualiza não muda nada.
+	AnunciarMoradorPerto(*World, Jogador->GetActorLocation());
 
 	const EGroundUse Uso =
 		LandUseLayout::UseAt(FVector2D(Jogador->GetActorLocation()));
@@ -1335,6 +1368,44 @@ void ABattleSquareGameMode::MostrarQuadroDeLicoes()
 			FString::Printf(TEXT("  ... e mais %d licoes"), Linhas.Num() - Mostradas),
 			0.0f, FColor::Silver, /*Key=*/765);
 	}
+}
+
+void ABattleSquareGameMode::AnunciarMoradorPerto(UWorld& World, const FVector& PlayerAt)
+{
+	constexpr float AlcanceDaProsa = 320.0f;
+
+	const AVillagerActor* MaisPerto = nullptr;
+	float Menor = AlcanceDaProsa;
+
+	for (TActorIterator<AVillagerActor> It(&World); It; ++It)
+	{
+		// Escondido está EM CASA — e quem está em casa não cumprimenta da
+		// janela: a conversa de rua é de quem está na rua.
+		if (!IsValid(*It) || It->IsHidden())
+		{
+			continue;
+		}
+
+		const float Ate = FVector::Dist2D(PlayerAt, It->GetActorLocation());
+		if (Ate < Menor)
+		{
+			Menor = Ate;
+			MaisPerto = *It;
+		}
+	}
+
+	if (!MaisPerto)
+	{
+		// Apaga ao afastar, como toda linha de lugar.
+		FBattleDebugScreen::Show(TEXT(""), 0.0f, FColor::White, /*Key=*/768);
+		return;
+	}
+
+	const VillageResidents::FResident& Morador = MaisPerto->GetResident();
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("%s (na rua): \"%s\""),
+			*Morador.Name, *Morador.TipLine),
+		0.0f, FColor(200, 220, 200), /*Key=*/768);
 }
 
 void ABattleSquareGameMode::AnunciarPortaCruzada(EVillageBuilding Predio,

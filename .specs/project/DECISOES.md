@@ -349,6 +349,17 @@ dia inteiro, nunca dia nenhum), lida do MESMO relógio do céu. Fora dela,
 ninguém atende — e a recusa diz o horário em que ele costuma estar, para a
 visita frustrada virar plano em vez de porta morta.
 
+**66. OS MORADORES ANDAM PELA VILA.** *"os npcs podem andar pela vila tbm,
+isso é perfeito o que vc propôs dos horários"*. A janela de horário vira dupla:
+quando o morador NÃO está em casa, ele está NA RUA — corpo procedural
+(cilindro e esfera, roupa seedada como o nome), passeando pela praça com o
+MESMO componente de passeio dos encontros. Uma janela só decide as duas
+coisas: quem atende a porta e quem se vê na rua — duas fontes da mesma
+verdade fariam a vizinha bilocada.
+
+E a conversa acompanha: o morador de rua CUMPRIMENTA quem chega perto, com a
+mesma dica que daria em casa — é a mesma pessoa.
+
 **64. A ESCOLA É O LUGAR DE APRENDER.** *"na escola você aprende sobre os
 pets, batalhas, aprende golpes e aumenta skill com treinamentos dos seus
 pets"*. Três metades, e cada uma tem um destino:

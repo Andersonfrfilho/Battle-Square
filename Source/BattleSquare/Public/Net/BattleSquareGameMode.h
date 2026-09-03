@@ -469,6 +469,9 @@ private:
 
 	/** O tique do trabalho, no mesmo passo do painel e do treino. */
 	void TickGroundWork();
+
+	/** O morador de rua mais perto cumprimenta (decisão 66). */
+	void AnunciarMoradorPerto(UWorld& World, const FVector& PlayerAt);
 	FTrainerProfile CachedTrainer;
 
 public:

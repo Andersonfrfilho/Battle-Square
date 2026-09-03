@@ -83,6 +83,18 @@ pergunta derivada, não respondida).
 **14. O que machuca o treinador.** Ataques de outros pets, ataques de outros
 treinadores, desastres naturais e outros danos.
 
+**15-b. LIDERANÇA DE CENTRO — implementada (03/09), com a leitura registrada.**
+Vencer o campeonato da Arena TOMA o título do centro. A frase "não pode sair
+nem aceitar desafios até alguém vencê-lo" foi lida assim (leitura minha,
+reversível): o posto PRENDE — o líder não desafia OUTRAS arenas enquanto o
+tem, e no próprio centro o desafio vira DEFESA contra o desafiante do dia
+(seedado pelo dia DE PROPÓSITO: "inclusive NPC" pede fila, não estátua).
+Perder a defesa é como o título muda de mão. A renda ("com renda por isso") é
+diária, fração do prêmio da tabela, paga NA Arena do posto — só a de hoje,
+nunca as perdidas: o posto cobra presença. ⚠️ Aberto e nomeado: título
+expirar por defesa NÃO atendida (hoje só batalha muda a mão), e a renda
+offline (espera a idade do mundo da `mundo-vivo`).
+
 **15. 🆕 ESCOPO NOVO — especialização e liderança de centro.** As cidades
 especializam, MAS todo bioma tem de ser jogável de nascença: **jogadores podem
 nascer em qualquer bioma, então todos são independentes e cheios de skills.**

@@ -83,6 +83,7 @@
 #include "Balance/PetTypeCatalog.h"
 #include "Meta/PetMoveRequirements.h"
 #include "Meta/TrainerSpecialtyRules.h"
+#include "Meta/LeadershipRules.h"
 #include "Meta/PetHealthRules.h"
 #include "Meta/PetSaleRules.h"
 #include "Meta/TrainerRankingRules.h"
@@ -891,15 +892,36 @@ void ABattleSquareGameMode::HandleWorldBattleFinished(ABattleArena* Arena)
 	{
 		const bool bVenceuODesafio = Arena
 			&& Arena->GetLastLocalOutcome() == EBattleResultOutcome::Vitoria;
+		const FString ChaveDoCentro =
+			RegionLayout::KindDebugName(PendingChallengeKind);
+
 		if (bVenceuODesafio)
 		{
 			FTrainerRankingRules::AwardArenaVictory(CachedTrainer);
 			FTrainerWalletRules::Earn(CachedTrainer,
 				SettlementEconomy::RankingPrize(PendingChallengeKind));
+
+			// VENCER O CAMPEONATO TOMA O TÍTULO (decisão 15) — só o desafio,
+			// não a defesa: quem defende já era líder, e "tomar de novo"
+			// rearmaria o carimbo da renda de graça.
+			if (!bPendingChallengeIsDefense)
+			{
+				FLeadershipRules::TakeTitle(CachedTrainer, ChaveDoCentro);
+				FBattleDebugScreen::Show(
+					FString::Printf(
+						TEXT("=== VOCE E O NOVO LIDER de %s — o posto rende, e prende ==="),
+						*ChaveDoCentro),
+					10.0f, FColor(255, 215, 120), /*Key=*/-1);
+			}
+			else
+			{
+				FBattleDebugScreen::Show(TEXT("posto DEFENDIDO — o titulo continua seu"),
+					8.0f, FColor::Green, /*Key=*/-1);
+			}
+
 			FPetCollectionService::SaveTrainerProfile(PetCollectionSlotName, CachedTrainer);
 
 			MostrarCarteira();
-	MostrarRanking();
 			MostrarRanking();
 			FBattleDebugScreen::Show(
 				FString::Printf(TEXT("vitoria de Arena: +%d pts, +%d"),
@@ -907,8 +929,21 @@ void ABattleSquareGameMode::HandleWorldBattleFinished(ABattleArena* Arena)
 					SettlementEconomy::RankingPrize(PendingChallengeKind)),
 				8.0f, FColor::Green, /*Key=*/-1);
 		}
+		else if (bPendingChallengeIsDefense)
+		{
+			// A DEFESA PERDIDA É COMO O TÍTULO MUDA DE MÃO — "até alguém
+			// vencê-lo, inclusive NPC": o desafiante do dia acabou de vencer.
+			FLeadershipRules::LoseTitle(CachedTrainer);
+			FPetCollectionService::SaveTrainerProfile(PetCollectionSlotName, CachedTrainer);
+			MostrarRanking();
+			FBattleDebugScreen::Show(
+				FString::Printf(TEXT("o desafiante VENCEU — voce nao e mais lider de %s"),
+					*ChaveDoCentro),
+				10.0f, FColor(240, 120, 100), /*Key=*/-1);
+		}
 
 		bPendingArenaChallenge = false;
+		bPendingChallengeIsDefense = false;
 	}
 
 	// A DERROTA ACORDA NO HOSPITAL (decisão 60). Só a derrota: vitória e
@@ -1153,7 +1188,10 @@ void ABattleSquareGameMode::SellOwnedPet(const FString& CatalogId)
 void ABattleSquareGameMode::MostrarRanking() const
 {
 	FBattleDebugScreen::Show(
-		FString::Printf(TEXT("ranking: %d pts"), CachedTrainer.RankingPoints),
+		FLeadershipRules::IsLeaderAnywhere(CachedTrainer)
+			? *FString::Printf(TEXT("ranking: %d pts — LIDER de %s"),
+				CachedTrainer.RankingPoints, *CachedTrainer.LeaderOf)
+			: *FString::Printf(TEXT("ranking: %d pts"), CachedTrainer.RankingPoints),
 		0.0f, FColor(180, 220, 255), /*Key=*/755);
 }
 
@@ -1182,11 +1220,36 @@ void ABattleSquareGameMode::ChallengeArena()
 		return;
 	}
 
+	// O POSTO DECIDE O QUE ESTE DESAFIO É (decisão 15): tomar o título, ou
+	// DEFENDER o seu — e líder de outro centro nem desafia: o posto prende.
+	const FString ChaveDaqui = RegionLayout::KindDebugName(CurrentBuildingKind);
+	const FLeadershipRules::EChallengeVerdict Veredito =
+		FLeadershipRules::VerdictFor(CachedTrainer, ChaveDaqui);
+
+	if (Veredito == FLeadershipRules::EChallengeVerdict::LockedElsewhere)
+	{
+		FBattleDebugScreen::Show(
+			FString::Printf(
+				TEXT("voce e LIDER de %s — o posto nao se abandona: defenda-o ate alguem te vencer"),
+				*CachedTrainer.LeaderOf),
+			8.0f, FColor::Orange, /*Key=*/-1);
+		return;
+	}
+
+	const bool bDefesa = Veredito == FLeadershipRules::EChallengeVerdict::Defense;
+
 	// O CAMPEÃO SAI DA GEOMETRIA DO LUGAR, nunca do relógio nem do índice de
-	// um laço (regra 5 da geração procedural): a mesma Arena tem sempre o
-	// mesmo campeão, e é isso que o torna um oponente que se aprende.
-	const uint32 Semente = BattleSpread::SeedFromText(FString::Printf(
-		TEXT("campeao-%s"), RegionLayout::KindDebugName(CurrentBuildingKind)));
+	// um laço (regra 5): a mesma Arena tem sempre o mesmo campeão, e é isso
+	// que o torna um oponente que se aprende.
+	//
+	// Na DEFESA o oponente é o DESAFIANTE DO DIA — aí o dia entra na semente
+	// DE PROPÓSITO: desafiante que nunca muda seria defender o mesmo NPC para
+	// sempre, e "inclusive NPC" pede fila, não estátua.
+	const int32 DiaDeHoje = (CenaDoMundo && CenaDoMundo->IsDayCycleRunning())
+		? FMath::FloorToInt(CenaDoMundo->GetElapsedHours() / 24.0f) : 0;
+	const uint32 Semente = BattleSpread::SeedFromText(bDefesa
+		? FString::Printf(TEXT("desafiante-%s-%d"), *ChaveDaqui, DiaDeHoje)
+		: FString::Printf(TEXT("campeao-%s"), *ChaveDaqui));
 	const FString& Campeao = WorldEncounterCatalogIds[
 		BattleSpread::Below(Semente, 0, WorldEncounterCatalogIds.Num())];
 
@@ -1206,6 +1269,7 @@ void ABattleSquareGameMode::ChallengeArena()
 	// Marca ANTES de disparar: o fim da batalha é quem lê, e ele pode chegar
 	// no mesmo quadro em que a montagem falha.
 	bPendingArenaChallenge = true;
+	bPendingChallengeIsDefense = bDefesa;
 	PendingChallengeKind = CurrentBuildingKind;
 
 	if (!WorldEncounterFlow->HandleEncounterTriggered(Desafio))
@@ -1218,7 +1282,9 @@ void ABattleSquareGameMode::ChallengeArena()
 	}
 
 	FBattleDebugScreen::Show(
-		FString::Printf(TEXT("DESAFIO DE ARENA — campeao: %s"), *Campeao),
+		bDefesa
+			? *FString::Printf(TEXT("DEFESA DO POSTO — desafiante de hoje: %s"), *Campeao)
+			: *FString::Printf(TEXT("DESAFIO DE ARENA — campeao: %s"), *Campeao),
 		8.0f, FColor(180, 220, 255), /*Key=*/-1);
 }
 
@@ -1650,6 +1716,39 @@ void ABattleSquareGameMode::AnunciarPortaCruzada(EVillageBuilding Predio,
 					TEXT("ninguem atende — %s costuma estar por volta das %dh"),
 					*Morador.Name, Morador.HomeStartHour),
 				0.0f, FColor::Silver, /*Key=*/767);
+		}
+	}
+
+	// A RENDA DO POSTO se pega NA Arena do próprio centro (decisão 15: "com
+	// renda por isso") — só a de hoje, nunca as perdidas: o posto que "não
+	// pode sair" cobra presença, e renda retroativa viraria baú.
+	if (Predio == EVillageBuilding::Arena)
+	{
+		const FString ChaveDaqui = RegionLayout::KindDebugName(DeQueVila);
+		const int32 DiaDeHoje = (CenaDoMundo && CenaDoMundo->IsDayCycleRunning())
+			? FMath::FloorToInt(CenaDoMundo->GetElapsedHours() / 24.0f) : 0;
+
+		const int32 Renda = FLeadershipRules::CollectDailyStipend(
+			CachedTrainer, ChaveDaqui, DiaDeHoje,
+			SettlementEconomy::LeaderDailyStipend(DeQueVila));
+
+		if (Renda > 0)
+		{
+			FTrainerWalletRules::Earn(CachedTrainer, Renda);
+			FPetCollectionService::SaveTrainerProfile(PetCollectionSlotName, CachedTrainer);
+			MostrarCarteira();
+			FBattleDebugScreen::Show(
+				FString::Printf(TEXT("a renda do posto: +%d"), Renda),
+				8.0f, FColor(255, 215, 120), /*Key=*/-1);
+		}
+		else if (FLeadershipRules::IsLeaderOf(CachedTrainer, ChaveDaqui))
+		{
+			// O carimbo pode ter só rearmado (posse nova, ou relógio de
+			// sessão): o líder que entra e não recebe merece saber por quê.
+			FPetCollectionService::SaveTrainerProfile(PetCollectionSlotName, CachedTrainer);
+			FBattleDebugScreen::Show(
+				TEXT("seu posto — a renda de amanha te espera aqui"),
+				6.0f, FColor(200, 200, 150), /*Key=*/-1);
 		}
 	}
 
@@ -2097,6 +2196,7 @@ void ABattleSquareGameMode::ReloadOwnedPetSnapshot()
 	}
 
 	MostrarCarteira();
+	MostrarRanking();
 
 	// A força do golpe no MUNDO é a musculatura do pet, a mesma que a arena
 	// usa. Sem esta linha, treinar musculatura num campo não mudaria nada

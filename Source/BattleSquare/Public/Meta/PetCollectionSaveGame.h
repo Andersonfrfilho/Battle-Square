@@ -188,6 +188,21 @@ struct BATTLESQUARE_API FTrainerProfile
 	 */
 	UPROPERTY()
 	int32 PetsSold = 0;
+
+	/**
+	 * DE QUE CENTRO o jogador é LÍDER (decisão 15) — a chave do assentamento
+	 * ("vila-inicial"), vazia quando não é de nenhum.
+	 *
+	 * UMA string, não uma lista: líder é de UM centro por vez — o posto
+	 * prende (ver a tranca em `LeadershipRules`), e prender em dois lugares
+	 * ao mesmo tempo é não estar em nenhum.
+	 */
+	UPROPERTY()
+	FString LeaderOf;
+
+	/** O último dia em que a renda do posto foi paga. -1 é "nunca". */
+	UPROPERTY()
+	int32 LastStipendDay = -1;
 };
 
 /**

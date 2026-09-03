@@ -30,6 +30,15 @@ namespace
 	constexpr int32 CuraNaCidade = 25;
 
 	/**
+	 * A renda do líder, em porcento do prêmio de ranking POR DIA.
+	 *
+	 * Trinta: o posto rende, mas devagar — dez dias de posto valem três
+	 * prêmios. Renda alta faria o título valer mais que o campeonato, e o
+	 * campeonato é o clímax.
+	 */
+	constexpr int32 RendaDoLiderPorCentoDia = 30;
+
+	/**
 	 * As arenas das vilas pagam pouco e esgotam cedo: são o dinheiro do
 	 * COMEÇO, quando a cidade ainda não se alcança. O prêmio grande mora na
 	 * cidade, e é ele que abre a fronteira.
@@ -100,6 +109,11 @@ int32 SettlementEconomy::SalePayout(ESettlementKind Kind)
 int32 SettlementEconomy::RankingPrize(ESettlementKind Kind)
 {
 	return PrecoBase * PayoutPercent(Kind, ESettlementService::PremioDeRanking) / 100;
+}
+
+int32 SettlementEconomy::LeaderDailyStipend(ESettlementKind Kind)
+{
+	return RankingPrize(Kind) * RendaDoLiderPorCentoDia / 100;
 }
 
 int32 SettlementEconomy::PayoutPercent(ESettlementKind Kind, ESettlementService Service)

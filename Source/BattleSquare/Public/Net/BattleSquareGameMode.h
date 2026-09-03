@@ -392,6 +392,9 @@ private:
 	 * Arena de uma luta que já acabou.
 	 */
 	bool bPendingArenaChallenge = false;
+
+	/** Verdadeiro quando o desafio pendente é a DEFESA do próprio posto. */
+	bool bPendingChallengeIsDefense = false;
 	ESettlementKind PendingChallengeKind{};
 
 	// `{}` e não um valor nomeado: aqui o enum só existe como declaração

@@ -91,4 +91,13 @@ namespace SettlementEconomy
 	 * grande mora na cidade.
 	 */
 	BATTLESQUARE_API int32 RankingPrize(ESettlementKind Kind);
+
+	/**
+	 * A RENDA DIÁRIA do líder do centro (decisão 15: "com renda por isso").
+	 *
+	 * Fração do prêmio de ranking do MESMO lugar — o posto rende na proporção
+	 * do que ele custou a tomar. Zero onde não há Arena: sem campeonato não
+	 * há posto.
+	 */
+	BATTLESQUARE_API int32 LeaderDailyStipend(ESettlementKind Kind);
 }

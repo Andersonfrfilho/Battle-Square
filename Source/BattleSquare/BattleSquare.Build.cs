@@ -37,7 +37,11 @@ public class BattleSquare : ModuleRules
 			// consome a tabela de efetividade de um arquivo JSON local.
 			"ProceduralMeshComponent",
 			"Json",
-			"JsonUtilities"
+			"JsonUtilities",
+			// Decisão 67: a conversa dinâmica com NPC fala com o modelo
+			// hospedado na infra própria. Sem endpoint configurado, o módulo
+			// nem é tocado — o modo restrito é local puro.
+			"HTTP"
 		});
 
 		// AD-019: OpenSSL já vem empacotado na engine (1.1.1t) — cobre

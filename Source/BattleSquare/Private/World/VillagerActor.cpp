@@ -96,6 +96,8 @@ void AVillagerActor::Configure(ESettlementKind Kind, int32 DoorIndex,
 	const FVector& PlazaCenter, float PlazaRadius)
 {
 	Resident = VillageResidents::ResidentFor(Kind, DoorIndex);
+	HomeKind = Kind;
+	HomeDoor = DoorIndex;
 	bConfigured = true;
 
 	// A roupa sai da MESMA semente do morador: a Dona Iraci veste sempre a

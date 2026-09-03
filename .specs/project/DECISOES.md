@@ -398,9 +398,26 @@ direto com a decisão 15 (campeonato torna o jogador LÍDER do centro, com renda
 e desafios). É feature própria, não uma task desta — registrado para não se
 perder.
 
-**67. CONVERSA LIVRE COM O NPC — modelo de fala.** ⬜ *Perguntado em 03/09:
-"poderíamos ter um modelo de fala para continuar falando com o NPC, e ele
-conversar como uma pessoa sobre os acontecimentos do jogo?"*
+**67. CONVERSA LIVRE COM O NPC — modelo de fala.** ✅ *Respondida em 03/09:
+"podemos na nossa infra ter nosso próprio modelo, para evitar gastos — local
+restrita, e se ele tiver online a conversa é mais dinâmica."*
+
+**O lado do JOGO está pronto:** `bs.Falar <texto>` conversa com quem está te
+ouvindo (a casa que atendeu, ou o passante mais perto — a visita nunca é
+atropelada pelo passante). Sem endpoint configurado, o MODO RESTRITO responde
+na hora: o morador admite o limite ("disso eu não sei falar...") e devolve o
+que sabe — a história dele, reagindo aos feitos. Com
+`NpcDialogueEndpointUrl` no `DefaultGame.ini`, o digesto vai por POST ao
+modelo da infra (contrato JSON documentado em `NpcDialogue.h`) e a resposta
+volta em personagem — com timeout de 3 s e QUALQUER falha caindo no restrito:
+a conversa nunca morre por causa da rede.
+
+**A fronteira que o teste guarda:** o digesto é TUDO que o modelo sabe, e
+nenhum segredo entra nele — afirmado no negativo. O que não entra não sai na
+fala, por construção: é a regra da carta valendo para o NPC mais eloquente.
+
+**O que falta é da INFRA, não deste repo:** o serviço que recebe o POST e
+serve o modelo próprio. O contrato está no header, esperando o servidor.
 
 **É viável, e a forma honesta é esta:** um serviço de diálogo FORA do jogo
 (no servidor que `posse-no-servidor` já planeja), chamado quando o jogador

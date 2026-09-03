@@ -45,6 +45,10 @@ public:
 
 	const VillageResidents::FResident& GetResident() const { return Resident; }
 
+	/** De onde ele é — a chave da história dele, para a conversa continuar. */
+	ESettlementKind GetHomeKind() const { return HomeKind; }
+	int32 GetHomeDoor() const { return HomeDoor; }
+
 	/**
 	 * Aplica a hora do mundo: em casa, o corpo SOME da rua (ele está dentro,
 	 * e dentro não se vê); fora da janela, ele anda. Separada do Tick para o
@@ -76,5 +80,7 @@ private:
 	TObjectPtr<ABattleSceneLighting> CachedSky;
 
 	VillageResidents::FResident Resident;
+	ESettlementKind HomeKind{};
+	int32 HomeDoor = 0;
 	bool bConfigured = false;
 };

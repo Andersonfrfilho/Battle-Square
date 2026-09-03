@@ -16,6 +16,7 @@
 #include "Environment/WorldTimeOfDay.h"
 #include "Data/BattleDataTranslator.h"
 #include "Meta/PetCollectionSaveGame.h"
+#include "World/VillageResidents.h"
 #include "BattleSquareGameMode.generated.h"
 
 /**
@@ -456,6 +457,14 @@ private:
 	FTimerHandle TrainingTimer;
 	FTimerHandle WorkTimer;
 
+	/**
+	 * O endpoint do modelo de fala NA INFRA PRÓPRIA (decisão 67). VAZIO é o
+	 * modo restrito — e vazio é o padrão: conversa dinâmica é upgrade de quem
+	 * configurou servidor, nunca requisito de quem instalou o jogo.
+	 */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Conversa")
+	FString NpcDialogueEndpointUrl;
+
 	/** Tipo por id do catálogo, para a predominância por lugar (decisão 62). */
 	TMap<FString, FString> CatalogTypeById;
 	float TrainingCarrySeconds = 0.0f;
@@ -475,6 +484,7 @@ private:
 
 	/** O morador de rua mais perto cumprimenta (decisão 66). */
 	void AnunciarMoradorPerto(UWorld& World, const FVector& PlayerAt);
+
 	FTrainerProfile CachedTrainer;
 
 public:
@@ -496,6 +506,20 @@ public:
 	 * responde "aqui não se vende".
 	 */
 	void SellOwnedPet(const FString& CatalogId);
+
+	/**
+	 * A conversa livre (decisão 67): `bs.Falar <texto>` com o morador que
+	 * está te ouvindo — o da casa que atendeu, ou o mais perto na rua.
+	 * Online, o modelo da infra responde; sem ele, o modo restrito.
+	 */
+	void TalkToNearbyResident(const FString& PlayerSays);
+
+	/** Quem está te ouvindo agora — a casa atendida ou a rua por perto. */
+	bool bHasConversationPartner = false;
+	VillageResidents::FResident ConversationPartner;
+	ESettlementKind ConversationPartnerKind{};
+	int32 ConversationPartnerDoor = 0;
+	int32 ConversationPartnerMeetings = 1;
 
 	/**
 	 * Desafia o campeão da Arena em que o jogador está.

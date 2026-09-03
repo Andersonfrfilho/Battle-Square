@@ -49,6 +49,12 @@
 #include "GameFramework/Character.h"
 #include "Engine/StaticMeshActor.h"
 #include "World/IslandBakedPlan.h"
+#include "HttpModule.h"
+#include "Interfaces/IHttpRequest.h"
+#include "Interfaces/IHttpResponse.h"
+#include "Serialization/JsonReader.h"
+#include "Serialization/JsonSerializer.h"
+#include "World/NpcDialogue.h"
 #include "World/EncounterPredominance.h"
 #include "World/GroundWorkRules.h"
 #include "Balance/PetSkillCatalog.h"
@@ -1411,7 +1417,13 @@ void ABattleSquareGameMode::AnunciarMoradorPerto(UWorld& World, const FVector& P
 
 	if (!MaisPerto)
 	{
-		// Apaga ao afastar, como toda linha de lugar.
+		// Apaga ao afastar, como toda linha de lugar — e a conversa de rua
+		// acaba junto, A MENOS que haja uma visita em pé: sair de perto de um
+		// passante não encerra a prosa com quem te recebeu em casa.
+		if (bHasConversationPartner && !bIsInsideBuilding)
+		{
+			bHasConversationPartner = false;
+		}
 		FBattleDebugScreen::Show(TEXT(""), 0.0f, FColor::White, /*Key=*/768);
 		return;
 	}
@@ -1421,6 +1433,100 @@ void ABattleSquareGameMode::AnunciarMoradorPerto(UWorld& World, const FVector& P
 		FString::Printf(TEXT("%s (na rua): \"%s\""),
 			*Morador.Name, *Morador.TipLine),
 		0.0f, FColor(200, 220, 200), /*Key=*/768);
+
+	// O passante vira interlocutor — mas nunca ATROPELA uma visita: quem está
+	// dentro de uma casa atendida conversa com o dono dela.
+	if (!bIsInsideBuilding)
+	{
+		bHasConversationPartner = true;
+		ConversationPartner = Morador;
+		ConversationPartnerKind = MaisPerto->GetHomeKind();
+		ConversationPartnerDoor = MaisPerto->GetHomeDoor();
+		ConversationPartnerMeetings = 2;
+	}
+}
+
+void ABattleSquareGameMode::TalkToNearbyResident(const FString& PlayerSays)
+{
+	if (!bHasConversationPartner)
+	{
+		FBattleDebugScreen::Show(
+			TEXT("nao ha ninguem te ouvindo — visite uma casa ou chegue perto de alguem"),
+			6.0f, FColor::Orange, /*Key=*/-1);
+		return;
+	}
+
+	// O que o jogador disse aparece ANTES da resposta: conversa sem eco da
+	// própria fala lê como painel falando sozinho.
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("voce: \"%s\""), *PlayerSays),
+		0.0f, FColor(180, 200, 240), /*Key=*/769);
+
+	VillageResidents::FPlayerDeeds Feitos;
+	Feitos.bBeatChampion = CachedTrainer.RankingPoints > 0;
+	Feitos.bHasSoldAPet = CachedTrainer.PetsSold > 0;
+	Feitos.bHasWaterPet = bHasCachedOwnedPet
+		&& CachedOwnedPet.Type.EndsWith(TEXT("/Agua"));
+
+	// A resposta restrita fica PRONTA antes da chamada: é o modo local, e é
+	// também o para-quedas de TODA falha do online — timeout, 500, campo
+	// ausente. A conversa nunca morre por causa da rede (fail-closed).
+	const FString Restrita = NpcDialogue::RestrictedReply(
+		ConversationPartner, ConversationPartnerKind, ConversationPartnerDoor,
+		ConversationPartnerMeetings, Feitos);
+	const FString Nome = ConversationPartner.Name;
+
+	auto Entregar = [Nome](const FString& Fala)
+	{
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("%s: \"%s\""), *Nome, *Fala),
+			0.0f, FColor(200, 220, 200), /*Key=*/770);
+	};
+
+	// SEM endpoint, o modo restrito responde NA HORA — e é o padrão: conversa
+	// dinâmica é upgrade de quem configurou servidor (decisão 67).
+	if (NpcDialogueEndpointUrl.IsEmpty())
+	{
+		Entregar(Restrita);
+		return;
+	}
+
+	const TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Pedido =
+		FHttpModule::Get().CreateRequest();
+	Pedido->SetURL(NpcDialogueEndpointUrl);
+	Pedido->SetVerb(TEXT("POST"));
+	Pedido->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
+	Pedido->SetContentAsString(NpcDialogue::BuildDigestJson(
+		ConversationPartner, ConversationPartnerMeetings, Feitos, PlayerSays));
+
+	// Curto de propósito: melhor a resposta restrita em três segundos que a
+	// dinâmica em trinta — conversa que trava é pior que conversa limitada.
+	Pedido->SetTimeout(3.0f);
+
+	Pedido->OnProcessRequestComplete().BindLambda(
+		[Entregar, Restrita](FHttpRequestPtr, FHttpResponsePtr Resposta, bool bOk)
+		{
+			FString Fala = Restrita;
+
+			if (bOk && Resposta.IsValid()
+				&& Resposta->GetResponseCode() == 200)
+			{
+				TSharedPtr<FJsonObject> Json;
+				const TSharedRef<TJsonReader<>> Leitor =
+					TJsonReaderFactory<>::Create(Resposta->GetContentAsString());
+				FString DoModelo;
+				if (FJsonSerializer::Deserialize(Leitor, Json) && Json.IsValid()
+					&& Json->TryGetStringField(TEXT("npcSays"), DoModelo)
+					&& !DoModelo.IsEmpty())
+				{
+					Fala = DoModelo;
+				}
+			}
+
+			Entregar(Fala);
+		});
+
+	Pedido->ProcessRequest();
 }
 
 void ABattleSquareGameMode::AnunciarPortaCruzada(EVillageBuilding Predio,
@@ -1441,6 +1547,9 @@ void ABattleSquareGameMode::AnunciarPortaCruzada(EVillageBuilding Predio,
 		// Apaga ao sair, como o sagrado e a travessia. Deixada, a linha diria
 		// que se está num prédio que ficou para trás. O quadro de lições sai
 		// junto: lição na tela fora da escola é o painel mentindo o lugar.
+		// E a conversa acaba: falar com quem ficou lá dentro seria conversar
+		// com a parede.
+		bHasConversationPartner = false;
 		FBattleDebugScreen::Show(TEXT(""), 0.0f, FColor::White, /*Key=*/753);
 		for (int32 Chave = 757; Chave <= 767; ++Chave)
 		{
@@ -1526,6 +1635,13 @@ void ABattleSquareGameMode::AnunciarPortaCruzada(EVillageBuilding Predio,
 					*VillageResidents::StoryLineReacting(
 						Morador, DeQueVila, DoorIndex, Conhecido->Meetings, Feitos)),
 				0.0f, FColor(200, 220, 200), /*Key=*/767);
+
+			// Quem atendeu está te OUVINDO: é com ele que o bs.Falar conversa.
+			bHasConversationPartner = true;
+			ConversationPartner = Morador;
+			ConversationPartnerKind = DeQueVila;
+			ConversationPartnerDoor = DoorIndex;
+			ConversationPartnerMeetings = Conhecido->Meetings;
 		}
 		else
 		{
@@ -3476,6 +3592,30 @@ namespace
 				}
 
 				GameMode->ToggleMapPinHere(Tipo);
+			}));
+
+	// A CONVERSA pelo console (decisão 67): fala com quem está te ouvindo.
+	FAutoConsoleCommandWithWorldAndArgs GFalarCommand(
+		TEXT("bs.Falar"),
+		TEXT("bs.Falar <texto> — conversa com o morador que esta te ouvindo."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(
+			[](const TArray<FString>& Args, UWorld* World)
+			{
+				ABattleSquareGameMode* GameMode =
+					World ? World->GetAuthGameMode<ABattleSquareGameMode>() : nullptr;
+				if (!GameMode)
+				{
+					return;
+				}
+
+				if (Args.Num() < 1)
+				{
+					FBattleDebugScreen::Show(TEXT("uso: bs.Falar <o que voce quer dizer>"),
+						6.0f, FColor::Orange, /*Key=*/-1);
+					return;
+				}
+
+				GameMode->TalkToNearbyResident(FString::Join(Args, TEXT(" ")));
 			}));
 
 	// O DESAFIO pelo console, gatilhado pelo LUGAR — mesmo desenho da venda.

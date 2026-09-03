@@ -35,6 +35,43 @@ namespace
 		TEXT("rio fundo se NADA; olhe a fundura no painel antes de atravessar"),
 		TEXT("quem cai em batalha acorda no hospital mais perto — curado, de graca"),
 	};
+
+	/**
+	 * OS ARCOS DE HISTÓRIA (decisão 15), três estágios cada: quem sou, o que
+	 * houve, a confidência.
+	 *
+	 * Todo arco é ancorado no que EXISTE no mundo — a fazenda, a ponte
+	 * destruída que não passa, o campeão que não muda, as grutas que se
+	 * ligam, o vau, os preços do Mercado. Memória de morador é flavor; fato
+	 * mecânico FALSO não entra nem como lembrança.
+	 */
+	struct FArcoDeHistoria
+	{
+		const TCHAR* QuemSou;
+		const TCHAR* OQueHouve;
+		const TCHAR* Confidencia;
+	};
+
+	const FArcoDeHistoria ArcosDeHistoria[] = {
+		{ TEXT("trabalho na fazenda desde crianca — a terra daqui e boa"),
+		  TEXT("teve um ano que o rio baixou e quase levou a lavoura junto"),
+		  TEXT("guardo as sementes da primeira colheita. um dia te mostro") },
+		{ TEXT("meu avo atravessava a ponte do rio todo santo dia"),
+		  TEXT("quando ela caiu, ninguem consertou — e ela NAO passa, ve la"),
+		  TEXT("as vezes vou ate o vao so para olhar. caminho que ja foi") },
+		{ TEXT("ja fui desafiante da Arena, sabia?"),
+		  TEXT("perdi tres vezes para o campeao — o jeito dele NUNCA muda"),
+		  TEXT("se voce o vencer, volte aqui e me conte COMO") },
+		{ TEXT("criei um pet de agua quando o lago era mais cheio"),
+		  TEXT("ele nadava fundo onde hoje da pe, acredita?"),
+		  TEXT("do que sinto falta e do barulho dele na agua, de noite") },
+		{ TEXT("minha mae dizia para nao entrar nas grutas"),
+		  TEXT("dizem que ALGUMAS se ligam por baixo — algumas, nao todas"),
+		  TEXT("nunca achei a passagem. mas sei que existe... e voce?") },
+		{ TEXT("vendi meu primeiro pet no Mercado, faz tempo"),
+		  TEXT("na cidade grande pagam menos — aprendi na pele"),
+		  TEXT("dinheiro vai, a historia fica. por isso te conto as minhas") },
+	};
 }
 
 VillageResidents::FResident VillageResidents::ResidentFor(
@@ -71,4 +108,39 @@ bool VillageResidents::IsHomeAtHour(const FResident& Morador, float Hora)
 	}
 
 	return Agora >= Morador.HomeStartHour || Agora < Morador.HomeEndHour;
+}
+
+FString VillageResidents::ResidentKeyFor(ESettlementKind Kind, int32 DoorIndex)
+{
+	return FString::Printf(TEXT("%s-%d"),
+		RegionLayout::KindDebugName(Kind), DoorIndex);
+}
+
+FString VillageResidents::StoryLineFor(const FResident& Morador,
+	ESettlementKind Kind, int32 DoorIndex, int32 Meetings)
+{
+	// A PRIMEIRA visita é apresentação + a dica: o morador ainda não te
+	// conhece, e estranho não ganha história — ganha conselho.
+	if (Meetings <= 1)
+	{
+		return FString::Printf(TEXT("prazer, sou %s. %s"),
+			*Morador.Name, *Morador.TipLine);
+	}
+
+	// O arco sai da MESMA semente do morador (índice novo): a história é
+	// DELE, estável como o nome — regra 5, a de sempre.
+	const uint32 Semente = BattleSpread::SeedFromText(FString::Printf(
+		TEXT("historia-%s"), *ResidentKeyFor(Kind, DoorIndex)));
+	const FArcoDeHistoria& Arco = ArcosDeHistoria[
+		BattleSpread::Below(Semente, 0, UE_ARRAY_COUNT(ArcosDeHistoria))];
+
+	// Segunda visita: quem sou. Terceira: o que houve. Da quarta em diante, a
+	// confidência — quem chegou ao fim é amigo, e amigo repete causo. Isso é
+	// gente, não defeito.
+	switch (Meetings)
+	{
+	case 2:  return Arco.QuemSou;
+	case 3:  return Arco.OQueHouve;
+	default: return Arco.Confidencia;
+	}
 }

@@ -128,3 +128,55 @@ bool FResidentHasHoursAndTheHouseIsNotYoursTest::RunTest(const FString&)
 
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FResidentStoryUnfoldsByVisitTest,
+	"BattleSquare.World.Moradores.AHistoriaAvancaPorVisita",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FResidentStoryUnfoldsByVisitTest::RunTest(const FString&)
+{
+	// A DECISÃO 15: histórias próprias e EVOLUTIVAS. Própria = o arco é do
+	// morador, estável como o nome. Evolutiva = avança por visita atendida:
+	// apresentação, quem sou, o que houve, a confidência.
+	const VillageResidents::FResident Morador =
+		VillageResidents::ResidentFor(ESettlementKind::VilaInicial, 2);
+
+	const FString Primeira = VillageResidents::StoryLineFor(
+		Morador, ESettlementKind::VilaInicial, 2, 1);
+	const FString Segunda = VillageResidents::StoryLineFor(
+		Morador, ESettlementKind::VilaInicial, 2, 2);
+	const FString Terceira = VillageResidents::StoryLineFor(
+		Morador, ESettlementKind::VilaInicial, 2, 3);
+	const FString Quarta = VillageResidents::StoryLineFor(
+		Morador, ESettlementKind::VilaInicial, 2, 4);
+
+	// A primeira é apresentação + conselho: estranho não ganha história.
+	TestTrue(TEXT("a primeira visita apresenta"), Primeira.Contains(Morador.Name));
+	TestTrue(TEXT("e aconselha — a dica de sempre"), Primeira.Contains(Morador.TipLine));
+
+	// Da segunda em diante a história É OUTRA a cada visita — evolutiva.
+	TestNotEqual(TEXT("a segunda visita conta outra coisa"), Segunda, Primeira);
+	TestNotEqual(TEXT("a terceira avanca"), Terceira, Segunda);
+	TestNotEqual(TEXT("e a quarta fecha o arco"), Quarta, Terceira);
+
+	// Da quarta em diante REPETE a confidência: amigo repete causo — isso é
+	// gente, não defeito. E repetir é o que impede a história de "andar" sem
+	// visita nenhuma nova de verdade.
+	TestEqual(TEXT("da quinta em diante, o mesmo causo"),
+		VillageResidents::StoryLineFor(Morador, ESettlementKind::VilaInicial, 2, 5),
+		Quarta);
+
+	// E a história é DELE: a mesma visita, consultada duas vezes, conta o
+	// mesmo — estável como o nome (regra 5).
+	TestEqual(TEXT("a historia e estavel"),
+		VillageResidents::StoryLineFor(Morador, ESettlementKind::VilaInicial, 2, 3),
+		Terceira);
+
+	// A chave do save é a mesma do mundo — duas chaves divergiriam na
+	// primeira edição, e o sintoma seria a história recomeçando do nada.
+	TestEqual(TEXT("a chave e estavel e legivel"),
+		VillageResidents::ResidentKeyFor(ESettlementKind::VilaInicial, 2),
+		FString(TEXT("vila-inicial-2")));
+
+	return true;
+}

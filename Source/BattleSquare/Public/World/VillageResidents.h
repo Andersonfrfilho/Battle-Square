@@ -46,6 +46,29 @@ namespace VillageResidents
 	BATTLESQUARE_API FResident ResidentFor(ESettlementKind Kind, int32 DoorIndex);
 
 	/**
+	 * A CHAVE ESTÁVEL deste morador ("vila-inicial-3") — a mesma para o
+	 * mundo e para o save: duas chaves divergiriam na primeira edição, e o
+	 * sintoma seria a história recomeçando do nada.
+	 */
+	BATTLESQUARE_API FString ResidentKeyFor(ESettlementKind Kind, int32 DoorIndex);
+
+	/**
+	 * A FALA da visita de número `Meetings` (decisão 15) — a história em
+	 * estágios: apresentação, o que houve, a confidência.
+	 *
+	 * Cada morador tem UM arco, seedado como o nome, e ele avança por visita
+	 * ATENDIDA — não por esbarrão de rua: história se conta a quem volta. Da
+	 * quarta visita em diante repete a confidência: quem chegou ao fim da
+	 * história é amigo, e amigo repete causo — isso é gente, não defeito.
+	 *
+	 * E todo arco é ancorado no que EXISTE: a fazenda, a ponte destruída, o
+	 * campeão fixo, as grutas que se ligam. Memória de morador é flavor; fato
+	 * mecânico falso não entra nem como lembrança.
+	 */
+	BATTLESQUARE_API FString StoryLineFor(const FResident& Resident,
+		ESettlementKind Kind, int32 DoorIndex, int32 Meetings);
+
+	/**
 	 * Ele atende a esta hora?
 	 *
 	 * A janela nunca é o dia inteiro NEM dia nenhum (10 a 16 horas): todo

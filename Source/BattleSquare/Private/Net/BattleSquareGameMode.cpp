@@ -1472,8 +1472,34 @@ void ABattleSquareGameMode::AnunciarPortaCruzada(EVillageBuilding Predio,
 
 		if (bAtende)
 		{
+			// A VISITA ATENDIDA AVANÇA A HISTÓRIA (decisão 15): primeira vez
+			// é apresentação e conselho; da segunda em diante o morador conta
+			// a dele, em estágios. A contagem mora no PERFIL — a relação é do
+			// jogador — e grava na hora: visita que o processo esquece é
+			// história que recomeça, e ninguém reconta a segunda visita igual.
+			const FString Chave =
+				VillageResidents::ResidentKeyFor(DeQueVila, DoorIndex);
+			FResidentAcquaintance* Conhecido =
+				CachedTrainer.Acquaintances.FindByPredicate(
+					[&Chave](const FResidentAcquaintance& Item)
+					{
+						return Item.ResidentKey == Chave;
+					});
+			if (!Conhecido)
+			{
+				FResidentAcquaintance Novo;
+				Novo.ResidentKey = Chave;
+				Conhecido = &CachedTrainer.Acquaintances[
+					CachedTrainer.Acquaintances.Add(Novo)];
+			}
+
+			++Conhecido->Meetings;
+			FPetCollectionService::SaveTrainerProfile(PetCollectionSlotName, CachedTrainer);
+
 			FBattleDebugScreen::Show(
-				FString::Printf(TEXT("%s: \"%s\""), *Morador.Name, *Morador.TipLine),
+				FString::Printf(TEXT("%s: \"%s\""), *Morador.Name,
+					*VillageResidents::StoryLineFor(
+						Morador, DeQueVila, DoorIndex, Conhecido->Meetings)),
 				0.0f, FColor(200, 220, 200), /*Key=*/767);
 		}
 		else

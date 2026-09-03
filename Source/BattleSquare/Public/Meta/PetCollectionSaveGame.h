@@ -102,6 +102,26 @@ struct FOwnedPetInstance
 };
 
 /**
+ * O quanto o jogador JÁ CONHECE um morador (decisão 15).
+ *
+ * Mora no perfil do TREINADOR porque a relação é do jogador, não do mundo:
+ * o morador é o mesmo para todos, mas quem já ouviu a história dele é você.
+ */
+USTRUCT()
+struct BATTLESQUARE_API FResidentAcquaintance
+{
+	GENERATED_BODY()
+
+	/** "vila-inicial-3": tipo da vila + porta — a mesma chave do morador. */
+	UPROPERTY()
+	FString ResidentKey;
+
+	/** Quantas visitas ATENDIDAS. A história avança por aqui. */
+	UPROPERTY()
+	int32 Meetings = 0;
+};
+
+/**
  * O TREINADOR — a primeira coisa do jogo que pertence ao JOGADOR, e não a um pet.
  *
  * Atravessa a coleção inteira e sobrevive à troca de pet favorito. É o que
@@ -152,6 +172,15 @@ struct BATTLESQUARE_API FTrainerProfile
 	 */
 	UPROPERTY()
 	int32 RankingPoints = 0;
+
+	/**
+	 * Quem o jogador já visitou, e quantas vezes foi atendido.
+	 *
+	 * Vazio em save antigo — ninguém conhecido, que é o certo: a história de
+	 * cada morador começa do começo.
+	 */
+	UPROPERTY()
+	TArray<FResidentAcquaintance> Acquaintances;
 };
 
 /**

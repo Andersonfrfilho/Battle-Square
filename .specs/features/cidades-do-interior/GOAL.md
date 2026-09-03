@@ -79,7 +79,7 @@ de ser cenário que só colide.
       curado e de graça (decisão 16). Acorda-se no MAIS PERTO de onde se caiu,
       para renascer nunca poupar caminhada.
 - [x] **CI7** — Palafita, Passarela e Chinampa têm cor própria
-- [ ] **CI8** — o ranking existe e aparece ~~e tranca/destranca o Portão~~
+- [x] **CI8** — o ranking existe e aparece ~~e tranca/destranca o Portão~~
       ⚠️ **Metade REESCRITA pela decisão 58:** o Portão **não tranca**, porque o
       jogador tem liberdade de viajar para onde quiser. O ranking continua
       existindo e aparecendo; o que ele deixa de ser é uma cancela.

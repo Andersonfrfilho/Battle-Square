@@ -22,25 +22,68 @@ temporário que sobrevive vira um segundo gabarito.
 
 ---
 
-## M2 — A rocha ganha DEGRAU na queda
+## M2 — A rocha ganha ESCARPA, e a água acha o degrau
 > 🤖 Modelo: `opus` 🧠 — mexe na camada mais baixa do mundo
 
 **Dependências:** M1.
 
-O poço tem 886 de meia-largura e 30–51 de fundura: é prato. A rocha ganha um
-degrau na queda, e o poço passa a cavar.
+⚠️ **REESCRITA em 02/09/2026, antes de uma linha de código.** A primeira versão
+dizia *"a rocha ganha degrau NA QUEDA"* — e isso é exatamente o que já foi
+tentado e removido. O comentário em `IslandGeography.cpp` diz por quê:
 
-⚠️ **A rocha é a camada mais baixa** (rocha → água → região → relevo → trilhas →
-solo). Mexer nela move costa, vilas e trilhas de tabela — e a M1 vai reprovar
-dizendo quanto.
+> *"AQUI HAVIA UM DEGRAU DESENHADO EM CADA CACHOEIRA, E ELE CRIAVA UM CICLO. O
+> relevo perguntava onde estavam as quedas; as quedas perguntavam o plano dos
+> rios; o plano dos rios estava sendo construído naquele instante — e entrar de
+> novo num inicializador em construção trava. A inversão é o conserto, e ela é
+> melhor: **o terreno não sabe de água.** É a água que procura onde o leito
+> despenca e põe a queda ali."*
 
-*Aceite:* o poço fica mais FUNDO que largo? **NÃO** — e este é o erro que já
-custou uma vez: o "dez vezes" da literatura é razão de VELOCIDADE de erosão,
-vertical sobre lateral, não a forma do buraco. O aceite é que a fundura do poço
-**cresça em relação à de hoje** e que ele deixe de ser plano, medido.
+Desenhar degrau na posição da queda recria o ciclo que trava o processo com
+`abort()` — o defeito que a regra 14 de `geracao-procedural-de-mapas.md` nomeia,
+e que este projeto já pagou.
 
-*Contrapeso:* nenhuma queda SEM poço ganha degrau, e o degrau não aparece longe
-da queda — senão o relevo inteiro vira escada.
+### O que a task passa a ser
+
+**A rocha ganha ESCARPA onde a rocha decide** — ondulação mais acidentada,
+patamares —, e a água, que **já** procura onde o leito despenca, encontra
+degraus maiores e põe as quedas neles.
+
+O poço aprofunda **sozinho**: ele já lê a rocha (`Caiu × 0,55`, onde `Caiu` é a
+queda de altura do leito ao longo da cachoeira). Ele é prato porque a rocha é
+lisa, não porque falte regra de poço.
+
+**Nenhuma linha nova pergunta onde estão as cachoeiras.**
+
+*Aceite:* a fundura mediana dos poços **cresce** em relação aos 30–51 de hoje, e
+nenhuma linha do relevo lê o plano de água.
+
+⚠️ **O aceite NÃO é "poço mais fundo que largo".** O "dez vezes" da literatura é
+razão de VELOCIDADE de erosão — vertical sobre lateral —, não a forma do buraco.
+Um teste escrito com essa leitura já reprovou código certo neste projeto.
+
+*Contrapesos obrigatórios, e são três:*
+
+1. **O relevo continua sem saber de água** — o grep por `FreshWater::` dentro de
+   `BedrockHeightAt` não acha nada. É o guarda do ciclo.
+2. **A ilha não vira escada.** A escarpa é acidentada, não uniforme: um teste
+   mede a proporção de terreno íngreme e cobra um teto. Sem ele, "mais degrau" é
+   uma ladeira só.
+3. **A praia continua subindo do mar.** O encolhimento pela orla já impediu uma
+   vez que o vale de um morro descesse abaixo do nível do mar e a ilha ganhasse
+   buracos de água — a escarpa passa pelo mesmo encolhimento.
+
+### O que vai mudar junto, e a M1 vai acusar
+
+- **As quedas podem MUDAR DE LUGAR.** A água escolhe onde o leito despenca; com
+  degraus diferentes, ela escolhe outros pontos. As 13 de hoje podem virar outro
+  número, noutros lugares.
+- **As trilhas mudam.** Terreno mais acidentado muda o custo de caminhada, e a
+  rota nasce do custo.
+- **As manchas de solo podem mudar.** Terra plana é o que decide onde cabe
+  fazenda ou templo.
+
+**Nada disso é reescrito aqui** (invariante 15): a M1 reprova dizendo os
+números, eles ficam anotados, e a M10 escreve o gabarito novo de uma vez.
 
 ---
 

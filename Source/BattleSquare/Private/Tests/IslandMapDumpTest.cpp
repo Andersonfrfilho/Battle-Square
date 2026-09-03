@@ -247,13 +247,15 @@ bool FIslandMapDumpTest::RunTest(const FString& Parameters)
 		case EGroundUse::Ruina:           Nome = TEXT("ruina"); break;
 		case EGroundUse::Cemiterio:       Nome = TEXT("cemiterio"); break;
 		case EGroundUse::CemiterioEsquecido: Nome = TEXT("cemiterio-esquecido"); break;
+		case EGroundUse::MercadoNegro:    Nome = TEXT("mercado-negro"); break;
 		default: break;
 		}
 
 		Json += FString::Printf(
-			TEXT("    {\"uso\":\"%s\",\"x\":%.0f,\"y\":%.0f,\"meio\":%.0f,\"deus\":\"%s\"}%s\n"),
+			TEXT("    {\"uso\":\"%s\",\"x\":%.0f,\"y\":%.0f,\"meio\":%.0f,\"deus\":\"%s\",\"escondido\":%s}%s\n"),
 			Nome, Manchas[Indice].CenterUnits.X, Manchas[Indice].CenterUnits.Y,
 			Manchas[Indice].HalfExtentUnits, Pantheon::DebugName(Manchas[Indice].Deity),
+			Manchas[Indice].bHidden ? TEXT("true") : TEXT("false"),
 			Indice + 1 < Manchas.Num() ? TEXT(",") : TEXT(""));
 	}
 	Json += TEXT("  ],\n");

@@ -395,6 +395,12 @@ private:
 
 	/** Verdadeiro quando o desafio pendente é a DEFESA do próprio posto. */
 	bool bPendingChallengeIsDefense = false;
+
+	/** O último dia em que o posto viu chegar desafiante (relógio de sessão). */
+	int32 LastChallengerDaySeen = -1;
+
+	/** A defesa em ausência: o BattleSim joga a defesa do dia pelo líder. */
+	void RunAutoDefense(int32 Today);
 	ESettlementKind PendingChallengeKind{};
 
 	// `{}` e não um valor nomeado: aqui o enum só existe como declaração
@@ -509,6 +515,9 @@ public:
 	 * Online, o modelo da infra responde; sem ele, o modo restrito.
 	 */
 	void TalkToNearbyResident(const FString& PlayerSays);
+
+	/** A escolha da defesa em ausência (decisão 15, emendada). Sem valor, diz o modo. */
+	void SetAutoDefense(TOptional<bool> bEnabled);
 
 	/**
 	 * O endpoint do modelo de fala (decisão 67, e a emenda: A ESCOLHA É DO

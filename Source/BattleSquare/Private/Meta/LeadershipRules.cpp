@@ -12,7 +12,23 @@ FLeadershipRules::EChallengeVerdict FLeadershipRules::VerdictFor(
 
 	return IsLeaderOf(Profile, SettlementKey)
 		? EChallengeVerdict::Defense
-		: EChallengeVerdict::LockedElsewhere;
+		: EChallengeVerdict::FreeChallenge;
+}
+
+bool FLeadershipRules::RegisterChallengerOnNewDay(FTrainerProfile& Profile, int32 Today)
+{
+	if (!IsLeaderAnywhere(Profile) || Today < 0 || Profile.PendingDefenseDay >= 0)
+	{
+		return false;
+	}
+
+	Profile.PendingDefenseDay = Today;
+	return true;
+}
+
+void FLeadershipRules::ClearPendingDefense(FTrainerProfile& Profile)
+{
+	Profile.PendingDefenseDay = -1;
 }
 
 void FLeadershipRules::TakeTitle(FTrainerProfile& Profile, const FString& SettlementKey)
@@ -29,6 +45,10 @@ void FLeadershipRules::LoseTitle(FTrainerProfile& Profile)
 {
 	Profile.LeaderOf.Empty();
 	Profile.LastStipendDay = -1;
+
+	// A fila morre com o posto: desafiante esperando um título que já caiu
+	// seria um aviso eterno sobre nada.
+	Profile.PendingDefenseDay = -1;
 }
 
 int32 FLeadershipRules::CollectDailyStipend(FTrainerProfile& Profile,

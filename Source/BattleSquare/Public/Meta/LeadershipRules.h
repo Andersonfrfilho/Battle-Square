@@ -12,11 +12,13 @@
  * e ele não pode sair nem aceitar desafios até alguém vencê-lo, inclusive
  * NPC."
  *
- * ⚠️ LEITURA REGISTRADA (é minha, e é reversível): "não pode sair nem aceitar
- * desafios" = o posto PRENDE — o líder não abandona o título por vontade, e
- * não desafia OUTRAS arenas enquanto o tem. O que ele faz no próprio centro é
- * DEFENDER: o desafio ali vira defesa contra o desafiante do dia, e perder a
- * defesa é como o título muda de mão — inclusive para NPC.
+ * ⚠️ A LEITURA MUDOU COM O DONO (03/09): "se ele sair, manda um aviso — e ele
+ * pode optar por batalhar ou deixar no automático". O posto NÃO prende mais:
+ * o líder viaja e desafia onde quiser (sem tomar segundo título — líder é de
+ * UM centro). O que o posto cobra é RESPOSTA: o desafiante chega com o dia e
+ * espera; o líder batalha quando avisado, ou liga a defesa automática — e aí
+ * o BattleSim joga por ele. Perder a defesa (jogada ou automática) é como o
+ * título muda de mão — inclusive para NPC.
  */
 class BATTLESQUARE_API FLeadershipRules
 {
@@ -31,10 +33,11 @@ public:
 		Defense,
 
 		/**
-		 * Você é líder de OUTRO centro — o posto prende. Desafiar fora seria
-		 * abandonar a cadeira com o título no bolso.
+		 * Você é líder de OUTRO centro. A batalha é LIVRE (a tranca caiu com
+		 * a emenda) — mas o título de lá não vem: líder é de UM centro, e o
+		 * prêmio da vitória é só prêmio.
 		 */
-		LockedElsewhere
+		FreeChallenge
 	};
 
 	static bool IsLeaderAnywhere(const FTrainerProfile& Profile)
@@ -55,6 +58,18 @@ public:
 
 	/** A defesa foi perdida: o desafiante levou o posto. */
 	static void LoseTitle(FTrainerProfile& Profile);
+
+	/**
+	 * O DIA VIROU: chegou desafiante? (decisão 15, emendada)
+	 *
+	 * Um por vez — fila de um lugar: o segundo desafiante do mundo espera o
+	 * primeiro ter resposta, senão o líder ausente voltava para um cerco.
+	 * Devolve true quando um desafiante NOVO chegou agora.
+	 */
+	static bool RegisterChallengerOnNewDay(FTrainerProfile& Profile, int32 Today);
+
+	/** A defesa foi respondida (jogada ou automática): a fila esvazia. */
+	static void ClearPendingDefense(FTrainerProfile& Profile);
 
 	/**
 	 * A renda de HOJE, se houver — e só a de hoje.

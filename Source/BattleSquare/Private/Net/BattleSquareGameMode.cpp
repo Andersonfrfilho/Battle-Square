@@ -83,6 +83,7 @@
 #include "Balance/PetTypeCatalog.h"
 #include "Meta/PetMoveRequirements.h"
 #include "Meta/TrainerSpecialtyRules.h"
+#include "Battle/AutoBattleResolver.h"
 #include "Meta/LeadershipRules.h"
 #include "Meta/PetHealthRules.h"
 #include "Meta/PetSaleRules.h"
@@ -901,22 +902,32 @@ void ABattleSquareGameMode::HandleWorldBattleFinished(ABattleArena* Arena)
 			FTrainerWalletRules::Earn(CachedTrainer,
 				SettlementEconomy::RankingPrize(PendingChallengeKind));
 
-			// VENCER O CAMPEONATO TOMA O TÍTULO (decisão 15) — só o desafio,
-			// não a defesa: quem defende já era líder, e "tomar de novo"
-			// rearmaria o carimbo da renda de graça.
-			if (!bPendingChallengeIsDefense)
+			// VENCER O CAMPEONATO TOMA O TÍTULO — quando há título a tomar:
+			// a defesa mantém o que já era seu, e o líder de OUTRO centro
+			// ganha só o prêmio (líder é de UM centro; a emenda liberou a
+			// viagem, não o colecionismo de cadeiras).
+			if (bPendingChallengeIsDefense)
+			{
+				FLeadershipRules::ClearPendingDefense(CachedTrainer);
+				FBattleDebugScreen::Show(TEXT("posto DEFENDIDO — o titulo continua seu"),
+					8.0f, FColor::Green, /*Key=*/-1);
+			}
+			else if (!FLeadershipRules::IsLeaderAnywhere(CachedTrainer))
 			{
 				FLeadershipRules::TakeTitle(CachedTrainer, ChaveDoCentro);
 				FBattleDebugScreen::Show(
 					FString::Printf(
-						TEXT("=== VOCE E O NOVO LIDER de %s — o posto rende, e prende ==="),
+						TEXT("=== VOCE E O NOVO LIDER de %s — o posto rende, e cobra resposta ==="),
 						*ChaveDoCentro),
 					10.0f, FColor(255, 215, 120), /*Key=*/-1);
 			}
 			else
 			{
-				FBattleDebugScreen::Show(TEXT("posto DEFENDIDO — o titulo continua seu"),
-					8.0f, FColor::Green, /*Key=*/-1);
+				FBattleDebugScreen::Show(
+					FString::Printf(
+						TEXT("vitoria de visitante: o titulo de %s continua la — voce ja tem o seu"),
+						*ChaveDoCentro),
+					8.0f, FColor(200, 220, 200), /*Key=*/-1);
 			}
 
 			FPetCollectionService::SaveTrainerProfile(PetCollectionSlotName, CachedTrainer);
@@ -933,6 +944,7 @@ void ABattleSquareGameMode::HandleWorldBattleFinished(ABattleArena* Arena)
 		{
 			// A DEFESA PERDIDA É COMO O TÍTULO MUDA DE MÃO — "até alguém
 			// vencê-lo, inclusive NPC": o desafiante do dia acabou de vencer.
+			// (LoseTitle já esvazia a fila.)
 			FLeadershipRules::LoseTitle(CachedTrainer);
 			FPetCollectionService::SaveTrainerProfile(PetCollectionSlotName, CachedTrainer);
 			MostrarRanking();
@@ -1226,16 +1238,8 @@ void ABattleSquareGameMode::ChallengeArena()
 	const FLeadershipRules::EChallengeVerdict Veredito =
 		FLeadershipRules::VerdictFor(CachedTrainer, ChaveDaqui);
 
-	if (Veredito == FLeadershipRules::EChallengeVerdict::LockedElsewhere)
-	{
-		FBattleDebugScreen::Show(
-			FString::Printf(
-				TEXT("voce e LIDER de %s — o posto nao se abandona: defenda-o ate alguem te vencer"),
-				*CachedTrainer.LeaderOf),
-			8.0f, FColor::Orange, /*Key=*/-1);
-		return;
-	}
-
+	// A tranca CAIU com a emenda do dono: líder viaja e desafia onde quiser.
+	// O que não vem é o SEGUNDO título — e isso quem diz é o fim da batalha.
 	const bool bDefesa = Veredito == FLeadershipRules::EChallengeVerdict::Defense;
 
 	// O CAMPEÃO SAI DA GEOMETRIA DO LUGAR, nunca do relógio nem do índice de
@@ -1595,6 +1599,132 @@ void ABattleSquareGameMode::TalkToNearbyResident(const FString& PlayerSays)
 	Pedido->ProcessRequest();
 }
 
+void ABattleSquareGameMode::SetAutoDefense(TOptional<bool> bEnabled)
+{
+	// Sem valor, DIZ o modo — quem pergunta quer saber onde está.
+	if (!bEnabled.IsSet())
+	{
+		FBattleDebugScreen::Show(
+			CachedTrainer.bAutoDefense
+				? TEXT("defesa: AUTOMATICA — o BattleSim joga por voce quando um desafiante chegar")
+				: TEXT("defesa: MANUAL — o desafiante espera voce na sua Arena"),
+			8.0f, FColor(180, 200, 240), /*Key=*/-1);
+		return;
+	}
+
+	CachedTrainer.bAutoDefense = bEnabled.GetValue();
+	FPetCollectionService::SaveTrainerProfile(PetCollectionSlotName, CachedTrainer);
+	FBattleDebugScreen::Show(
+		CachedTrainer.bAutoDefense
+			? TEXT("defesa AUTOMATICA ligada — o posto se defende sozinho")
+			: TEXT("defesa MANUAL — desafios esperam por voce"),
+		8.0f, FColor::Green, /*Key=*/-1);
+}
+
+void ABattleSquareGameMode::RunAutoDefense(int32 Today)
+{
+	// A DEFESA AUTOMÁTICA é o BattleSim jogando de verdade — bot contra bot,
+	// nunca um dado: a mesma montagem das salas (registros + progressão) e o
+	// mesmo resolvedor da tela. Determinística por semente do dia: a defesa
+	// que aconteceu longe dos olhos é a MESMA que aconteceria de novo.
+	const FString ChaveDoPosto = CachedTrainer.LeaderOf;
+
+	TArray<FLoadedPetRecord> Registros;
+	if (const FString Problema = LoadConfiguredMirrorPets(Registros); !Problema.IsEmpty())
+	{
+		// Sem espelho não há batalha — e SEM BATALHA NÃO SE PERDE TÍTULO: o
+		// desafiante fica na fila, como no manual. Falha de dado nunca vira
+		// derrota de ninguém.
+		FPetCollectionService::SaveTrainerProfile(PetCollectionSlotName, CachedTrainer);
+		return;
+	}
+
+	const FLoadedPetRecord* Lider = Registros.FindByPredicate(
+		[this](const FLoadedPetRecord& Registro)
+		{
+			return Registro.Id == WorldEncounterPlayerCatalogId;
+		});
+
+	const uint32 SementeDoDia = BattleSpread::SeedFromText(FString::Printf(
+		TEXT("desafiante-%s-%d"), *ChaveDoPosto, Today));
+	const FLoadedPetRecord* Desafiante = WorldEncounterCatalogIds.IsEmpty() ? nullptr
+		: Registros.FindByPredicate(
+			[this, SementeDoDia](const FLoadedPetRecord& Registro)
+			{
+				return Registro.Id == WorldEncounterCatalogIds[BattleSpread::Below(
+					SementeDoDia, 0, WorldEncounterCatalogIds.Num())];
+			});
+
+	if (!Lider || !Desafiante)
+	{
+		FPetCollectionService::SaveTrainerProfile(PetCollectionSlotName, CachedTrainer);
+		return;
+	}
+
+	// A MESMA montagem do resto do jogo: efetividade, itens vestidos e
+	// progressão — o pet defende com tudo que ele é, não com uma cópia nua.
+	FTypeEffectivenessTable Efetividade;
+	FTypeEffectivenessTable::LoadFromJson(
+		FPaths::Combine(FPaths::ProjectConfigDir(), TEXT("TypeEffectiveness.json")),
+		Efetividade);
+
+	TArray<FBackpackStack> Mochila;
+	TArray<FEquippedItem> Vestidos;
+	FPetCollectionService::LoadBackpack(PetCollectionSlotName, Mochila, Vestidos);
+	TArray<FString> ItensDoLider;
+	for (const FEquippedItem& Vestido : Vestidos)
+	{
+		if (Vestido.PetCatalogId.Equals(Lider->Id, ESearchCase::IgnoreCase))
+		{
+			ItensDoLider.Add(Vestido.ItemId);
+		}
+	}
+
+	FPetState PetDoLider;
+	FPetPresentationInfo ApresentacaoDoLider;
+	FPetState PetDesafiante;
+	FPetPresentationInfo ApresentacaoDesafiante;
+	FBattleDataTranslator::TranslateMatchupWithItems(
+		*Lider, ItensDoLider, *Desafiante, TArray<FString>(), Efetividade,
+		/*LeftPetId=*/1, /*RightPetId=*/2,
+		PetDoLider, ApresentacaoDoLider, PetDesafiante, ApresentacaoDesafiante);
+	ApplyOwnedPetProgressionBonus(PetCollectionSlotName, PetDoLider, ApresentacaoDoLider);
+
+	FBattleState Estado;
+	Estado.Random.State = SementeDoDia | 1;
+	Estado.Pets.Add(PetDoLider);
+	Estado.Pets.Add(PetDesafiante);
+	Estado.PlaceDuelistsAtStartingCells();
+
+	const uint8 Vencedor = AutoBattleResolver::ResolveBotVsBot(
+		Estado, static_cast<uint64>(SementeDoDia) * 2654435761ull + 1);
+
+	FLeadershipRules::ClearPendingDefense(CachedTrainer);
+
+	// EMPATE MANTÉM: ninguém perde título para um relógio — só para uma
+	// derrota jogada de fato pelo sim.
+	if (Vencedor == 1)
+	{
+		FLeadershipRules::LoseTitle(CachedTrainer);
+		MostrarRanking();
+		FBattleDebugScreen::Show(
+			FString::Printf(
+				TEXT("defesa AUTOMATICA perdida: %s tomou seu posto em %s"),
+				*Desafiante->Id, *ChaveDoPosto),
+			12.0f, FColor(240, 120, 100), /*Key=*/-1);
+	}
+	else
+	{
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("defesa automatica VENCIDA — %s segue seu (%s)"),
+				*ChaveDoPosto,
+				Vencedor == 0xFF ? TEXT("empate no teto") : TEXT("vitoria")),
+			10.0f, FColor::Green, /*Key=*/-1);
+	}
+
+	FPetCollectionService::SaveTrainerProfile(PetCollectionSlotName, CachedTrainer);
+}
+
 void ABattleSquareGameMode::AnunciarPortaCruzada(EVillageBuilding Predio,
 	ESettlementKind DeQueVila, bool bEntrou, int32 DoorIndex)
 {
@@ -1608,6 +1738,20 @@ void ABattleSquareGameMode::AnunciarPortaCruzada(EVillageBuilding Predio,
 		if (bIsInsideBuilding && CurrentBuilding == Predio)
 		{
 			bIsInsideBuilding = false;
+		}
+
+		// "SE ELE SAIR, MANDA UM AVISO" — ao deixar a PRÓPRIA Arena, o líder
+		// ouve as duas saídas da defesa em ausência. Uma vez por visita: o
+		// aviso que repete a cada porta vira ruído, e ruído se ignora.
+		if (Predio == EVillageBuilding::Arena
+			&& FLeadershipRules::IsLeaderOf(CachedTrainer,
+				RegionLayout::KindDebugName(DeQueVila)))
+		{
+			FBattleDebugScreen::Show(
+				CachedTrainer.bAutoDefense
+					? TEXT("seu posto fica guardado: defesa AUTOMATICA ligada")
+					: TEXT("seu posto fica: desafios chegarao — volte quando avisado, ou bs.DefesaAutomatica on"),
+				10.0f, FColor(200, 200, 150), /*Key=*/-1);
 		}
 
 		// Apaga ao sair, como o sagrado e a travessia. Deixada, a linha diria
@@ -1848,6 +1992,37 @@ void ABattleSquareGameMode::SpawnTrainingFields()
 
 void ABattleSquareGameMode::TickWorldClock()
 {
+	// O DIA VIRA, E O POSTO COBRA (decisão 15, emendada): chega o desafiante
+	// do dia. Com a defesa automática ligada, o BattleSim joga a defesa AGORA;
+	// no manual, o desafiante ESPERA e o aviso diz as duas saídas.
+	if (CenaDoMundo && CenaDoMundo->IsDayCycleRunning()
+		&& FLeadershipRules::IsLeaderAnywhere(CachedTrainer))
+	{
+		const int32 DiaDeHoje =
+			FMath::FloorToInt(CenaDoMundo->GetElapsedHours() / 24.0f);
+		if (DiaDeHoje != LastChallengerDaySeen)
+		{
+			LastChallengerDaySeen = DiaDeHoje;
+			if (FLeadershipRules::RegisterChallengerOnNewDay(CachedTrainer, DiaDeHoje))
+			{
+				if (CachedTrainer.bAutoDefense)
+				{
+					RunAutoDefense(DiaDeHoje);
+				}
+				else
+				{
+					FPetCollectionService::SaveTrainerProfile(
+						PetCollectionSlotName, CachedTrainer);
+					FBattleDebugScreen::Show(
+						FString::Printf(
+							TEXT("AVISO: um desafiante espera na Arena de %s — batalhe la, ou bs.DefesaAutomatica on"),
+							*CachedTrainer.LeaderOf),
+						12.0f, FColor(255, 215, 120), /*Key=*/756);
+				}
+			}
+		}
+	}
+
 	if (!CenaDoMundo || !CenaDoMundo->IsDayCycleRunning())
 	{
 		return;
@@ -3757,6 +3932,31 @@ namespace
 				FBattleDebugScreen::Show(
 					FString::Printf(TEXT("conversa DINAMICA ligada: %s"), *Args[0]),
 					8.0f, FColor::Green, /*Key=*/-1);
+			}));
+
+	// A ESCOLHA DA DEFESA (decisão 15, emendada): batalhar quando avisado, ou
+	// deixar no automático — e o automático é o BattleSim jogando por você.
+	FAutoConsoleCommandWithWorldAndArgs GDefesaAutomaticaCommand(
+		TEXT("bs.DefesaAutomatica"),
+		TEXT("bs.DefesaAutomatica [on|off] — ve ou muda como seu posto se defende na sua ausencia."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(
+			[](const TArray<FString>& Args, UWorld* World)
+			{
+				ABattleSquareGameMode* GameMode =
+					World ? World->GetAuthGameMode<ABattleSquareGameMode>() : nullptr;
+				if (!GameMode)
+				{
+					return;
+				}
+
+				if (Args.Num() < 1)
+				{
+					GameMode->SetAutoDefense(TOptional<bool>());
+					return;
+				}
+
+				GameMode->SetAutoDefense(
+					Args[0].Equals(TEXT("on"), ESearchCase::IgnoreCase));
 			}));
 
 	// A CONVERSA pelo console (decisão 67): fala com quem está te ouvindo.

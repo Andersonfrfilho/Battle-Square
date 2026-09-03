@@ -27,14 +27,15 @@ bool FLeadershipBindsAndChangesHandsByBattleTest::RunTest(const FString&)
 	TestTrue(TEXT("o titulo e seu"),
 		FLeadershipRules::IsLeaderOf(Perfil, TEXT("vila-inicial")));
 
-	// ...e o posto PRENDE (a leitura registrada de "não pode sair"): no
-	// próprio centro o desafio vira DEFESA; em qualquer outro, é recusa.
+	// ...e o posto COBRA RESPOSTA, não prisão (a emenda do dono derrubou a
+	// tranca): no próprio centro o desafio vira DEFESA; noutro, a batalha é
+	// LIVRE — mas o título de lá não vem, e isso quem afirma é o GameMode.
 	TestEqual(TEXT("no proprio centro, defende-se"),
 		static_cast<int32>(FLeadershipRules::VerdictFor(Perfil, TEXT("vila-inicial"))),
 		static_cast<int32>(FLeadershipRules::EChallengeVerdict::Defense));
-	TestEqual(TEXT("noutro centro, o posto tranca"),
+	TestEqual(TEXT("noutro centro, a batalha e livre — a tranca caiu"),
 		static_cast<int32>(FLeadershipRules::VerdictFor(Perfil, TEXT("cidade-grande"))),
-		static_cast<int32>(FLeadershipRules::EChallengeVerdict::LockedElsewhere));
+		static_cast<int32>(FLeadershipRules::EChallengeVerdict::FreeChallenge));
 
 	// A defesa perdida é como o título muda de mão — inclusive para NPC.
 	FLeadershipRules::LoseTitle(Perfil);
@@ -116,6 +117,43 @@ bool FLeadershipStipendComesFromTheTableTest::RunTest(const FString&)
 	// Onde não há Arena não há posto — nem renda.
 	TestEqual(TEXT("sem Arena, sem renda"),
 		SettlementEconomy::LeaderDailyStipend(ESettlementKind::PostoDeFronteira), 0);
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FLeadershipChallengerQueuesAndWaitsTest,
+	"BattleSquare.Meta.Lideranca.ODesafianteChegaEEspera",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FLeadershipChallengerQueuesAndWaitsTest::RunTest(const FString&)
+{
+	// A EMENDA: o líder pode sair, e o posto cobra RESPOSTA — o desafiante
+	// chega com o dia e ESPERA (no manual, nada é perdido por ausência).
+	FTrainerProfile Perfil;
+
+	// Sem título, dia nenhum traz desafiante: fila de posto vazio é aviso
+	// eterno sobre nada.
+	TestFalse(TEXT("sem titulo, nao ha fila"),
+		FLeadershipRules::RegisterChallengerOnNewDay(Perfil, 3));
+
+	FLeadershipRules::TakeTitle(Perfil, TEXT("vila-inicial"));
+	TestTrue(TEXT("o dia traz o desafiante"),
+		FLeadershipRules::RegisterChallengerOnNewDay(Perfil, 3));
+
+	// FILA DE UM LUGAR: o segundo espera o primeiro ter resposta — senão o
+	// líder ausente voltava para um cerco.
+	TestFalse(TEXT("o segundo do dia seguinte espera na porta"),
+		FLeadershipRules::RegisterChallengerOnNewDay(Perfil, 4));
+
+	// A resposta esvazia a fila, e o dia seguinte pode trazer outro.
+	FLeadershipRules::ClearPendingDefense(Perfil);
+	TestTrue(TEXT("respondido, a fila reabre"),
+		FLeadershipRules::RegisterChallengerOnNewDay(Perfil, 5));
+
+	// E perder o posto mata a fila junto: desafiante esperando um título que
+	// já caiu seria um aviso eterno sobre nada.
+	FLeadershipRules::LoseTitle(Perfil);
+	TestEqual(TEXT("o posto caiu, a fila morre junto"), Perfil.PendingDefenseDay, -1);
 
 	return true;
 }

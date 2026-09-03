@@ -203,6 +203,19 @@ struct BATTLESQUARE_API FTrainerProfile
 	/** O último dia em que a renda do posto foi paga. -1 é "nunca". */
 	UPROPERTY()
 	int32 LastStipendDay = -1;
+
+	/**
+	 * A ESCOLHA do líder ausente (decisão 15, emendada): defesa automática
+	 * ligada, o posto se defende sozinho — o BattleSim joga por ele. FALSO
+	 * por padrão: nada é tirado (nem arriscado) sem o jogador pedir, e o
+	 * desafiante ESPERA em vez de vencer por ausência.
+	 */
+	UPROPERTY()
+	bool bAutoDefense = false;
+
+	/** O dia em que um desafiante chegou e espera. -1 é "ninguém na fila". */
+	UPROPERTY()
+	int32 PendingDefenseDay = -1;
 };
 
 /**

@@ -83,6 +83,17 @@ pergunta derivada, não respondida).
 **14. O que machuca o treinador.** Ataques de outros pets, ataques de outros
 treinadores, desastres naturais e outros danos.
 
+**15-c. A DEFESA EM AUSÊNCIA — o posto cobra resposta, não prisão (03/09).**
+*"Se ele sair, manda um aviso: qualquer usuário que desafiá-lo, ele pode optar
+por batalhar ou deixa no automático."* A tranca da 15-b CAIU: o líder viaja e
+desafia onde quiser (vitória fora rende prêmio, nunca segundo título — líder é
+de UM centro). O desafiante chega com o dia e ESPERA (fila de um lugar); ao
+sair da própria Arena, o aviso diz as duas saídas. `bs.DefesaAutomatica on`
+liga o automático — e o automático é o **BattleSim jogando de verdade**, bot
+contra bot com a IA que já existe, determinístico pela semente do dia. Empate
+mantém o posto (ninguém perde título para um relógio), e falha de dado (espelho
+ausente) NUNCA vira derrota: o desafiante volta para a fila.
+
 **15-b. LIDERANÇA DE CENTRO — implementada (03/09), com a leitura registrada.**
 Vencer o campeonato da Arena TOMA o título do centro. A frase "não pode sair
 nem aceitar desafios até alguém vencê-lo" foi lida assim (leitura minha,

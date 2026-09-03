@@ -55,6 +55,15 @@ namespace Vila
 			case EVillageBuilding::Academia:            return FLinearColor(0.35f, 0.75f, 0.45f);
 			case EVillageBuilding::Mercado:             return FLinearColor(0.62f, 0.40f, 0.78f);
 			case EVillageBuilding::Portao:              return FLinearColor(0.30f, 0.32f, 0.36f);
+
+			// O MERCADO DO LAGO, e as três cores contam o material, não a
+			// função: palafita é madeira clara de estaca, que vive molhada e
+			// desbota; passarela é a mesma madeira mais escura de pisada; e a
+			// chinampa é a única coisa VERDE sobre a água — ela é canteiro, e
+			// verde sobre azul é o que diz "aqui se planta" de longe.
+			case EVillageBuilding::Palafita:            return FLinearColor(0.72f, 0.60f, 0.44f);
+			case EVillageBuilding::Passarela:           return FLinearColor(0.55f, 0.44f, 0.32f);
+			case EVillageBuilding::Chinampa:            return FLinearColor(0.30f, 0.62f, 0.28f);
 		}
 		return FLinearColor(0.5f, 0.5f, 0.5f);
 	}
@@ -83,6 +92,19 @@ namespace Vila
 		Tinta->SetVectorParameterValue(TEXT("Color"), Cor);
 		Componente->SetMaterial(0, Tinta);
 	}
+}
+
+FLinearColor AVillage::BuildingColor(EVillageBuilding Predio)
+{
+	return Vila::CorDoPredio(Predio);
+}
+
+FLinearColor AVillage::FallbackColor()
+{
+	// O MESMO literal do `default`, num lugar só? Não: o literal fica lá, e
+	// esta função devolve a cor de um valor de enum que NÃO tem case — assim
+	// ela continua certa se alguém mudar o cinza.
+	return Vila::CorDoPredio(static_cast<EVillageBuilding>(255));
 }
 
 AVillage::AVillage()

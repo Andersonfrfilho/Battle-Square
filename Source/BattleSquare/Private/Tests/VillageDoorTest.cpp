@@ -186,3 +186,47 @@ bool FVillageEnteringIsNotCommittingTest::RunTest(const FString&)
 	PortaDaVilaTeste::DestruirMundoDasPortasDaVila(Mundo);
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FVillageLakeBuildingsHaveTheirOwnColorTest,
+	"BattleSquare.World.Vila.OMercadoDoLagoTemCorPropria",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FVillageLakeBuildingsHaveTheirOwnColorTest::RunTest(const FString&)
+{
+	// A INVARIANTE 16, agora com teste: Palafita, Passarela e Chinampa caíram
+	// no cinza do `default` uma vez, em silêncio, e só o olho pegou. A cor é
+	// informação — três construções cinzas sobre a água leem como caixotes.
+	const FLinearColor Cinza = AVillage::FallbackColor();
+
+	const EVillageBuilding DoLago[] = {
+		EVillageBuilding::Palafita,
+		EVillageBuilding::Passarela,
+		EVillageBuilding::Chinampa,
+	};
+
+	for (EVillageBuilding Predio : DoLago)
+	{
+		TestFalse(TEXT("a construcao do lago nao cai no cinza do default"),
+			AVillage::BuildingColor(Predio).Equals(Cinza));
+	}
+
+	// E as três são DIFERENTES entre si — senão "cor própria" é só trocar um
+	// cinza por outro, que é o aceite da task por extenso.
+	TestFalse(TEXT("palafita != passarela"),
+		AVillage::BuildingColor(EVillageBuilding::Palafita)
+			.Equals(AVillage::BuildingColor(EVillageBuilding::Passarela)));
+	TestFalse(TEXT("passarela != chinampa"),
+		AVillage::BuildingColor(EVillageBuilding::Passarela)
+			.Equals(AVillage::BuildingColor(EVillageBuilding::Chinampa)));
+	TestFalse(TEXT("chinampa != palafita"),
+		AVillage::BuildingColor(EVillageBuilding::Chinampa)
+			.Equals(AVillage::BuildingColor(EVillageBuilding::Palafita)));
+
+	// O CONTRAPESO: o `default` continua de pé para o prédio que ainda não
+	// existe. A rede de segurança não se remove — só se para de precisar dela
+	// para estas três.
+	TestTrue(TEXT("valor sem case ainda cai no cinza"),
+		AVillage::BuildingColor(static_cast<EVillageBuilding>(200)).Equals(Cinza));
+
+	return true;
+}

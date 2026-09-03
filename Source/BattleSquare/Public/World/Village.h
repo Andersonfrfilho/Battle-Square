@@ -81,6 +81,19 @@ public:
 	/** Alguém cruzou uma porta. Quem escuta decide o que isso significa. */
 	FOnVillageDoorCrossed OnDoorCrossed;
 
+	/**
+	 * A cor de UM prédio — exposta para o teste ler.
+	 *
+	 * A tabela vive no `.cpp`, e o teste da invariante 16 precisa alcançá-la:
+	 * Palafita, Passarela e Chinampa já caíram no cinza do `default` uma vez,
+	 * em silêncio, e só o olho pegou. Sem esta janela o teste releria a tabela
+	 * copiando-a — e duas cópias concordam até a primeira edição.
+	 */
+	static FLinearColor BuildingColor(EVillageBuilding Building);
+
+	/** O cinza do `default` — a cor de "ninguém escreveu o case ainda". */
+	static FLinearColor FallbackColor();
+
 protected:
 	virtual void BeginPlay() override;
 

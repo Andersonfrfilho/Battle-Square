@@ -26,6 +26,7 @@
  */
 enum class EVillageBuilding : uint8;
 enum class ESettlementKind : uint8;
+enum class EGroundUse : uint8;
 
 class ABattleSquarePlayerController;
 
@@ -447,7 +448,21 @@ private:
 	TObjectPtr<class AAuroraCurtain> AuroraDoCeu;
 
 	FTimerHandle TrainingTimer;
+	FTimerHandle WorkTimer;
 	float TrainingCarrySeconds = 0.0f;
+
+	/**
+	 * O trabalho em andamento: quanto se acumulou, e ONDE.
+	 *
+	 * Sair para a mata PAUSA e não zera — mesma lição do treino: quem deu dois
+	 * passos para fora e voltou não pode perder o que já tinha. Trocar de TIPO
+	 * de lugar zera, porque é outro serviço: colher não adianta a lavoura.
+	 */
+	float WorkProgressSeconds = 0.0f;
+	EGroundUse CurrentWorkUse{};
+
+	/** O tique do trabalho, no mesmo passo do painel e do treino. */
+	void TickGroundWork();
 	FTrainerProfile CachedTrainer;
 
 public:
@@ -507,6 +522,20 @@ public:
 	 */
 	UPROPERTY(config, EditDefaultsOnly, Category = "Economia")
 	int32 StartingMoney = 100;
+
+	/**
+	 * O TRABALHO (CI9): quanto paga um ciclo, quanto o pet certo soma por
+	 * cima, e quanto tempo um ciclo leva. Config, como a task exige — o aceite
+	 * é "o número existe e é lido de configuração", não um valor específico.
+	 */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Economia")
+	int32 WorkBasePay = 20;
+
+	UPROPERTY(config, EditDefaultsOnly, Category = "Economia")
+	int32 WorkPetBonusPercent = 50;
+
+	UPROPERTY(config, EditDefaultsOnly, Category = "Economia")
+	float WorkSecondsToComplete = 15.0f;
 
 	/**
 	 * Repõe a população: tira de cena os derrotados e cria novos até o alvo.

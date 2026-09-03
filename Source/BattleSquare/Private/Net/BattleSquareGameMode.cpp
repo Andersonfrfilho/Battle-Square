@@ -49,6 +49,9 @@
 #include "GameFramework/Character.h"
 #include "Engine/StaticMeshActor.h"
 #include "World/IslandBakedPlan.h"
+#include "World/GroundWorkRules.h"
+#include "Balance/PetSkillCatalog.h"
+#include "World/LandUseLayout.h"
 #include "World/RespawnRules.h"
 #include "World/SettlementEconomy.h"
 #include "World/TrailLayout.h"
@@ -437,6 +440,12 @@ FString ABattleSquareGameMode::SetUpWorldEncounterFlow()
 		// no instante em que ele sobe, e não meio segundo depois.
 		World->GetTimerManager().SetTimer(TrainingTimer, this,
 			&ABattleSquareGameMode::TickTrainingFields,
+			WorldStatusRefreshSeconds, /*bLoop=*/true);
+
+		// O TRABALHO no mesmo passo, pelo mesmo motivo: a barra sobe quando o
+		// tempo passa, não meio segundo depois.
+		World->GetTimerManager().SetTimer(WorkTimer, this,
+			&ABattleSquareGameMode::TickGroundWork,
 			WorldStatusRefreshSeconds, /*bLoop=*/true);
 
 		// A DESCOBERTA também: uma região tem 800 unidades e ninguém a
@@ -1088,6 +1097,77 @@ void ABattleSquareGameMode::ChallengeArena()
 	FBattleDebugScreen::Show(
 		FString::Printf(TEXT("DESAFIO DE ARENA — campeao: %s"), *Campeao),
 		8.0f, FColor(180, 220, 255), /*Key=*/-1);
+}
+
+void ABattleSquareGameMode::TickGroundWork()
+{
+	UWorld* World = GetWorld();
+	const APawn* Jogador = AcharPawnDoJogador(World);
+	if (!World || !Jogador)
+	{
+		return;
+	}
+
+	const EGroundUse Uso =
+		LandUseLayout::UseAt(FVector2D(Jogador->GetActorLocation()));
+
+	if (!GroundWorkRules::IsWorkPlace(Uso))
+	{
+		// Fora do serviço a linha SOME — pausada, não zerada. Mesma lição do
+		// treino: dois passos para fora e de volta não podem perder o ganho.
+		FBattleDebugScreen::Show(TEXT(""), 0.0f, FColor::White, /*Key=*/756);
+		return;
+	}
+
+	// Trocar de TIPO de lugar zera: é outro serviço, e colher não adianta a
+	// lavoura. Ficar no mesmo tipo em outra mancha continua — o serviço é o
+	// mesmo, e o mapa tem oito fazendas de propósito.
+	if (Uso != CurrentWorkUse)
+	{
+		CurrentWorkUse = Uso;
+		WorkProgressSeconds = 0.0f;
+	}
+
+	WorkProgressSeconds += WorldStatusRefreshSeconds;
+
+	// O PET FACILITA, NUNCA HABILITA. A checagem decide só o BÔNUS: o caminho
+	// sem pet certo — e sem pet nenhum — completa e recebe a base inteira.
+	bool bPetAjuda = false;
+	if (bHasCachedOwnedPet)
+	{
+		const FPetSkillCatalog Catalogo =
+			FPetSkillCatalog::FromTypeCatalog(FPetTypeCatalog::Get());
+		bPetAjuda = Catalogo.GetSkillsForType(CachedOwnedPet.Type)
+			.Contains(GroundWorkRules::FacilitatingSkillFor(Uso));
+	}
+
+	if (WorkProgressSeconds < WorkSecondsToComplete)
+	{
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("trabalho (%s): %.0f/%.0fs%s"),
+				AGroundUseActor::UseDebugName(Uso),
+				WorkProgressSeconds, WorkSecondsToComplete,
+				bPetAjuda ? TEXT(" — seu pet ajuda") : TEXT("")),
+			0.0f, bPetAjuda ? FColor(150, 240, 170) : FColor(200, 200, 150),
+			/*Key=*/756);
+		return;
+	}
+
+	const int32 Pagamento =
+		GroundWorkRules::PayFor(WorkBasePay, WorkPetBonusPercent, bPetAjuda);
+
+	FTrainerWalletRules::Earn(CachedTrainer, Pagamento);
+	FPetCollectionService::SaveTrainerProfile(PetCollectionSlotName, CachedTrainer);
+
+	// O ciclo zera e recomeça: trabalho é renda repetível de propósito — é a
+	// fonte que a decisão 57 nomeou ao lado da Arena e do achado.
+	WorkProgressSeconds = 0.0f;
+
+	MostrarCarteira();
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("trabalho pago: +%d%s"), Pagamento,
+			bPetAjuda ? TEXT(" (com bonus do pet)") : TEXT("")),
+		6.0f, FColor::Green, /*Key=*/-1);
 }
 
 void ABattleSquareGameMode::AnunciarPortaCruzada(EVillageBuilding Predio,

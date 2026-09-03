@@ -70,6 +70,8 @@
 #include "Meta/PetMoveRequirements.h"
 #include "Meta/TrainerSpecialtyRules.h"
 #include "Meta/PetSaleRules.h"
+#include "Meta/TrainerRankingRules.h"
+#include "Battle/DeterministicSpread.h"
 #include "Meta/TrainerWalletRules.h"
 #include "World/EncounterDetectionComponent.h"
 #include "World/EncounterMatchAssembler.h"
@@ -806,6 +808,34 @@ void ABattleSquareGameMode::HandleWorldBattleFinished(ABattleArena* Arena)
 		PlayerController->SetInputMode(FInputModeGameOnly());
 	}
 
+	// O DESAFIO DE ARENA fecha aqui, em QUALQUER desfecho — deixá-lo aberto
+	// faria a próxima vitória selvagem pontuar pela Arena de uma luta que já
+	// acabou. Só a VITÓRIA pontua e paga, e o prêmio vem da tabela
+	// (invariante 15): a vila paga pouco, o grande mora na cidade.
+	if (bPendingArenaChallenge)
+	{
+		const bool bVenceuODesafio = Arena
+			&& Arena->GetLastLocalOutcome() == EBattleResultOutcome::Vitoria;
+		if (bVenceuODesafio)
+		{
+			FTrainerRankingRules::AwardArenaVictory(CachedTrainer);
+			FTrainerWalletRules::Earn(CachedTrainer,
+				SettlementEconomy::RankingPrize(PendingChallengeKind));
+			FPetCollectionService::SaveTrainerProfile(PetCollectionSlotName, CachedTrainer);
+
+			MostrarCarteira();
+	MostrarRanking();
+			MostrarRanking();
+			FBattleDebugScreen::Show(
+				FString::Printf(TEXT("vitoria de Arena: +%d pts, +%d"),
+					FTrainerRankingRules::PointsPerArenaVictory,
+					SettlementEconomy::RankingPrize(PendingChallengeKind)),
+				8.0f, FColor::Green, /*Key=*/-1);
+		}
+
+		bPendingArenaChallenge = false;
+	}
+
 	// A DERROTA ACORDA NO HOSPITAL (decisão 60). Só a derrota: vitória e
 	// empate devolvem o jogador onde ele estava — renascer em vitória seria
 	// teleporte grátis, a fresta que a decisão 17 fechou.
@@ -986,6 +1016,78 @@ void ABattleSquareGameMode::SellOwnedPet(const FString& CatalogId)
 	FBattleDebugScreen::Show(
 		FString::Printf(TEXT("vendido: %s por %d"), *CatalogId, Pagamento),
 		8.0f, FColor::Green, /*Key=*/-1);
+}
+
+void ABattleSquareGameMode::MostrarRanking() const
+{
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("ranking: %d pts"), CachedTrainer.RankingPoints),
+		0.0f, FColor(180, 220, 255), /*Key=*/755);
+}
+
+void ABattleSquareGameMode::ChallengeArena()
+{
+	// O LUGAR é o gatilho, como na venda: a porta da CI2 sabe onde o jogador
+	// está, e desafiar da rua seria arena sem arena.
+	if (!bIsInsideBuilding || CurrentBuilding != EVillageBuilding::Arena)
+	{
+		FBattleDebugScreen::Show(TEXT("aqui nao ha desafio — entre numa Arena"),
+			6.0f, FColor::Orange, /*Key=*/-1);
+		return;
+	}
+
+	if (!SettlementEconomy::Offers(CurrentBuildingKind, ESettlementService::PremioDeRanking))
+	{
+		FBattleDebugScreen::Show(TEXT("esta Arena nao paga premio"),
+			6.0f, FColor::Orange, /*Key=*/-1);
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	APawn* Jogador = AcharPawnDoJogador(World);
+	if (!World || !Jogador || !WorldEncounterFlow || WorldEncounterCatalogIds.IsEmpty())
+	{
+		return;
+	}
+
+	// O CAMPEÃO SAI DA GEOMETRIA DO LUGAR, nunca do relógio nem do índice de
+	// um laço (regra 5 da geração procedural): a mesma Arena tem sempre o
+	// mesmo campeão, e é isso que o torna um oponente que se aprende.
+	const uint32 Semente = BattleSpread::SeedFromText(FString::Printf(
+		TEXT("campeao-%s"), RegionLayout::KindDebugName(CurrentBuildingKind)));
+	const FString& Campeao = WorldEncounterCatalogIds[
+		BattleSpread::Below(Semente, 0, WorldEncounterCatalogIds.Num())];
+
+	FActorSpawnParameters Parametros;
+	Parametros.ObjectFlags |= RF_Transient;
+
+	AWorldEncounterActor* Desafio = World->SpawnActor<AWorldEncounterActor>(
+		AWorldEncounterActor::StaticClass(), Jogador->GetActorLocation(),
+		FRotator::ZeroRotator, Parametros);
+	if (!Desafio)
+	{
+		return;
+	}
+
+	Desafio->CatalogId = FName(*Campeao);
+
+	// Marca ANTES de disparar: o fim da batalha é quem lê, e ele pode chegar
+	// no mesmo quadro em que a montagem falha.
+	bPendingArenaChallenge = true;
+	PendingChallengeKind = CurrentBuildingKind;
+
+	if (!WorldEncounterFlow->HandleEncounterTriggered(Desafio))
+	{
+		// Montagem impossível não deixa desafio pendurado: a próxima vitória
+		// selvagem não pode pontuar por uma luta que nunca começou.
+		bPendingArenaChallenge = false;
+		Desafio->Destroy();
+		return;
+	}
+
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("DESAFIO DE ARENA — campeao: %s"), *Campeao),
+		8.0f, FColor(180, 220, 255), /*Key=*/-1);
 }
 
 void ABattleSquareGameMode::AnunciarPortaCruzada(EVillageBuilding Predio,
@@ -2861,6 +2963,20 @@ namespace
 				}
 
 				GameMode->ToggleMapPinHere(Tipo);
+			}));
+
+	// O DESAFIO pelo console, gatilhado pelo LUGAR — mesmo desenho da venda.
+	FAutoConsoleCommandWithWorldAndArgs GDesafiarCommand(
+		TEXT("bs.Desafiar"),
+		TEXT("Desafia o campeao da Arena em que voce esta. Vitoria da ponto e premio."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(
+			[](const TArray<FString>&, UWorld* World)
+			{
+				if (ABattleSquareGameMode* GameMode =
+					World ? World->GetAuthGameMode<ABattleSquareGameMode>() : nullptr)
+				{
+					GameMode->ChallengeArena();
+				}
 			}));
 
 	// A VENDA pelo console, gatilhada pelo LUGAR: só funciona dentro de um

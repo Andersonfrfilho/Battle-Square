@@ -364,6 +364,9 @@ private:
 	/** A linha da carteira no painel. Chave fixa: é estado, não evento. */
 	void MostrarCarteira() const;
 
+	/** A linha do ranking no painel — mesmo desenho da carteira. */
+	void MostrarRanking() const;
+
 	/**
 	 * EM QUE PRÉDIO o jogador está, dito pelas portas da CI2.
 	 *
@@ -371,6 +374,17 @@ private:
 	 * verdadeiro — ler sem checar é ler o último prédio visitado.
 	 */
 	bool bIsInsideBuilding = false;
+
+	/**
+	 * Há um desafio de Arena em andamento, e de que vila.
+	 *
+	 * É o que separa a vitória que PONTUA da vitória de trilha: encontro
+	 * selvagem não é ranking. Limpo em QUALQUER fim de batalha — vitória,
+	 * derrota ou empate —, senão a vitória selvagem seguinte pontuaria pela
+	 * Arena de uma luta que já acabou.
+	 */
+	bool bPendingArenaChallenge = false;
+	ESettlementKind PendingChallengeKind{};
 
 	// `{}` e não um valor nomeado: aqui o enum só existe como declaração
 	// adiantada, e o par abaixo nunca é lido com `bIsInsideBuilding` falso.
@@ -455,6 +469,15 @@ public:
 	 * responde "aqui não se vende".
 	 */
 	void SellOwnedPet(const FString& CatalogId);
+
+	/**
+	 * Desafia o campeão da Arena em que o jogador está.
+	 *
+	 * O campeão é SEMPRE O MESMO para cada assentamento — sorteado da geometria
+	 * do lugar, nunca do relógio: um oponente que muda a cada visita não é "um
+	 * oponente com motivo para voltar", é sorteio com nome.
+	 */
+	void ChallengeArena();
 
 	/**
 	 * Raio do anel dos campos de treino.

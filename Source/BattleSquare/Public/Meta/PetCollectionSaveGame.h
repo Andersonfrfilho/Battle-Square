@@ -126,6 +126,16 @@ struct BATTLESQUARE_API FTrainerProfile
 	 */
 	UPROPERTY()
 	bool bWalletGranted = false;
+
+	/**
+	 * Os pontos de RANKING — vitórias de Arena, acumuladas.
+	 *
+	 * Só sobem. Perder não desconta, e é decisão do dono do mundo (58): o
+	 * ranking é placar de progresso, não corda bamba — e o Portão que ele um
+	 * dia trancaria não tranca ninguém, porque viajar é liberdade.
+	 */
+	UPROPERTY()
+	int32 RankingPoints = 0;
 };
 
 /**

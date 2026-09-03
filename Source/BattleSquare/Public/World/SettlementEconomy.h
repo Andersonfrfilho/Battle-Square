@@ -82,4 +82,13 @@ namespace SettlementEconomy
 	 * (invariante 15). Zero é "aqui não se vende".
 	 */
 	BATTLESQUARE_API int32 SalePayout(ESettlementKind Kind);
+
+	/**
+	 * O prêmio de UMA vitória na Arena deste lugar, em moeda — a conta pronta.
+	 *
+	 * Mesmo desenho do `SalePayout`, pelo mesmo motivo (invariante 15). Zero é
+	 * "aqui não há Arena". A vila paga pouco (é o dinheiro do começo); o prêmio
+	 * grande mora na cidade.
+	 */
+	BATTLESQUARE_API int32 RankingPrize(ESettlementKind Kind);
 }

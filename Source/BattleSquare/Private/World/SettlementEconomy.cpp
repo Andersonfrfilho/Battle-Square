@@ -97,6 +97,11 @@ int32 SettlementEconomy::SalePayout(ESettlementKind Kind)
 	return PetBaseValue() * PayoutPercent(Kind, ESettlementService::Venda) / 100;
 }
 
+int32 SettlementEconomy::RankingPrize(ESettlementKind Kind)
+{
+	return PrecoBase * PayoutPercent(Kind, ESettlementService::PremioDeRanking) / 100;
+}
+
 int32 SettlementEconomy::PayoutPercent(ESettlementKind Kind, ESettlementService Service)
 {
 	if (!Offers(Kind, Service))

@@ -582,7 +582,14 @@ public:
 	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
 	TArray<FString> WorldEncounterCatalogIds;
 
-	void HandleWorldBattleFinished();
+	/**
+	 * A volta ao mundo — e, na DERROTA, o renascimento.
+	 *
+	 * Recebe a arena como payload do bind porque o delegate não carrega nada,
+	 * e é dela que se lê COMO terminou. Derrota acorda o jogador na porta do
+	 * Centro de Recuperação mais perto de onde ele caiu (decisão 60).
+	 */
+	void HandleWorldBattleFinished(class ABattleArena* Arena);
 
 	void TearDownBattleUi();
 

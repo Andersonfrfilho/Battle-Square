@@ -1262,6 +1262,7 @@ void ABattleArena::AnnounceBattleFinishedIfEnded(const TArray<FBattleEvent>& Tra
 			// tinha escrito esta escada de if aqui também, e duas cópias da
 			// mesma regra concordam só até a primeira edição.
 			const EBattleResultOutcome Desfecho = BattleOutcomeForLocalPlayer(Event, LocalPlayerSide);
+			LastLocalOutcome = Desfecho;
 			const bool bEmpate = (Desfecho == EBattleResultOutcome::Empate);
 			const bool bVenceu = (Desfecho == EBattleResultOutcome::Vitoria);
 

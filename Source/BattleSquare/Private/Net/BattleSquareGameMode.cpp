@@ -11,6 +11,7 @@
 #include "Battle/BattleActionQueueComponent.h"
 #include "Battle/BattleTypes.h"
 #include "UI/BattleActionSelectorWidget.h"
+#include "UI/BattleResultWidget.h"
 #include "Net/BattleSquarePlayerController.h"
 #include "Debug/BattleDebugHUD.h"
 #include "Data/PetDataLoader.h"
@@ -48,6 +49,7 @@
 #include "GameFramework/Character.h"
 #include "Engine/StaticMeshActor.h"
 #include "World/IslandBakedPlan.h"
+#include "World/RespawnRules.h"
 #include "World/SettlementEconomy.h"
 #include "World/TrailLayout.h"
 #include "GameFramework/Character.h"
@@ -781,10 +783,13 @@ void ABattleSquareGameMode::HandleWorldBattleStarted(ABattleArena* Arena)
 	PlayerController->SetInputMode(
 		FInputModeGameAndUI().SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock));
 
-	Arena->OnBattleFinished.AddUObject(this, &ABattleSquareGameMode::HandleWorldBattleFinished);
+	// A arena vai como payload: o delegate não carrega nada, e a volta ao
+	// mundo precisa saber COMO terminou — é a derrota que acorda no hospital.
+	Arena->OnBattleFinished.AddUObject(this,
+		&ABattleSquareGameMode::HandleWorldBattleFinished, Arena);
 }
 
-void ABattleSquareGameMode::HandleWorldBattleFinished()
+void ABattleSquareGameMode::HandleWorldBattleFinished(ABattleArena* Arena)
 {
 	TearDownBattleUi();
 
@@ -800,6 +805,45 @@ void ABattleSquareGameMode::HandleWorldBattleFinished()
 		PlayerController->bShowMouseCursor = false;
 		PlayerController->SetInputMode(FInputModeGameOnly());
 	}
+
+	// A DERROTA ACORDA NO HOSPITAL (decisão 60). Só a derrota: vitória e
+	// empate devolvem o jogador onde ele estava — renascer em vitória seria
+	// teleporte grátis, a fresta que a decisão 17 fechou.
+	if (!Arena
+		|| Arena->GetLastLocalOutcome() != EBattleResultOutcome::Derrota)
+	{
+		return;
+	}
+
+	APawn* Jogador = AcharPawnDoJogador(GetWorld());
+	if (!Jogador)
+	{
+		return;
+	}
+
+	RespawnRules::FWakeSpot Onde;
+	if (!RespawnRules::NearestRecoveryCenter(FVector2D(Jogador->GetActorLocation()), Onde))
+	{
+		// Região sem hospital nenhum é resposta válida do traçado — cair vira
+		// só a derrota, sem viagem. Inventar um destino seria pior.
+		return;
+	}
+
+	// Os pés no CHÃO que a superfície tem, como os usos do solo fazem: acordar
+	// na altura zero enterraria o jogador no morro ou o deixaria boiando.
+	float Chao = 0.0f;
+	if (TracadoAssado)
+	{
+		Chao = TracadoAssado->HeightAt(Onde.WakeUnits);
+	}
+
+	Jogador->SetActorLocation(FVector(Onde.WakeUnits.X, Onde.WakeUnits.Y,
+		Chao + Jogador->GetSimpleCollisionHalfHeight() + 2.0f));
+
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("voce caiu — acordou no Centro de Recuperacao (%s)"),
+			RegionLayout::KindDebugName(Onde.Kind)),
+		10.0f, FColor(240, 160, 120), /*Key=*/-1);
 }
 
 void ABattleSquareGameMode::TearDownBattleUi()

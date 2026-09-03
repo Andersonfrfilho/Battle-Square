@@ -21,6 +21,10 @@ class AForestBackdrop;
 class AMountainRange;
 class ABattleSceneLighting;
 class APetOwnerView;
+
+// Declaração adiantada COM o tipo base — sem o `: uint8` o compilador
+// declara um enum novo, e o erro sai como "tipo incompleto" longe daqui.
+enum class EBattleResultOutcome : uint8;
 enum class EIslandBiome : uint8;
 enum class EScenaryClimate : uint8;
 
@@ -314,6 +318,17 @@ public:
 	// sempre DEPOIS de captura e XP terem rodado: quem escuta (a transição de
 	// volta ao mundo) destrói esta arena, e destruí-la antes perderia os dois.
 	FBattleFinishedSignature OnBattleFinished;
+
+	/**
+	 * COMO terminou, do ponto de vista do jogador local.
+	 *
+	 * `OnBattleFinished` não carrega payload, e quem escuta (a volta ao mundo)
+	 * precisa saber se foi derrota — é a derrota que acorda o jogador no
+	 * Centro de Recuperação. Guardado no anúncio, pela MESMA função que a tela
+	 * de resultado usa (`BattleOutcomeForLocalPlayer`), nunca recalculado.
+	 * `Nenhum` é batalha que ainda não terminou.
+	 */
+	EBattleResultOutcome GetLastLocalOutcome() const { return LastLocalOutcome; }
 
 	const FBattleState& GetCurrentState() const { return CurrentState; }
 
@@ -738,4 +753,7 @@ private:
 	bool bWaitingForPlaybackToOpenNextTurn = false;
 
 	bool bHasAnnouncedBattleFinished = false;
+
+	// `{}` porque aqui o enum é declaração adiantada; zero é `Nenhum`.
+	EBattleResultOutcome LastLocalOutcome{};
 };

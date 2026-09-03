@@ -789,26 +789,26 @@ bool FFreshWaterGalleriesAreNotStraightTest::RunTest(const FString& Parameters)
 	return true;
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FFreshWaterLinkedGrottoShareBaselineTest,
-	"BattleSquare.Environment.FreshWater.QuantasGrutasSeLigamHoje",
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FFreshWaterLinkedGrottoShareTest,
+	"BattleSquare.Environment.FreshWater.AlgumasGrutasSeLigam",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FFreshWaterLinkedGrottoShareBaselineTest::RunTest(const FString& Parameters)
+bool FFreshWaterLinkedGrottoShareTest::RunTest(const FString& Parameters)
 {
-	// A LINHA DE BASE, medida antes de mexer.
+	// "ALGUMAS" É MEDIÇÃO, NUNCA IMPRESSÃO.
 	//
-	// A M7 pede que a proporção de grutas ligadas seja parâmetro, com teto e
-	// piso. Antes de escolher o parâmetro é preciso saber o que o mundo faz
-	// hoje — escolher primeiro e medir depois é escolher às cegas, e foi assim
-	// que "123 de 158 galerias retas" passou despercebido por semanas.
+	// Antes a proporção era sobra da distância: emendava quem tivesse chegado
+	// perto, e o resultado caía onde caísse — 2 de 8, medido em 03/09/2026,
+	// número que ninguém escolheu e ninguém podia defender.
 	//
-	// Este teste não cobra valor nenhum: ele DIZ o número. Quem cobra é o teste
-	// da M7, escrito depois de ler esta medição.
+	// O teste cobra as duas pontas, e a de cima é a que importa: se TODAS se
+	// ligassem, o subsolo viraria um corredor só e achar passagem deixaria de
+	// ser achado.
 	const TArray<IslandFeatureLayout::FFeaturePlacement> Grutas = FreshWater::PlanGrottoes();
 	const TArray<FreshWater::FUnderwaterLink> Passagens = FreshWater::PlanUnderwaterLinks();
 
-	TestTrue(TEXT("ha gruta para medir"), Grutas.Num() > 0);
-	if (Grutas.Num() == 0)
+	TestTrue(TEXT("ha gruta para medir"), Grutas.Num() > 1);
+	if (Grutas.Num() < 2)
 	{
 		return true;
 	}
@@ -825,7 +825,6 @@ bool FFreshWaterLinkedGrottoShareBaselineTest::RunTest(const FString& Parameters
 		return Dono[Qual] == Qual ? Qual : (Dono[Qual] = Raiz(Dono[Qual]));
 	};
 
-	int32 Emendas = 0;
 	for (const FreshWater::FUnderwaterLink& Passagem : Passagens)
 	{
 		if (Passagem.FromGrotto == INDEX_NONE || Passagem.ToGrotto == INDEX_NONE)
@@ -833,14 +832,20 @@ bool FFreshWaterLinkedGrottoShareBaselineTest::RunTest(const FString& Parameters
 			continue;
 		}
 
-		++Emendas;
+		// A emenda tem de apontar para gruta que existe: índice fora da lista
+		// seria a rede dizendo que ligou o que não há.
+		TestTrue(TEXT("a emenda aponta grutas que existem"),
+			Grutas.IsValidIndex(Passagem.FromGrotto)
+				&& Grutas.IsValidIndex(Passagem.ToGrotto));
+
 		Dono[Raiz(Passagem.FromGrotto)] = Raiz(Passagem.ToGrotto);
 	}
 
-	TMap<int32, int32> Tamanho;
+	TArray<int32> Tamanho;
+	Tamanho.Init(0, Grutas.Num());
 	for (int32 Qual = 0; Qual < Grutas.Num(); ++Qual)
 	{
-		++Tamanho.FindOrAdd(Raiz(Qual));
+		++Tamanho[Raiz(Qual)];
 	}
 
 	int32 Ligadas = 0;
@@ -852,11 +857,25 @@ bool FFreshWaterLinkedGrottoShareBaselineTest::RunTest(const FString& Parameters
 		}
 	}
 
-	AddInfo(FString::Printf(
-		TEXT("grutas: %d  emendas: %d  ligadas: %d  fracao: %.3f  componentes: %d"),
-		Grutas.Num(), Emendas, Ligadas,
-		static_cast<float>(Ligadas) / static_cast<float>(Grutas.Num()),
-		Tamanho.Num()));
+	AddInfo(FString::Printf(TEXT("grutas: %d  ligadas: %d  fracao: %.3f"),
+		Grutas.Num(), Ligadas,
+		static_cast<float>(Ligadas) / static_cast<float>(Grutas.Num())));
+
+	TestTrue(TEXT("algumas se ligam — nunca nenhuma"), Ligadas > 0);
+	TestTrue(TEXT("e nunca TODAS: o subsolo nao e um corredor so"),
+		Ligadas < Grutas.Num());
+
+	// E a proporção é a PEDIDA, não uma qualquer entre as duas pontas: sem
+	// isto o teste passaria com uma ligação só, que é o estado que ele veio
+	// substituir.
+	const int32 Pedidas = FMath::Min(Grutas.Num() - 1, FMath::RoundToInt(
+		Grutas.Num() * WorldBudget::LinkedGrottoShare(IslandGeography::IslandBiome())));
+
+	// Uma gruta de folga: a emenda liga DUAS de uma vez, então o alvo ímpar
+	// só é alcançável por cima ou por baixo. Cobrar exato reprovaria a
+	// aritmética, não o gerador.
+	TestTrue(TEXT("e a proporcao e a pedida pelo bioma"),
+		FMath::Abs(Ligadas - Pedidas) <= 1);
 
 	return true;
 }

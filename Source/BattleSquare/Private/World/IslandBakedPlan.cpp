@@ -352,6 +352,7 @@ namespace IslandBakedPlan
 		Parametros.CampCount = WorldBudget::CampCount(Bioma);
 		Parametros.RuinCount = WorldBudget::RuinCount(Bioma);
 		Parametros.StraightGalleryShare = WorldBudget::StraightGalleryShare(Bioma);
+		Parametros.LinkedGrottoShare = WorldBudget::LinkedGrottoShare(Bioma);
 		Parametros.GraveyardsPerSettlement = WorldBudget::GraveyardsPerSettlement(Bioma);
 		Parametros.ForgottenGraveyardCount = WorldBudget::ForgottenGraveyardCount(Bioma);
 		Parametros.ForestDensity = WorldBudget::ForestDensity(Bioma);

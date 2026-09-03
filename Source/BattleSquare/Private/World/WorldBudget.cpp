@@ -28,6 +28,7 @@ namespace
 		int32 Acampamentos = 6;
 		int32 Ruinas = 4;
 		float GaleriaReta = 0.15f;
+		float GrutaLigada = 0.40f;
 		int32 CemiteriosPorAssentamento = 1;
 		int32 CemiteriosEsquecidos = 1;
 	};
@@ -48,6 +49,8 @@ namespace
 			Orcamento.Acampamentos = 3;
 			Orcamento.Ruinas = 6;
 			Orcamento.GaleriaReta = 0.28f;
+			// Calcário que já dissolveu tudo: quase toda gruta sai noutra.
+			Orcamento.GrutaLigada = 0.65f;
 			Orcamento.CemiteriosEsquecidos = 2;
 			break;
 
@@ -67,6 +70,8 @@ namespace
 			Orcamento.Acampamentos = 9;
 			Orcamento.Ruinas = 7;
 			Orcamento.GaleriaReta = 0.20f;
+			// Sem água corrente não há o que dissolver a pedra.
+			Orcamento.GrutaLigada = 0.25f;
 			Orcamento.CemiteriosEsquecidos = 2;
 			break;
 
@@ -85,6 +90,8 @@ namespace
 			Orcamento.Acampamentos = 7;
 			Orcamento.Ruinas = 2;
 			Orcamento.GaleriaReta = 0.06f;
+			// Basalto sob gelo: a água que abriria caminho está dura.
+			Orcamento.GrutaLigada = 0.15f;
 			break;
 
 		case EIslandBiome::Volcano:
@@ -98,6 +105,8 @@ namespace
 			Orcamento.FazendasPorVila = 3;
 			Orcamento.PomaresCuidados = 0;
 			Orcamento.PomaresSelvagens = 1;
+			// Tubo de lava já nasce corredor: ligar é o estado natural dele.
+			Orcamento.GrutaLigada = 0.50f;
 			break;
 
 		case EIslandBiome::Forest:
@@ -125,5 +134,6 @@ int32 WorldBudget::RoadsideShopCount(EIslandBiome Biome) { return Do(Biome).Loja
 int32 WorldBudget::CampCount(EIslandBiome Biome) { return Do(Biome).Acampamentos; }
 int32 WorldBudget::RuinCount(EIslandBiome Biome) { return Do(Biome).Ruinas; }
 float WorldBudget::StraightGalleryShare(EIslandBiome Biome) { return Do(Biome).GaleriaReta; }
+float WorldBudget::LinkedGrottoShare(EIslandBiome Biome) { return Do(Biome).GrutaLigada; }
 int32 WorldBudget::GraveyardsPerSettlement(EIslandBiome Biome) { return Do(Biome).CemiteriosPorAssentamento; }
 int32 WorldBudget::ForgottenGraveyardCount(EIslandBiome Biome) { return Do(Biome).CemiteriosEsquecidos; }

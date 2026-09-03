@@ -70,6 +70,25 @@ namespace WorldBudget
 	 */
 	BATTLESQUARE_API float StraightGalleryShare(EIslandBiome Biome);
 
+	/**
+	 * QUE FRAÇÃO das grutas se liga a alguma outra por baixo.
+	 *
+	 * "Algumas" é medição, nunca impressão. Era sobra da distância — emendava
+	 * quem tivesse chegado perto, e a proporção caía onde caísse (2 de 8,
+	 * medido em 03/09/2026). Número que ninguém escolheu é número que ninguém
+	 * pode defender.
+	 *
+	 * Nunca zero e NUNCA TODAS, e o "todas" é o contrapeso que importa: com o
+	 * subsolo inteiro ligado, achar passagem deixa de ser achado — vira andar
+	 * num corredor só. Por isso o gerador também trava o teto, e não confia no
+	 * teste para isso.
+	 *
+	 * É parâmetro de bioma porque quem liga é a rocha: o calcário do pântano
+	 * dissolve e junta tudo, o tubo de lava do vulcão já nasce corredor, e o
+	 * basalto da geleira quase não abre caminho.
+	 */
+	BATTLESQUARE_API float LinkedGrottoShare(EIslandBiome Biome);
+
 	/** Quantos cemitérios cada assentamento tem. */
 	BATTLESQUARE_API int32 GraveyardsPerSettlement(EIslandBiome Biome);
 

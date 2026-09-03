@@ -106,6 +106,9 @@ struct BATTLESQUARE_API FIslandParameters
 	float StraightGalleryShare = 0.0f;
 
 	UPROPERTY()
+	float LinkedGrottoShare = 0.0f;
+
+	UPROPERTY()
 	int32 GraveyardsPerSettlement = 0;
 
 	UPROPERTY()

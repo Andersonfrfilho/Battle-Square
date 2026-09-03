@@ -354,9 +354,6 @@ namespace FreshWater
 		constexpr float SegueAEncosta = 0.55f;
 		constexpr float TorceAGaleria = 0.55f;
 
-		/** Até onde duas galerias de cavernas diferentes se emendam. */
-		constexpr float EmendaNoMaximo = 0.09f;
-
 		/**
 		 * Quanto o poço da queda afunda por unidade de altura caída, e quantas
 		 * vezes ele aprofunda mais depressa do que alarga.
@@ -1972,6 +1969,19 @@ FMath::RoundToInt(Plan().Num() * SubsoloSobreSuperficie),
 	//
 	// A emenda é explícita, e é o que transforma "parece ligado" em "está
 	// ligado". Uma por par de cavernas, na aproximação mais curta entre elas.
+	//
+	// QUANTAS delas se emendam é PARÂMETRO, e não sobra da distância.
+	//
+	// Era sobra: emendava-se todo par cujas galerias tivessem chegado a menos
+	// um nono do raio uma da outra, e a proporção ligada caía onde caísse —
+	// medido, 2 de 8. Um número que ninguém escolheu é um número que ninguém
+	// pode defender, e que muda sozinho na primeira mexida na serpentina.
+	//
+	// Agora as candidatas são TODAS as aproximações mais curtas entre bocas
+	// diferentes, e elas entram da mais curta para a mais longa até a fração
+	// pedida ficar ligada. O alcance deixa de decidir, e por isso a constante
+	// que o guardava saiu: alcance e proporção seriam duas fontes da mesma
+	// verdade, e elas concordam até a primeira edição.
 	TMap<uint64, TPair<int32, int32>> MaisPerto;
 	TMap<uint64, float> Menor;
 
@@ -1985,10 +1995,6 @@ FMath::RoundToInt(Plan().Num() * SubsoloSobreSuperficie),
 			}
 
 			const float Ate = FVector2D::DistSquared(Nos[Um], Nos[Outro]);
-			if (Ate > FMath::Square(Raio * EmendaNoMaximo))
-			{
-				continue;
-			}
 
 			const int32 Menorzinha = FMath::Min(DeQueBoca[Um], DeQueBoca[Outro]);
 			const int32 Maiorzinha = FMath::Max(DeQueBoca[Um], DeQueBoca[Outro]);
@@ -2000,6 +2006,79 @@ FMath::RoundToInt(Plan().Num() * SubsoloSobreSuperficie),
 				Guardado = Ate;
 				MaisPerto.Add(Chave, TPair<int32, int32>(Um, Outro));
 			}
+		}
+	}
+
+	// E QUAIS delas entram: da mais curta para a mais longa, até a fração
+	// pedida de grutas estar ligada — nunca todas.
+	//
+	// A ordem é a DISTÂNCIA, nunca a ordem do laço nem a do `TMap`: ordem de
+	// laço faria a mesma ilha mudar de subsolo se alguém reordenasse o código,
+	// e ordem de tabela de dispersão nem é estável entre execuções.
+	TArray<uint64> Candidatas;
+	MaisPerto.GetKeys(Candidatas);
+	Candidatas.Sort([&Menor](uint64 Uma, uint64 Outra)
+	{
+		const float Esta = Menor[Uma];
+		const float Aquela = Menor[Outra];
+		return FMath::IsNearlyEqual(Esta, Aquela) ? (Uma < Outra) : (Esta < Aquela);
+	});
+
+	TArray<uint64> Escolhidas;
+	{
+		TArray<int32> DonoDaGruta;
+		DonoDaGruta.Reserve(Grutas.Num());
+		for (int32 Qual = 0; Qual < Grutas.Num(); ++Qual)
+		{
+			DonoDaGruta.Add(Qual);
+		}
+
+		TFunction<int32(int32)> RaizDaGruta = [&DonoDaGruta, &RaizDaGruta](int32 Qual)
+		{
+			return DonoDaGruta[Qual] == Qual
+				? Qual
+				: (DonoDaGruta[Qual] = RaizDaGruta(DonoDaGruta[Qual]));
+		};
+
+		// O teto vive AQUI, e não só no teste: se todas se ligassem, o subsolo
+		// viraria um corredor só e achar passagem deixaria de ser achado. Um
+		// teto que só existe no teste é um teto que o gerador pode furar.
+		const int32 NuncaTodas = FMath::Max(1, Grutas.Num() - 1);
+		const int32 Alvo = FMath::Min(NuncaTodas, FMath::RoundToInt(
+			Grutas.Num() * WorldBudget::LinkedGrottoShare(IslandGeography::IslandBiome())));
+
+		int32 Ligadas = 0;
+		for (uint64 Chave : Candidatas)
+		{
+			if (Ligadas >= Alvo)
+			{
+				break;
+			}
+
+			const int32 Uma = static_cast<int32>(Chave >> 32);
+			const int32 Outra = static_cast<int32>(Chave & 0xFFFFFFFFull);
+			if (RaizDaGruta(Uma) == RaizDaGruta(Outra))
+			{
+				continue;
+			}
+
+			// Quantas grutas a emenda ACRESCENTA ao ligado: as duas, se
+			// nenhuma estava ligada ainda; uma, se ela entra num grupo que já
+			// existia. Contar sempre duas inflaria o alvo e pararia cedo.
+			TArray<int32> Tamanho;
+			Tamanho.Init(0, Grutas.Num());
+			for (int32 Qual = 0; Qual < Grutas.Num(); ++Qual)
+			{
+				++Tamanho[RaizDaGruta(Qual)];
+			}
+
+			const int32 Antes = (Tamanho[RaizDaGruta(Uma)] > 1 ? Tamanho[RaizDaGruta(Uma)] : 0)
+				+ (Tamanho[RaizDaGruta(Outra)] > 1 ? Tamanho[RaizDaGruta(Outra)] : 0);
+			const int32 Depois = Tamanho[RaizDaGruta(Uma)] + Tamanho[RaizDaGruta(Outra)];
+
+			DonoDaGruta[RaizDaGruta(Uma)] = RaizDaGruta(Outra);
+			Ligadas += Depois - Antes;
+			Escolhidas.Add(Chave);
 		}
 	}
 
@@ -2096,18 +2175,19 @@ FMath::RoundToInt(Plan().Num() * SubsoloSobreSuperficie),
 		}
 	}
 
-	for (const TPair<uint64, TPair<int32, int32>>& Emenda : MaisPerto)
+	for (uint64 Chave : Escolhidas)
 	{
+		const TPair<int32, int32>& Emenda = MaisPerto[Chave];
+
 		FUnderwaterLink Passagem;
 		Passagem.Navigability = ENavigability::BarcoPequeno;
-		Passagem.PointsUnits = CavarGaleria(Nos[Emenda.Value.Key],
-			Nos[Emenda.Value.Value]);
+		Passagem.PointsUnits = CavarGaleria(Nos[Emenda.Key], Nos[Emenda.Value]);
 
 		// A chave JÁ é o par de grutas: os primeiros nós da rede são as bocas,
 		// e `DeQueBoca` remonta a raiz de qualquer nó até uma delas. Guardar o
 		// par aqui é o que permite CONTAR as ligadas em vez de olhar o mapa.
-		Passagem.FromGrotto = static_cast<int32>(Emenda.Key >> 32);
-		Passagem.ToGrotto = static_cast<int32>(Emenda.Key & 0xFFFFFFFFull);
+		Passagem.FromGrotto = static_cast<int32>(Chave >> 32);
+		Passagem.ToGrotto = static_cast<int32>(Chave & 0xFFFFFFFFull);
 		Passagens.Add(MoveTemp(Passagem));
 	}
 

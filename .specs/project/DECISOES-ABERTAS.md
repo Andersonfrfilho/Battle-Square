@@ -82,11 +82,20 @@ prato, não um poço. Na natureza, água caindo cava um buraco fundo.
 A pergunta é: **quero que a rocha tenha um degrau ali**, para o poço ficar
 fundo de verdade?
 
-- **Se sim:** dá para mergulhar sob a cachoeira, esconder coisa no fundo, e a
-  queda vira lugar. O preço é que a rocha é a camada mais baixa do mundo —
-  mexer nela **move a costa, as vilas e as trilhas de tabela**, e a carta muda
-  junto (o que a B3 já autorizou).
-- **Se não:** a cachoeira continua bonita e rasa, e o mergulho não existe.
+✅ **SIM.** A rocha ganha degrau, e a queda passa a cavar poço de verdade.
+
+**O que isso abre:** mergulhar sob a cachoeira, e esconder coisa no fundo — o
+que casa com a `cavernas-nas-quedas` (a gruta atrás da lâmina) e com os segredos.
+
+**O que isso custa, e é preciso dizer:** a rocha é a camada mais baixa do mundo
+(rocha → água → região → relevo → trilhas → solo). Mexer nela **move a costa, as
+vilas e as trilhas de tabela** — e a carta muda junto, o que a B3 já autorizou.
+
+⚠️ **Isto quer dizer que a carta muda UMA VEZ, com tudo dentro.** Degrau na
+rocha (B4), fundura por ponto (B2), pontes (B3) e mercado-negro escondido (K3)
+mexem todos no mesmo gabarito. Fazer um de cada vez faria a carta ser reescrita
+quatro vezes, e cada reescrita é uma chance de o mundo e a carta divergirem sem
+ninguém ver.
 
 **B5. Quem mais passa a ler fundura?** ✅ *"por enquanto isso"* — só o traçado
 (o andar). Batalha, pesca e navegação ficam de fora até pedirem.
@@ -194,9 +203,9 @@ descreve a TROCA, que é a H7 — esta pergunta é outra, e menor)*
 dele, o servidor responde **"proibido"** (403, que confirma que o pet existe) ou
 **"não encontrado"** (404, que não confirma nada)?
 
-**Minha recomendação: 404.** O 403 conta ao curioso que aquele pet existe, e
-isso já é informação. É o padrão para posse por objeto, e não muda nada para
-quem joga honesto. Se concordar, respondo por você e sigo.
+✅ **404.** O 403 contaria ao curioso que aquele pet existe, e isso já é
+informação. Vale para toda rota de posse, e não muda nada para quem joga
+honesto.
 **H5. Pet abandonado volta a ser selvagem?** ✅ *"selvagem ou adotado"* — as
 duas saídas: volta ao mundo, ou outro treinador o adota.
 **H6. A coleção tem teto?** ✅ *"quantos quiser, e você salva as informações de
@@ -313,8 +322,22 @@ quais. O mercado-negro vira o **primeiro cliente real** dela:
 Sem os segredos, o mercado-negro precisaria de uma exceção no gabarito — e
 exceção no gabarito é o começo do gabarito não valer.
 
-**K4. Quantos mercados-negros, e onde?** ⬜ — depende de quantos segredos (J4),
-que ficou em aberto.
+**K4. Quantos mercados-negros, e onde?** ✅ *"você pode decidir, mas pelo menos
+3 bem espalhados pelo mundo"*
+
+→ **Piso de 3, e a decisão do número exato é minha.** Mas "bem espalhados" não
+pode ficar como impressão: vira **medição**, do mesmo jeito que a distância das
+cavernas às quedas virou.
+
+A regra que vou usar, e ela é testável: **nenhum par de mercados-negros mais
+perto que um limiar derivado do raio da ilha**, e não um número escrito à mão.
+Assim eles continuam espalhados se a ilha mudar de tamanho — e o teste reprova
+se dois nascerem vizinhos, que é o defeito que "bem espalhados" existe para
+impedir.
+
+O número exato sai da medição de quantas regiões a ilha tem: um por região, com
+piso de 3. Se a ilha tiver menos de 3 regiões, o piso ganha e eles se espalham
+pelo raio.
 
 ---
 

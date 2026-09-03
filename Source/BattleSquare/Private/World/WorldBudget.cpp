@@ -29,6 +29,7 @@ namespace
 		int32 Ruinas = 4;
 		float GaleriaReta = 0.15f;
 		float GrutaLigada = 0.40f;
+		int32 MercadosNegros = 3;
 		int32 CemiteriosPorAssentamento = 1;
 		int32 CemiteriosEsquecidos = 1;
 	};
@@ -51,6 +52,8 @@ namespace
 			Orcamento.GaleriaReta = 0.28f;
 			// Calcário que já dissolveu tudo: quase toda gruta sai noutra.
 			Orcamento.GrutaLigada = 0.65f;
+			// Terra que não drena esconde bem, e quem esconde bem vende mais.
+			Orcamento.MercadosNegros = 4;
 			Orcamento.CemiteriosEsquecidos = 2;
 			break;
 
@@ -135,5 +138,9 @@ int32 WorldBudget::CampCount(EIslandBiome Biome) { return Do(Biome).Acampamentos
 int32 WorldBudget::RuinCount(EIslandBiome Biome) { return Do(Biome).Ruinas; }
 float WorldBudget::StraightGalleryShare(EIslandBiome Biome) { return Do(Biome).GaleriaReta; }
 float WorldBudget::LinkedGrottoShare(EIslandBiome Biome) { return Do(Biome).GrutaLigada; }
+
+// O PISO É DO DONO DO MUNDO, e não do bioma: "pelo menos 3 bem espalhados".
+int32 WorldBudget::BlackMarketFloor() { return 3; }
+int32 WorldBudget::BlackMarketCount(EIslandBiome Biome) { return Do(Biome).MercadosNegros; }
 int32 WorldBudget::GraveyardsPerSettlement(EIslandBiome Biome) { return Do(Biome).CemiteriosPorAssentamento; }
 int32 WorldBudget::ForgottenGraveyardCount(EIslandBiome Biome) { return Do(Biome).CemiteriosEsquecidos; }

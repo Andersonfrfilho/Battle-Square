@@ -89,6 +89,21 @@ namespace WorldBudget
 	 */
 	BATTLESQUARE_API float LinkedGrottoShare(EIslandBiome Biome);
 
+	/**
+	 * QUANTOS MERCADOS-NEGROS, e o piso que o dono do mundo fixou.
+	 *
+	 * O piso é decisão do usuário — "pelo menos 3 bem espalhados" —, e por
+	 * isso ele é função própria, e não um número escrito dentro de quem
+	 * planta: piso guardado no ponto de uso é piso que a próxima edição
+	 * esquece. Quantos passam disso é decisão de bioma.
+	 *
+	 * "Bem espalhados" NÃO mora aqui: aqui só se diz quanto (regra 1 deste
+	 * arquivo). Onde eles ficam é do gerador, e o afastamento sai do raio da
+	 * ilha.
+	 */
+	BATTLESQUARE_API int32 BlackMarketFloor();
+	BATTLESQUARE_API int32 BlackMarketCount(EIslandBiome Biome);
+
 	/** Quantos cemitérios cada assentamento tem. */
 	BATTLESQUARE_API int32 GraveyardsPerSettlement(EIslandBiome Biome);
 

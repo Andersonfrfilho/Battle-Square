@@ -2,6 +2,7 @@
 
 #include "Misc/AutomationTest.h"
 #include "World/LandUseLayout.h"
+#include "World/WorldBudget.h"
 #include "World/RegionLayout.h"
 #include "World/VillageLayout.h"
 #include "World/TrailLayout.h"
@@ -819,6 +820,78 @@ bool FLandUseForgottenGraveyardSitsByARuinTest::RunTest(const FString& Parameter
 	}
 
 	TestTrue(TEXT("existe cemiterio esquecido"), Quantos > 0);
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FLandUseBlackMarketsAreSpreadTest,
+	"BattleSquare.World.LandUse.MercadosNegrosBemEspalhados",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FLandUseBlackMarketsAreSpreadTest::RunTest(const FString& Parameters)
+{
+	// "BEM ESPALHADOS" É MEDIÇÃO, NUNCA IMPRESSÃO.
+	//
+	// O defeito que a palavra existe para impedir é DOIS VIZINHOS, e ele sai
+	// naturalmente de sortear pontos de trilha: as trilhas convergem nas
+	// vilas, então o sorteio junta. Por isso o teste cobra o par mais próximo,
+	// e o limiar sai do RAIO DA ILHA — número escrito à mão deixaria de valer
+	// no dia em que a ilha mudasse de tamanho.
+	TArray<FVector2D> Mercados;
+	for (const FGroundUsePatch& Mancha : LandUseLayout::Plan())
+	{
+		if (Mancha.Use == EGroundUse::MercadoNegro)
+		{
+			Mercados.Add(Mancha.CenterUnits);
+		}
+	}
+
+	TestTrue(TEXT("pelo menos o piso que o dono do mundo fixou"),
+		Mercados.Num() >= WorldBudget::BlackMarketFloor());
+
+	// O limiar vem do gerador, não de uma cópia aqui: duas cópias concordam
+	// até a primeira edição, e a partir dali o teste afirma uma regra que o
+	// mundo não segue.
+	const float Limiar = LandUseLayout::BlackMarketSpreadUnits();
+
+	// E O LIMIAR REPROVA DOIS VIZINHOS, que é o defeito que ele existe para
+	// impedir. Afirmado sobre dois pontos montados à mão, e não procurado no
+	// mundo: procurar mediria o sorteio em vez da regra.
+	TestTrue(TEXT("dois vizinhos seriam reprovados pelo limiar"),
+		FVector2D::Distance(FVector2D::ZeroVector, FVector2D(Limiar * 0.5f, 0.0f)) < Limiar);
+
+	if (Mercados.Num() < 2)
+	{
+		return true;
+	}
+
+	float MaisPerto = TNumericLimits<float>::Max();
+	for (int32 Um = 0; Um < Mercados.Num(); ++Um)
+	{
+		for (int32 Outro = Um + 1; Outro < Mercados.Num(); ++Outro)
+		{
+			MaisPerto = FMath::Min(MaisPerto, static_cast<float>(
+				FVector2D::Distance(Mercados[Um], Mercados[Outro])));
+		}
+	}
+
+	AddInfo(FString::Printf(TEXT("mercados: %d  par mais perto: %.0f  limiar: %.0f"),
+		Mercados.Num(), MaisPerto, Limiar));
+
+	TestTrue(TEXT("nenhum par mais perto que o limiar derivado do raio"),
+		MaisPerto >= Limiar);
+
+	// E LONGE DA VILA: mercado-negro com vizinho é mercado. Sem esta, três
+	// barracas na praça da vila passariam no teste de afastamento entre si.
+	for (const FVector2D& Mercado : Mercados)
+	{
+		for (const FSettlementPlacement& Vila : RegionLayout::Plan())
+		{
+			TestTrue(TEXT("nenhum mercado-negro encostado numa vila"),
+				FVector2D::Distance(Mercado, Vila.CenterUnits)
+					>= VillageLayout::ClearingHalfExtentUnitsFor(Vila.Kind) * 3.0f);
+		}
+	}
 
 	return true;
 }

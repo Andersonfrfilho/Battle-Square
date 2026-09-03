@@ -88,6 +88,11 @@ namespace UsoDoSolo
 		case EGroundUse::CemiterioEsquecido:
 			return { Cubo, EScenaryRole::DeadWood, 0.45f };
 
+		// ESCONDIDO: baixo e apagado, do tamanho de umas barracas. O que se
+		// avista de longe não é mercado-negro.
+		case EGroundUse::MercadoNegro:
+			return { Cubo, EScenaryRole::DeadWood, 0.5f };
+
 		default: break;
 		}
 
@@ -120,6 +125,7 @@ const TCHAR* AGroundUseActor::UseDebugName(EGroundUse Uso)
 	case EGroundUse::Ruina:              return TEXT("ruina");
 	case EGroundUse::Cemiterio:          return TEXT("cemiterio");
 	case EGroundUse::CemiterioEsquecido: return TEXT("cemiterio esquecido");
+	case EGroundUse::MercadoNegro:       return TEXT("mercado-negro");
 	default: break;
 	}
 	return TEXT("nenhum");

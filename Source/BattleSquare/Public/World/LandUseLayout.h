@@ -166,7 +166,22 @@ enum class EGroundUse : uint8
 	 * O cemitério da vila e este não são o mesmo lugar em tamanhos diferentes
 	 * — um é serviço, o outro é vestígio.
 	 */
-	CemiterioEsquecido
+	CemiterioEsquecido,
+
+	/**
+	 * MERCADO-NEGRO: o lugar onde se vende o que não se declara.
+	 *
+	 * É LUGAR, não estado (K3), e é a diferença que importa: um estado
+	 * viajaria com o vendedor e não custaria nada achar. Sendo lugar, ele tem
+	 * posição, e chegar até ela é o preço de vender um pet roubado.
+	 *
+	 * Fica ao LADO da trilha e LONGE da vila, as duas coisas ao mesmo tempo.
+	 * Sem freguês não há mercado; com vizinho não há negro.
+	 *
+	 * E ele é ESCONDIDO: a carta o CONTA e não o aponta. Um mercado-negro que
+	 * o gabarito anuncia é um mercado-negro com placa.
+	 */
+	MercadoNegro
 };
 
 struct BATTLESQUARE_API FGroundUsePatch
@@ -198,6 +213,19 @@ struct BATTLESQUARE_API FGroundUsePatch
 namespace LandUseLayout
 {
 	BATTLESQUARE_API TArray<FGroundUsePatch> Plan();
+
+	/**
+	 * O AFASTAMENTO MÍNIMO entre dois mercados-negros.
+	 *
+	 * "Bem espalhados" é medição, e a medida mora aqui — num lugar só, porque
+	 * um limiar no gerador e outro no teste concordam até a primeira edição, e
+	 * a partir dali o teste passa a afirmar uma regra que o mundo não segue.
+	 *
+	 * Derivado do RAIO DA ILHA, nunca escrito em unidades: número absoluto
+	 * escolhido quando só existia um tamanho é a armadilha mais cara deste
+	 * projeto.
+	 */
+	BATTLESQUARE_API float BlackMarketSpreadUnits();
 
 	/** O que este ponto é. */
 	BATTLESQUARE_API EGroundUse UseAt(const FVector2D& PositionUnits);

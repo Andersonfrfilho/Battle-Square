@@ -63,6 +63,30 @@ namespace
 	 */
 	constexpr float LongeDaTrilhaEmLarguras = 6.0f;
 
+	/**
+	 * O MERCADO-NEGRO: o tamanho da mancha, e o quanto ele fica da trilha.
+	 *
+	 * Ao lado do caminho, e não sobre ele: quem vende o que não se declara
+	 * precisa de freguês e não pode ser visto do caminho. Mais longe que o
+	 * acampamento, que não tem o que esconder.
+	 */
+	constexpr float MercadoEmLotes = 0.20f;
+	constexpr float MercadoDaTrilhaEmLarguras = 4.5f;
+
+	/**
+	 * "BEM ESPALHADOS" É MEDIÇÃO: nenhum par mais perto que esta fração do raio.
+	 *
+	 * Em fração do raio, e nunca em unidades, porque o número absoluto
+	 * escolhido quando só existia um tamanho é a armadilha mais cara deste
+	 * projeto. Se a ilha crescer, eles continuam espalhados sem ninguém mexer
+	 * aqui.
+	 */
+	constexpr float EntreMercadosEmRaios = 0.55f;
+
+
+	/** E longe da vila: mercado-negro com vizinho é mercado. */
+	constexpr float LongeDaVilaEmClareiras = 3.0f;
+
 	FVector2D DoRumo(float Graus, float Distancia)
 	{
 		const float Radianos = FMath::DegreesToRadians(Graus);
@@ -981,6 +1005,167 @@ TArray<FGroundUsePatch> LandUseLayout::Plan()
 			}
 		}
 
+		// OS MERCADOS-NEGROS, e "bem espalhados" é medição.
+		//
+		// Eles vêm por último pelo mesmo motivo das clareiras: dependem das
+		// trilhas, e as trilhas não dependem deles.
+		//
+		// A ESCOLHA É POR AFASTAMENTO, não por sorteio. Sortear três pontos de
+		// trilha e torcer para caírem longe é medir a sorte: com trilhas que
+		// convergem nas vilas, dois vizinhos saem com frequência — e vizinhos é
+		// exatamente o defeito que "bem espalhados" existe para impedir.
+		//
+		// Cada um é o candidato MAIS LONGE do que já foi posto (amostragem de
+		// ponto mais distante). O primeiro é o mais longe de qualquer vila, que
+		// é o mais escondido que a trilha oferece.
+		{
+			const int32 Quantos = FMath::Max(WorldBudget::BlackMarketFloor(),
+				WorldBudget::BlackMarketCount(IslandGeography::IslandBiome()));
+
+			const TArray<FSettlementPlacement>& Vilas = RegionLayout::Plan();
+
+			TArray<FVector2D> Candidatos;
+			for (const FTrailRoute& Trilha : TrailLayout::Plan())
+			{
+				for (const FVector2D& NoCaminho : Trilha.PointsUnits)
+				{
+					bool bPertoDeVila = false;
+					for (const FSettlementPlacement& Vila : Vilas)
+					{
+						if (FVector2D::Distance(NoCaminho, Vila.CenterUnits)
+							< VillageLayout::ClearingHalfExtentUnitsFor(Vila.Kind)
+								* LongeDaVilaEmClareiras)
+						{
+							bPertoDeVila = true;
+							break;
+						}
+					}
+
+					if (!bPertoDeVila)
+					{
+						Candidatos.Add(NoCaminho);
+					}
+				}
+			}
+
+			TArray<FVector2D> Postos;
+			while (Postos.Num() < Quantos && Candidatos.Num() > 0)
+			{
+				int32 Melhor = INDEX_NONE;
+				float Maior = -1.0f;
+
+				for (int32 Qual = 0; Qual < Candidatos.Num(); ++Qual)
+				{
+					float Perto = TNumericLimits<float>::Max();
+
+					if (Postos.Num() == 0)
+					{
+						for (const FSettlementPlacement& Vila : Vilas)
+						{
+							Perto = FMath::Min(Perto, static_cast<float>(
+								FVector2D::Distance(Candidatos[Qual], Vila.CenterUnits)));
+						}
+					}
+					else
+					{
+						for (const FVector2D& Posto : Postos)
+						{
+							Perto = FMath::Min(Perto, static_cast<float>(
+								FVector2D::Distance(Candidatos[Qual], Posto)));
+						}
+					}
+
+					if (Perto > Maior)
+					{
+						Maior = Perto;
+						Melhor = Qual;
+					}
+				}
+
+				if (Melhor == INDEX_NONE)
+				{
+					break;
+				}
+
+				const FVector2D NoCaminho = Candidatos[Melhor];
+				Candidatos.RemoveAt(Melhor);
+
+				// O rumo do desvio sai da GEOMETRIA do ponto, nunca do índice
+				// do laço: assim o mesmo mercado fica no mesmo lugar se alguém
+				// reordenar o código (regra 5 da geração procedural).
+				const uint32 Semente = BattleSpread::SeedFromText(FString::Printf(
+					TEXT("mercado-negro-%d-%d"),
+					FMath::RoundToInt(NoCaminho.X), FMath::RoundToInt(NoCaminho.Y)));
+
+				// A REGRA VALE ONDE O MERCADO FICA, não onde a trilha passa.
+				//
+				// Foi assim que ele nasceu encostado numa vila: o ponto de
+				// trilha estava longe, e o desvio de quatro larguras e meia o
+				// trouxe de volta. Filtrar a candidata e não conferir o lugar
+				// final é conferir o passo anterior ao que importa.
+				constexpr int32 RumosDoDesvio = 8;
+				for (int32 Tentativa = 0; Tentativa < RumosDoDesvio; ++Tentativa)
+				{
+					const float Rumo = BattleSpread::Between(0.0f, 360.0f,
+						BattleSpread::Fraction(Semente, Tentativa));
+
+					const FVector2D Onde = NoCaminho + DoRumo(Rumo,
+						TrailLayout::HalfWidthUnits() * MercadoDaTrilhaEmLarguras);
+
+					if (!IslandGeography::IsOnLand(Onde))
+					{
+						continue;
+					}
+
+					bool bPertoDeVila = false;
+					for (const FSettlementPlacement& Vila : Vilas)
+					{
+						if (FVector2D::Distance(Onde, Vila.CenterUnits)
+							< VillageLayout::ClearingHalfExtentUnitsFor(Vila.Kind)
+								* LongeDaVilaEmClareiras)
+						{
+							bPertoDeVila = true;
+							break;
+						}
+					}
+
+					if (bPertoDeVila)
+					{
+						continue;
+					}
+
+					// E o afastamento é EXIGIDO aqui, não só medido no teste.
+					// Limiar que só existe no teste é limiar que o gerador
+					// pode furar — e ele furaria calado.
+					bool bVizinhoDeMercado = false;
+					for (const FVector2D& Posto : Postos)
+					{
+						if (FVector2D::Distance(Onde, Posto)
+							< LandUseLayout::BlackMarketSpreadUnits())
+						{
+							bVizinhoDeMercado = true;
+							break;
+						}
+					}
+
+					if (bVizinhoDeMercado)
+					{
+						continue;
+					}
+
+					Postos.Add(Onde);
+
+					FGroundUsePatch Mercado;
+					Mercado.Use = EGroundUse::MercadoNegro;
+					Mercado.CenterUnits = Onde;
+					Mercado.HalfExtentUnits =
+						VillageLayout::PlotHalfExtentUnits() * MercadoEmLotes;
+					Tudo.Add(Mercado);
+					break;
+				}
+			}
+		}
+
 		return Tudo;
 	}();
 
@@ -1012,6 +1197,11 @@ EGroundUse LandUseLayout::UseAt(const FVector2D& PositionUnits)
 	}
 
 	return Achado;
+}
+
+float LandUseLayout::BlackMarketSpreadUnits()
+{
+	return IslandGeography::LandRadiusUnits() * EntreMercadosEmRaios;
 }
 
 bool LandUseLayout::BlocksPlanting(const FVector2D& PositionUnits)

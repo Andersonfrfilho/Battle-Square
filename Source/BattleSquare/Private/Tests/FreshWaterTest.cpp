@@ -788,3 +788,75 @@ bool FFreshWaterGalleriesAreNotStraightTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FFreshWaterLinkedGrottoShareBaselineTest,
+	"BattleSquare.Environment.FreshWater.QuantasGrutasSeLigamHoje",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FFreshWaterLinkedGrottoShareBaselineTest::RunTest(const FString& Parameters)
+{
+	// A LINHA DE BASE, medida antes de mexer.
+	//
+	// A M7 pede que a proporção de grutas ligadas seja parâmetro, com teto e
+	// piso. Antes de escolher o parâmetro é preciso saber o que o mundo faz
+	// hoje — escolher primeiro e medir depois é escolher às cegas, e foi assim
+	// que "123 de 158 galerias retas" passou despercebido por semanas.
+	//
+	// Este teste não cobra valor nenhum: ele DIZ o número. Quem cobra é o teste
+	// da M7, escrito depois de ler esta medição.
+	const TArray<IslandFeatureLayout::FFeaturePlacement> Grutas = FreshWater::PlanGrottoes();
+	const TArray<FreshWater::FUnderwaterLink> Passagens = FreshWater::PlanUnderwaterLinks();
+
+	TestTrue(TEXT("ha gruta para medir"), Grutas.Num() > 0);
+	if (Grutas.Num() == 0)
+	{
+		return true;
+	}
+
+	TArray<int32> Dono;
+	Dono.Reserve(Grutas.Num());
+	for (int32 Qual = 0; Qual < Grutas.Num(); ++Qual)
+	{
+		Dono.Add(Qual);
+	}
+
+	TFunction<int32(int32)> Raiz = [&Dono, &Raiz](int32 Qual)
+	{
+		return Dono[Qual] == Qual ? Qual : (Dono[Qual] = Raiz(Dono[Qual]));
+	};
+
+	int32 Emendas = 0;
+	for (const FreshWater::FUnderwaterLink& Passagem : Passagens)
+	{
+		if (Passagem.FromGrotto == INDEX_NONE || Passagem.ToGrotto == INDEX_NONE)
+		{
+			continue;
+		}
+
+		++Emendas;
+		Dono[Raiz(Passagem.FromGrotto)] = Raiz(Passagem.ToGrotto);
+	}
+
+	TMap<int32, int32> Tamanho;
+	for (int32 Qual = 0; Qual < Grutas.Num(); ++Qual)
+	{
+		++Tamanho.FindOrAdd(Raiz(Qual));
+	}
+
+	int32 Ligadas = 0;
+	for (int32 Qual = 0; Qual < Grutas.Num(); ++Qual)
+	{
+		if (Tamanho[Raiz(Qual)] > 1)
+		{
+			++Ligadas;
+		}
+	}
+
+	AddInfo(FString::Printf(
+		TEXT("grutas: %d  emendas: %d  ligadas: %d  fracao: %.3f  componentes: %d"),
+		Grutas.Num(), Emendas, Ligadas,
+		static_cast<float>(Ligadas) / static_cast<float>(Grutas.Num()),
+		Tamanho.Num()));
+
+	return true;
+}

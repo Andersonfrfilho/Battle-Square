@@ -341,6 +341,21 @@ namespace FreshWater
 
 		/** Passagem de pedra é apertada: barco grande não entra. */
 		ENavigability Navigability = ENavigability::BarcoPequeno;
+
+		/**
+		 * QUE DUAS GRUTAS esta passagem emenda — índices em `PlanGrottoes()`.
+		 *
+		 * `INDEX_NONE` nos dois quando a passagem não emenda gruta nenhuma: ela
+		 * é um galho da rede de uma gruta só, ou a ligação entre duas bacias.
+		 *
+		 * Existe porque "gruta ligada" não se lê do desenho. No space
+		 * colonization cada nó tem UM pai, e duas árvores que se encostam no
+		 * mapa continuam sendo dois sistemas — quem quisesse contar as ligadas
+		 * teria de adivinhar de que boca cada ponta veio, e adivinhar é
+		 * exatamente o que a medição existe para substituir.
+		 */
+		int32 FromGrotto = INDEX_NONE;
+		int32 ToGrotto = INDEX_NONE;
 	};
 
 	BATTLESQUARE_API TArray<FUnderwaterLink> PlanUnderwaterLinks();

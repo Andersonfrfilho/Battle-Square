@@ -2102,6 +2102,12 @@ FMath::RoundToInt(Plan().Num() * SubsoloSobreSuperficie),
 		Passagem.Navigability = ENavigability::BarcoPequeno;
 		Passagem.PointsUnits = CavarGaleria(Nos[Emenda.Value.Key],
 			Nos[Emenda.Value.Value]);
+
+		// A chave JÁ é o par de grutas: os primeiros nós da rede são as bocas,
+		// e `DeQueBoca` remonta a raiz de qualquer nó até uma delas. Guardar o
+		// par aqui é o que permite CONTAR as ligadas em vez de olhar o mapa.
+		Passagem.FromGrotto = static_cast<int32>(Emenda.Key >> 32);
+		Passagem.ToGrotto = static_cast<int32>(Emenda.Key & 0xFFFFFFFFull);
 		Passagens.Add(MoveTemp(Passagem));
 	}
 

@@ -112,8 +112,11 @@ si?** Virou C4.
 
 **C3. O que se vê de dentro?** ✅ *"é efeito visual"* (r13)
 
-**C4. As grutas têm ligação entre si e saídas para outros lugares?** ⬜ *(nova,
-levantada por você em r12)*
+**C4. As grutas têm ligação entre si e saídas para outros lugares?** ✅
+*"algumas grutas sim, se ligam entre si"*
+→ **Algumas**, não todas — e o "algumas" é o que dá sentido: se todas se
+ligassem, o subsolo viraria um corredor só e descobrir uma passagem deixaria de
+ser achado. Vira parâmetro medido, como a proporção de trechos retos já é.
 
 ## D — Cidades, dinheiro e trabalho (`cidades-do-interior`)
 
@@ -168,7 +171,7 @@ skills"* (r15)
 **F2. Pets de região são exclusivos ou só mais comuns?** ✅ *"por elementos do
 mapa"* (r53) — o bioma inclina o elemento, e o mapa aumenta atributos.
 
-**F3. Quantas ilhas, e como se ligam?** ⬜ *"vamos decidir ainda; podem ser
+**F3. Quantas ilhas, e como se ligam?** 🟡 **respondo abaixo, com a medição** *"vamos decidir ainda; podem ser
 ligadas por terra ou ilhas mesmo; hoje todo servidor vê o mapa fixo"* (r51)
 
 ✅ **COMPLEMENTADO:** *"pode ser por pontes também"* — e isso amarra com a B3:
@@ -338,6 +341,34 @@ impedir.
 O número exato sai da medição de quantas regiões a ilha tem: um por região, com
 piso de 3. Se a ilha tiver menos de 3 regiões, o piso ganha e eles se espalham
 pelo raio.
+
+---
+
+## L — O que você trouxe em 02/09, e não existia em spec nenhuma
+
+**L1. O primeiro bioma é FLORESTA COMUM.** ✅
+→ É o bioma onde o jogador nasce, e o que a `mundo-por-biomas` precisa ter
+primeiro. Casa com o que a ilha já é: **9 bosques e 6 clareiras** no traçado de
+hoje.
+
+**L2. O jogo tem ESTAÇÕES.** ⬜ *(nova)*
+→ Conversa direto com o que já existe: a `mundo-vivo` já tem **idade do mundo
+que corre offline**, e a rebrota já é prazo de configuração. Estação é a mesma
+roda, num período maior.
+**Falta decidir:** quantas estações, quanto dura cada uma, e o que elas mudam —
+só aparência, ou também o que nasce, o que cresce e o que se pesca.
+
+**L3. Áreas de criminosos, que MUDAM e são DISFARÇADAS.** ⬜ *(nova)*
+→ Três propriedades numa frase, e as três são diferentes:
+- **área** — é lugar no mapa, como o mercado-negro (K3);
+- **muda** — não fica no mesmo lugar para sempre, então não pode ser assada no
+  traçado como uma vila é;
+- **disfarçada** — entra pelos segredos (`segredos-e-a-carta`), como o
+  mercado-negro entra.
+
+⚠️ **"Muda" é o que a distingue de tudo o que existe hoje.** Todo lugar deste
+mundo é assado uma vez e fica. Um lugar que se move é a primeira coisa do mapa
+com estado que muda em jogo — e isso é outra camada, não mais uma mancha.
 
 ---
 

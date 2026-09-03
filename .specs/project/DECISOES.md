@@ -398,7 +398,16 @@ direto com a decisão 15 (campeonato torna o jogador LÍDER do centro, com renda
 e desafios). É feature própria, não uma task desta — registrado para não se
 perder.
 
-**62. A fauna do bioma tem PREDOMINÂNCIA, não exclusividade.** *"nosso
+**62. A fauna do bioma tem PREDOMINÂNCIA, não exclusividade.** ✅
+*Implementada em 03/09* — `EncounterPredominance`: peso do LUGAR multiplicando
+o peso da HORA que já existia. Na mata, planta e terra são o comum; o aquático
+é "alguns, perto d'água" (amostrado em cruz na margem); o fantasma pesa perto
+das grutas; o fogo é o deslocado — raro, NUNCA impossível (nenhum peso é zero,
+afirmado em teste sobre todos os biomas e contextos). Biomas sem fauna
+desenhada pesam neutro: pesar por palpite seria decidir a fauna do deserto sem
+ninguém pedir.
+
+**62 (original).** *"nosso
 primeiro bioma é natureza comum, vai ter mais predominância de tipos de pets
 comuns, natureza, plantas, insetos, alguns aquáticos, cavernas, noturnos
 desses ambientes"*. Os encontros do bioma de mata puxam para o comum e o

@@ -264,6 +264,46 @@ namespace WorldTimeOfDay
 		return CatalogIds.Num() - 1;
 	}
 
+	int32 PickSpeciesForPhaseAndPlace(
+		const TArray<FString>& CatalogIds, EDayPhase Phase,
+		const TArray<int32>& PlaceWeightsPercent, FRandomStream& Stream)
+	{
+		if (CatalogIds.IsEmpty())
+		{
+			return INDEX_NONE;
+		}
+
+		// Fase × lugar, e o composto tem PISO DE UM: um peso que zerasse
+		// trancaria a espécie em silêncio, e predominância não é
+		// exclusividade — são as palavras da própria decisão 62.
+		auto PesoComposto = [&](int32 Indice)
+		{
+			const int32 DaFase = EncounterWeightPercent(
+				ActivityForSpecies(CatalogIds[Indice]), Phase);
+			const int32 DoLugar = PlaceWeightsPercent.IsValidIndex(Indice)
+				? PlaceWeightsPercent[Indice] : 100;
+			return FMath::Max(1, DaFase * DoLugar / 100);
+		};
+
+		int32 Total = 0;
+		for (int32 Indice = 0; Indice < CatalogIds.Num(); ++Indice)
+		{
+			Total += PesoComposto(Indice);
+		}
+
+		int32 Restante = Stream.RandRange(0, Total - 1);
+		for (int32 Indice = 0; Indice < CatalogIds.Num(); ++Indice)
+		{
+			Restante -= PesoComposto(Indice);
+			if (Restante < 0)
+			{
+				return Indice;
+			}
+		}
+
+		return CatalogIds.Num() - 1;
+	}
+
 	const TCHAR* PhaseDebugName(EDayPhase Phase)
 	{
 		switch (Phase)

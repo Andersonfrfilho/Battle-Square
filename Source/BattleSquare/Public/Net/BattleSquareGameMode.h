@@ -455,6 +455,9 @@ private:
 
 	FTimerHandle TrainingTimer;
 	FTimerHandle WorkTimer;
+
+	/** Tipo por id do catálogo, para a predominância por lugar (decisão 62). */
+	TMap<FString, FString> CatalogTypeById;
 	float TrainingCarrySeconds = 0.0f;
 
 	/**

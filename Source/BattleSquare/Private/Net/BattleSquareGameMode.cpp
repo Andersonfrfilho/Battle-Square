@@ -49,6 +49,7 @@
 #include "GameFramework/Character.h"
 #include "Engine/StaticMeshActor.h"
 #include "World/IslandBakedPlan.h"
+#include "World/EncounterPredominance.h"
 #include "World/GroundWorkRules.h"
 #include "Balance/PetSkillCatalog.h"
 #include "World/LandUseLayout.h"
@@ -378,6 +379,15 @@ FString ABattleSquareGameMode::SetUpWorldEncounterFlow()
 	if (const FString MirrorProblem = LoadConfiguredMirrorPets(Pets); !MirrorProblem.IsEmpty())
 	{
 		return MirrorProblem;
+	}
+
+	// O TIPO de cada espécie fica guardado: a predominância por lugar
+	// (decisão 62) pergunta o elemento na hora de repor população, e reler o
+	// espelho a cada spawn seria I/O por bicho.
+	CatalogTypeById.Reset();
+	for (const FLoadedPetRecord& Registro : Pets)
+	{
+		CatalogTypeById.Add(Registro.Id, Registro.Type);
 	}
 
 	FEncounterMatchParams MatchParams;
@@ -3098,11 +3108,54 @@ void ABattleSquareGameMode::SpawnOneEncounter(const FVector& Centro, FRandomStre
 		return;
 	}
 
-	// Pesado pela hora, e não sorteio igual: a espécie noturna aparece de noite
-	// e mal aparece ao meio-dia. Sem isto o ciclo do dia era só a luz mudando
-	// de cor, e não havia motivo nenhum para esperar anoitecer.
-	const int32 CatalogoIndice = WorldTimeOfDay::PickSpeciesForPhase(
-		WorldEncounterCatalogIds, CurrentEncounterPhase(), Sorteio);
+	// Pesado pela HORA e pelo LUGAR, em multiplicação (decisão 62): a espécie
+	// noturna aparece de noite, a aquática perto d'água, a cavernícola perto
+	// das grutas — e o aquático-noturno exige as duas coisas. Sem o peso do
+	// lugar, o ciclo do dia era a única textura da fauna.
+	EncounterPredominance::FSpawnSurroundings EmVolta;
+	EmVolta.Biome = IslandGeography::IslandBiome();
+
+	if (TracadoAssado)
+	{
+		// "Perto d'água" é amostrado em cruz, não só no ponto: o bicho da
+		// margem nasce NA margem, e o ponto exato de spawn quase nunca cai
+		// dentro do rio.
+		const FVector2D Aqui(Posicao);
+		constexpr float BracoDaCruz = 900.0f;
+		const FVector2D Bracos[] = {
+			Aqui, Aqui + FVector2D(BracoDaCruz, 0), Aqui - FVector2D(BracoDaCruz, 0),
+			Aqui + FVector2D(0, BracoDaCruz), Aqui - FVector2D(0, BracoDaCruz) };
+		for (const FVector2D& Braco : Bracos)
+		{
+			if (WaterFooting::At(*TracadoAssado, Braco) != EWaterFooting::Seco)
+			{
+				EmVolta.bNearWater = true;
+				break;
+			}
+		}
+
+		for (const FBakedCave& Caverna : TracadoAssado->Caves)
+		{
+			if (FVector2D::Distance(Aqui, Caverna.CenterUnits) < 4000.0f)
+			{
+				EmVolta.bNearCave = true;
+				break;
+			}
+		}
+	}
+
+	TArray<int32> PesosDoLugar;
+	PesosDoLugar.Reserve(WorldEncounterCatalogIds.Num());
+	for (const FString& Id : WorldEncounterCatalogIds)
+	{
+		const FString* Tipo = CatalogTypeById.Find(Id);
+		// Tipo desconhecido pesa neutro: ausência não decide nada.
+		PesosDoLugar.Add(Tipo
+			? EncounterPredominance::PlaceWeightPercent(*Tipo, EmVolta) : 100);
+	}
+
+	const int32 CatalogoIndice = WorldTimeOfDay::PickSpeciesForPhaseAndPlace(
+		WorldEncounterCatalogIds, CurrentEncounterPhase(), PesosDoLugar, Sorteio);
 	if (CatalogoIndice == INDEX_NONE)
 	{
 		Encontro->Destroy();

@@ -195,6 +195,18 @@ namespace WorldTimeOfDay
 	BATTLESQUARE_API int32 PickSpeciesForPhase(
 		const TArray<FString>& CatalogIds, EDayPhase Phase, FRandomStream& Stream);
 
+	/**
+	 * O sorteio com o PESO DO LUGAR junto (decisão 62): fase × lugar, em
+	 * MULTIPLICAÇÃO — o aquático-noturno aparece de noite E perto d'água. Um
+	 * segundo sorteio separado escolheria duas espécies e ficaria com uma, e
+	 * o peso de quem perde o desempate sumiria.
+	 *
+	 * `PlaceWeights` é paralelo a `CatalogIds`, em porcento (100 = neutro).
+	 */
+	BATTLESQUARE_API int32 PickSpeciesForPhaseAndPlace(
+		const TArray<FString>& CatalogIds, EDayPhase Phase,
+		const TArray<int32>& PlaceWeightsPercent, FRandomStream& Stream);
+
 	/** O nome da fase, para o painel. Desenvolvimento, não texto de jogador. */
 	BATTLESQUARE_API const TCHAR* PhaseDebugName(EDayPhase Phase);
 }

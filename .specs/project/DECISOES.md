@@ -416,8 +416,13 @@ a conversa nunca morre por causa da rede.
 nenhum segredo entra nele — afirmado no negativo. O que não entra não sai na
 fala, por construção: é a regra da carta valendo para o NPC mais eloquente.
 
-**O que falta é da INFRA, não deste repo:** o serviço que recebe o POST e
-serve o modelo próprio. O contrato está no header, esperando o servidor.
+~~O que falta é da INFRA~~ **O servidor de referência EXISTE**
+(`Server/conversa/`, 03/09): Bun + zod, o contrato do jogo na frente de
+qualquer modelo OpenAI-compatível — llama-server local e infra usam o MESMO
+código, só muda `MODEL_URL`. Sem estado de propósito (memória é do jogo), erro
+rápido de propósito (o restrito é o para-quedas), e o prompt — a única peça
+com regra — é a peça com teste: só os fatos do digesto, admitir o que não
+sabe, uma a três frases de gente do interior.
 
 **Emendada em 03/09** (*"dê a opção para ele"* + *"e informe das necessidades
 e diferenças"*): a escolha é DO JOGADOR — `bs.Conversa` vê, aponta e desliga a

@@ -46,10 +46,10 @@ restrito **na hora** — a conversa nunca morre.
   conversa fica lenta primeiro.
 - Ligue com: `bs.Conversa http://localhost:8080/fala`
 
-> ⚠️ O endpoint precisa implementar o contrato de `NpcDialogue.h`
-> (`{npc, deeds, facts, playerSays}` → `{npcSays}`). Um adaptador de uma
-> dúzia de linhas na frente do llama-server resolve; a infra oficial já fala
-> o contrato nativamente.
+> ✅ O adaptador **já existe**: `Server/conversa/` neste repositório fala o
+> contrato do jogo na frente de qualquer modelo OpenAI-compatível — o
+> llama-server local e a infra usam o MESMO servidor. `bun start` e pronto
+> (ver o README dele).
 
 ### Desligar
 

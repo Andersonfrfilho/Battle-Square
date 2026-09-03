@@ -256,3 +256,41 @@ produto). Restam três, e duas por escolha do usuário:
 - **52 inverte a MB4.** Ela procurava o limiar de magnitude que abandona uma
   vila; não há abandono — há reconstrução, exceto se a população inteira
   morrer. A task passa a ser sobre RECONSTRUÇÃO.
+
+---
+
+## Respostas de 03/09/2026 — `cidades-do-interior`
+
+**56. A carteira começa com 100.** ⚠️ *Delegada a mim* ("quanto vc recomenda?"),
+e o número não é redondo por acaso: são **quatro curas na cidade**
+(`CuraNaCidade = 25`) e pouco mais que **uma venda de pet** (`CidadePagaPeloPet
+= 70`). Dá fôlego para a primeira viagem para fora da vila inicial sem tornar a
+primeira venda irrelevante — que é o que 250 ou 500 fariam.
+
+**57. Paga a Arena, o trabalho e o ACHADO.** Batalha comum não paga. Achar
+dinheiro no mundo é o item novo, e ele dá motivo para sair da trilha — que é
+justamente o que ruína, clareira fechada e mercado-negro precisavam para
+existirem como destino.
+
+⚠️ **O achado é conteúdo que nenhuma task previu.** Ele não cabe na CI1: entra
+como task própria, depois que a carteira existir para receber.
+
+**58. O Portão do Posto de Fronteira NÃO TRANCA.** *"o usuário deve ter
+liberdade para viajar para onde quiser"*.
+
+⚠️ **Isso reescreve metade da CI8.** A caixa dizia "o ranking existe e
+**tranca/destranca** o Portão" — a segunda metade cai. O ranking continua
+existindo e aparecendo na tela; o que ele deixa de ser é uma cancela.
+
+E isto conversa com a **17**: as duas respostas dizem a mesma coisa por lados
+opostos — não se pula distância, e não se é barrado nela. Andar é o custo, e é o
+único.
+
+**59. O jogador escolhe ONDE trabalhar.** *"ele tem liberdade de escolher"* —
+não há um `EGroundUse` eleito.
+
+Leitura, e ela é minha: isto é **um trabalho com três lugares**, não três
+trabalhos. A mecânica é uma só, oferecida em Fazenda (8), Criadouro (4) e Pomar
+(3) — o que muda de um para outro é **qual atributo do pet facilita**. Assim a
+CI9 continua sendo "um trabalho real", como a spec pede, e a liberdade é de
+escolha, não de quantidade.

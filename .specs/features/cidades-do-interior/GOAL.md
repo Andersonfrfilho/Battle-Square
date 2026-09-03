@@ -23,15 +23,36 @@ de ser cenário que só colide.
 
 ## PRONTO é isto, e nada menos
 
-- [⛔] **CI1** — a carteira existe e aparece na tela
-- [⛔] **CI2** — um prédio reage a alguém entrando nele
-- [⛔] **CI3** — Centro de Recuperação cura de verdade, e cobra fora da vila inicial
-- [⛔] **CI4** — Escola especializa pelo prédio, mesma função do console
-- [⛔] **CI5** — Mercado vende o pet capturado pela tabela já testada
-- [⛔] **CI6** — Marco de retorno teleporta de verdade, ida e volta
-- [⛔] **CI7** — Palafita, Passarela e Chinampa têm cor própria
-- [⛔] **CI8** — o ranking existe e tranca/destranca o Portão do Posto de Fronteira
-- [⛔] **CI9** — um trabalho real, em que o pet facilita e nunca habilita
+> **ABERTA PARCIALMENTE em 03/09/2026, pelo usuário.** A regra desta feature é
+> que a caixa só abre quando o número de configuração dela existe — então
+> abriram as cinco que **não dependem de número nenhum**, e as quatro que
+> dependem seguem `[⛔]` com a pergunta nomeada ao lado. Abrir as nove de uma vez
+> seria escolher os números por omissão, que é o que este bloqueio impede.
+
+- [ ] **CI1** — a carteira existe e aparece na tela
+      Começa com **100** (decisão 56). Paga Arena e trabalho; o **achado** é
+      task própria, depois que a carteira existir para receber (decisão 57).
+- [ ] **CI2** — um prédio reage a alguém entrando nele
+- [ ] **CI3** — Centro de Recuperação cura de verdade, ~~e cobra fora da vila
+      inicial~~ **e NÃO cobra**
+      ⚠️ **REESCRITA pela decisão 16, "curar é de graça"**, que é anterior a
+      esta caixa. `SettlementEconomy::CuraNaCidade = 25` fica sem cliente — não
+      apagar sem o usuário mandar: é tabela testada, e apagá-la é decisão dele.
+- [ ] **CI4** — Escola especializa pelo prédio, mesma função do console
+- [ ] **CI5** — Mercado vende o pet capturado pela tabela já testada
+- [⛔] **CI6** — ~~Marco de retorno teleporta de verdade, ida e volta~~
+      ⚠️ **A PREMISSA CAIU pela decisão 17, "não existe teletransporte".** O
+      `DECISOES.md` já registrava que esta task "vira outra coisa, ou sai", e
+      ninguém decidiu qual. **É a única pergunta que resta nesta feature.**
+- [ ] **CI7** — Palafita, Passarela e Chinampa têm cor própria
+- [ ] **CI8** — o ranking existe e aparece ~~e tranca/destranca o Portão~~
+      ⚠️ **Metade REESCRITA pela decisão 58:** o Portão **não tranca**, porque o
+      jogador tem liberdade de viajar para onde quiser. O ranking continua
+      existindo e aparecendo; o que ele deixa de ser é uma cancela.
+- [ ] **CI9** — um trabalho real, em que o pet facilita e nunca habilita
+      O jogador **escolhe onde** (decisão 59): Fazenda, Criadouro ou Pomar. É um
+      trabalho com três lugares, e o que muda entre eles é qual atributo do pet
+      facilita.
 - [ ] O grep por `OnActorBeginOverlap`/`TriggerVolume` fora de `/Tests/` acha o
       padrão criado em CI2, reaproveitado por CI3–CI6, CI9
 - [ ] Bateria completa verde, zero falhas, zero crash

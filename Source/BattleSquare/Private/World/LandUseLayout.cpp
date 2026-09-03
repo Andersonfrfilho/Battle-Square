@@ -1160,6 +1160,10 @@ TArray<FGroundUsePatch> LandUseLayout::Plan()
 					Mercado.CenterUnits = Onde;
 					Mercado.HalfExtentUnits =
 						VillageLayout::PlotHalfExtentUnits() * MercadoEmLotes;
+
+					// A carta o CONTA e não o aponta: mercado-negro que o
+					// gabarito anuncia é mercado-negro com placa.
+					Mercado.bHidden = true;
 					Tudo.Add(Mercado);
 					break;
 				}

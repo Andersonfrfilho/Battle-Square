@@ -200,6 +200,18 @@ struct BATTLESQUARE_API FGroundUsePatch
 
 	/** De que deus, quando é templo ou ruína. */
 	EDeity Deity = EDeity::MaeNatureza;
+
+	/**
+	 * A carta NÃO mostra esta mancha.
+	 *
+	 * Marca na mancha, e não uma lista ao lado: lista paralela é a segunda
+	 * fonte da mesma verdade, e ela concorda com a primeira até alguém
+	 * acrescentar uma mancha e esquecer da lista.
+	 *
+	 * Falso por omissão, que é o comportamento de sempre — mancha antiga
+	 * continua sendo mostrada sem ninguém mexer nela.
+	 */
+	bool bHidden = false;
 };
 
 /**

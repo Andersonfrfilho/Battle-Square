@@ -453,6 +453,10 @@ struct BATTLESQUARE_API FBakedGroundUse
 
 	UPROPERTY()
 	EDeity Deity = EDeity::MaeNatureza;
+
+	/** A carta não mostra esta mancha. Falso no assado antigo, que é o certo. */
+	UPROPERTY()
+	bool bHidden = false;
 };
 
 /** A planta de uma caverna: a grade de paredes já cavada. */

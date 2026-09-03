@@ -558,6 +558,7 @@ namespace IslandBakedPlan
 			Assada.HalfExtentUnits = Mancha.HalfExtentUnits;
 			Assada.bYieldsWater = Mancha.bYieldsWater;
 			Assada.Deity = Mancha.Deity;
+			Assada.bHidden = Mancha.bHidden;
 			Out.GroundUses.Add(Assada);
 		}
 

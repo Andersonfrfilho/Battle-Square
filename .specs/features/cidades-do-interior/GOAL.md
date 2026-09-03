@@ -54,7 +54,23 @@ de ser cenário que só colide.
       quando ela é debitada (fim de toda batalha? só derrota?), e o que
       acontece com um pet a 0 fora de batalha (não pode lutar? cura sozinho
       com o tempo?). Nenhuma dessas está na spec nem em `tasks.md`.
-- [ ] **CI4** — Escola especializa pelo prédio, mesma função do console
+- [⛔] **CI4** — Escola especializa pelo prédio, mesma função do console
+      ⚠️ **PAROU em 03/09/2026 — GEOMETRICAMENTE IMPOSSÍVEL como escrita,
+      medido.** A task manda chamar `LearnSpecialtyOfCurrentField()` do gatilho
+      da Escola, mas essa função exige estar DENTRO de um campo de treino
+      (`AWorldTrainingField::IsInside`), e os campos ficam num anel de 22.000
+      unidades do centro (`TrainingFieldRingRadiusUnits`, `DefaultGame.ini:42`)
+      enquanto a clareira inteira da vila tem meia-extensão de 1.348. Chamada da
+      Escola, ela responde "você não está num campo de treino" — sempre, por
+      vinte mil unidades.
+
+      **E o desenho por trás é decisão de conteúdo em aberto na própria spec:**
+      "Quais atributos cada cidade ensina? É o que faz viajar valer." Se a
+      Escola especializa em QUALQUER atributo sem sair da vila, os cinco campos
+      e a viagem até eles perdem o papel. As saídas possíveis — a Escola
+      escolhe o atributo num menu; a Escola só MOSTRA as especialidades e o
+      gesto continua no campo; ou o campo ganha a confirmação em duas etapas —
+      são produtos diferentes, e a escolha é do usuário.
 - [ ] **CI5** — Mercado vende o pet capturado pela tabela já testada
 - [ ] **CI6** — ~~Marco de retorno teleporta~~ **o Marco é PONTO DE
       RENASCIMENTO, e quem cai acorda no hospital**

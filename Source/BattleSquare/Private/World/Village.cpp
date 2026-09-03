@@ -2,7 +2,9 @@
 
 #include "World/Village.h"
 
+#include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "GameFramework/Pawn.h"
 #include "Engine/StaticMesh.h"
 #include "Environment/ScenaryPalette.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -17,6 +19,18 @@ namespace Vila
 	/** O telhado é um pouco MAIOR que a parede: beiral se lê de longe. */
 	constexpr float BeiralUnidades = 60.0f;
 	constexpr float AlturaDoTelhado = 90.0f;
+
+	/**
+	 * A CALÇADA: quanto a porta se estende além da parede.
+	 *
+	 * Ela existe porque o prédio BLOQUEIA. Um gatilho do tamanho exato da
+	 * parede nunca dispararia — ninguém consegue estar dentro de uma caixa
+	 * sólida —, e a porta seria um evento que só o teste vê.
+	 *
+	 * Maior que a largura de quem anda, para o passo não atravessar a faixa
+	 * entre dois quadros e sair sem nunca ter entrado.
+	 */
+	constexpr float CalcadaDaPorta = 160.0f;
 
 	/**
 	 * A cor de cada prédio, e ela é INFORMAÇÃO.
@@ -162,6 +176,94 @@ void AVillage::BuildVillage()
 			BuiltRoofs.Add(Telhado);
 		}
 
+		// A PORTA, e só onde há função atrás dela.
+		//
+		// Ela é uma FAIXA EM VOLTA da parede, e não a parede: o prédio bloqueia
+		// (é o que faz a vila ser um lugar), então um gatilho do tamanho dele
+		// nunca dispararia — ninguém consegue estar dentro de uma caixa
+		// sólida. Quem chega para na calçada, e é ali que a porta tem de estar.
+		if (VillageLayout::HasDoor(Peca.Building))
+		{
+			UBoxComponent* Porta = NewObject<UBoxComponent>(this,
+				*FString::Printf(TEXT("Porta_%d"), Indice));
+			Porta->SetupAttachment(VillageRoot);
+			Porta->RegisterComponent();
+
+			Porta->SetBoxExtent(FVector(
+				Peca.HalfExtentUnits.X + Vila::CalcadaDaPorta,
+				Peca.HalfExtentUnits.Y + Vila::CalcadaDaPorta,
+				Peca.HeightUnits * 0.5f));
+			Porta->SetRelativeLocation(FVector(
+				Peca.OffsetUnits.X, Peca.OffsetUnits.Y, Peca.HeightUnits * 0.5f));
+
+			// NÃO BLOQUEIA. Um gatilho que bloqueia é parede, e empararedaria
+			// justamente o prédio que ele existe para deixar usar.
+			Porta->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+			Porta->SetCollisionResponseToAllChannels(ECR_Ignore);
+			Porta->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+			Porta->SetGenerateOverlapEvents(true);
+
+			// E ela é INVISÍVEL: quem vê a porta é quem entra nela, e uma
+			// caixa desenhada em volta de cada prédio seria a vila dentro de
+			// gaiolas.
+			Porta->SetHiddenInGame(true);
+
+			Porta->OnComponentBeginOverlap.AddDynamic(this, &AVillage::HandleDoorBegin);
+			Porta->OnComponentEndOverlap.AddDynamic(this, &AVillage::HandleDoorEnd);
+
+			Doors.Add(Porta);
+			DoorBuildings.Add(Peca.Building);
+		}
+
 		++Indice;
 	}
+}
+
+EVillageBuilding AVillage::GetDoorBuilding(int32 Qual) const
+{
+	return DoorBuildings.IsValidIndex(Qual)
+		? DoorBuildings[Qual] : EVillageBuilding::Casa;
+}
+
+void AVillage::HandleDoorBegin(UPrimitiveComponent* Porta, AActor* Quem,
+	UPrimitiveComponent*, int32, bool, const FHitResult&)
+{
+	AnunciarPorta(Porta, Quem, /*bEntrou=*/true);
+}
+
+void AVillage::HandleDoorEnd(UPrimitiveComponent* Porta, AActor* Quem,
+	UPrimitiveComponent*, int32)
+{
+	AnunciarPorta(Porta, Quem, /*bEntrou=*/false);
+}
+
+void AVillage::AnunciarPorta(UPrimitiveComponent* Porta, AActor* Quem, bool bEntrou)
+{
+	// CAMINHO ÚNICO para entrar e sair, porque só o sentido muda. Dois corpos
+	// quase iguais divergem na primeira edição — e aqui a divergência seria
+	// entrar num prédio e sair de outro.
+	if (!Quem || !Porta)
+	{
+		return;
+	}
+
+	// SÓ QUEM JOGA cruza porta. Sem isto, cada pet solto e cada inimigo do
+	// mundo passando pela calçada anunciaria uma visita que ninguém fez.
+	if (!Cast<APawn>(Quem))
+	{
+		return;
+	}
+
+	const int32 Qual = Doors.IndexOfByKey(Porta);
+	if (Qual == INDEX_NONE)
+	{
+		return;
+	}
+
+	// ENTRAR NÃO É COMPROMETER-SE, e é por isso que aqui só se ANUNCIA.
+	//
+	// Nada é cobrado, curado nem vendido neste caminho — quem escuta decide, e
+	// decidir exige um gesto do jogador. Uma vila que cobra por atravessar a
+	// calçada é uma vila que ninguém atravessa duas vezes.
+	OnDoorCrossed.Broadcast(DoorBuildings[Qual], Kind, bEntrou);
 }

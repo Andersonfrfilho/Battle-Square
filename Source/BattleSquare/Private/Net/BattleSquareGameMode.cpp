@@ -830,6 +830,7 @@ void ABattleSquareGameMode::SpawnStartingVillage()
 
 	int32 Erguidos = 0;
 	int32 Predios = 0;
+	int32 Portas = 0;
 
 	// A REGIÃO inteira, e não só a vila de casa. Uma vila só faz o resto do
 	// mapa ser paisagem: sem academia paga, sem mercado e sem a arena da
@@ -849,15 +850,49 @@ void ABattleSquareGameMode::SpawnStartingVillage()
 		// O tipo ANTES de erguer: ele decide o traçado, e mudá-lo depois não
 		// move prédio nenhum.
 		Vila->SetSettlementKind(Assentamento.Kind);
+
+		// A ESCUTA VEM ANTES DE ERGUER, e a ordem é a mesma lição do tipo: as
+		// portas nascem em `BuildVillage`, e quem se inscrever depois perde a
+		// primeira porta cruzada por quem já estivesse dentro do lote.
+		Vila->OnDoorCrossed.AddUObject(this, &ABattleSquareGameMode::AnunciarPortaCruzada);
+
 		Vila->BuildVillage();
 
 		++Erguidos;
 		Predios += Vila->GetBuiltCount();
+		Portas += Vila->GetDoors().Num();
+	}
+
+	// AS PORTAS ENTRAM NA CONTAGEM, e não só os prédios.
+	//
+	// Elas são invisíveis por desenho, então a única prova de que existem é o
+	// número — e uma vila que erguesse dez prédios com zero portas leria como
+	// vila pronta. É o mesmo motivo de o painel contar predio de pé.
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("regiao: %d assentamentos, %d predios de pe, %d portas"),
+			Erguidos, Predios, Portas),
+		0.0f, FColor(200, 180, 120), /*Key=*/744);
+}
+
+void ABattleSquareGameMode::AnunciarPortaCruzada(EVillageBuilding Predio,
+	ESettlementKind DeQueVila, bool bEntrou)
+{
+	// ENTRAR NÃO É COMPROMETER-SE. Esta função ANUNCIA e não faz mais nada —
+	// não cobra, não cura, não vende. Quem for escrever CI3 a CI9 acrescenta o
+	// gesto do jogador, e não o efeito da calçada.
+	if (!bEntrou)
+	{
+		// Apaga ao sair, como o sagrado e a travessia. Deixada, a linha diria
+		// que se está num prédio que ficou para trás.
+		FBattleDebugScreen::Show(TEXT(""), 0.0f, FColor::White, /*Key=*/753);
+		return;
 	}
 
 	FBattleDebugScreen::Show(
-		FString::Printf(TEXT("regiao: %d assentamentos, %d predios de pe"), Erguidos, Predios),
-		0.0f, FColor(200, 180, 120), /*Key=*/744);
+		FString::Printf(TEXT("entrou: %s (%s)"),
+			VillageLayout::BuildingDebugName(Predio),
+			RegionLayout::KindDebugName(DeQueVila)),
+		0.0f, FColor(220, 200, 255), /*Key=*/753);
 }
 
 void ABattleSquareGameMode::SpawnTrainingFields()

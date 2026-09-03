@@ -29,17 +29,11 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FIslandMapDumpTest,
 
 namespace DespejoDoMapa
 {
+	// O nome sai do traçado, e não de uma tabela aqui: esta era a única cópia
+	// dele, e o painel da vila passou a precisar do mesmo nome.
 	const TCHAR* NomeDoTipo(ESettlementKind Tipo)
 	{
-		switch (Tipo)
-		{
-		case ESettlementKind::VilaInicial:      return TEXT("vila-inicial");
-		case ESettlementKind::VilaDaAcademia:   return TEXT("vila-academia");
-		case ESettlementKind::VilaDoMercado:    return TEXT("vila-mercado");
-		case ESettlementKind::CidadeGrande:     return TEXT("cidade-grande");
-		case ESettlementKind::PostoDeFronteira: return TEXT("posto-fronteira");
-		}
-		return TEXT("?");
+		return RegionLayout::KindDebugName(Tipo);
 	}
 
 	const TCHAR* NomeDaPeca(IslandFeatureLayout::EIslandFeature Peca)

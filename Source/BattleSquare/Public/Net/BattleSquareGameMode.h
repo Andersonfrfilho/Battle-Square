@@ -18,6 +18,15 @@
 #include "Meta/PetCollectionSaveGame.h"
 #include "BattleSquareGameMode.generated.h"
 
+/**
+ * Declaração adiantada COM O TIPO BASE, e o `: uint8` não é enfeite.
+ *
+ * Sem ele o compilador declara um enum NOVO de tipo diferente, e o erro que
+ * sai fala de "tipo incompleto" em cinco arquivos que não têm nada a ver.
+ */
+enum class EVillageBuilding : uint8;
+enum class ESettlementKind : uint8;
+
 class ABattleSquarePlayerController;
 
 // T7–T9 (tasks.md, Sala e Pareamento Simples): fiação fina — liga
@@ -342,6 +351,16 @@ private:
 	int32 UsosDoSoloConstruidos = 0;
 
 	/** Diz no painel de que deus é o templo ou a ruína em que se está. */
+	/**
+	 * ALGUÉM CRUZOU A PORTA DE UM PRÉDIO.
+	 *
+	 * Só ANUNCIA. Não cobra, não cura e não vende — entrar não é
+	 * comprometer-se, e a vila que cobra por atravessar a calçada é a vila que
+	 * ninguém atravessa duas vezes.
+	 */
+	void AnunciarPortaCruzada(EVillageBuilding Predio,
+		ESettlementKind DeQueVila, bool bEntrou);
+
 	/** A travessia sob os pés, e o aviso da ponte destruída antes da tentativa. */
 	void AnunciarTravessiaPerto(const UIslandBakedPlan& Baked, const FVector2D& PositionUnits);
 

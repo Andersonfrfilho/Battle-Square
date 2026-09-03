@@ -63,6 +63,17 @@ namespace RegionLayout
 	/** Os quatro assentamentos e os postos de fronteira, em ordem de visita. */
 	BATTLESQUARE_API TArray<FSettlementPlacement> Plan();
 
+	/**
+	 * O nome do tipo de assentamento, para o painel e para o despejo.
+	 *
+	 * Mora aqui, junto do enum, e não em quem imprime. Esta tabela vivia dentro
+	 * do teste de despejo — a TERCEIRA que este projeto achou escondida num
+	 * teste enquanto a produção precisava dela, depois da do uso do solo e da
+	 * do material da ponte. Duas cópias concordam até alguém acrescentar um
+	 * tipo, e aí a nova sai como "?" no lugar que importa.
+	 */
+	BATTLESQUARE_API const TCHAR* KindDebugName(ESettlementKind Kind);
+
 	/** Quantos postos de fronteira a região tem. */
 	BATTLESQUARE_API int32 BorderPostCount();
 

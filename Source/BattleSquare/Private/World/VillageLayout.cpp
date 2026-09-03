@@ -67,6 +67,53 @@ constexpr float EscalaDoPosto = 0.55f;
 	}
 }
 
+bool VillageLayout::HasDoor(EVillageBuilding Predio)
+{
+	switch (Predio)
+	{
+	// SEM PORTA, e cada um por um motivo diferente.
+	//
+	// A Casa não tem função — e a regra estava escrita no comentário dela
+	// desde sempre. Palafita e Passarela são casa e rua do Mercado do Lago;
+	// a Chinampa é lavoura flutuante, que é CHÃO e não portal.
+	case EVillageBuilding::Casa:
+	case EVillageBuilding::Palafita:
+	case EVillageBuilding::Passarela:
+	case EVillageBuilding::Chinampa:
+		return false;
+
+	default:
+		break;
+	}
+
+	// O RESTO TEM, e o `default` aqui é deliberado ao contrário do costume:
+	// prédio novo nasce COM porta e é obrigado a se declarar sem ela. O avesso
+	// — nascer mudo — é como Palafita, Passarela e Chinampa passaram a existir
+	// sem cor, caindo num `default` que ninguém releu (invariante 16).
+	return true;
+}
+
+const TCHAR* VillageLayout::BuildingDebugName(EVillageBuilding Predio)
+{
+	switch (Predio)
+	{
+	case EVillageBuilding::CentroDeRecuperacao: return TEXT("Centro de Recuperacao");
+	case EVillageBuilding::Escola:              return TEXT("Escola");
+	case EVillageBuilding::Arena:               return TEXT("Arena");
+	case EVillageBuilding::Praca:               return TEXT("Praca");
+	case EVillageBuilding::Marco:               return TEXT("Marco");
+	case EVillageBuilding::Casa:                return TEXT("Casa");
+	case EVillageBuilding::Academia:            return TEXT("Academia");
+	case EVillageBuilding::Mercado:             return TEXT("Mercado");
+	case EVillageBuilding::Portao:              return TEXT("Portao");
+	case EVillageBuilding::Palafita:            return TEXT("Palafita");
+	case EVillageBuilding::Passarela:           return TEXT("Passarela");
+	case EVillageBuilding::Chinampa:            return TEXT("Chinampa");
+	default: break;
+	}
+	return TEXT("?");
+}
+
 float VillageLayout::PlotHalfExtentUnits()
 {
 	return RegionResidency::ChunkSideUnits() * FracaoDoBloco * 0.5f;

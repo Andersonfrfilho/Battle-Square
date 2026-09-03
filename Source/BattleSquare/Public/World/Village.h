@@ -6,7 +6,22 @@
 #include "World/VillageLayout.h"
 #include "Village.generated.h"
 
+class UBoxComponent;
 class UStaticMeshComponent;
+
+/**
+ * ALGUÉM ENTROU (ou saiu) da porta de um prédio.
+ *
+ * O evento carrega O QUE foi tocado e DE QUE assentamento, e nada mais. É de
+ * propósito: quem escuta decide o que fazer, e o prédio não aprende a curar,
+ * a cobrar nem a vender.
+ *
+ * Sem isso, a primeira interação escrita dentro do Centro de Recuperação
+ * obrigaria as cinco seguintes a repetir o mesmo gatilho — o próprio
+ * `tasks.md` avisa que escolher errado aqui custa seis vezes.
+ */
+DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnVillageDoorCrossed,
+	EVillageBuilding /*Predio*/, ESettlementKind /*DeQueVila*/, bool /*bEntrou*/);
 
 /**
  * A vila em pé.
@@ -52,6 +67,20 @@ public:
 		return BuiltMeshes;
 	}
 
+	/**
+	 * As PORTAS: um volume de gatilho por prédio que tem função.
+	 *
+	 * Menos que os prédios, sempre — Casa, Palafita, Passarela e Chinampa não
+	 * têm porta, e não tê-la é a regra, não uma falta.
+	 */
+	const TArray<TObjectPtr<UBoxComponent>>& GetDoors() const { return Doors; }
+
+	/** De que prédio é a porta de índice `Qual`, na mesma ordem de `GetDoors`. */
+	EVillageBuilding GetDoorBuilding(int32 Which) const;
+
+	/** Alguém cruzou uma porta. Quem escuta decide o que isso significa. */
+	FOnVillageDoorCrossed OnDoorCrossed;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -72,4 +101,28 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UStaticMesh> BoxMesh;
+
+	/**
+	 * As portas, e elas NÃO BLOQUEIAM.
+	 *
+	 * Volume de gatilho que bloqueia é parede: emparedaria justamente o prédio
+	 * que ele existe para deixar usar. Só `QueryOnly`, e só sobreposição.
+	 */
+	UPROPERTY()
+	TArray<TObjectPtr<UBoxComponent>> Doors;
+
+	/** De que prédio é cada porta, na mesma ordem. */
+	TArray<EVillageBuilding> DoorBuildings;
+
+	UFUNCTION()
+	void HandleDoorBegin(UPrimitiveComponent* Porta, AActor* Quem,
+		UPrimitiveComponent* Outro, int32 Corpo, bool bVarredura,
+		const FHitResult& Batida);
+
+	UFUNCTION()
+	void HandleDoorEnd(UPrimitiveComponent* Porta, AActor* Quem,
+		UPrimitiveComponent* Outro, int32 Corpo);
+
+	/** O caminho único dos dois: só o SENTIDO muda. */
+	void AnunciarPorta(UPrimitiveComponent* Porta, AActor* Quem, bool bEntrou);
 };

@@ -241,6 +241,19 @@ float RegionLayout::DistanceFromCenterUnits(ESettlementKind Kind)
 	return 0.0f;
 }
 
+const TCHAR* RegionLayout::KindDebugName(ESettlementKind Tipo)
+{
+	switch (Tipo)
+	{
+	case ESettlementKind::VilaInicial:      return TEXT("vila-inicial");
+	case ESettlementKind::VilaDaAcademia:   return TEXT("vila-academia");
+	case ESettlementKind::VilaDoMercado:    return TEXT("vila-mercado");
+	case ESettlementKind::CidadeGrande:     return TEXT("cidade-grande");
+	case ESettlementKind::PostoDeFronteira: return TEXT("posto-fronteira");
+	}
+	return TEXT("?");
+}
+
 int32 RegionLayout::BorderPostCount()
 {
 	return QuantidadeDePostos;

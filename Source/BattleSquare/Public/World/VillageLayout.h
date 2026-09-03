@@ -141,6 +141,26 @@ namespace VillageLayout
 	 * para a floresta que vem em volta, e o jogador sairia de casa direto para
 	 * o bloco vizinho.
 	 */
+	/**
+	 * ESTE PRÉDIO TEM PORTA?
+	 *
+	 * A regra já estava escrita no comentário da `Casa`, e não no código:
+	 * *"casa sem função não tem porta. Porta que não abre é promessa
+	 * quebrada."* Aqui ela vira coisa que o compilador e o teste alcançam.
+	 *
+	 * O que ela protege é a promessa: um gatilho em toda parede faria a vila
+	 * anunciar dez lugares e responder em cinco, e quem tentasse a Casa
+	 * aprenderia que anúncio não quer dizer nada — inclusive nos prédios em que
+	 * quer.
+	 *
+	 * Palafita, Passarela e Chinampa também não têm: as duas primeiras são
+	 * casa e rua, e a chinampa é lavoura — chão, não portal.
+	 */
+	BATTLESQUARE_API bool HasDoor(EVillageBuilding Building);
+
+	/** O nome do prédio, para o painel. Ao lado do enum, e não em quem imprime. */
+	BATTLESQUARE_API const TCHAR* BuildingDebugName(EVillageBuilding Building);
+
 	BATTLESQUARE_API float PlotHalfExtentUnits();
 
 	/**

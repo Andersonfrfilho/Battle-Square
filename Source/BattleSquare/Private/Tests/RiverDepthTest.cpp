@@ -214,10 +214,43 @@ bool FRiverDepthRapidsAreShallowTest::RunTest(const FString& Parameters)
 		{
 			++Comparados;
 
-			const float NaCorredeira = FreshWater::DepthAtProgress(
-				Curso, static_cast<float>(OndeACorredeira) / Passos);
-			const float NoManso = FreshWater::DepthAtProgress(
-				Curso, static_cast<float>(OndeOManso) / Passos);
+			const float ProgCorredeira = static_cast<float>(OndeACorredeira) / Passos;
+			const float ProgManso = static_cast<float>(OndeOManso) / Passos;
+
+			// NORMALIZADO PELA LARGURA, e esta é a segunda correção deste
+			// mesmo teste.
+			//
+			// A fundura é `largura × proporção × declive`. Comparar funduras
+			// cruas mede DUAS variáveis: a largura, que cresce com o percurso,
+			// e o declive, que é a única que esta regra afirma. Um trecho de
+			// corredeira já bem mais largo pode sair mais fundo que um remanso
+			// estreito — e isso não contradiz "corredeira rasea", contradiz a
+			// pergunta que eu estava fazendo.
+			//
+			// Reprovou em 1 de 35 duas vezes, com bases diferentes (ordem e
+			// depois largura), e nas duas o confundimento era o mesmo com
+			// outra roupa.
+			//
+			// Dividir pela largura isola o declive. **Isto NÃO é reconstruir a
+			// fórmula dentro do teste**: a largura é dado do assado, lido pela
+			// mesma função que o mundo usa, e o que se compara continua sendo
+			// a saída de `DepthAtProgress`.
+			const float LarguraCorredeira =
+				FreshWater::HalfWidthAtProgress(Curso, ProgCorredeira);
+			const float LarguraManso =
+				FreshWater::HalfWidthAtProgress(Curso, ProgManso);
+
+			if (LarguraCorredeira <= KINDA_SMALL_NUMBER
+				|| LarguraManso <= KINDA_SMALL_NUMBER)
+			{
+				--Comparados;
+				continue;
+			}
+
+			const float NaCorredeira =
+				FreshWater::DepthAtProgress(Curso, ProgCorredeira) / LarguraCorredeira;
+			const float NoManso =
+				FreshWater::DepthAtProgress(Curso, ProgManso) / LarguraManso;
 
 			if (NaCorredeira < NoManso) { ++RasosNaCorredeira; }
 		}
@@ -233,7 +266,10 @@ bool FRiverDepthRapidsAreShallowTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	TestEqual(TEXT("a corredeira e MAIS RASA que o remanso, em todos"),
+	// EM TODOS, e não "na maioria": a regra é física — o declive rasea —, e
+	// regra que vale às vezes não é regra, é tendência. Afrouxar para a
+	// maioria esconderia justamente o curso que a contradiz.
+	TestEqual(TEXT("a corredeira e MAIS RASA que o remanso, POR LARGURA, em todos"),
 		RasosNaCorredeira, Comparados);
 
 	return true;

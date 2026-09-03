@@ -1104,3 +1104,41 @@ o de não ter tentado.
 **Busca grossa é melhor que fórmula fina aqui:** 72 rumos é determinístico,
 reproduzível, e imune à inversão. Fórmula que trate o caso especial precisaria
 saber que ele existe.
+
+### L-050: 34 de 35 não é ruído — é confundimento
+
+**Descoberto:** 02/09/2026, medindo "a corredeira é mais rasa que o remanso".
+
+O teste reprovou em **1 de 35** cursos. Duas vezes. Com bases diferentes.
+
+**Primeira vez:** eu comparava o PRIMEIRO ponto de corredeira com o PRIMEIRO de
+remanso. Quando o remanso está na cabeceira e a corredeira lá adiante, a
+corredeira sai mais funda mesmo com o declive raseando — porque a base cresce
+com o percurso. Consertei comparando pontos VIZINHOS, e passou.
+
+**Segunda vez:** troquei a base (de ordem para largura) e o mesmo 1 de 35
+voltou. A largura também varia com o percurso, e um trecho de corredeira mais
+largo pode sair mais fundo que um remanso estreito.
+
+**Eu tinha consertado o sintoma sem nomear a causa**, e por isso ela voltou
+quando a base mudou.
+
+A causa é uma só: **o teste media DUAS variáveis e atribuía o resultado a uma.**
+A fundura é `largura × proporção × declive`; comparar funduras cruas mede a
+largura junto, e a regra só afirma o declive.
+
+O conserto é NORMALIZAR pela variável que não é da regra — dividir pela largura
+— e aí 35 de 35.
+
+⚠️ **O número quase-certo é o disfarce.** Uma falha em 1 de 35 parece ruído de
+amostragem, e a tentação é afrouxar o teste para "na maioria". Afrouxar teria
+escondido exatamente o caso que denunciava o confundimento — e a regra afirmada
+continuaria sendo outra que a testada.
+
+**A pergunta que separa:** *este teste mede só o que a regra afirma, ou arrasta
+junto alguma coisa que varia pelo mesmo eixo?* Se arrasta, normalize por ela.
+
+**E normalizar não é reconstruir a fórmula no teste** (o erro que a regra 12 de
+`geracao-procedural-de-mapas.md` nomeia): a largura vem do assado, pela mesma
+função que o mundo usa, e o que se compara continua sendo a saída da função
+testada.

@@ -377,12 +377,17 @@ namespace FreshWater
 		constexpr float EngrossaPorOrdem = 1.7f;
 
 	/**
-	 * A fundura de um fio de cabeceira de primeira ordem, na nascente.
+	 * A proporção entre largura e fundura, ANTES do declive.
 	 *
-	 * 18 unidades — pouco menos de vinte centímetros. É o fio que se pisa sem
-	 * pensar, e é a base de onde tudo cresce por ordem e por percurso.
+	 * É o mesmo `0,065` que a estimativa do traçado usava, e ele fica: a
+	 * proporção nunca foi o erro dela. Um córrego de três metros dá dez
+	 * centímetros; um tronco de vinte e oito metros dá quase dois.
+	 *
+	 * O que muda é que este número deixou de ser a resposta e passou a ser a
+	 * BASE — o declive modula em cima dele, e é isso que faz dois pontos de
+	 * mesma largura terem funduras diferentes.
 	 */
-	constexpr float FundoDoFioDeCabeceira = 18.0f;
+	constexpr float FundoSobreLargura = 0.065f;
 
 	/**
 	 * Quanto da fundura sobra na corredeira mais brava.
@@ -1492,12 +1497,25 @@ namespace FreshWater
 	{
 		const float Onde = FMath::Clamp(Progress, 0.0f, 1.0f);
 
-		// A BASE sai da ordem e do progresso, como a largura — pelo mesmo
-		// motivo: a bacia entra pela margem o percurso inteiro.
-		const float PorOrdem =
-			FMath::Pow(EngrossaPorOrdem, static_cast<float>(Course.Order - 1));
-		const float Base = FundoDoFioDeCabeceira * PorOrdem
-			* FMath::Lerp(1.0f / EngrossaAteAFoz, 1.0f, Onde);
+		// A BASE SAI DA LARGURA, e isto é uma correção da minha primeira
+		// tentativa — que crescia só por ordem e não cobria a faixa.
+		//
+		// A fundura precisa ir de dez centímetros num fio de cabeceira a
+		// vários metros num tronco: cerca de sessenta vezes. Crescer por ordem
+		// dá `1,7³ = 4,9×`, e não existe constante que faça o fio raso E o
+		// tronco fundo dentro disso. Medido: com base por ordem, a fundura
+		// máxima da ilha ficou em 134,7 — abaixo do limiar de vau (100) quase
+		// em todo lugar, e TODAS as 37 travessias viraram vau.
+		//
+		// A LARGURA já cobre a faixa, porque ela cresce por ordem E por
+		// percurso, multiplicativamente. O comentário da estimativa antiga
+		// estava certo sobre isso: "rio largo é rio fundo — a relação vale em
+		// qualquer escala".
+		//
+		// **O que ele não tinha era o DECLIVE**, e é ele que entra abaixo. A
+		// estimativa não estava errada na proporção; estava incompleta na
+		// pergunta.
+		const float Base = HalfWidthAtProgress(Course, Onde) * 2.0f * FundoSobreLargura;
 
 		// O DECLIVE É QUEM FAZ A FUNDURA VARIAR, e é o que a estimativa por
 		// largura nunca soube: água que despenca corre RASA sobre a pedra;

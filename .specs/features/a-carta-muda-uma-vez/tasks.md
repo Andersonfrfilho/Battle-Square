@@ -104,7 +104,7 @@ parâmetro novo** — é o guarda que já existe.
 
 ---
 
-## M4 — A estimativa privada MORRE, e o traçado LÊ
+## M4 — A estimativa privada MORRE, e o traçado LÊ ✅ FEITO
 > 🤖 Modelo: `sonnet`
 
 **Dependências:** M3.

@@ -952,14 +952,42 @@ namespace
 	/**
 	 * A fundura da água num ponto, estimada pela LARGURA da calha.
 	 *
-	 * Rio largo é rio fundo — a relação vale em qualquer escala, e é a única
-	 * medida que este mundo tem sem modelar o leito. Um córrego de três metros
-	 * dá dez centímetros; um tronco de vinte e oito metros dá quase dois.
+	 * ## A ESTIMATIVA POR LARGURA MORREU AQUI, em 02/09/2026
 	 *
-	 * Estimar não é inventar: a alternativa seria um campo de profundidade
-	 * separado, que é uma segunda fonte da mesma verdade (L-032).
+	 * Ela era `largura × 0,065`, e o comentário dela defendia a escolha:
+	 * *"estimar não é inventar; a alternativa seria um campo de profundidade
+	 * separado, que é uma segunda fonte da mesma verdade (L-032)"*.
+	 *
+	 * **O comentário estava certo, e deixou de estar** no dia em que a fundura
+	 * passou a existir de verdade (`FreshWater::DepthAtProgress`). A partir
+	 * dali, é a estimativa que seria a segunda fonte.
+	 *
+	 * Ela não vira "fallback": fallback de fonte de verdade é fonte de verdade,
+	 * e as duas concordariam até o primeiro rio que alguém alargasse.
+	 *
+	 * ## E ela não era só imprecisa — estava lendo a variável errada
+	 *
+	 * Medido na M3: para a MESMA largura, a fundura real varia em até **56,8
+	 * unidades**. A largura não consegue distinguir esses dois lugares, porque
+	 * quem os separa é o DECLIVE — água que despenca corre rasa, água que quase
+	 * não desce empoça. Um trecho largo e íngreme é raso, e a estimativa o dava
+	 * como fundo.
+	 *
+	 * Nenhuma calibragem de `0,065` acertaria: o número não estava errado, a
+	 * pergunta estava.
 	 */
-	constexpr float FunduraSobreLargura = 0.065f;
+	/**
+	 * A fundura de um CÓRREGO, pela largura dele.
+	 *
+	 * Sobreviveu à morte da estimativa do rio, e por medição: o córrego é um
+	 * fio que liga uma fonte a um rio — sem ordem, sem progresso e sem declive
+	 * ao longo do percurso. Não há o que variar nele, então não há segunda
+	 * fonte de verdade a criar, que era o motivo de matar a do rio.
+	 *
+	 * O valor é o mesmo `0,065` de antes, porque para o córrego ele nunca
+	 * esteve errado.
+	 */
+	constexpr float FunduraDoCorregoSobreLargura = 0.065f;
 
 	float FunduraEm(const FVector2D& Onde)
 	{
@@ -973,7 +1001,12 @@ namespace
 
 			if (Ate <= Meia)
 			{
-				MaisFunda = FMath::Max(MaisFunda, Meia * 2.0f * FunduraSobreLargura);
+				// A FUNDURA DAQUELE PONTO DO CURSO, e não uma conta sobre a
+				// largura dele. `NoCurso` já é o progresso do ponto mais perto
+				// — a mesma coordenada que a largura usa —, então as duas
+				// falam do mesmo lugar.
+				MaisFunda = FMath::Max(MaisFunda,
+					FreshWater::DepthAtProgress(Curso, NoCurso));
 			}
 		}
 
@@ -994,8 +1027,16 @@ namespace
 
 				if (FVector2D::Distance(Onde, MaisPerto) <= Corrego.HalfWidthUnits)
 				{
+					// O CÓRREGO continua pela largura, e isto é medição, não
+					// esquecimento: ele não tem curso com progresso, ordem nem
+					// declive — é um fio que liga uma fonte a um rio, e a
+					// fundura dele não varia ao longo do percurso.
+					//
+					// Aplicar a fórmula do rio aqui exigiria inventar um
+					// declive que o córrego não tem. A relação largura-fundura
+					// continua sendo a melhor medida DELE.
 					MaisFunda = FMath::Max(MaisFunda,
-						Corrego.HalfWidthUnits * 2.0f * FunduraSobreLargura);
+						Corrego.HalfWidthUnits * 2.0f * FunduraDoCorregoSobreLargura);
 				}
 			}
 		}

@@ -35,7 +35,7 @@ comentário previu.
 - [x] **M2** — a rocha ganha ESCARPA, a água acha o degrau, e o poço aprofunda
       sozinho *(reescrita: degrau NA QUEDA recriaria um ciclo já consertado)*
 - [x] **M3** — a fundura existe POR PONTO no assado, e quem a decide é o gerador
-- [ ] **M4** — a estimativa privada do traçado MORRE, e o traçado passa a LER
+- [x] **M4** — a estimativa privada do traçado MORRE, e o traçado passa a LER
 - [ ] **M5** — a cintura é 40% da altura de quem pisa, não uma constante
 - [ ] **M6** — pontes existem: bloco, madeira e DESTRUÍDA
 - [ ] **M7** — algumas grutas se ligam entre si, e "algumas" é medido

@@ -22,4 +22,17 @@ public:
 	// não travar a demonstração; o resolvedor real já trata bloqueio de
 	// movimento na resolução de verdade).
 	static FTurnCommit GenerateRandomValidCommit(const FBattleState& State, uint8 Side, FBattleRandom& Random);
+
+	/**
+	 * O commit COM O ESTILO DE ALGUÉM (decisão 15-d): os TIPOS de ação saem
+	 * de uma roleta pesada pelo histórico do jogador — quem ataca sempre é
+	 * simulado atacando —, e a direção continua a do bot: o estilo que vale
+	 * simular é a TENDÊNCIA, não a coordenada de cada golpe antigo.
+	 *
+	 * Todo tipo mantém peso mínimo 1 (suavização): histórico vazio joga
+	 * uniforme como o bot de sempre, e nenhum tipo morre por nunca ter sido
+	 * usado — estilo é viés, não mordaça.
+	 */
+	static FTurnCommit GenerateStyledCommit(const FBattleState& State, uint8 Side,
+		FBattleRandom& Random, const TArray<int32>& StyleCounts);
 };

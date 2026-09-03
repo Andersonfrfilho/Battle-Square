@@ -83,6 +83,23 @@ pergunta derivada, não respondida).
 **14. O que machuca o treinador.** Ataques de outros pets, ataques de outros
 treinadores, desastres naturais e outros danos.
 
+**15-d. A I.A. SIMULA VOCÊ (03/09).** *"Se você decide ficar na academia, tem
+a opção de batalhar ou deixar a I.A. batalhar por você; se está longe, a I.A.
+batalha por você com seus pets, simulando você lá, baseando nos seus
+movimentos de jogo."* Duas metades:
+
+- **O ESTILO é colhido das batalhas reais**: cada commit do jogador soma no
+  perfil (`ActionStyleCounts`), e a I.A. escolhe os TIPOS de ação por roleta
+  pesada nesse histórico — quem ataca sempre é simulado atacando. A direção
+  continua do bot: o que vale simular é a tendência, não a coordenada de cada
+  golpe antigo. Suavização de +1: histórico vazio joga uniforme (estilo nenhum
+  é um estilo), e nenhum tipo morre por nunca ter sido usado — estilo é viés,
+  não mordaça.
+- **PRESENTE também escolhe**: `bs.Desafiar auto` deixa a I.A. jogar com você
+  ali — e o desfecho passa pela MESMA função da batalha jogada (prêmio, ponto,
+  título, fila): conveniência não muda consequência. Os três caminhos (jogado,
+  auto presente, auto ausente) desembocam em `ApplyArenaOutcome`, um só.
+
 **15-c. A DEFESA EM AUSÊNCIA — o posto cobra resposta, não prisão (03/09).**
 *"Se ele sair, manda um aviso: qualquer usuário que desafiá-lo, ele pode optar
 por batalhar ou deixa no automático."* A tranca da 15-b CAIU: o líder viaja e

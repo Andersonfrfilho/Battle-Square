@@ -320,6 +320,15 @@ public:
 	FBattleFinishedSignature OnBattleFinished;
 
 	/**
+	 * O commit do JOGADOR LOCAL acabou de resolver (decisão 15-d): é daqui
+	 * que o estilo se colhe — das escolhas DELIBERADAS, no momento em que
+	 * viram jogada. Colher do trace confundiria o que o jogador escolheu com
+	 * o que o bot jogou pelo outro lado.
+	 */
+	DECLARE_MULTICAST_DELEGATE_OneParam(FLocalCommitResolvedSignature, const FTurnCommit&);
+	FLocalCommitResolvedSignature OnLocalCommitResolved;
+
+	/**
 	 * COMO terminou, do ponto de vista do jogador local.
 	 *
 	 * `OnBattleFinished` não carrega payload, e quem escuta (a volta ao mundo)

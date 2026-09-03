@@ -401,6 +401,9 @@ private:
 
 	/** A defesa em ausência: o BattleSim joga a defesa do dia pelo líder. */
 	void RunAutoDefense(int32 Today);
+
+	/** Soma as escolhas reais do jogador no perfil de estilo (decisão 15-d). */
+	void AccumulatePlayStyle(const struct FTurnCommit& Commit);
 	ESettlementKind PendingChallengeKind{};
 
 	// `{}` e não um valor nomeado: aqui o enum só existe como declaração
@@ -519,6 +522,16 @@ public:
 	/** A escolha da defesa em ausência (decisão 15, emendada). Sem valor, diz o modo. */
 	void SetAutoDefense(TOptional<bool> bEnabled);
 
+	/** O desfecho de arena, visto do jogador. */
+	enum class EArenaOutcome : uint8 { Won, Lost, Draw };
+
+	/**
+	 * A consequência de um desfecho de arena — UMA função para os três
+	 * caminhos (jogado, automático presente, automático ausente): prêmio,
+	 * ponto, título tomado/mantido/perdido, fila respondida.
+	 */
+	void ApplyArenaOutcome(EArenaOutcome Outcome, bool bWasDefense, ESettlementKind Kind);
+
 	/**
 	 * O endpoint do modelo de fala (decisão 67, e a emenda: A ESCOLHA É DO
 	 * JOGADOR). VAZIO é o modo restrito — e vazio é o padrão: dinâmica é
@@ -543,7 +556,7 @@ public:
 	 * do lugar, nunca do relógio: um oponente que muda a cada visita não é "um
 	 * oponente com motivo para voltar", é sorteio com nome.
 	 */
-	void ChallengeArena();
+	void ChallengeArena(bool bAutoPlay = false);
 
 	/**
 	 * Raio do anel dos campos de treino.

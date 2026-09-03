@@ -52,11 +52,12 @@ namespace
 		return Valid;
 	}
 
-	FBattleAction GenerateOneAction(const FBattleState& State, const FPetState* Pet, FBattleRandom& Random)
+	// A montagem de UMA ação de um TIPO JÁ DECIDIDO — separada da escolha do
+	// tipo para o bot estilizado (decisão 15-d) reaproveitar a regra da grade
+	// em vez de copiá-la.
+	FBattleAction GenerateActionOfType(const FBattleState& State, const FPetState* Pet,
+		EActionType ChosenType, FBattleRandom& Random)
 	{
-		const int32 TypeIndex = Random.NextRange(0, UE_ARRAY_COUNT(AllActionTypes) - 1);
-		const EActionType ChosenType = AllActionTypes[TypeIndex];
-
 		FBattleAction Action;
 		Action.Type = ChosenType;
 
@@ -88,6 +89,12 @@ namespace
 		Action.Direction = AllDirections[DirIndex];
 		return Action;
 	}
+
+	FBattleAction GenerateOneAction(const FBattleState& State, const FPetState* Pet, FBattleRandom& Random)
+	{
+		const int32 TypeIndex = Random.NextRange(0, UE_ARRAY_COUNT(AllActionTypes) - 1);
+		return GenerateActionOfType(State, Pet, AllActionTypes[TypeIndex], Random);
+	}
 }
 
 FTurnCommit FDumbOpponentAI::GenerateRandomValidCommit(const FBattleState& State, uint8 Side, FBattleRandom& Random)
@@ -99,5 +106,47 @@ FTurnCommit FDumbOpponentAI::GenerateRandomValidCommit(const FBattleState& State
 	{
 		Commit.Actions[Index] = GenerateOneAction(State, Pet, Random);
 	}
+	return Commit;
+}
+
+FTurnCommit FDumbOpponentAI::GenerateStyledCommit(const FBattleState& State, uint8 Side,
+	FBattleRandom& Random, const TArray<int32>& StyleCounts)
+{
+	const FPetState* Pet = FindPetOnSide(State, Side);
+
+	// A roleta dos TIPOS, pesada pelo histórico + 1. O menu é o MESMO do bot
+	// uniforme — um segundo menu divergiria dele na primeira skill nova.
+	int32 Total = 0;
+	int32 Pesos[UE_ARRAY_COUNT(AllActionTypes)];
+	for (int32 Indice = 0; Indice < UE_ARRAY_COUNT(AllActionTypes); ++Indice)
+	{
+		const int32 Valor = static_cast<int32>(AllActionTypes[Indice]);
+		Pesos[Indice] = 1 + (StyleCounts.IsValidIndex(Valor)
+			? FMath::Max(0, StyleCounts[Valor]) : 0);
+		Total += Pesos[Indice];
+	}
+
+	FTurnCommit Commit;
+	for (int32 Slot = 0; Slot < FTurnCommit::ActionsPerTurn; ++Slot)
+	{
+		int32 Restante = Random.NextRange(0, Total - 1);
+		EActionType Escolhido = AllActionTypes[0];
+		for (int32 Indice = 0; Indice < UE_ARRAY_COUNT(AllActionTypes); ++Indice)
+		{
+			Restante -= Pesos[Indice];
+			if (Restante < 0)
+			{
+				Escolhido = AllActionTypes[Indice];
+				break;
+			}
+		}
+
+		// A direção é a do bot de sempre, pela MESMA montagem: reescrever a
+		// validade de Mover aqui seria a segunda cópia da regra da grade.
+		// (Mover encurralado ainda degrada para Aguardar lá dentro — ação
+		// VÁLIDA vale mais que estilo fiel.)
+		Commit.Actions[Slot] = GenerateActionOfType(State, Pet, Escolhido, Random);
+	}
+
 	return Commit;
 }

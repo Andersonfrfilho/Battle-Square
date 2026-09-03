@@ -1,6 +1,8 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Battle/AutoBattleResolver.h"
+#include "Battle/BattleRandom.h"
+#include "Battle/DumbOpponentAI.h"
 #include "Misc/AutomationTest.h"
 
 namespace DefesaAutomaticaTeste
@@ -99,6 +101,57 @@ bool FAutoBattleFavorsTheStrongerTest::RunTest(const FString&)
 
 	TestTrue(TEXT("o lado dez vezes mais vivo vence a maioria"),
 		VitoriasDoForte > Rodadas / 2);
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FStyledBotSimulatesThePlayerTest,
+	"BattleSquare.Battle.DefesaAutomatica.AIASimulaOJogador",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FStyledBotSimulatesThePlayerTest::RunTest(const FString&)
+{
+	// "A I.A. batalha por você SIMULANDO VOCÊ, baseando nos seus movimentos"
+	// (decisão 15-d): um perfil carregado de Atacar tem de gerar commits
+	// carregados de Atacar. Semente fixa — mede-se a roleta, não a sorte.
+	const FBattleState Estado =
+		DefesaAutomaticaTeste::DueloParaADefesaAutomatica(200, 200);
+
+	TArray<int32> EstiloAgressivo;
+	EstiloAgressivo.SetNumZeroed(static_cast<int32>(EActionType::Atacar) + 1);
+	EstiloAgressivo[static_cast<int32>(EActionType::Atacar)] = 200;
+
+	FBattleRandom Random;
+	Random.State = 9;
+
+	int32 Ataques = 0;
+	int32 Total = 0;
+	for (int32 Rodada = 0; Rodada < 40; ++Rodada)
+	{
+		const FTurnCommit Commit = FDumbOpponentAI::GenerateStyledCommit(
+			Estado, 0, Random, EstiloAgressivo);
+		for (const FBattleAction& Acao : Commit.Actions)
+		{
+			++Total;
+			Ataques += Acao.Type == EActionType::Atacar ? 1 : 0;
+		}
+	}
+
+	// Com peso 200 contra 1 dos outros cinco, atacar tem de DOMINAR — e não
+	// pode ser TUDO: a suavização (+1) garante que estilo é viés, não
+	// mordaça, e o pet encurralado ainda degrada para Aguardar.
+	TestTrue(TEXT("o agressivo ataca na maioria dos slots"), Ataques > Total / 2);
+
+	// E o histórico VAZIO joga: estilo nenhum é um estilo, não um erro.
+	const FTurnCommit SemHistorico = FDumbOpponentAI::GenerateStyledCommit(
+		Estado, 0, Random, TArray<int32>());
+	TestTrue(TEXT("sem historico, o commit sai valido"),
+		SemHistorico.Actions[0].Type == EActionType::Aguardar
+			|| SemHistorico.Actions[0].Type == EActionType::Mover
+			|| SemHistorico.Actions[0].Type == EActionType::Atacar
+			|| SemHistorico.Actions[0].Type == EActionType::Magia
+			|| SemHistorico.Actions[0].Type == EActionType::Defender
+			|| SemHistorico.Actions[0].Type == EActionType::Esquivar);
 
 	return true;
 }

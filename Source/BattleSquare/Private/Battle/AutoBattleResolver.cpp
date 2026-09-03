@@ -18,7 +18,8 @@ namespace
 	constexpr int32 TetoDeTurnos = 60;
 }
 
-uint8 AutoBattleResolver::ResolveBotVsBot(FBattleState State, uint64 BotSeed)
+uint8 AutoBattleResolver::ResolveBotVsBot(FBattleState State, uint64 BotSeed,
+	const TArray<int32>* Side0Style)
 {
 	// O acaso da IA é PRÓPRIO e semeado por fora: o do estado pertence à
 	// resolução (dano, esquiva), e usar o mesmo para as escolhas faria a
@@ -28,8 +29,9 @@ uint8 AutoBattleResolver::ResolveBotVsBot(FBattleState State, uint64 BotSeed)
 
 	for (int32 Turno = 0; Turno < TetoDeTurnos; ++Turno)
 	{
-		const FTurnCommit Esquerda =
-			FDumbOpponentAI::GenerateRandomValidCommit(State, /*Side=*/0, BotRandom);
+		const FTurnCommit Esquerda = Side0Style
+			? FDumbOpponentAI::GenerateStyledCommit(State, /*Side=*/0, BotRandom, *Side0Style)
+			: FDumbOpponentAI::GenerateRandomValidCommit(State, /*Side=*/0, BotRandom);
 		const FTurnCommit Direita =
 			FDumbOpponentAI::GenerateRandomValidCommit(State, /*Side=*/1, BotRandom);
 

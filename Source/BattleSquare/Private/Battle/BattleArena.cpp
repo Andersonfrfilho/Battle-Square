@@ -1999,6 +1999,9 @@ void ABattleArena::ResolveTurnWithCommits(const FTurnCommit& LocalCommit, const 
 	LastCommitBySide[0] = LeftCommit;
 	LastCommitBySide[1] = RightCommit;
 
+	// O estilo se colhe AQUI, do lado que o jogador comanda — e só dele.
+	OnLocalCommitResolved.Broadcast(LastCommitBySide[LocalPlayerSide]);
+
 	const uint64 AcasoAntesDoTurno = CurrentState.Random.State;
 	FBattleResolveResult Result = FBattleResolver::ResolveTurn(CurrentState,
 		FBattleResolver::DuelCommits(CurrentState, LeftCommit, RightCommit));

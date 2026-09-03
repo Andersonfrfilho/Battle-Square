@@ -216,6 +216,18 @@ struct BATTLESQUARE_API FTrainerProfile
 	/** O dia em que um desafiante chegou e espera. -1 é "ninguém na fila". */
 	UPROPERTY()
 	int32 PendingDefenseDay = -1;
+
+	/**
+	 * O SEU JEITO DE JOGAR, contado das suas batalhas (decisão 15-d): quantas
+	 * vezes você escolheu cada tipo de ação, indexado pelo valor de
+	 * `EActionType`. É o que a I.A. lê para "simular você" quando joga no seu
+	 * lugar — quem ataca sempre é simulado atacando; quem dança, dançando.
+	 *
+	 * Vazio é jogador sem histórico: a I.A. joga uniforme, como o bot de
+	 * sempre — estilo nenhum é um estilo, não um erro.
+	 */
+	UPROPERTY()
+	TArray<int32> ActionStyleCounts;
 };
 
 /**

@@ -828,11 +828,35 @@ void ABattleSquareGameMode::HandleWorldBattleStarted(ABattleArena* Arena)
 	// mundo precisa saber COMO terminou — é a derrota que acorda no hospital.
 	Arena->OnBattleFinished.AddUObject(this,
 		&ABattleSquareGameMode::HandleWorldBattleFinished, Arena);
+
+	// O ESTILO SE COLHE DAS JOGADAS REAIS (decisão 15-d): cada commit do
+	// jogador soma no perfil — em memória; quem grava é o fim da batalha,
+	// senão seria um save por turno.
+	Arena->OnLocalCommitResolved.AddUObject(this,
+		&ABattleSquareGameMode::AccumulatePlayStyle);
+}
+
+void ABattleSquareGameMode::AccumulatePlayStyle(const FTurnCommit& Commit)
+{
+	for (const FBattleAction& Acao : Commit.Actions)
+	{
+		const int32 Valor = static_cast<int32>(Acao.Type);
+		if (CachedTrainer.ActionStyleCounts.Num() <= Valor)
+		{
+			CachedTrainer.ActionStyleCounts.SetNumZeroed(Valor + 1);
+		}
+		++CachedTrainer.ActionStyleCounts[Valor];
+	}
 }
 
 void ABattleSquareGameMode::HandleWorldBattleFinished(ABattleArena* Arena)
 {
 	TearDownBattleUi();
+
+	// O estilo acumulado na luta grava AGORA, junto de tudo: um save por
+	// turno seria I/O por clique, e estilo que morre com o processo é
+	// jogador que a I.A. esquece.
+	FPetCollectionService::SaveTrainerProfile(PetCollectionSlotName, CachedTrainer);
 
 	// A VIDA QUE SOBROU FICA (decisão 61) — gravada ANTES de reler o
 	// snapshot, senão o painel mostraria a vida de antes da luta.
@@ -891,69 +915,18 @@ void ABattleSquareGameMode::HandleWorldBattleFinished(ABattleArena* Arena)
 	// (invariante 15): a vila paga pouco, o grande mora na cidade.
 	if (bPendingArenaChallenge)
 	{
-		const bool bVenceuODesafio = Arena
-			&& Arena->GetLastLocalOutcome() == EBattleResultOutcome::Vitoria;
-		const FString ChaveDoCentro =
-			RegionLayout::KindDebugName(PendingChallengeKind);
-
-		if (bVenceuODesafio)
+		EArenaOutcome Desfecho = EArenaOutcome::Draw;
+		if (Arena)
 		{
-			FTrainerRankingRules::AwardArenaVictory(CachedTrainer);
-			FTrainerWalletRules::Earn(CachedTrainer,
-				SettlementEconomy::RankingPrize(PendingChallengeKind));
-
-			// VENCER O CAMPEONATO TOMA O TÍTULO — quando há título a tomar:
-			// a defesa mantém o que já era seu, e o líder de OUTRO centro
-			// ganha só o prêmio (líder é de UM centro; a emenda liberou a
-			// viagem, não o colecionismo de cadeiras).
-			if (bPendingChallengeIsDefense)
+			switch (Arena->GetLastLocalOutcome())
 			{
-				FLeadershipRules::ClearPendingDefense(CachedTrainer);
-				FBattleDebugScreen::Show(TEXT("posto DEFENDIDO — o titulo continua seu"),
-					8.0f, FColor::Green, /*Key=*/-1);
+			case EBattleResultOutcome::Vitoria: Desfecho = EArenaOutcome::Won; break;
+			case EBattleResultOutcome::Derrota: Desfecho = EArenaOutcome::Lost; break;
+			default: break;
 			}
-			else if (!FLeadershipRules::IsLeaderAnywhere(CachedTrainer))
-			{
-				FLeadershipRules::TakeTitle(CachedTrainer, ChaveDoCentro);
-				FBattleDebugScreen::Show(
-					FString::Printf(
-						TEXT("=== VOCE E O NOVO LIDER de %s — o posto rende, e cobra resposta ==="),
-						*ChaveDoCentro),
-					10.0f, FColor(255, 215, 120), /*Key=*/-1);
-			}
-			else
-			{
-				FBattleDebugScreen::Show(
-					FString::Printf(
-						TEXT("vitoria de visitante: o titulo de %s continua la — voce ja tem o seu"),
-						*ChaveDoCentro),
-					8.0f, FColor(200, 220, 200), /*Key=*/-1);
-			}
-
-			FPetCollectionService::SaveTrainerProfile(PetCollectionSlotName, CachedTrainer);
-
-			MostrarCarteira();
-			MostrarRanking();
-			FBattleDebugScreen::Show(
-				FString::Printf(TEXT("vitoria de Arena: +%d pts, +%d"),
-					FTrainerRankingRules::PointsPerArenaVictory,
-					SettlementEconomy::RankingPrize(PendingChallengeKind)),
-				8.0f, FColor::Green, /*Key=*/-1);
-		}
-		else if (bPendingChallengeIsDefense)
-		{
-			// A DEFESA PERDIDA É COMO O TÍTULO MUDA DE MÃO — "até alguém
-			// vencê-lo, inclusive NPC": o desafiante do dia acabou de vencer.
-			// (LoseTitle já esvazia a fila.)
-			FLeadershipRules::LoseTitle(CachedTrainer);
-			FPetCollectionService::SaveTrainerProfile(PetCollectionSlotName, CachedTrainer);
-			MostrarRanking();
-			FBattleDebugScreen::Show(
-				FString::Printf(TEXT("o desafiante VENCEU — voce nao e mais lider de %s"),
-					*ChaveDoCentro),
-				10.0f, FColor(240, 120, 100), /*Key=*/-1);
 		}
 
+		ApplyArenaOutcome(Desfecho, bPendingChallengeIsDefense, PendingChallengeKind);
 		bPendingArenaChallenge = false;
 		bPendingChallengeIsDefense = false;
 	}
@@ -1207,7 +1180,7 @@ void ABattleSquareGameMode::MostrarRanking() const
 		0.0f, FColor(180, 220, 255), /*Key=*/755);
 }
 
-void ABattleSquareGameMode::ChallengeArena()
+void ABattleSquareGameMode::ChallengeArena(bool bAutoPlay)
 {
 	// O LUGAR é o gatilho, como na venda: a porta da CI2 sabe onde o jogador
 	// está, e desafiar da rua seria arena sem arena.
@@ -1265,6 +1238,88 @@ void ABattleSquareGameMode::ChallengeArena()
 		FRotator::ZeroRotator, Parametros);
 	if (!Desafio)
 	{
+		return;
+	}
+
+	// "FICAR E DEIXAR A I.A. BATALHAR" (decisão 15-d): presente, o jogador
+	// escolhe não jogar — a I.A. joga com o estilo DELE, e o desfecho passa
+	// pela MESMA função da batalha jogada: mesmo prêmio, mesmo risco de
+	// título. Conveniência não muda consequência.
+	if (bAutoPlay)
+	{
+		Desafio->Destroy();
+
+		const FLoadedPetRecord* Lider = nullptr;
+		const FLoadedPetRecord* Oponente = nullptr;
+		TArray<FLoadedPetRecord> Registros;
+		if (const FString Problema = LoadConfiguredMirrorPets(Registros); Problema.IsEmpty())
+		{
+			Lider = Registros.FindByPredicate(
+				[this](const FLoadedPetRecord& Registro)
+				{
+					return Registro.Id == WorldEncounterPlayerCatalogId;
+				});
+			Oponente = Registros.FindByPredicate(
+				[&Campeao](const FLoadedPetRecord& Registro)
+				{
+					return Registro.Id == Campeao;
+				});
+		}
+
+		if (!Lider || !Oponente)
+		{
+			FBattleDebugScreen::Show(TEXT("a I.A. nao pode jogar sem o espelho de pets"),
+				6.0f, FColor::Orange, /*Key=*/-1);
+			return;
+		}
+
+		FTypeEffectivenessTable Efetividade;
+		FTypeEffectivenessTable::LoadFromJson(
+			FPaths::Combine(FPaths::ProjectConfigDir(), TEXT("TypeEffectiveness.json")),
+			Efetividade);
+
+		TArray<FBackpackStack> Mochila;
+		TArray<FEquippedItem> Vestidos;
+		FPetCollectionService::LoadBackpack(PetCollectionSlotName, Mochila, Vestidos);
+		TArray<FString> Itens;
+		for (const FEquippedItem& Vestido : Vestidos)
+		{
+			if (Vestido.PetCatalogId.Equals(Lider->Id, ESearchCase::IgnoreCase))
+			{
+				Itens.Add(Vestido.ItemId);
+			}
+		}
+
+		FPetState PetDoJogador;
+		FPetPresentationInfo ApresentacaoDoJogador;
+		FPetState PetOponente;
+		FPetPresentationInfo ApresentacaoOponente;
+		FBattleDataTranslator::TranslateMatchupWithItems(
+			*Lider, Itens, *Oponente, TArray<FString>(), Efetividade,
+			/*LeftPetId=*/1, /*RightPetId=*/2,
+			PetDoJogador, ApresentacaoDoJogador, PetOponente, ApresentacaoOponente);
+		ApplyOwnedPetProgressionBonus(
+			PetCollectionSlotName, PetDoJogador, ApresentacaoDoJogador);
+
+		FBattleState Estado;
+		Estado.Random.State = Semente | 1;
+		Estado.Pets.Add(PetDoJogador);
+		Estado.Pets.Add(PetOponente);
+		Estado.PlaceDuelistsAtStartingCells();
+
+		const uint8 Vencedor = AutoBattleResolver::ResolveBotVsBot(
+			Estado, static_cast<uint64>(Semente) * 2654435761ull + 1,
+			&CachedTrainer.ActionStyleCounts);
+
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("(a I.A. jogou por voce, com o seu estilo, contra %s)"),
+				*Campeao),
+			8.0f, FColor(180, 200, 240), /*Key=*/-1);
+
+		ApplyArenaOutcome(
+			Vencedor == 0 ? EArenaOutcome::Won
+				: (Vencedor == 1 ? EArenaOutcome::Lost : EArenaOutcome::Draw),
+			bDefesa, CurrentBuildingKind);
 		return;
 	}
 
@@ -1599,6 +1654,78 @@ void ABattleSquareGameMode::TalkToNearbyResident(const FString& PlayerSays)
 	Pedido->ProcessRequest();
 }
 
+void ABattleSquareGameMode::ApplyArenaOutcome(EArenaOutcome Outcome,
+	bool bWasDefense, ESettlementKind Kind)
+{
+	// UM desfecho para os três caminhos — jogado, automático presente e
+	// automático ausente. Três cópias desta regra concordariam até a primeira
+	// edição, e a divergência seria um título que muda de mão num caminho e
+	// não no outro.
+	const FString ChaveDoCentro = RegionLayout::KindDebugName(Kind);
+
+	if (Outcome == EArenaOutcome::Won)
+	{
+		FTrainerRankingRules::AwardArenaVictory(CachedTrainer);
+		FTrainerWalletRules::Earn(CachedTrainer, SettlementEconomy::RankingPrize(Kind));
+
+		// VENCER O CAMPEONATO TOMA O TÍTULO — quando há título a tomar: a
+		// defesa mantém o que já era seu, e o líder de OUTRO centro ganha só
+		// o prêmio (líder é de UM centro).
+		if (bWasDefense)
+		{
+			FLeadershipRules::ClearPendingDefense(CachedTrainer);
+			FBattleDebugScreen::Show(TEXT("posto DEFENDIDO — o titulo continua seu"),
+				8.0f, FColor::Green, /*Key=*/-1);
+		}
+		else if (!FLeadershipRules::IsLeaderAnywhere(CachedTrainer))
+		{
+			FLeadershipRules::TakeTitle(CachedTrainer, ChaveDoCentro);
+			FBattleDebugScreen::Show(
+				FString::Printf(
+					TEXT("=== VOCE E O NOVO LIDER de %s — o posto rende, e cobra resposta ==="),
+					*ChaveDoCentro),
+				10.0f, FColor(255, 215, 120), /*Key=*/-1);
+		}
+		else
+		{
+			FBattleDebugScreen::Show(
+				FString::Printf(
+					TEXT("vitoria de visitante: o titulo de %s continua la — voce ja tem o seu"),
+					*ChaveDoCentro),
+				8.0f, FColor(200, 220, 200), /*Key=*/-1);
+		}
+
+		MostrarCarteira();
+		MostrarRanking();
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("vitoria de Arena: +%d pts, +%d"),
+				FTrainerRankingRules::PointsPerArenaVictory,
+				SettlementEconomy::RankingPrize(Kind)),
+			8.0f, FColor::Green, /*Key=*/-1);
+	}
+	else if (bWasDefense && Outcome == EArenaOutcome::Lost)
+	{
+		// A DEFESA PERDIDA É COMO O TÍTULO MUDA DE MÃO — inclusive NPC.
+		// (LoseTitle já esvazia a fila.)
+		FLeadershipRules::LoseTitle(CachedTrainer);
+		MostrarRanking();
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("o desafiante VENCEU — voce nao e mais lider de %s"),
+				*ChaveDoCentro),
+			10.0f, FColor(240, 120, 100), /*Key=*/-1);
+	}
+	else if (bWasDefense)
+	{
+		// EMPATE NA DEFESA MANTÉM e responde a fila: ninguém perde título
+		// para um relógio — só para derrota de fato.
+		FLeadershipRules::ClearPendingDefense(CachedTrainer);
+		FBattleDebugScreen::Show(TEXT("defesa empatada — o titulo continua seu"),
+			8.0f, FColor(200, 200, 150), /*Key=*/-1);
+	}
+
+	FPetCollectionService::SaveTrainerProfile(PetCollectionSlotName, CachedTrainer);
+}
+
 void ABattleSquareGameMode::SetAutoDefense(TOptional<bool> bEnabled)
 {
 	// Sem valor, DIZ o modo — quem pergunta quer saber onde está.
@@ -1696,32 +1823,36 @@ void ABattleSquareGameMode::RunAutoDefense(int32 Today)
 	Estado.Pets.Add(PetDesafiante);
 	Estado.PlaceDuelistsAtStartingCells();
 
+	// O LADO DO LÍDER JOGA COM O ESTILO DELE — "simulando você lá": os tipos
+	// de ação saem do histórico das suas batalhas reais.
 	const uint8 Vencedor = AutoBattleResolver::ResolveBotVsBot(
-		Estado, static_cast<uint64>(SementeDoDia) * 2654435761ull + 1);
+		Estado, static_cast<uint64>(SementeDoDia) * 2654435761ull + 1,
+		&CachedTrainer.ActionStyleCounts);
 
+	// O desfecho passa pela MESMA função dos outros caminhos: a defesa
+	// automática vencida paga o mesmo prêmio da jogada — I.A. jogando por
+	// você não é você jogando de graça.
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("(a I.A. defendeu %s por voce, com o seu estilo)"),
+			*ChaveDoPosto),
+		8.0f, FColor(180, 200, 240), /*Key=*/-1);
+
+	// Preciso achar o KIND pela chave: o posto guarda a chave estável.
+	for (const FSettlementPlacement& Vila : RegionLayout::Plan())
+	{
+		if (RegionLayout::KindDebugName(Vila.Kind) == ChaveDoPosto)
+		{
+			ApplyArenaOutcome(
+				Vencedor == 0 ? EArenaOutcome::Won
+					: (Vencedor == 1 ? EArenaOutcome::Lost : EArenaOutcome::Draw),
+				/*bWasDefense=*/true, Vila.Kind);
+			return;
+		}
+	}
+
+	// Chave sem vila é save de mundo antigo: responde a fila sem mexer em
+	// título — falha de mapeamento nunca decide posse.
 	FLeadershipRules::ClearPendingDefense(CachedTrainer);
-
-	// EMPATE MANTÉM: ninguém perde título para um relógio — só para uma
-	// derrota jogada de fato pelo sim.
-	if (Vencedor == 1)
-	{
-		FLeadershipRules::LoseTitle(CachedTrainer);
-		MostrarRanking();
-		FBattleDebugScreen::Show(
-			FString::Printf(
-				TEXT("defesa AUTOMATICA perdida: %s tomou seu posto em %s"),
-				*Desafiante->Id, *ChaveDoPosto),
-			12.0f, FColor(240, 120, 100), /*Key=*/-1);
-	}
-	else
-	{
-		FBattleDebugScreen::Show(
-			FString::Printf(TEXT("defesa automatica VENCIDA — %s segue seu (%s)"),
-				*ChaveDoPosto,
-				Vencedor == 0xFF ? TEXT("empate no teto") : TEXT("vitoria")),
-			10.0f, FColor::Green, /*Key=*/-1);
-	}
-
 	FPetCollectionService::SaveTrainerProfile(PetCollectionSlotName, CachedTrainer);
 }
 
@@ -3986,14 +4117,16 @@ namespace
 	// O DESAFIO pelo console, gatilhado pelo LUGAR — mesmo desenho da venda.
 	FAutoConsoleCommandWithWorldAndArgs GDesafiarCommand(
 		TEXT("bs.Desafiar"),
-		TEXT("Desafia o campeao da Arena em que voce esta. Vitoria da ponto e premio."),
+		TEXT("bs.Desafiar [auto] — desafia (ou defende) a Arena em que voce esta. ")
+		TEXT("Com 'auto', a I.A. joga por voce com o SEU estilo — mesmo premio, mesmo risco."),
 		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(
-			[](const TArray<FString>&, UWorld* World)
+			[](const TArray<FString>& Args, UWorld* World)
 			{
 				if (ABattleSquareGameMode* GameMode =
 					World ? World->GetAuthGameMode<ABattleSquareGameMode>() : nullptr)
 				{
-					GameMode->ChallengeArena();
+					GameMode->ChallengeArena(Args.Num() > 0
+						&& Args[0].Equals(TEXT("auto"), ESearchCase::IgnoreCase));
 				}
 			}));
 

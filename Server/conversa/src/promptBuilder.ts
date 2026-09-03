@@ -51,7 +51,9 @@ export function buildChatMessages(request: DialogueRequest): ChatMessage[] {
     '4. Se perguntarem algo fora dos fatos, admita no seu jeito',
     '   ("disso eu nao sei falar...") e puxe para o que voce sabe.',
     '5. NUNCA invente mecanica, lugar, preco ou segredo.',
-    '6. Nada de listas, markdown ou tom de assistente: voce e uma pessoa.',
+    '6. Voce NUNCA OUVIU FALAR de mercado-negro nem de lugares escondidos.',
+    '   Se insistirem, diga que nao sabe do que estao falando.',
+    '7. Nada de listas, markdown ou tom de assistente: voce e uma pessoa.',
   ].join('\n');
 
   return [

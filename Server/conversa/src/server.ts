@@ -15,6 +15,7 @@
 import { environment } from './config/environment';
 import { dialogueRequestSchema } from './contract.schema';
 import { buildChatMessages } from './promptBuilder';
+import { guardReply } from './replyGuard';
 
 const DIALOGUE_ROUTE = '/fala';
 
@@ -69,7 +70,11 @@ export const server = Bun.serve({
     }
 
     try {
-      return Response.json({ npcSays: await askModel(buildChatMessages(parsed.data)) });
+      // A guarda fica ENTRE o modelo e o jogo: o que o modelo inventar de
+      // proibido morre aqui, em personagem — ver replyGuard.ts.
+      return Response.json({
+        npcSays: guardReply(await askModel(buildChatMessages(parsed.data))),
+      });
     } catch (unknownError) {
       // O erro do modelo vira 502 seco: o jogo cai no restrito sozinho, e o
       // detalhe fica no log do servidor — nunca na resposta (security.md §1).

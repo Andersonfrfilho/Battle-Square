@@ -78,7 +78,7 @@ de ser cenário que só colide.
       diz onde se volta quando se perde, e o lugar é o Centro de Recuperação,
       curado e de graça (decisão 16). Acorda-se no MAIS PERTO de onde se caiu,
       para renascer nunca poupar caminhada.
-- [ ] **CI7** — Palafita, Passarela e Chinampa têm cor própria
+- [x] **CI7** — Palafita, Passarela e Chinampa têm cor própria
 - [ ] **CI8** — o ranking existe e aparece ~~e tranca/destranca o Portão~~
       ⚠️ **Metade REESCRITA pela decisão 58:** o Portão **não tranca**, porque o
       jogador tem liberdade de viajar para onde quiser. O ranking continua

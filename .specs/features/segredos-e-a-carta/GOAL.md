@@ -18,6 +18,10 @@ menciona **depois** de ele andar até lá.
 ## PRONTO é isto, e nada menos
 
 - [⛔] **SC1** — o gabarito aprende a dizer "escondido": mostrado, escondido e a SOMA
+      ⚠️ **JÁ FEITA em 03/09/2026 pela M9 de `a-carta-muda-uma-vez`**, depois de
+      as respostas de 02/09 (K3, K4, J4) fecharem a dúvida para o mercado-negro.
+      A terceira contagem existe em `World/IslandChart.h`, e a marca mora na
+      mancha (`bHidden`). **Não reescrever** — ler o que está lá.
 - [⛔] **SC2** — "escondido" é marca na mancha, não lista ao lado
 - [⛔] **SC3** — o mapa do jogador revela por andar; a carta continua calada
 - [⛔] **SC4** — o achado aparece na tela, em `LOCTEXT`

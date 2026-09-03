@@ -180,3 +180,60 @@ bool FResidentStoryUnfoldsByVisitTest::RunTest(const FString&)
 
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FResidentStoryReactsToDeedsTest,
+	"BattleSquare.World.Moradores.AHistoriaReageAoFeito",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FResidentStoryReactsToDeedsTest::RunTest(const FString&)
+{
+	// A METADE "EVOLUTIVA" DE VERDADE: o arco da Arena PEDE em texto — "se
+	// você o vencer, volte aqui e me conte" — e um pedido que ignora o feito
+	// cumprido é o NPC provando que não escuta. Acha-se um morador com esse
+	// arco varrendo portas (ele existe por construção: seis arcos, muitas
+	// portas), e afirma-se a reação NELE.
+	bool bAchouOArcoDaArena = false;
+
+	for (int32 Porta = 0; Porta < 48 && !bAchouOArcoDaArena; ++Porta)
+	{
+		const VillageResidents::FResident Morador =
+			VillageResidents::ResidentFor(ESettlementKind::VilaInicial, Porta);
+
+		const FString SemFeito = VillageResidents::StoryLineFor(
+			Morador, ESettlementKind::VilaInicial, Porta, 4);
+		if (!SemFeito.Contains(TEXT("se voce o vencer")))
+		{
+			continue;
+		}
+
+		bAchouOArcoDaArena = true;
+
+		// COM o feito, a confidência vira reação — a mesma visita, outra
+		// resposta.
+		const FString ComFeito = VillageResidents::StoryLineReacting(
+			Morador, ESettlementKind::VilaInicial, Porta, 4, true);
+		TestNotEqual(TEXT("quem venceu ouve a reacao, nao o pedido"),
+			ComFeito, SemFeito);
+		TestTrue(TEXT("e a reacao reconhece o feito"),
+			ComFeito.Contains(TEXT("VENCEU")));
+
+		// SEM o feito, a versão que reage responde IGUAL à que não reage:
+		// reagir a tudo é tão falso quanto não reagir a nada.
+		TestEqual(TEXT("sem o feito, nada muda"),
+			VillageResidents::StoryLineReacting(
+				Morador, ESettlementKind::VilaInicial, Porta, 4, false),
+			SemFeito);
+
+		// E os OUTROS estágios do mesmo arco não reagem — o gancho é a
+		// confidência, não o morador inteiro.
+		TestEqual(TEXT("a apresentacao nao muda com o feito"),
+			VillageResidents::StoryLineReacting(
+				Morador, ESettlementKind::VilaInicial, Porta, 2, true),
+			VillageResidents::StoryLineFor(
+				Morador, ESettlementKind::VilaInicial, Porta, 2));
+	}
+
+	TestTrue(TEXT("existe morador com o arco da Arena para testar"),
+		bAchouOArcoDaArena);
+	return true;
+}

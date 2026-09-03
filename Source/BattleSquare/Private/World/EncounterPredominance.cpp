@@ -39,10 +39,14 @@ int32 EncounterPredominance::PlaceWeightPercent(const FString& PetType,
 		return EmVolta.bNearWater ? PesoNoAmbienteCerto : PesoDeslocado;
 	}
 
-	// O CAVERNÍCOLA da mata é o fantasma: quem atravessa pedra mora nela.
+	// O FANTASMA mora onde ninguém mora: na gruta (quem atravessa pedra mora
+	// nela), no cemitério — de vila ou esquecido, os dois assombram — e no
+	// fim do mundo, longe de qualquer assentamento. Fora desses, é o mais
+	// deslocado de todos: assombração na praça é fantasia de outra história.
 	if (Elemento == TEXT("Fantasma"))
 	{
-		return EmVolta.bNearCave ? PesoNoAmbienteCerto : PesoDeslocado;
+		return (EmVolta.bNearCave || EmVolta.bNearGraveyard || EmVolta.bRemote)
+			? PesoNoAmbienteCerto : PesoDeslocado;
 	}
 
 	// O COMUM da natureza comum: planta e terra são a mata sendo mata.

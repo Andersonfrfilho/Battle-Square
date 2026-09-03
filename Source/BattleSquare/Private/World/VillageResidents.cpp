@@ -144,3 +144,21 @@ FString VillageResidents::StoryLineFor(const FResident& Morador,
 	default: return Arco.Confidencia;
 	}
 }
+
+FString VillageResidents::StoryLineReacting(const FResident& Morador,
+	ESettlementKind Kind, int32 DoorIndex, int32 Meetings,
+	bool bPlayerBeatChampion)
+{
+	const FString Fala = StoryLineFor(Morador, Kind, DoorIndex, Meetings);
+
+	// O GANCHO é a fala, não um índice: se alguém reordenar os arcos, o
+	// pedido e a reação continuam colados — índice solto os separaria na
+	// primeira edição.
+	if (bPlayerBeatChampion
+		&& Fala.Contains(TEXT("se voce o vencer")))
+	{
+		return TEXT("voce O VENCEU?! entao era verdade... me conta TUDO, do primeiro golpe ao ultimo");
+	}
+
+	return Fala;
+}

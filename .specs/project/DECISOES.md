@@ -398,6 +398,12 @@ direto com a decisão 15 (campeonato torna o jogador LÍDER do centro, com renda
 e desafios). É feature própria, não uma task desta — registrado para não se
 perder.
 
+**62-b. O FANTASMA tem três moradas.** *"fantasmas podem viver em cemitérios
+e lugares bem afastados tbm"* — além da gruta: o cemitério (de vila e
+esquecido, os dois assombram) e o fim do mundo (longe de TODO assentamento, em
+fração do raio — nunca unidades soltas). Cada morada sozinha basta; fora das
+três, ele é o mais deslocado de todos.
+
 **62. A fauna do bioma tem PREDOMINÂNCIA, não exclusividade.** ✅
 *Implementada em 03/09* — `EncounterPredominance`: peso do LUGAR multiplicando
 o peso da HORA que já existia. Na mata, planta e terra são o comum; o aquático

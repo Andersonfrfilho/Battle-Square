@@ -25,6 +25,13 @@ namespace EncounterPredominance
 	{
 		bool bNearWater = false;
 		bool bNearCave = false;
+
+		/** Perto de cemitério — de vila ou esquecido: os dois assombram. */
+		bool bNearGraveyard = false;
+
+		/** LONGE de qualquer assentamento: o fim do mundo também é morada. */
+		bool bRemote = false;
+
 		EIslandBiome Biome = EIslandBiome::Forest;
 	};
 

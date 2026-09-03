@@ -69,6 +69,23 @@ namespace VillageResidents
 		ESettlementKind Kind, int32 DoorIndex, int32 Meetings);
 
 	/**
+	 * A HISTÓRIA QUE REAGE (decisão 15, a metade "evolutiva" de verdade): a
+	 * mesma visita, com o feito do jogador mudando a resposta.
+	 *
+	 * O primeiro cliente é o arco da Arena — a confidência dele PEDE em
+	 * texto: "se você o vencer, volte aqui e me conte". Quem venceu
+	 * (`bPlayerBeatChampion`) ouve a reação em vez do pedido: um pedido que
+	 * ignora o feito cumprido é o NPC provando que não escuta — o oposto do
+	 * que "história própria" promete.
+	 *
+	 * Arcos sem gancho de feito respondem igual com e sem — reagir a tudo é
+	 * tão falso quanto não reagir a nada.
+	 */
+	BATTLESQUARE_API FString StoryLineReacting(const FResident& Resident,
+		ESettlementKind Kind, int32 DoorIndex, int32 Meetings,
+		bool bPlayerBeatChampion);
+
+	/**
 	 * Ele atende a esta hora?
 	 *
 	 * A janela nunca é o dia inteiro NEM dia nenhum (10 a 16 horas): todo

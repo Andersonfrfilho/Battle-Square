@@ -1508,8 +1508,12 @@ void ABattleSquareGameMode::AnunciarPortaCruzada(EVillageBuilding Predio,
 
 			FBattleDebugScreen::Show(
 				FString::Printf(TEXT("%s: \"%s\""), *Morador.Name,
-					*VillageResidents::StoryLineFor(
-						Morador, DeQueVila, DoorIndex, Conhecido->Meetings)),
+					*VillageResidents::StoryLineReacting(
+						Morador, DeQueVila, DoorIndex, Conhecido->Meetings,
+						// "Venceu o campeao" e ponto de ranking: so o desafio
+						// de Arena pontua, entao a pergunta ja tem resposta
+						// guardada — sem estado novo.
+						CachedTrainer.RankingPoints > 0)),
 				0.0f, FColor(200, 220, 200), /*Key=*/767);
 		}
 		else
@@ -3139,6 +3143,34 @@ void ABattleSquareGameMode::SpawnOneEncounter(const FVector& Centro, FRandomStre
 			if (FVector2D::Distance(Aqui, Caverna.CenterUnits) < 4000.0f)
 			{
 				EmVolta.bNearCave = true;
+				break;
+			}
+		}
+
+		// O CEMITÉRIO assombra — o de vila e o esquecido, os dois.
+		for (const FBakedGroundUse& Mancha : TracadoAssado->GroundUses)
+		{
+			if ((Mancha.Use == EGroundUse::Cemiterio
+					|| Mancha.Use == EGroundUse::CemiterioEsquecido)
+				&& FVector2D::Distance(Aqui, Mancha.CenterUnits)
+					< Mancha.HalfExtentUnits + 2500.0f)
+			{
+				EmVolta.bNearGraveyard = true;
+				break;
+			}
+		}
+	}
+
+	// "LUGARES BEM AFASTADOS": longe de TODO assentamento, em fração do raio
+	// — nunca em unidades soltas, a armadilha mais cara deste projeto.
+	{
+		const float Afastado = IslandGeography::LandRadiusUnits() * 0.22f;
+		EmVolta.bRemote = true;
+		for (const FSettlementPlacement& Vila : RegionLayout::Plan())
+		{
+			if (FVector2D::Distance(FVector2D(Posicao), Vila.CenterUnits) < Afastado)
+			{
+				EmVolta.bRemote = false;
 				break;
 			}
 		}

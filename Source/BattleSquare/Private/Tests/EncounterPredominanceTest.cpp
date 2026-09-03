@@ -39,14 +39,27 @@ bool FPredominanceFavorsTheForestCommonsTest::RunTest(const FString&)
 		EncounterPredominance::PlaceWeightPercent(TEXT("Fisica/Agua"), Margem)
 			> EncounterPredominance::PlaceWeightPercent(TEXT("Fisica/Agua"), MataSeca));
 
-	// E o cavernícola perto da gruta.
+	// E o fantasma mora onde ninguém mora: gruta, cemitério, e o fim do
+	// mundo — as TRÊS moradas, cada uma sozinha bastando.
 	EncounterPredominance::FSpawnSurroundings Gruta = MataSeca;
 	Gruta.bNearCave = true;
+	EncounterPredominance::FSpawnSurroundings Cemiterio = MataSeca;
+	Cemiterio.bNearGraveyard = true;
+	EncounterPredominance::FSpawnSurroundings FimDoMundo = MataSeca;
+	FimDoMundo.bRemote = true;
+
+	const int32 NaPraca = EncounterPredominance::PlaceWeightPercent(
+		TEXT("Espiritual/Fantasma"), MataSeca);
 
 	TestTrue(TEXT("o fantasma pesa mais perto da gruta"),
-		EncounterPredominance::PlaceWeightPercent(TEXT("Espiritual/Fantasma"), Gruta)
-			> EncounterPredominance::PlaceWeightPercent(
-				TEXT("Espiritual/Fantasma"), MataSeca));
+		EncounterPredominance::PlaceWeightPercent(
+			TEXT("Espiritual/Fantasma"), Gruta) > NaPraca);
+	TestTrue(TEXT("e perto do cemiterio"),
+		EncounterPredominance::PlaceWeightPercent(
+			TEXT("Espiritual/Fantasma"), Cemiterio) > NaPraca);
+	TestTrue(TEXT("e no fim do mundo, longe de toda vila"),
+		EncounterPredominance::PlaceWeightPercent(
+			TEXT("Espiritual/Fantasma"), FimDoMundo) > NaPraca);
 
 	return true;
 }
@@ -91,9 +104,12 @@ bool FPredominanceNeverExcludesTest::RunTest(const FString&)
 		}
 	}
 
+	// Por CAMPO nomeado, não posicional: o struct ganhou moradas novas do
+	// fantasma, e o agregado posicional foi exatamente o que quebrou aqui.
+	EncounterPredominance::FSpawnSurroundings Deserto;
+	Deserto.Biome = EIslandBiome::Desert;
 	TestEqual(TEXT("bioma sem fauna desenhada e neutro"),
-		EncounterPredominance::PlaceWeightPercent(TEXT("Fisica/Fogo"),
-			{ false, false, EIslandBiome::Desert }), 100);
+		EncounterPredominance::PlaceWeightPercent(TEXT("Fisica/Fogo"), Deserto), 100);
 
 	return true;
 }

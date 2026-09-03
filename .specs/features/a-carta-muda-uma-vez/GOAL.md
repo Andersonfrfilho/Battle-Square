@@ -38,7 +38,7 @@ comentário previu.
 - [x] **M4** — a estimativa privada do traçado MORRE, e o traçado passa a LER
 - [x] **M5** — a cintura é 40% da altura de quem pisa, não uma constante
 - [x] **M6** — pontes existem: bloco, madeira e DESTRUÍDA
-- [ ] **M7** — algumas grutas se ligam entre si, e "algumas" é medido
+- [x] **M7** — algumas grutas se ligam entre si, e "algumas" é medido
 - [ ] **M8** — três mercados-negros, e "bem espalhados" é medido
 - [ ] **M9** — a carta aprende a dizer "escondido" sem dizer o quê
 - [ ] **M10** — o gabarito novo, escrito UMA VEZ, com o motivo de cada número

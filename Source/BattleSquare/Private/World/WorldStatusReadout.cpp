@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "World/WorldStatusReadout.h"
+#include "Meta/PetHealthRules.h"
 
 #include "Meta/PetAttributeProgression.h"
 #include "Meta/PetMoveRequirements.h"
@@ -56,6 +57,20 @@ TArray<FWorldStatusLine> FWorldStatusReadout::Build(const FWorldStatusSnapshot& 
 				{ TEXT("Subsolo"), FPetMoveRequirements::GetAttributeLabel(TEXT("underground")) },
 				{ TEXT("ValorSubsolo"), FText::AsNumber(Pet.SkillProficiency[FPetAttributeProgression::Underground]) },
 			}), FColor::White });
+
+		// A VIDA na tela, e SÓ quando falta: pet cheio não ocupa altura —
+		// mesma regra da fundura em terra seca. Quem anda machucado precisa
+		// saber ANTES do próximo encontro, e é esta linha que transforma
+		// "acho que apanhei muito" em decisão de ir ao Centro de Recuperação.
+		if (FPetHealthRules::IsHurt(Pet.HealthPercent))
+		{
+			Linhas.Add({ FText::Format(
+				LOCTEXT("VidaDoPet", "vida: {Percentual}% — o Centro de Recuperação cura de graça"),
+				FFormatNamedArguments{
+					{ TEXT("Percentual"), FText::AsNumber(Pet.HealthPercent) },
+				}),
+				Pet.HealthPercent < 35 ? FColor::Red : FColor::Orange });
+		}
 
 		// A BIOLOGIA na tela, e só quando ela existe.
 		//

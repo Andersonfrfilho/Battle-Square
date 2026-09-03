@@ -72,6 +72,7 @@
 #include "Balance/PetTypeCatalog.h"
 #include "Meta/PetMoveRequirements.h"
 #include "Meta/TrainerSpecialtyRules.h"
+#include "Meta/PetHealthRules.h"
 #include "Meta/PetSaleRules.h"
 #include "Meta/TrainerRankingRules.h"
 #include "Battle/DeterministicSpread.h"
@@ -621,6 +622,13 @@ void ABattleSquareGameMode::ApplyOwnedPetProgressionBonus(const FString& SlotNam
 	// mesma instância da coleção, e separá-los abriria a chance de um pet
 	// entrar na batalha com o nível novo e os atributos velhos.
 	FPetAttributeProgression::ApplyToBattleState(*OwnedInstance, PetState);
+
+	// A VIDA QUE SOBROU entra por ÚLTIMO, depois de tudo que mexe no teto: a
+	// porcentagem persistida multiplica o MaxHealth de AGORA, com o nível já
+	// aplicado. Antes do nível, meia-vida de um pet forte viraria meia-vida de
+	// um pet fraco (decisão 61).
+	PetState.Health = FPetHealthRules::StartingHealthFor(
+		OwnedInstance->HealthPercent, PetState.MaxHealth);
 }
 
 void ABattleSquareGameMode::HandleRoomReady(const FString& Code)
@@ -803,6 +811,44 @@ void ABattleSquareGameMode::HandleWorldBattleStarted(ABattleArena* Arena)
 void ABattleSquareGameMode::HandleWorldBattleFinished(ABattleArena* Arena)
 {
 	TearDownBattleUi();
+
+	// A VIDA QUE SOBROU FICA (decisão 61) — gravada ANTES de reler o
+	// snapshot, senão o painel mostraria a vida de antes da luta.
+	//
+	// Na DERROTA grava-se CHEIO, e não zero: é a decisão 60 somada à 16 —
+	// acorda-se no hospital, e o hospital cura de graça. Vitória e empate
+	// carregam o que a batalha deixou.
+	if (Arena)
+	{
+		const uint8 LadoDoJogador = Arena->GetControlledPlayerNumber() - 1;
+		const FBattleState& Final = Arena->GetCurrentState();
+
+		int32 Percentual = FPetHealthRules::FullHealthPercent;
+		if (Arena->GetLastLocalOutcome() != EBattleResultOutcome::Derrota)
+		{
+			for (const FPetState& Pet : Final.Pets)
+			{
+				if (Pet.Side == LadoDoJogador)
+				{
+					Percentual = FPetHealthRules::PercentAfterBattle(
+						Pet.Health, Pet.MaxHealth);
+					break;
+				}
+			}
+		}
+
+		TArray<FOwnedPetInstance> Colecao =
+			FPetCollectionService::LoadCollection(PetCollectionSlotName);
+		for (FOwnedPetInstance& Pet : Colecao)
+		{
+			if (Pet.CatalogId == WorldEncounterPlayerCatalogId)
+			{
+				Pet.HealthPercent = Percentual;
+				FPetCollectionService::SaveCollection(PetCollectionSlotName, Colecao);
+				break;
+			}
+		}
+	}
 
 	// A batalha acabou de gravar experiência e atributo na coleção. Sem
 	// reler aqui, o painel do mundo continuaria mostrando o pet de antes da
@@ -1196,6 +1242,30 @@ void ABattleSquareGameMode::AnunciarPortaCruzada(EVillageBuilding Predio,
 	bIsInsideBuilding = true;
 	CurrentBuilding = Predio;
 	CurrentBuildingKind = DeQueVila;
+
+	// O CENTRO DE RECUPERAÇÃO CURA AO ENTRAR, e de graça (decisão 16) — em
+	// TODA vila que o tenha: cobrar era a metade da CI3 que caiu. Automático
+	// não fere o "entrar não é comprometer-se": comprometer-se é perder algo,
+	// e aqui nada se perde — nem dinheiro, nem escolha.
+	if (Predio == EVillageBuilding::CentroDeRecuperacao
+		&& bHasCachedOwnedPet && FPetHealthRules::IsHurt(CachedOwnedPet.HealthPercent))
+	{
+		TArray<FOwnedPetInstance> Colecao =
+			FPetCollectionService::LoadCollection(PetCollectionSlotName);
+		for (FOwnedPetInstance& Pet : Colecao)
+		{
+			if (Pet.CatalogId == CachedOwnedPet.CatalogId)
+			{
+				Pet.HealthPercent = FPetHealthRules::FullHealthPercent;
+				FPetCollectionService::SaveCollection(PetCollectionSlotName, Colecao);
+				break;
+			}
+		}
+
+		ReloadOwnedPetSnapshot();
+		FBattleDebugScreen::Show(TEXT("seu pet foi CURADO — de graca, como sempre"),
+			8.0f, FColor::Green, /*Key=*/-1);
+	}
 
 	FBattleDebugScreen::Show(
 		FString::Printf(TEXT("entrou: %s (%s)"),

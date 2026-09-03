@@ -304,6 +304,29 @@ poupa caminhada — ele devolve o jogador ao mundo, não ao começo. Se você
 preferir que seja sempre a vila natal, é uma linha, e a fresta é aceita de
 propósito.
 
+**61. A VIDA DO PET PERSISTE, e mora no registro dele.** *"a vida do pet
+persiste, decida você onde mora — pode morar o registro dele nas propriedades
+dele"*. Vai para `FOwnedPetInstance`, ao lado da biologia, com o mesmo cuidado
+de save antigo: **ausente é "cheio"**, nunca "zero" — um campo novo que
+matasse os pets de quem já jogava seria o defeito que o comentário de
+`BiologySkin` existe para impedir.
+
+O resto foi delegado, e as escolhas são minhas, nomeadas: guarda-se
+**porcentagem** (o teto muda com o nível, e a fração sobrevive à subida); a
+vida final da batalha é a que fica; **derrota acorda CURADO** (é a decisão 60
+somada à 16 — o hospital cura de graça, e é para lá que se acorda); e batalha
+nunca COMEÇA com zero — piso de 1, porque uma luta perdida antes do primeiro
+turno não é luta.
+
+**62. A fauna do bioma tem PREDOMINÂNCIA, não exclusividade.** *"nosso
+primeiro bioma é natureza comum, vai ter mais predominância de tipos de pets
+comuns, natureza, plantas, insetos, alguns aquáticos, cavernas, noturnos
+desses ambientes"*. Os encontros do bioma de mata puxam para o comum e o
+natural — planta, inseto — com aquático perto d'água, cavernícola nas grutas e
+noturno de noite (o peso por hora JÁ existe: `WorldTimeOfDay::PickSpeciesForPhase`).
+⚠️ **É conteúdo de `mundo-por-biomas`/encontros, não de `cidades-do-interior`**
+— registrada aqui para não se perder, implementada lá.
+
 **59. O jogador escolhe ONDE trabalhar.** *"ele tem liberdade de escolher"* —
 não há um `EGroundUse` eleito.
 

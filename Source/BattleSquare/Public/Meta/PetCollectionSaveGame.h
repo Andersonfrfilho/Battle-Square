@@ -36,6 +36,22 @@ struct FOwnedPetInstance
 	 * jogava. `UPROPERTY` ausente no arquivo antigo desserializa como vazio,
 	 * que é exatamente "não informado".
 	 */
+	/**
+	 * A VIDA que sobrou da última batalha, em PORCENTAGEM (decisão 61).
+	 *
+	 * Porcentagem, e não valor absoluto: o teto muda com o nível, e a fração
+	 * sobrevive à subida — um pet a meia-vida continua a meia-vida quando o
+	 * teto crescer.
+	 *
+	 * **Negativo é "não informado", e não informado é CHEIO.** É o save
+	 * antigo, gravado antes de a vida persistir — e é também o motivo de o
+	 * padrão não ser zero: um campo novo que matasse os pets de quem já
+	 * jogava seria o defeito que o comentário de `BiologySkin` acima existe
+	 * para impedir, na pior forma possível.
+	 */
+	UPROPERTY()
+	int32 HealthPercent = -1;
+
 	UPROPERTY()
 	FString BiologySkin;
 

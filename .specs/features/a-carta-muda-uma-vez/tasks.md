@@ -140,7 +140,7 @@ hoje — cadastro antigo não muda de comportamento sozinho.
 
 ---
 
-## M6 — PONTES existem: bloco, madeira e destruída
+## M6 — PONTES existem: bloco, madeira e destruída ✅ FEITO
 > 🤖 Modelo: `opus` 🧠 — o `0 pontes` deixa de ser verdade
 
 **Dependências:** M4.

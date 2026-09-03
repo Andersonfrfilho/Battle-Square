@@ -37,7 +37,7 @@ comentário previu.
 - [x] **M3** — a fundura existe POR PONTO no assado, e quem a decide é o gerador
 - [x] **M4** — a estimativa privada do traçado MORRE, e o traçado passa a LER
 - [x] **M5** — a cintura é 40% da altura de quem pisa, não uma constante
-- [ ] **M6** — pontes existem: bloco, madeira e DESTRUÍDA
+- [x] **M6** — pontes existem: bloco, madeira e DESTRUÍDA
 - [ ] **M7** — algumas grutas se ligam entre si, e "algumas" é medido
 - [ ] **M8** — três mercados-negros, e "bem espalhados" é medido
 - [ ] **M9** — a carta aprende a dizer "escondido" sem dizer o quê

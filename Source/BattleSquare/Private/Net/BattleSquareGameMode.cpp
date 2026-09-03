@@ -66,6 +66,7 @@
 #include "Balance/PetTypeCatalog.h"
 #include "Meta/PetMoveRequirements.h"
 #include "Meta/TrainerSpecialtyRules.h"
+#include "Meta/TrainerWalletRules.h"
 #include "World/EncounterDetectionComponent.h"
 #include "World/EncounterMatchAssembler.h"
 #include "Battle/BattleArena.h"
@@ -874,6 +875,16 @@ void ABattleSquareGameMode::SpawnStartingVillage()
 		0.0f, FColor(200, 180, 120), /*Key=*/744);
 }
 
+void ABattleSquareGameMode::MostrarCarteira() const
+{
+	// SEMPRE VISÍVEL, ao contrário da fundura: dinheiro é estado do jogador,
+	// não do lugar — e "quanto eu tenho" é pergunta que se faz longe de
+	// qualquer loja, na trilha, decidindo se vale voltar.
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("dinheiro: %d"), CachedTrainer.Money),
+		0.0f, FColor(255, 215, 120), /*Key=*/754);
+}
+
 void ABattleSquareGameMode::AnunciarPortaCruzada(EVillageBuilding Predio,
 	ESettlementKind DeQueVila, bool bEntrou)
 {
@@ -1298,6 +1309,18 @@ void ABattleSquareGameMode::ReloadOwnedPetSnapshot()
 	}
 
 	CachedTrainer = FPetCollectionService::LoadTrainerProfile(PetCollectionSlotName);
+
+	// A BOLSA INICIAL, uma vez por treinador — inclusive para o perfil gravado
+	// antes de a carteira existir, que chega aqui com a marca em falso e é
+	// exatamente um treinador que nunca recebeu.
+	if (FTrainerWalletRules::GrantStartingMoneyOnce(CachedTrainer, StartingMoney))
+	{
+		// Salva NA CONCESSÃO, não no próximo save que aparecer: entre os dois
+		// o processo pode cair, e o jogador receberia a bolsa duas vezes.
+		FPetCollectionService::SaveTrainerProfile(PetCollectionSlotName, CachedTrainer);
+	}
+
+	MostrarCarteira();
 
 	// A força do golpe no MUNDO é a musculatura do pet, a mesma que a arena
 	// usa. Sem esta linha, treinar musculatura num campo não mudaria nada

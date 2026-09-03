@@ -106,6 +106,26 @@ struct BATTLESQUARE_API FTrainerProfile
 	 */
 	UPROPERTY()
 	TArray<FString> Specialties;
+
+	/**
+	 * O DINHEIRO do treinador. Nunca negativo — dívida seria mecânica própria.
+	 *
+	 * Mora no perfil, e não num save separado, porque é a mesma pergunta das
+	 * especialidades: coisa que pertence ao JOGADOR e sobrevive à troca de pet.
+	 */
+	UPROPERTY()
+	int32 Money = 0;
+
+	/**
+	 * A bolsa inicial já foi dada.
+	 *
+	 * Falso em save antigo — que é o certo: perfil gravado antes da carteira
+	 * recebe a bolsa na primeira carga, igual a um treinador novo. E a marca é
+	 * SEPARADA do saldo de propósito: zerar a carteira gastando não pode
+	 * devolver a bolsa, senão falir vira renda.
+	 */
+	UPROPERTY()
+	bool bWalletGranted = false;
 };
 
 /**

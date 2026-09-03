@@ -361,6 +361,9 @@ private:
 	void AnunciarPortaCruzada(EVillageBuilding Predio,
 		ESettlementKind DeQueVila, bool bEntrou);
 
+	/** A linha da carteira no painel. Chave fixa: é estado, não evento. */
+	void MostrarCarteira() const;
+
 	/** A travessia sob os pés, e o aviso da ponte destruída antes da tentativa. */
 	void AnunciarTravessiaPerto(const UIslandBakedPlan& Baked, const FVector2D& PositionUnits);
 
@@ -448,6 +451,17 @@ public:
 	/** Zero desliga os campos de treino. */
 	UPROPERTY(config, EditDefaultsOnly, Category = "Mundo")
 	bool bSpawnTrainingFields = true;
+
+	/**
+	 * A bolsa inicial do treinador (decisão 56).
+	 *
+	 * 100 não é redondo por acaso: quatro curas na cidade (25) e pouco mais
+	 * que uma venda de pet (70) — a primeira venda ainda é um acontecimento.
+	 * Config, porque é o tipo de número que se equilibra jogando, não
+	 * recompilando.
+	 */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Economia")
+	int32 StartingMoney = 100;
 
 	/**
 	 * Repõe a população: tira de cena os derrotados e cria novos até o alvo.

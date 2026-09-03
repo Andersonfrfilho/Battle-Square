@@ -1067,3 +1067,40 @@ Sucesso de build é sobre o que foi compilado, não sobre o que eu escrevi.
 
 **Regra:** teste novo se confirma pelo NOME na saída, nunca pela contagem total
 nem pelo "Succeeded" do build.
+
+### L-049: o rumo da coisa mais perto NÃO é o melhor lugar para se pôr algo
+
+**Descoberto:** 02/09/2026, quando a escarpa na rocha quebrou a regra "a fazenda
+olha para a água".
+
+A fazenda era posta assim:
+
+```cpp
+ParaAAgua = (AguaMaisPerto(vila) - vila).Normalize();
+Fazenda   = vila + ParaAAgua * (Clareira + Meia) + DeLado * ...;
+```
+
+Isso responde **"para que lado fica a água"**, e responde certo. Mas a pergunta
+que a regra faz é outra: **"de todos os lugares onde a fazenda cabe, qual é o
+mais perto da água"**.
+
+As duas coincidem enquanto a água está longe. **Quando a água está DENTRO da
+clareira, elas se invertem:** a fazenda avança o raio inteiro, ATRAVESSA o
+córrego, e para do outro lado — mais longe da água do que a própria vila.
+
+Medido na `vila-academia`: água a **580**, vila a **580**, fazenda a **1692**.
+
+**O conserto é trocar o cálculo por uma BUSCA**: 72 rumos ao redor da vila, e
+escolhe-se o que minimiza a distância à água. A vila-academia caiu de 1692 para
+**96**, e as outras três melhoraram ou empataram — porque o rumo antigo era
+apenas um dos 72 candidatos, e a busca nunca pode dar pior.
+
+**A generalização:** sempre que uma posição for escolhida por um vetor
+`(alvo - origem)` e depois empurrada por uma distância fixa, pergunte o que
+acontece quando a distância fixa é MAIOR que a distância ao alvo. É o caso em
+que o cálculo passa do alvo — e o sintoma não é um erro, é um resultado pior que
+o de não ter tentado.
+
+**Busca grossa é melhor que fórmula fina aqui:** 72 rumos é determinístico,
+reproduzível, e imune à inversão. Fórmula que trate o caso especial precisaria
+saber que ele existe.

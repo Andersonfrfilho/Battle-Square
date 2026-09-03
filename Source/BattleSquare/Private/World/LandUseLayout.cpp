@@ -122,27 +122,88 @@ namespace
 				continue;
 			}
 
-			const FVector2D ParaAAgua =
-				(AguaMaisPerto(Assentamento.CenterUnits) - Assentamento.CenterUnits).GetSafeNormal();
-			const FVector2D DeLado(-ParaAAgua.Y, ParaAAgua.X);
-
 			const float Clareira =
 				VillageLayout::ClearingHalfExtentUnitsFor(Assentamento.Kind);
 			const float Meia = Lote * FazendaEmLotes;
 
+			// O RAIO é fixo — a fazenda fica encostada na vila, fora da
+			// clareira. O que se ESCOLHE é a direção.
+			const float Raio = Clareira + Meia;
+
+			// A DIREÇÃO SE PROCURA, e não se calcula pelo rumo da água mais
+			// perto.
+			//
+			// Antes era `(agua - vila).Normalize()`, e ela falha quando a água
+			// está DENTRO da clareira: a fazenda avançava o raio inteiro,
+			// ATRAVESSAVA o córrego e parava do outro lado, mais longe da água
+			// do que a própria vila. Medido na vila-academia: água a 580, vila
+			// a 580, fazenda a 1692.
+			//
+			// O rumo da água mais perto responde "para que lado fica a água",
+			// que é outra pergunta. A que importa é "de todos os lugares onde
+			// a fazenda CABE, qual é o mais perto da água" — e essa se
+			// responde procurando.
+			//
+			// A varredura é determinística e grossa de propósito: 72 rumos, um
+			// a cada cinco graus. Fino demais só troca a fazenda de lugar por
+			// unidades que ninguém vê, e o traçado inteiro é reproduzível.
+			constexpr int32 RumosDaBusca = 72;
+
+			auto MelhorRumo = [&](const TArray<FVector2D>& JaUsados) -> FVector2D
+			{
+				FVector2D Escolhido = FVector2D(1.0f, 0.0f);
+				float MenorDistancia = TNumericLimits<float>::Max();
+
+				for (int32 Qual = 0; Qual < RumosDaBusca; ++Qual)
+				{
+					const float Angulo = (2.0f * PI * Qual) / RumosDaBusca;
+					const FVector2D Rumo(FMath::Cos(Angulo), FMath::Sin(Angulo));
+					const FVector2D Onde = Assentamento.CenterUnits + Rumo * Raio;
+
+					// Longe das fazendas já postas desta vila: duas fazendas
+					// na mesma beira seriam uma fazenda com duas etiquetas.
+					bool bEncostada = false;
+					for (const FVector2D& Outra : JaUsados)
+					{
+						if (FVector2D::Distance(Onde, Outra) < Meia * 2.0f)
+						{
+							bEncostada = true;
+							break;
+						}
+					}
+
+					if (bEncostada)
+					{
+						continue;
+					}
+
+					const float AteAAgua =
+						FVector2D::Distance(Onde, AguaMaisPerto(Onde));
+
+					if (AteAAgua < MenorDistancia)
+					{
+						MenorDistancia = AteAAgua;
+						Escolhido = Rumo;
+					}
+				}
+
+				return Escolhido;
+			};
+
 			const int32 FazendasPorVila =
 				WorldBudget::FarmsPerSettlement(IslandGeography::IslandBiome());
+
+			TArray<FVector2D> Postas;
 			for (int32 Qual = 0; Qual < FazendasPorVila; ++Qual)
 			{
-				const float ParaOnde = (Qual == 0) ? 1.0f : -1.0f;
+				const FVector2D Rumo = MelhorRumo(Postas);
 
 				FGroundUsePatch Fazenda;
 				Fazenda.Use = EGroundUse::Fazenda;
 				Fazenda.HalfExtentUnits = Meia;
-				Fazenda.CenterUnits = Assentamento.CenterUnits
-					+ ParaAAgua * (Clareira + Meia)
-					+ DeLado * (ParaOnde * Meia * 1.15f);
+				Fazenda.CenterUnits = Assentamento.CenterUnits + Rumo * Raio;
 
+				Postas.Add(Fazenda.CenterUnits);
 				Manchas.Add(Fazenda);
 			}
 		}

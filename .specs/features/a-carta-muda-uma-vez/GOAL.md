@@ -32,7 +32,7 @@ comentário previu.
 ## PRONTO é isto, e nada menos
 
 - [x] **M1** — o gabarito de hoje está CONGELADO em números, antes de mexer
-- [ ] **M2** — a rocha ganha ESCARPA, a água acha o degrau, e o poço aprofunda
+- [x] **M2** — a rocha ganha ESCARPA, a água acha o degrau, e o poço aprofunda
       sozinho *(reescrita: degrau NA QUEDA recriaria um ciclo já consertado)*
 - [ ] **M3** — a fundura existe POR PONTO no assado, e quem a decide é o gerador
 - [ ] **M4** — a estimativa privada do traçado MORRE, e o traçado passa a LER

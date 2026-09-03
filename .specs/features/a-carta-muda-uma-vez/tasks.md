@@ -22,7 +22,7 @@ temporário que sobrevive vira um segundo gabarito.
 
 ---
 
-## M2 — A rocha ganha ESCARPA, e a água acha o degrau
+## M2 — A rocha ganha ESCARPA, e a água acha o degrau ✅ FEITO
 > 🤖 Modelo: `opus` 🧠 — mexe na camada mais baixa do mundo
 
 **Dependências:** M1.

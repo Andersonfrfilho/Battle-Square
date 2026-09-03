@@ -241,6 +241,59 @@ namespace Relevo
 	 * POSIÇÃO, e por isso o mesmo lugar tem sempre a mesma altura — o mundo
 	 * nasce por pedaço, e relevo que muda entre visitas é o chão se mexendo.
 	 */
+	/**
+	 * A ESCARPA: a encosta em PATAMARES, e a planície intocada.
+	 *
+	 * ## Por que aqui, e não na cachoeira
+	 *
+	 * Desenhar degrau na posição da queda foi tentado e removido — ver o
+	 * comentário em `BedrockHeightAt`. O relevo perguntaria pelas quedas, as
+	 * quedas pelo plano dos rios, e o plano estaria em construção: ciclo, e
+	 * `abort()`.
+	 *
+	 * A inversão é melhor: **o terreno não sabe de água.** Ele ganha patamar
+	 * onde a rocha decide, e a água — que já procura onde o leito despenca —
+	 * acha os degraus sozinha e põe as cachoeiras neles. O poço aprofunda pela
+	 * fórmula que já existe, sem ninguém perguntar onde ele está.
+	 *
+	 * ## Por que RARA E ALTA, e não textura
+	 *
+	 * Medido em 02/09/2026, ANTES desta função existir: **31,4% do terreno já
+	 * era íngreme** (>10% de declive em 400 unidades). A rocha não é lisa — ela
+	 * é lisa apenas na escala da cachoeira. Escarpar tudo estouraria qualquer
+	 * teto no primeiro passo.
+	 *
+	 * Por isso o patamar entra em proporção à ALTURA da ondulação: a encosta
+	 * ganha degrau, e a planície fica como estava. Escarpa é acidente
+	 * geológico, não acabamento.
+	 */
+	float EmPatamares(float Ondulado, float Amplitude)
+	{
+		if (Amplitude <= KINDA_SMALL_NUMBER)
+		{
+			return Ondulado;
+		}
+
+		// A ALTURA RELATIVA decide quanto de patamar entra: zero no vale, cheio
+		// no alto da encosta. É o que mantém a planície andável.
+		const float Relativa = FMath::Clamp(FMath::Abs(Ondulado) / Amplitude, 0.0f, 1.0f);
+		const float Quanto = Relativa * Relativa;
+
+		// QUATRO patamares na amplitude. Menos que isso vira uma escada de dois
+		// degraus gigantes; mais, e cada degrau fica raso demais para a água
+		// achar — e é a água que decide se o degrau virou cachoeira.
+		const float Passo = Amplitude / 4.0f;
+
+		const float Nivel = FMath::FloorToFloat(Ondulado / Passo);
+		const float Dentro = Ondulado / Passo - Nivel;
+
+		// A BORDA é abrupta e o MEIO é plano: é isso que faz o patamar ser
+		// patamar. `Dentro` elevado concentra a subida no fim do degrau.
+		const float Degrau = (Nivel + Dentro * Dentro * Dentro) * Passo;
+
+		return FMath::Lerp(Ondulado, Degrau, Quanto);
+	}
+
 	float Ondulacao(const FVector2D& Onde)
 	{
 		const float Lado = IslandGeography::LandRadiusUnits() * FracaoDaCelula;
@@ -256,8 +309,14 @@ namespace Relevo
 		const float Baixo = FMath::Lerp(ValorDoCanto(X0, Y0), ValorDoCanto(X0 + 1, Y0), FracaoX);
 		const float Cima = FMath::Lerp(ValorDoCanto(X0, Y0 + 1), ValorDoCanto(X0 + 1, Y0 + 1), FracaoX);
 
-		return FMath::Lerp(Baixo, Cima, FracaoY)
-			* IslandGeography::LandRadiusUnits() * FracaoDaOndulacao;
+		const float Amplitude = IslandGeography::LandRadiusUnits() * FracaoDaOndulacao;
+		const float Liso = FMath::Lerp(Baixo, Cima, FracaoY) * Amplitude;
+
+		// O PATAMAR entra aqui, e não sobre a altura final: terraçar o total
+		// terraçaria também a rampa da praia, e a praia precisa subir lisa do
+		// mar — o encolhimento pela orla já impediu uma vez que a ilha ganhasse
+		// buracos de água.
+		return EmPatamares(Liso, Amplitude);
 	}
 
 

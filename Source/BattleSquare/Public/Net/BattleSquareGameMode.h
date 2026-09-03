@@ -369,6 +369,12 @@ private:
 	void MostrarRanking() const;
 
 	/**
+	 * O quadro de lições da Escola (decisão 64): os golpes do pet, os
+	 * trancados com requisito, e o campo do pátio que destrava cada um.
+	 */
+	void MostrarQuadroDeLicoes();
+
+	/**
 	 * EM QUE PRÉDIO o jogador está, dito pelas portas da CI2.
 	 *
 	 * `bIsInsideBuilding` falso é "na rua". O par prédio+vila só vale enquanto

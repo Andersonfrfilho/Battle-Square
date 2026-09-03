@@ -318,6 +318,22 @@ somada à 16 — o hospital cura de graça, e é para lá que se acorda); e bata
 nunca COMEÇA com zero — piso de 1, porque uma luta perdida antes do primeiro
 turno não é luta.
 
+**64. A ESCOLA É O LUGAR DE APRENDER.** *"na escola você aprende sobre os
+pets, batalhas, aprende golpes e aumenta skill com treinamentos dos seus
+pets"*. Três metades, e cada uma tem um destino:
+
+- **aumentar skill treinando** → é o PÁTIO da decisão 63, já de pé;
+- **aprender SOBRE pets e batalhas** → a Escola vira o quadro de lições:
+  entrar nela mostra os golpes do seu pet — os que ele já alcança e os
+  trancados, com o requisito e o campo do pátio que o treina. Nenhum dado
+  novo: o registro assinado já carrega `RequiresAttribute`/`RequiresValue`, e
+  a regra (`IsMet`) já existia — faltava um lugar fora da batalha que a
+  mostrasse;
+- 🆕 **ESCOPO NOVO — "aprender golpes" como mecânica** (golpe que o pet só
+  ganha estudando, além do kit do elemento): muda o desenho de desbloqueio,
+  conversa com a decisão 19 ("mais skills de terra virão") e é feature
+  própria — registrado para não se perder.
+
 **63. A ESCOLA TEM os campos de treinamento — e torneios, e ranking de
 treinadores.** *"escolas devem ter os campos de treinamento e até torneios e
 ranking de treinadores"*. Resolve a CI4 pelo caminho oposto ao da task: em vez

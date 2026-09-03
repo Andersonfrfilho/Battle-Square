@@ -53,6 +53,7 @@
 #include "Balance/PetSkillCatalog.h"
 #include "World/LandUseLayout.h"
 #include "World/RespawnRules.h"
+#include "World/SchoolTeachings.h"
 #include "World/SchoolyardLayout.h"
 #include "World/SettlementEconomy.h"
 #include "World/TrailLayout.h"
@@ -1243,6 +1244,59 @@ void ABattleSquareGameMode::TickGroundWork()
 		6.0f, FColor::Green, /*Key=*/-1);
 }
 
+void ABattleSquareGameMode::MostrarQuadroDeLicoes()
+{
+	// O ESPELHO é a fonte dos golpes — o mesmo dado assinado que monta a
+	// batalha. Falhar em carregar não quebra a visita: a escola sem quadro
+	// ainda é a escola, e o motivo aparece em vez de sumir.
+	TArray<FLoadedPetRecord> Registros;
+	if (const FString Problema = LoadConfiguredMirrorPets(Registros); !Problema.IsEmpty())
+	{
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("a escola esta sem material: %s"), *Problema),
+			0.0f, FColor::Orange, /*Key=*/757);
+		return;
+	}
+
+	const FLoadedPetRecord* Registro = Registros.FindByPredicate(
+		[this](const FLoadedPetRecord& Candidato)
+		{
+			return Candidato.Id == CachedOwnedPet.CatalogId;
+		});
+	if (!Registro)
+	{
+		FBattleDebugScreen::Show(TEXT("seu pet nao esta no material da escola"),
+			0.0f, FColor::Orange, /*Key=*/757);
+		return;
+	}
+
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("LICAO: os golpes de %s"), *CachedOwnedPet.Name),
+		0.0f, FColor(180, 220, 255), /*Key=*/757);
+
+	// O painel tem teto de altura (12 linhas para o mundo inteiro): as lições
+	// param antes de empurrar o resto para fora, e o corte se DECLARA — uma
+	// lista que termina calada lê como lista completa.
+	const TArray<FString> Linhas =
+		SchoolTeachings::BuildLessonLines(*Registro, CachedOwnedPet);
+	constexpr int32 TetoDeLinhas = 7;
+
+	for (int32 Indice = 0; Indice < Linhas.Num() && Indice < TetoDeLinhas; ++Indice)
+	{
+		FBattleDebugScreen::Show(Linhas[Indice], 0.0f,
+			Linhas[Indice].Contains(TEXT("🔒"))
+				? FColor(240, 200, 120) : FColor(150, 240, 170),
+			/*Key=*/758 + Indice);
+	}
+
+	if (Linhas.Num() > TetoDeLinhas)
+	{
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("  ... e mais %d golpes"), Linhas.Num() - TetoDeLinhas),
+			0.0f, FColor::Silver, /*Key=*/765);
+	}
+}
+
 void ABattleSquareGameMode::AnunciarPortaCruzada(EVillageBuilding Predio,
 	ESettlementKind DeQueVila, bool bEntrou)
 {
@@ -1259,8 +1313,13 @@ void ABattleSquareGameMode::AnunciarPortaCruzada(EVillageBuilding Predio,
 		}
 
 		// Apaga ao sair, como o sagrado e a travessia. Deixada, a linha diria
-		// que se está num prédio que ficou para trás.
+		// que se está num prédio que ficou para trás. O quadro de lições sai
+		// junto: lição na tela fora da escola é o painel mentindo o lugar.
 		FBattleDebugScreen::Show(TEXT(""), 0.0f, FColor::White, /*Key=*/753);
+		for (int32 Chave = 757; Chave <= 765; ++Chave)
+		{
+			FBattleDebugScreen::Show(TEXT(""), 0.0f, FColor::White, Chave);
+		}
 		return;
 	}
 
@@ -1269,6 +1328,15 @@ void ABattleSquareGameMode::AnunciarPortaCruzada(EVillageBuilding Predio,
 	bIsInsideBuilding = true;
 	CurrentBuilding = Predio;
 	CurrentBuildingKind = DeQueVila;
+
+	// A ESCOLA ENSINA AO ENTRAR (decisão 64): o quadro de lições — os golpes
+	// do seu pet, os trancados com requisito e o campo do pátio que destrava.
+	// O golpe trancado só aparecia DENTRO da batalha, e descobrir o requisito
+	// no meio da luta é descobrir tarde.
+	if (Predio == EVillageBuilding::Escola && bHasCachedOwnedPet)
+	{
+		MostrarQuadroDeLicoes();
+	}
 
 	// O CENTRO DE RECUPERAÇÃO CURA AO ENTRAR, e de graça (decisão 16) — em
 	// TODA vila que o tenha: cobrar era a metade da CI3 que caiu. Automático

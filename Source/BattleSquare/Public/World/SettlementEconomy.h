@@ -63,4 +63,23 @@ namespace SettlementEconomy
 	 * mercado paga o melhor pelo pet; a cidade paga o melhor prêmio.
 	 */
 	BATTLESQUARE_API int32 PayoutPercent(ESettlementKind Kind, ESettlementService Service);
+
+	/**
+	 * O valor base de UM PET, em moeda.
+	 *
+	 * Hoje é o preço base da economia, para todos: raridade como número é
+	 * decisão de conteúdo em aberto (a spec fala em "troca de pets por
+	 * raridade" sem dizer quanto vale cada uma). Quando ela existir, muda AQUI
+	 * — quem vende já multiplica pela porcentagem do lugar e não precisa saber.
+	 */
+	BATTLESQUARE_API int32 PetBaseValue();
+
+	/**
+	 * Quanto ESTE lugar paga por um pet, em moeda — a conta pronta.
+	 *
+	 * Existe para a tarefa de venda não refazer `valor × porcentagem / 100` no
+	 * call site: a conta refeita é a tabela duplicada com outra roupa
+	 * (invariante 15). Zero é "aqui não se vende".
+	 */
+	BATTLESQUARE_API int32 SalePayout(ESettlementKind Kind);
 }

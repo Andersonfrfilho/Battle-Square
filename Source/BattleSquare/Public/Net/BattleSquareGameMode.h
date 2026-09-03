@@ -364,6 +364,19 @@ private:
 	/** A linha da carteira no painel. Chave fixa: é estado, não evento. */
 	void MostrarCarteira() const;
 
+	/**
+	 * EM QUE PRÉDIO o jogador está, dito pelas portas da CI2.
+	 *
+	 * `bIsInsideBuilding` falso é "na rua". O par prédio+vila só vale enquanto
+	 * verdadeiro — ler sem checar é ler o último prédio visitado.
+	 */
+	bool bIsInsideBuilding = false;
+
+	// `{}` e não um valor nomeado: aqui o enum só existe como declaração
+	// adiantada, e o par abaixo nunca é lido com `bIsInsideBuilding` falso.
+	EVillageBuilding CurrentBuilding{};
+	ESettlementKind CurrentBuildingKind{};
+
 	/** A travessia sob os pés, e o aviso da ponte destruída antes da tentativa. */
 	void AnunciarTravessiaPerto(const UIslandBakedPlan& Baked, const FVector2D& PositionUnits);
 
@@ -433,6 +446,15 @@ public:
 	 * clicar exigiria uma barra no mundo que ainda não existe.
 	 */
 	bool LearnSpecialtyOfCurrentField();
+
+	/**
+	 * Vende um pet da coleção, se o jogador estiver num lugar que compra.
+	 *
+	 * O gesto é DELIBERADO (console `bs.VenderPet`), nunca a porta: entrar não
+	 * é comprometer-se. A porta só diz ONDE o jogador está — e é ela que
+	 * responde "aqui não se vende".
+	 */
+	void SellOwnedPet(const FString& CatalogId);
 
 	/**
 	 * Raio do anel dos campos de treino.

@@ -48,6 +48,7 @@
 #include "GameFramework/Character.h"
 #include "Engine/StaticMeshActor.h"
 #include "World/IslandBakedPlan.h"
+#include "World/SettlementEconomy.h"
 #include "World/TrailLayout.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -66,6 +67,7 @@
 #include "Balance/PetTypeCatalog.h"
 #include "Meta/PetMoveRequirements.h"
 #include "Meta/TrainerSpecialtyRules.h"
+#include "Meta/PetSaleRules.h"
 #include "Meta/TrainerWalletRules.h"
 #include "World/EncounterDetectionComponent.h"
 #include "World/EncounterMatchAssembler.h"
@@ -885,6 +887,63 @@ void ABattleSquareGameMode::MostrarCarteira() const
 		0.0f, FColor(255, 215, 120), /*Key=*/754);
 }
 
+void ABattleSquareGameMode::SellOwnedPet(const FString& CatalogId)
+{
+	// A porta decide ONDE, a tabela decide QUANTO, a regra decide SE. Este
+	// método só coordena — e anuncia, porque gesto sem resposta na tela é
+	// indistinguível de defeito.
+	if (!bIsInsideBuilding || CurrentBuilding != EVillageBuilding::Mercado)
+	{
+		FBattleDebugScreen::Show(TEXT("aqui nao se vende — entre num Mercado"),
+			6.0f, FColor::Orange, /*Key=*/-1);
+		return;
+	}
+
+	const int32 Pagamento = SettlementEconomy::SalePayout(CurrentBuildingKind);
+	if (Pagamento <= 0)
+	{
+		// `Offers` falso com prédio de Mercado em pé seria uma vila mentindo
+		// na fachada; se acontecer, o painel acusa em vez de vender por zero.
+		FBattleDebugScreen::Show(TEXT("este lugar nao compra pets"),
+			6.0f, FColor::Orange, /*Key=*/-1);
+		return;
+	}
+
+	TArray<FOwnedPetInstance> Colecao =
+		FPetCollectionService::LoadCollection(PetCollectionSlotName);
+
+	switch (FPetSaleRules::TrySell(Colecao, CatalogId, WorldEncounterPlayerCatalogId))
+	{
+	case EPetSaleVerdict::NotOwned:
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("voce nao tem pet com id '%s'"), *CatalogId),
+			6.0f, FColor::Orange, /*Key=*/-1);
+		return;
+
+	case EPetSaleVerdict::ActivePet:
+		FBattleDebugScreen::Show(TEXT("este e o SEU pet — o companheiro nao se vende"),
+			6.0f, FColor::Orange, /*Key=*/-1);
+		return;
+
+	case EPetSaleVerdict::Sold:
+		break;
+	}
+
+	// A COLEÇÃO grava antes da carteira, e a ordem é escolha: se o processo
+	// cair entre as duas, o defeito é uma venda perdida — nunca um pet que
+	// continua na coleção COM o dinheiro dele na mão, que é a duplicação que
+	// o contrapeso da task existe para impedir.
+	FPetCollectionService::SaveCollection(PetCollectionSlotName, Colecao);
+
+	FTrainerWalletRules::Earn(CachedTrainer, Pagamento);
+	FPetCollectionService::SaveTrainerProfile(PetCollectionSlotName, CachedTrainer);
+
+	MostrarCarteira();
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("vendido: %s por %d"), *CatalogId, Pagamento),
+		8.0f, FColor::Green, /*Key=*/-1);
+}
+
 void ABattleSquareGameMode::AnunciarPortaCruzada(EVillageBuilding Predio,
 	ESettlementKind DeQueVila, bool bEntrou)
 {
@@ -893,11 +952,24 @@ void ABattleSquareGameMode::AnunciarPortaCruzada(EVillageBuilding Predio,
 	// gesto do jogador, e não o efeito da calçada.
 	if (!bEntrou)
 	{
+		// Só esquece o prédio se a saída for DELE: com duas calçadas
+		// encostadas, "entrei em B, saí de A" não pode apagar B.
+		if (bIsInsideBuilding && CurrentBuilding == Predio)
+		{
+			bIsInsideBuilding = false;
+		}
+
 		// Apaga ao sair, como o sagrado e a travessia. Deixada, a linha diria
 		// que se está num prédio que ficou para trás.
 		FBattleDebugScreen::Show(TEXT(""), 0.0f, FColor::White, /*Key=*/753);
 		return;
 	}
+
+	// A porta é quem sabe ONDE o jogador está — e é este estado que os gestos
+	// deliberados (vender, curar, especializar) consultam antes de agir.
+	bIsInsideBuilding = true;
+	CurrentBuilding = Predio;
+	CurrentBuildingKind = DeQueVila;
 
 	FBattleDebugScreen::Show(
 		FString::Printf(TEXT("entrou: %s (%s)"),
@@ -2745,6 +2817,35 @@ namespace
 				}
 
 				GameMode->ToggleMapPinHere(Tipo);
+			}));
+
+	// A VENDA pelo console, gatilhada pelo LUGAR: só funciona dentro de um
+	// Mercado, e é a porta da CI2 quem sabe onde o jogador está. O mesmo
+	// desenho do bs.Especializar, que só funciona dentro de um campo de treino.
+	FAutoConsoleCommandWithWorldAndArgs GVenderPetCommand(
+		TEXT("bs.VenderPet"),
+		TEXT("bs.VenderPet <catalogId> — vende o pet capturado, se voce estiver num Mercado."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(
+			[](const TArray<FString>& Args, UWorld* World)
+			{
+				ABattleSquareGameMode* GameMode =
+					World ? World->GetAuthGameMode<ABattleSquareGameMode>() : nullptr;
+				if (!GameMode)
+				{
+					return;
+				}
+
+				if (Args.Num() < 1)
+				{
+					// Sem id não há o que vender — e o comando diz como se usa
+					// em vez de falhar calado.
+					FBattleDebugScreen::Show(
+						TEXT("uso: bs.VenderPet <catalogId>"),
+						6.0f, FColor::Orange, /*Key=*/-1);
+					return;
+				}
+
+				GameMode->SellOwnedPet(Args[0]);
 			}));
 
 	FAutoConsoleCommandWithWorldAndArgs GEspecializarCommand(

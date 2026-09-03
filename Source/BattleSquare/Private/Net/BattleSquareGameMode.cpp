@@ -3594,6 +3594,71 @@ namespace
 				GameMode->ToggleMapPinHere(Tipo);
 			}));
 
+	// A ESCOLHA DO JOGADOR (decisão 67, emenda): a conversa dinâmica é dele
+	// para ligar — na infra oficial, num modelo local em localhost, ou
+	// desligada. `SaveConfig` persiste: escolha que evapora ao fechar o jogo
+	// não é escolha, é sessão.
+	FAutoConsoleCommandWithWorldAndArgs GConversaCommand(
+		TEXT("bs.Conversa"),
+		TEXT("bs.Conversa [url|off] — ve, aponta ou desliga a conversa dinamica. ")
+		TEXT("Ex.: bs.Conversa http://localhost:8080/fala"),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(
+			[](const TArray<FString>& Args, UWorld* World)
+			{
+				ABattleSquareGameMode* GameMode =
+					World ? World->GetAuthGameMode<ABattleSquareGameMode>() : nullptr;
+				if (!GameMode)
+				{
+					return;
+				}
+
+				if (Args.Num() < 1)
+				{
+					// Sem argumento DIZ o modo: quem pergunta quer saber onde
+					// está, não mudar de lugar.
+					FBattleDebugScreen::Show(
+						GameMode->NpcDialogueEndpointUrl.IsEmpty()
+							? TEXT("conversa: modo RESTRITO (local). bs.Conversa <url> liga a dinamica")
+							: *FString::Printf(TEXT("conversa: DINAMICA via %s"),
+								*GameMode->NpcDialogueEndpointUrl),
+						8.0f, FColor(180, 200, 240), /*Key=*/-1);
+
+					// AS NECESSIDADES, na tela: escolher sem saber o custo
+					// nao e escolha. O guia completo tem a comparacao.
+					FBattleDebugScreen::Show(
+						TEXT("dinamica exige: internet (infra oficial) OU modelo local (~2 GB de RAM) — ver docs/conversa-dinamica.md"),
+						8.0f, FColor::Silver, /*Key=*/-1);
+					return;
+				}
+
+				if (Args[0].Equals(TEXT("off"), ESearchCase::IgnoreCase))
+				{
+					GameMode->NpcDialogueEndpointUrl.Empty();
+					GameMode->SaveConfig();
+					FBattleDebugScreen::Show(
+						TEXT("conversa dinamica DESLIGADA — o modo restrito segue vivo"),
+						8.0f, FColor(180, 200, 240), /*Key=*/-1);
+					return;
+				}
+
+				// URL sem esquema não é URL: falhar aqui é mais claro que
+				// falhar em silêncio no primeiro bs.Falar.
+				if (!Args[0].StartsWith(TEXT("http://"))
+					&& !Args[0].StartsWith(TEXT("https://")))
+				{
+					FBattleDebugScreen::Show(
+						TEXT("a url precisa comecar com http:// ou https://"),
+						6.0f, FColor::Orange, /*Key=*/-1);
+					return;
+				}
+
+				GameMode->NpcDialogueEndpointUrl = Args[0];
+				GameMode->SaveConfig();
+				FBattleDebugScreen::Show(
+					FString::Printf(TEXT("conversa DINAMICA ligada: %s"), *Args[0]),
+					8.0f, FColor::Green, /*Key=*/-1);
+			}));
+
 	// A CONVERSA pelo console (decisão 67): fala com quem está te ouvindo.
 	FAutoConsoleCommandWithWorldAndArgs GFalarCommand(
 		TEXT("bs.Falar"),

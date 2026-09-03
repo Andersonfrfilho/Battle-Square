@@ -457,13 +457,6 @@ private:
 	FTimerHandle TrainingTimer;
 	FTimerHandle WorkTimer;
 
-	/**
-	 * O endpoint do modelo de fala NA INFRA PRÓPRIA (decisão 67). VAZIO é o
-	 * modo restrito — e vazio é o padrão: conversa dinâmica é upgrade de quem
-	 * configurou servidor, nunca requisito de quem instalou o jogo.
-	 */
-	UPROPERTY(config, EditDefaultsOnly, Category = "Conversa")
-	FString NpcDialogueEndpointUrl;
 
 	/** Tipo por id do catálogo, para a predominância por lugar (decisão 62). */
 	TMap<FString, FString> CatalogTypeById;
@@ -513,6 +506,16 @@ public:
 	 * Online, o modelo da infra responde; sem ele, o modo restrito.
 	 */
 	void TalkToNearbyResident(const FString& PlayerSays);
+
+	/**
+	 * O endpoint do modelo de fala (decisão 67, e a emenda: A ESCOLHA É DO
+	 * JOGADOR). VAZIO é o modo restrito — e vazio é o padrão: dinâmica é
+	 * upgrade de quem apontou um servidor (a infra oficial, ou um modelo
+	 * local em localhost — o jogo não distingue, e é o ponto). `bs.Conversa`
+	 * liga, aponta e desliga em jogo, persistindo por `SaveConfig`.
+	 */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Conversa")
+	FString NpcDialogueEndpointUrl;
 
 	/** Quem está te ouvindo agora — a casa atendida ou a rua por perto. */
 	bool bHasConversationPartner = false;

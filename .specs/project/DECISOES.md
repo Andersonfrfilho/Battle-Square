@@ -419,6 +419,15 @@ fala, por construção: é a regra da carta valendo para o NPC mais eloquente.
 **O que falta é da INFRA, não deste repo:** o serviço que recebe o POST e
 serve o modelo próprio. O contrato está no header, esperando o servidor.
 
+**Emendada em 03/09** (*"dê a opção para ele"* + *"e informe das necessidades
+e diferenças"*): a escolha é DO JOGADOR — `bs.Conversa` vê, aponta e desliga a
+dinâmica em jogo, persistindo por `SaveConfig` (escolha que evapora ao fechar
+não é escolha). O endpoint pode ser a infra oficial OU um modelo local em
+`localhost` — o jogo não distingue, e é o ponto: o mesmo contrato serve os
+dois. As necessidades aparecem na tela ao consultar o modo, e o guia completo
+— diferenças, RAM, download, o adaptador do llama.cpp — vive em
+`docs/conversa-dinamica.md`.
+
 **É viável, e a forma honesta é esta:** um serviço de diálogo FORA do jogo
 (no servidor que `posse-no-servidor` já planeja), chamado quando o jogador
 puxa conversa. O prompt leva (a) a FICHA do morador — nome, arco, janela,

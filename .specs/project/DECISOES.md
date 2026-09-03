@@ -329,6 +329,16 @@ pets"*. Três metades, e cada uma tem um destino:
   novo: o registro assinado já carrega `RequiresAttribute`/`RequiresValue`, e
   a regra (`IsMet`) já existia — faltava um lugar fora da batalha que a
   mostrasse;
+
+  **Ampliada em 03/09** (*"mostra estratégia tbm, limitações, terrenos e
+  dicas… é bom contra… ruim contra… cuidado com terrenos"*): o quadro ganhou
+  a ESTRATÉGIA do tipo — bom contra, ruim contra, e "apanha feio de" (só o
+  golpe 150+, porque aviso de tudo é aviso de nada) — lida da MESMA tabela de
+  efetividade da batalha; e os avisos de TERRENO, cada frase amarrada ao
+  teste de BattleSim que a prova (dano de casa que voar escapa e camuflar
+  não, submergir que exige água funda, gelo que nega, lama que é aposta).
+  Frase sem teste correspondente não entra: a escola só ensina o que a
+  batalha cobra;
 - 🆕 **ESCOPO NOVO — "aprender golpes" como mecânica** (golpe que o pet só
   ganha estudando, além do kit do elemento): muda o desenho de desbloqueio,
   conversa com a decisão 19 ("mais skills de terra virão") e é feature

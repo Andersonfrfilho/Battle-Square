@@ -19,6 +19,11 @@
  * tarde: a Escola é onde se lê ANTES, com calma, e com o dedo apontando o
  * campo do pátio que destrava.
  */
+// Adiantada AQUI, no escopo global: dentro do namespace, `class F...&` no
+// parâmetro declararia uma `SchoolTeachings::FTypeEffectivenessTable` nova —
+// incompleta para sempre, e o erro sai longe, no `.cpp`.
+class FTypeEffectivenessTable;
+
 namespace SchoolTeachings
 {
 	/**
@@ -28,4 +33,28 @@ namespace SchoolTeachings
 	 */
 	BATTLESQUARE_API TArray<FString> BuildLessonLines(
 		const FLoadedPetRecord& Record, const FOwnedPetInstance& Owned);
+
+	/**
+	 * A ESTRATÉGIA do tipo: bom contra, ruim contra, e de quem apanhar.
+	 *
+	 * Lida da MESMA tabela que a batalha usa (`FTypeEffectivenessTable`) —
+	 * uma lição escrita à mão ensinaria um número e a batalha cobraria outro,
+	 * que é exatamente o defeito que a tabela veio matar ("existia, era
+	 * testada, e nunca chegava ao jogo").
+	 *
+	 * `AllTypes` são os tipos que EXISTEM (escola/elemento do catálogo): a
+	 * lição compara contra o mundo real, nunca contra uma lista própria.
+	 */
+	BATTLESQUARE_API TArray<FString> BuildStrategyLines(const FString& PetType,
+		const FTypeEffectivenessTable& Table, const TArray<FString>& AllTypes);
+
+	/**
+	 * Os avisos de TERRENO — e cada frase tem um teste de BattleSim por trás.
+	 *
+	 * A escola só ensina o que a batalha cobra: dano de casa que voar escapa
+	 * (`LeavingTheGround.AvoidsCellDamage`), camuflar que não escapa (mesmo
+	 * teste), submergir que exige água funda, gelo que nega e lama que é
+	 * aposta. Frase sem teste correspondente não entra.
+	 */
+	BATTLESQUARE_API TArray<FString> BuildTerrainLines();
 }

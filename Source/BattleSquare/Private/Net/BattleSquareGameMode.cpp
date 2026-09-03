@@ -1271,28 +1271,67 @@ void ABattleSquareGameMode::MostrarQuadroDeLicoes()
 	}
 
 	FBattleDebugScreen::Show(
-		FString::Printf(TEXT("LICAO: os golpes de %s"), *CachedOwnedPet.Name),
+		FString::Printf(TEXT("LICAO: %s (%s)"), *CachedOwnedPet.Name, *CachedOwnedPet.Type),
 		0.0f, FColor(180, 220, 255), /*Key=*/757);
 
-	// O painel tem teto de altura (12 linhas para o mundo inteiro): as lições
-	// param antes de empurrar o resto para fora, e o corte se DECLARA — uma
-	// lista que termina calada lê como lista completa.
-	const TArray<FString> Linhas =
-		SchoolTeachings::BuildLessonLines(*Registro, CachedOwnedPet);
-	constexpr int32 TetoDeLinhas = 7;
+	// A LIÇÃO INTEIRA, na ordem do que decide batalha: estratégia e terreno
+	// primeiro — valem contra QUALQUER oponente —, e os golpes preenchem o
+	// que sobrar do painel (decisão 64, ampliada: "mostra estratégia,
+	// limitações, terrenos").
+	TArray<FString> Linhas;
 
-	for (int32 Indice = 0; Indice < Linhas.Num() && Indice < TetoDeLinhas; ++Indice)
+	// A tabela é a MESMA da batalha; ausente, a lição de tipos fica muda em
+	// vez de ensinar o neutro como se fosse regra.
+	FTypeEffectivenessTable Efetividade;
+	if (FTypeEffectivenessTable::LoadFromJson(
+		FPaths::Combine(FPaths::ProjectConfigDir(), TEXT("TypeEffectiveness.json")),
+		Efetividade))
 	{
-		FBattleDebugScreen::Show(Linhas[Indice], 0.0f,
-			Linhas[Indice].Contains(TEXT("🔒"))
-				? FColor(240, 200, 120) : FColor(150, 240, 170),
-			/*Key=*/758 + Indice);
+		// Os tipos que EXISTEM, do catálogo — a lição compara contra o mundo
+		// real, nunca contra uma lista própria.
+		TArray<FString> TodosOsTipos;
+		const FPetTypeCatalog& Catalogo = FPetTypeCatalog::Get();
+		for (const FPetSchoolDefinition& Escola : Catalogo.GetSchools())
+		{
+			for (const FPetElementDefinition& Elemento : Catalogo.GetElements())
+			{
+				TodosOsTipos.Add(Escola.Name + TEXT("/") + Elemento.Name);
+			}
+		}
+
+		Linhas.Append(SchoolTeachings::BuildStrategyLines(
+			CachedOwnedPet.Type, Efetividade, TodosOsTipos));
+	}
+
+	Linhas.Append(SchoolTeachings::BuildTerrainLines());
+	Linhas.Append(SchoolTeachings::BuildLessonLines(*Registro, CachedOwnedPet));
+
+	// O painel tem teto de altura: o quadro para antes de empurrar o resto
+	// para fora, e o corte se DECLARA — lista que termina calada lê como
+	// lista completa.
+	constexpr int32 TetoDeLinhas = 8;
+	const int32 Mostradas = FMath::Min(Linhas.Num(),
+		Linhas.Num() > TetoDeLinhas ? TetoDeLinhas - 1 : TetoDeLinhas);
+
+	for (int32 Indice = 0; Indice < Mostradas; ++Indice)
+	{
+		FColor Cor = FColor(150, 240, 170);
+		if (Linhas[Indice].Contains(TEXT("🔒")) || Linhas[Indice].Contains(TEXT("⚠")))
+		{
+			Cor = FColor(240, 200, 120);
+		}
+		else if (Linhas[Indice].Contains(TEXT("terreno:")))
+		{
+			Cor = FColor(200, 200, 150);
+		}
+
+		FBattleDebugScreen::Show(Linhas[Indice], 0.0f, Cor, /*Key=*/758 + Indice);
 	}
 
 	if (Linhas.Num() > TetoDeLinhas)
 	{
 		FBattleDebugScreen::Show(
-			FString::Printf(TEXT("  ... e mais %d golpes"), Linhas.Num() - TetoDeLinhas),
+			FString::Printf(TEXT("  ... e mais %d licoes"), Linhas.Num() - Mostradas),
 			0.0f, FColor::Silver, /*Key=*/765);
 	}
 }

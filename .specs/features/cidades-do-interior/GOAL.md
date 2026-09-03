@@ -71,7 +71,7 @@ de ser cenário que só colide.
       escolhe o atributo num menu; a Escola só MOSTRA as especialidades e o
       gesto continua no campo; ou o campo ganha a confirmação em duas etapas —
       são produtos diferentes, e a escolha é do usuário.
-- [ ] **CI5** — Mercado vende o pet capturado pela tabela já testada
+- [x] **CI5** — Mercado vende o pet capturado pela tabela já testada
 - [ ] **CI6** — ~~Marco de retorno teleporta~~ **o Marco é PONTO DE
       RENASCIMENTO, e quem cai acorda no hospital**
       Reescrita pela decisão 60. Ninguém viaja por vontade própria — o Marco

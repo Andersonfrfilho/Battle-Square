@@ -147,17 +147,30 @@ FString VillageResidents::StoryLineFor(const FResident& Morador,
 
 FString VillageResidents::StoryLineReacting(const FResident& Morador,
 	ESettlementKind Kind, int32 DoorIndex, int32 Meetings,
-	bool bPlayerBeatChampion)
+	const FPlayerDeeds& Feitos)
 {
 	const FString Fala = StoryLineFor(Morador, Kind, DoorIndex, Meetings);
 
 	// O GANCHO é a fala, não um índice: se alguém reordenar os arcos, o
 	// pedido e a reação continuam colados — índice solto os separaria na
 	// primeira edição.
-	if (bPlayerBeatChampion
-		&& Fala.Contains(TEXT("se voce o vencer")))
+	if (Feitos.bBeatChampion && Fala.Contains(TEXT("se voce o vencer")))
 	{
 		return TEXT("voce O VENCEU?! entao era verdade... me conta TUDO, do primeiro golpe ao ultimo");
+	}
+
+	// O arco do Mercado, dito a quem TAMBÉM já vendeu: a confidência vira
+	// cumplicidade — a frase é a mesma lição, agora entre iguais.
+	if (Feitos.bHasSoldAPet && Fala.Contains(TEXT("dinheiro vai, a historia fica")))
+	{
+		return TEXT("soube que voce tambem ja vendeu um... entao sabe: dinheiro vai, a historia fica. me conta a sua?");
+	}
+
+	// O arco do pet de água, dito a quem ANDA com um: a saudade reconhece o
+	// bicho do visitante antes de falar do próprio.
+	if (Feitos.bHasWaterPet && Fala.Contains(TEXT("barulho dele na agua")))
+	{
+		return TEXT("o SEU e de agua, eu vi de longe! cuida bem dele... o barulho deles na agua, de noite, e a melhor parte");
 	}
 
 	return Fala;

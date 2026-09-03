@@ -69,21 +69,36 @@ namespace VillageResidents
 		ESettlementKind Kind, int32 DoorIndex, int32 Meetings);
 
 	/**
+	 * OS FEITOS que as histórias escutam — só o que o save já sabe.
+	 *
+	 * Nenhum campo aqui cria estado novo: o campeão é o ranking, a venda é o
+	 * contador dela, o pet de água é o tipo do companheiro. Feito que
+	 * exigisse estado próprio seria a história mandando no jogo — e é o
+	 * contrário: ela ESCUTA.
+	 */
+	struct BATTLESQUARE_API FPlayerDeeds
+	{
+		bool bBeatChampion = false;
+		bool bHasSoldAPet = false;
+		bool bHasWaterPet = false;
+	};
+
+	/**
 	 * A HISTÓRIA QUE REAGE (decisão 15, a metade "evolutiva" de verdade): a
 	 * mesma visita, com o feito do jogador mudando a resposta.
 	 *
-	 * O primeiro cliente é o arco da Arena — a confidência dele PEDE em
-	 * texto: "se você o vencer, volte aqui e me conte". Quem venceu
-	 * (`bPlayerBeatChampion`) ouve a reação em vez do pedido: um pedido que
-	 * ignora o feito cumprido é o NPC provando que não escuta — o oposto do
-	 * que "história própria" promete.
+	 * Três ganchos, e cada um cola numa CONFIDÊNCIA que já pedia: a Arena
+	 * ("se você o vencer, me conte"), o Mercado ("dinheiro vai, a história
+	 * fica" — dita a quem também já vendeu), e o pet de água ("sinto falta do
+	 * barulho dele" — dita a quem anda com um). Um pedido que ignora o feito
+	 * cumprido é o NPC provando que não escuta.
 	 *
-	 * Arcos sem gancho de feito respondem igual com e sem — reagir a tudo é
-	 * tão falso quanto não reagir a nada.
+	 * Arcos sem gancho respondem igual com e sem — reagir a tudo é tão falso
+	 * quanto não reagir a nada.
 	 */
 	BATTLESQUARE_API FString StoryLineReacting(const FResident& Resident,
 		ESettlementKind Kind, int32 DoorIndex, int32 Meetings,
-		bool bPlayerBeatChampion);
+		const FPlayerDeeds& Deeds);
 
 	/**
 	 * Ele atende a esta hora?

@@ -210,8 +210,10 @@ bool FResidentStoryReactsToDeedsTest::RunTest(const FString&)
 
 		// COM o feito, a confidência vira reação — a mesma visita, outra
 		// resposta.
+		VillageResidents::FPlayerDeeds Venceu;
+		Venceu.bBeatChampion = true;
 		const FString ComFeito = VillageResidents::StoryLineReacting(
-			Morador, ESettlementKind::VilaInicial, Porta, 4, true);
+			Morador, ESettlementKind::VilaInicial, Porta, 4, Venceu);
 		TestNotEqual(TEXT("quem venceu ouve a reacao, nao o pedido"),
 			ComFeito, SemFeito);
 		TestTrue(TEXT("e a reacao reconhece o feito"),
@@ -221,19 +223,82 @@ bool FResidentStoryReactsToDeedsTest::RunTest(const FString&)
 		// reagir a tudo é tão falso quanto não reagir a nada.
 		TestEqual(TEXT("sem o feito, nada muda"),
 			VillageResidents::StoryLineReacting(
-				Morador, ESettlementKind::VilaInicial, Porta, 4, false),
+				Morador, ESettlementKind::VilaInicial, Porta, 4,
+				VillageResidents::FPlayerDeeds()),
 			SemFeito);
 
 		// E os OUTROS estágios do mesmo arco não reagem — o gancho é a
 		// confidência, não o morador inteiro.
 		TestEqual(TEXT("a apresentacao nao muda com o feito"),
 			VillageResidents::StoryLineReacting(
-				Morador, ESettlementKind::VilaInicial, Porta, 2, true),
+				Morador, ESettlementKind::VilaInicial, Porta, 2, Venceu),
 			VillageResidents::StoryLineFor(
 				Morador, ESettlementKind::VilaInicial, Porta, 2));
 	}
 
 	TestTrue(TEXT("existe morador com o arco da Arena para testar"),
 		bAchouOArcoDaArena);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FResidentStoryHasThreeHooksTest,
+	"BattleSquare.World.Moradores.TresGanchosTresFeitos",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FResidentStoryHasThreeHooksTest::RunTest(const FString&)
+{
+	// OS DOIS GANCHOS NOVOS, pelo mesmo protocolo do primeiro: acha-se o
+	// morador com o arco varrendo portas, e afirma-se NELE — com o feito a
+	// confidência muda, sem o feito nada muda, e o feito ERRADO também não
+	// muda nada (vencer o campeão não mexe no arco do Mercado).
+	struct FGancho
+	{
+		const TCHAR* Pede;
+		VillageResidents::FPlayerDeeds Feito;
+		VillageResidents::FPlayerDeeds FeitoErrado;
+	};
+
+	FGancho Mercado;
+	Mercado.Pede = TEXT("dinheiro vai, a historia fica");
+	Mercado.Feito.bHasSoldAPet = true;
+	Mercado.FeitoErrado.bBeatChampion = true;
+
+	FGancho PetDeAgua;
+	PetDeAgua.Pede = TEXT("barulho dele na agua");
+	PetDeAgua.Feito.bHasWaterPet = true;
+	PetDeAgua.FeitoErrado.bHasSoldAPet = true;
+
+	const FGancho Ganchos[] = { Mercado, PetDeAgua };
+
+	for (const FGancho& Gancho : Ganchos)
+	{
+		bool bAchou = false;
+		for (int32 Porta = 0; Porta < 48 && !bAchou; ++Porta)
+		{
+			const VillageResidents::FResident Morador =
+				VillageResidents::ResidentFor(ESettlementKind::VilaInicial, Porta);
+			const FString SemFeito = VillageResidents::StoryLineFor(
+				Morador, ESettlementKind::VilaInicial, Porta, 4);
+			if (!SemFeito.Contains(Gancho.Pede))
+			{
+				continue;
+			}
+
+			bAchou = true;
+
+			TestNotEqual(TEXT("com o feito, a confidencia reage"),
+				VillageResidents::StoryLineReacting(Morador,
+					ESettlementKind::VilaInicial, Porta, 4, Gancho.Feito),
+				SemFeito);
+
+			TestEqual(TEXT("com o feito ERRADO, nada muda"),
+				VillageResidents::StoryLineReacting(Morador,
+					ESettlementKind::VilaInicial, Porta, 4, Gancho.FeitoErrado),
+				SemFeito);
+		}
+
+		TestTrue(TEXT("existe morador com o arco deste gancho"), bAchou);
+	}
+
 	return true;
 }

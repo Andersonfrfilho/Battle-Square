@@ -181,6 +181,13 @@ struct BATTLESQUARE_API FTrainerProfile
 	 */
 	UPROPERTY()
 	TArray<FResidentAcquaintance> Acquaintances;
+
+	/**
+	 * Quantos pets o jogador JÁ VENDEU — o feito que o arco do Mercado
+	 * escuta. Contador e não bool: histórias futuras podem querer "muitos".
+	 */
+	UPROPERTY()
+	int32 PetsSold = 0;
 };
 
 /**

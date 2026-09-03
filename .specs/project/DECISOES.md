@@ -398,6 +398,33 @@ direto com a decisão 15 (campeonato torna o jogador LÍDER do centro, com renda
 e desafios). É feature própria, não uma task desta — registrado para não se
 perder.
 
+**67. CONVERSA LIVRE COM O NPC — modelo de fala.** ⬜ *Perguntado em 03/09:
+"poderíamos ter um modelo de fala para continuar falando com o NPC, e ele
+conversar como uma pessoa sobre os acontecimentos do jogo?"*
+
+**É viável, e a forma honesta é esta:** um serviço de diálogo FORA do jogo
+(no servidor que `posse-no-servidor` já planeja), chamado quando o jogador
+puxa conversa. O prompt leva (a) a FICHA do morador — nome, arco, janela,
+quantas visitas — e (b) um DIGESTO de fatos VERDADEIROS do jogo: os feitos do
+save, o gabarito da carta, as mecânicas com teste. O modelo responde EM
+PERSONAGEM, e a regra de sempre vale dobrada: ele só afirma o que o digesto
+contém — fato mecânico falso não entra nem por eloquência.
+
+**O que fica decidido por arquitetura, antes de qualquer código:**
+- os ganchos determinísticos CONTINUAM sendo a base: offline joga-se local
+  (decisão 39), e conversa que exige internet não pode ser a única conversa;
+- **custa dinheiro por conversa** (chamada de modelo) — precisa de teto por
+  jogador/dia e de decisão de orçamento, que é do dono;
+- precisa de moderação de saída (NPC não xinga, não promete recurso que não
+  existe, não aponta segredo — o filtro do digesto cobre o último);
+- latência: a resposta chega em segundos, não em quadros — a UI de conversa
+  precisa comportar espera.
+
+**Parado aguardando três decisões do dono:** provedor (API externa vs modelo
+local pequeno embarcado), orçamento por jogador, e se a v1 é só nos NPCs de
+vila ou em todos. Sem essas, implementar seria escolher custo recorrente por
+omissão.
+
 **62-b. O FANTASMA tem três moradas.** *"fantasmas podem viver em cemitérios
 e lugares bem afastados tbm"* — além da gruta: o cemitério (de vila e
 esquecido, os dois assombram) e o fim do mundo (longe de TODO assentamento, em

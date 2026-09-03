@@ -1131,6 +1131,11 @@ void ABattleSquareGameMode::SellOwnedPet(const FString& CatalogId)
 	FPetCollectionService::SaveCollection(PetCollectionSlotName, Colecao);
 
 	FTrainerWalletRules::Earn(CachedTrainer, Pagamento);
+
+	// O FEITO fica registrado no mesmo save do dinheiro: o arco do Mercado
+	// escuta "já vendeu um pet", e feito sem registro é história que não
+	// reage nunca.
+	++CachedTrainer.PetsSold;
 	FPetCollectionService::SaveTrainerProfile(PetCollectionSlotName, CachedTrainer);
 
 	MostrarCarteira();
@@ -1506,14 +1511,20 @@ void ABattleSquareGameMode::AnunciarPortaCruzada(EVillageBuilding Predio,
 			++Conhecido->Meetings;
 			FPetCollectionService::SaveTrainerProfile(PetCollectionSlotName, CachedTrainer);
 
+			// OS FEITOS que a história escuta, todos lidos do que o save já
+			// sabia: ranking (só a Arena pontua), o contador de vendas, e o
+			// elemento do companheiro. Nenhum estado novo — a história ESCUTA
+			// o jogo, nunca manda nele.
+			VillageResidents::FPlayerDeeds Feitos;
+			Feitos.bBeatChampion = CachedTrainer.RankingPoints > 0;
+			Feitos.bHasSoldAPet = CachedTrainer.PetsSold > 0;
+			Feitos.bHasWaterPet = bHasCachedOwnedPet
+				&& CachedOwnedPet.Type.EndsWith(TEXT("/Agua"));
+
 			FBattleDebugScreen::Show(
 				FString::Printf(TEXT("%s: \"%s\""), *Morador.Name,
 					*VillageResidents::StoryLineReacting(
-						Morador, DeQueVila, DoorIndex, Conhecido->Meetings,
-						// "Venceu o campeao" e ponto de ranking: so o desafio
-						// de Arena pontua, entao a pergunta ja tem resposta
-						// guardada — sem estado novo.
-						CachedTrainer.RankingPoints > 0)),
+						Morador, DeQueVila, DoorIndex, Conhecido->Meetings, Feitos)),
 				0.0f, FColor(200, 220, 200), /*Key=*/767);
 		}
 		else

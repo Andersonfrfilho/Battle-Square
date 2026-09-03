@@ -1,0 +1,3 @@
+# Dependências instaladas não são fonte: o lockfile (commitado) as reproduz
+# byte a byte com `bun install --frozen-lockfile`.
+node_modules/

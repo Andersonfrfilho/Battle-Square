@@ -40,23 +40,14 @@ de ser cenário que só colide.
       batalha), a derrota acorda curado (60+16), e entrar no Centro cura de
       graça. `CuraNaCidade = 25` segue sem cliente — apagar é decisão do
       usuário.
-- [⛔] **CI4** — Escola especializa pelo prédio, mesma função do console
-      ⚠️ **PAROU em 03/09/2026 — GEOMETRICAMENTE IMPOSSÍVEL como escrita,
-      medido.** A task manda chamar `LearnSpecialtyOfCurrentField()` do gatilho
-      da Escola, mas essa função exige estar DENTRO de um campo de treino
-      (`AWorldTrainingField::IsInside`), e os campos ficam num anel de 22.000
-      unidades do centro (`TrainingFieldRingRadiusUnits`, `DefaultGame.ini:42`)
-      enquanto a clareira inteira da vila tem meia-extensão de 1.348. Chamada da
-      Escola, ela responde "você não está num campo de treino" — sempre, por
-      vinte mil unidades.
-
-      **E o desenho por trás é decisão de conteúdo em aberto na própria spec:**
-      "Quais atributos cada cidade ensina? É o que faz viajar valer." Se a
-      Escola especializa em QUALQUER atributo sem sair da vila, os cinco campos
-      e a viagem até eles perdem o papel. As saídas possíveis — a Escola
-      escolhe o atributo num menu; a Escola só MOSTRA as especialidades e o
-      gesto continua no campo; ou o campo ganha a confirmação em duas etapas —
-      são produtos diferentes, e a escolha é do usuário.
+- [x] **CI4** — ~~Escola especializa pelo prédio, mesma função do console~~
+      **a Escola TEM os campos: o pátio (decisão 63)**
+      A task original era geometricamente impossível (campos a 20.000 unidades,
+      medido). O usuário resolveu pelo caminho oposto: os cinco campos, miúdos,
+      nascem na faixa da clareira atrás da Escola — e `bs.Especializar` e o
+      treino funcionam ali pela MESMA função de sempre, sem linha nova de
+      regra. Torneios e ranking de treinadores na escola são 🆕 escopo novo,
+      registrados na decisão 63.
 - [x] **CI5** — Mercado vende o pet capturado pela tabela já testada
 - [x] **CI6** — ~~Marco de retorno teleporta~~ **o Marco é PONTO DE
       RENASCIMENTO, e quem cai acorda no hospital**

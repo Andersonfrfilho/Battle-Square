@@ -318,6 +318,18 @@ somada à 16 — o hospital cura de graça, e é para lá que se acorda); e bata
 nunca COMEÇA com zero — piso de 1, porque uma luta perdida antes do primeiro
 turno não é luta.
 
+**63. A ESCOLA TEM os campos de treinamento — e torneios, e ranking de
+treinadores.** *"escolas devem ter os campos de treinamento e até torneios e
+ranking de treinadores"*. Resolve a CI4 pelo caminho oposto ao da task: em vez
+de a Escola chamar um campo a vinte mil unidades, ela ganha um PÁTIO — os
+cinco campos, miúdos, na faixa da clareira atrás dela. `bs.Especializar` e o
+treino passam a funcionar ali, pela mesma função de sempre.
+
+🆕 **ESCOPO NOVO — torneios e ranking de treinadores na escola.** Conversa
+direto com a decisão 15 (campeonato torna o jogador LÍDER do centro, com renda
+e desafios). É feature própria, não uma task desta — registrado para não se
+perder.
+
 **62. A fauna do bioma tem PREDOMINÂNCIA, não exclusividade.** *"nosso
 primeiro bioma é natureza comum, vai ter mais predominância de tipos de pets
 comuns, natureza, plantas, insetos, alguns aquáticos, cavernas, noturnos

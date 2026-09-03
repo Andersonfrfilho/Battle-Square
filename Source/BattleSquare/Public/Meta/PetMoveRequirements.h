@@ -57,6 +57,17 @@ public:
 	 */
 	static FText GetAttributeLabel(const FString& Attribute);
 
+	/**
+	 * OS CINCO ATRIBUTOS, na grafia do dado assinado — a lista canônica.
+	 *
+	 * Ela morava como array literal dentro de quem planta os campos de treino,
+	 * e o pátio da Escola precisou da mesma lista: seria a quarta tabela
+	 * escondida que este projeto acha em dois dias (uso do solo, material da
+	 * ponte, tipo de assentamento). Duas cópias concordam até alguém criar o
+	 * sexto atributo — e aí um lugar ganha campo e o outro não.
+	 */
+	static const TArray<FString>& AllAttributeNames();
+
 	/** "exige Voo 12", ou vazio quando o golpe não exige nada. */
 	static FText DescribeRequirement(const FString& Attribute, int32 RequiredValue);
 };

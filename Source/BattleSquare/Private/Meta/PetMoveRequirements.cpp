@@ -124,3 +124,12 @@ void FPetMoveRequirements::ApplyToPresentation(FPetPresentationInfo& Presentatio
 		Presentation.MoveUnlocked[Indice] = IsMet(Atributo, Valor, *Instance);
 	}
 }
+
+const TArray<FString>& FPetMoveRequirements::AllAttributeNames()
+{
+	static const TArray<FString> Nomes = {
+		TEXT("musculature"), TEXT("personality"),
+		TEXT("camouflage"), TEXT("flight"), TEXT("underground"),
+	};
+	return Nomes;
+}

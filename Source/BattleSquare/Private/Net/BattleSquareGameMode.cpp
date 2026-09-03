@@ -53,6 +53,7 @@
 #include "Balance/PetSkillCatalog.h"
 #include "World/LandUseLayout.h"
 #include "World/RespawnRules.h"
+#include "World/SchoolyardLayout.h"
 #include "World/SettlementEconomy.h"
 #include "World/TrailLayout.h"
 #include "GameFramework/Character.h"
@@ -963,6 +964,7 @@ void ABattleSquareGameMode::SpawnStartingVillage()
 	int32 Erguidos = 0;
 	int32 Predios = 0;
 	int32 Portas = 0;
+	int32 CamposDePatio = 0;
 
 	// A REGIÃO inteira, e não só a vila de casa. Uma vila só faz o resto do
 	// mapa ser paisagem: sem academia paga, sem mercado e sem a arena da
@@ -990,6 +992,31 @@ void ABattleSquareGameMode::SpawnStartingVillage()
 
 		Vila->BuildVillage();
 
+		// O PÁTIO DA ESCOLA (decisão 63): os campos de treino da vila, atrás
+		// da escola, na faixa da clareira. É o que torna `bs.Especializar`
+		// alcançável sem andar vinte mil unidades — a CI4 pelo caminho oposto.
+		for (const SchoolyardLayout::FSchoolyardField& Campo :
+			SchoolyardLayout::PlanFor(Assentamento.Kind))
+		{
+			const FVector2D NoMundo = Assentamento.CenterUnits + Campo.OffsetUnits;
+			AWorldTrainingField* Ator = World->SpawnActor<AWorldTrainingField>(
+				AWorldTrainingField::StaticClass(),
+				FVector(NoMundo.X, NoMundo.Y, Onde.Z), FRotator::ZeroRotator, Parametros);
+			if (!Ator)
+			{
+				continue;
+			}
+
+			Ator->TrainedAttribute = Campo.Attribute;
+			Ator->FieldRadiusUnits = Campo.RadiusUnits;
+
+			// REMONTA depois de atribuir, mesma lição dos campos da mata: o
+			// BeginPlay já correu com o atributo padrão, e sem isto os cinco
+			// nasceriam com o marco e a cor da musculatura.
+			Ator->RebuildMarker();
+			++CamposDePatio;
+		}
+
 		++Erguidos;
 		Predios += Vila->GetBuiltCount();
 		Portas += Vila->GetDoors().Num();
@@ -1001,8 +1028,8 @@ void ABattleSquareGameMode::SpawnStartingVillage()
 	// número — e uma vila que erguesse dez prédios com zero portas leria como
 	// vila pronta. É o mesmo motivo de o painel contar predio de pé.
 	FBattleDebugScreen::Show(
-		FString::Printf(TEXT("regiao: %d assentamentos, %d predios de pe, %d portas"),
-			Erguidos, Predios, Portas),
+		FString::Printf(TEXT("regiao: %d assentamentos, %d predios, %d portas, %d campos de patio"),
+			Erguidos, Predios, Portas, CamposDePatio),
 		0.0f, FColor(200, 180, 120), /*Key=*/744);
 }
 
@@ -1302,12 +1329,10 @@ void ABattleSquareGameMode::SpawnTrainingFields()
 		Centro.Z -= Jogador->GetSimpleCollisionHalfHeight();
 	}
 
-	// Os cinco atributos que existem, na mesma grafia do requisito de golpe.
-	const TCHAR* Atributos[] = {
-		TEXT("musculature"), TEXT("personality"),
-		TEXT("camouflage"), TEXT("flight"), TEXT("underground"),
-	};
-	constexpr int32 Quantos = UE_ARRAY_COUNT(Atributos);
+	// A lista CANÔNICA, e não um array literal aqui: o pátio da Escola usa a
+	// mesma, e duas cópias concordariam até o sexto atributo nascer.
+	const TArray<FString>& Atributos = FPetMoveRequirements::AllAttributeNames();
+	const int32 Quantos = Atributos.Num();
 
 	for (int32 Indice = 0; Indice < Quantos; ++Indice)
 	{

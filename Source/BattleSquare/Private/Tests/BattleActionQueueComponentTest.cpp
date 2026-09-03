@@ -387,10 +387,14 @@ bool FBattleActionQueueTwoAlliesTwoChoicesTest::RunTest(const FString& Parameter
 	FilaA->SetOwningPetId(1);
 	FilaB->SetOwningPetId(2);
 
-	FilaA->SelectActionType(EActionType::Mover);
-	FilaA->SelectDirection(EBattleDirection::Esquerda);
-	FilaB->SelectActionType(EActionType::Mover);
-	FilaB->SelectDirection(EBattleDirection::Direita);
+	// `BeginSelectingType` + `ConfirmDirection` — a API real da fila. A primeira
+	// versão deste teste inventou `SelectActionType`/`SelectDirection`, que não
+	// existem, e ele NUNCA RODOU: não compilava, e eu contei os sucessos de uma
+	// bateria que nem o tinha dentro.
+	FilaA->BeginSelectingType(EActionType::Mover);
+	FilaA->ConfirmDirection(EBattleDirection::Esquerda);
+	FilaB->BeginSelectingType(EActionType::Mover);
+	FilaB->ConfirmDirection(EBattleDirection::Direita);
 
 	const FTurnCommit CommitA = FilaA->BuildCommit();
 	const FTurnCommit CommitB = FilaB->BuildCommit();

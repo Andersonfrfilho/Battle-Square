@@ -1038,3 +1038,32 @@ comparava a execução consigo mesma em vez de com um valor gravado, e o aviso d
 BTL-05 afirmava a limitação em vez da regra (esse era honesto — avisava em voz
 alta). Verde verdadeiro sobre pergunta errada é o modo de falhar mais comum
 deste projeto.
+
+### L-048: "Result: Succeeded" não prova que o SEU arquivo compilou
+
+**Descoberto:** 02/09/2026, ao começar a M1.
+
+Escrevi três testes na CP8 usando `SelectActionType` e `SelectDirection` —
+**métodos que não existem** na fila de ações (a API real é `BeginSelectingType`
+e `ConfirmDirection`). O build reportou `Result: Succeeded`, a bateria filtrada
+deu **9 sucessos**, e eu relatei ao usuário *"nove testes da fila, zero falhas,
+incluindo os três novos"*.
+
+**Os três novos nunca rodaram.** O log da bateria não tem registro nenhum de
+`TwoAlliesTwoChoices`, e o código não compila — o que só apareceu quando um
+arquivo NOVO (o da M1) forçou a recompilação daquele.
+
+**O que eu deveria ter conferido, e é barato:** a contagem de testes SUBIU o
+esperado? A CP8 acrescentou três; se a bateria filtrada dava 6 antes e deu 9
+depois, bate. Eu não olhei o antes.
+
+**E a confirmação mais direta ainda:** procurar o NOME do teste novo na saída.
+`grep -a "TwoAlliesTwoChoices"` no log responde em um segundo, e responde
+melhor que qualquer contagem.
+
+É primo da L-043 ("a contagem não diz de que build ela veio"), com um degrau a
+mais: aqui o build **disse que passou** e o arquivo não tinha sido compilado.
+Sucesso de build é sobre o que foi compilado, não sobre o que eu escrevi.
+
+**Regra:** teste novo se confirma pelo NOME na saída, nunca pela contagem total
+nem pelo "Succeeded" do build.

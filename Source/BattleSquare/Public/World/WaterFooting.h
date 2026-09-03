@@ -66,6 +66,20 @@ namespace WaterFooting
 	 */
 	BATTLESQUARE_API float WaistDepthUnitsFor(float HeightUnits);
 
+	/**
+	 * QUANTA ÁGUA há sob os pés, em unidades.
+	 *
+	 * Sai da MESMA medição que decide se o pé passa — uma função própria que
+	 * percorresse os rios de novo seria a segunda fonte da mesma verdade.
+	 *
+	 * Zero é "não sei", e não "raso": é terra seca, é córrego e fonte (que não
+	 * têm fundura por ponto), e é o mar, que não está no traçado como curso.
+	 * Quem imprime o número decide não imprimir o zero — ausência não ocupa
+	 * linha no painel.
+	 */
+	BATTLESQUARE_API float DepthUnitsAt(const UIslandBakedPlan& Baked,
+		const FVector2D& PositionUnits);
+
 	/** A altura de uma pessoa comum deste mundo, para quem não disse a sua. */
 	BATTLESQUARE_API float DefaultHeightUnits();
 

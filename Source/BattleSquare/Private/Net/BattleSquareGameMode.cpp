@@ -48,6 +48,7 @@
 #include "GameFramework/Character.h"
 #include "Engine/StaticMeshActor.h"
 #include "World/IslandBakedPlan.h"
+#include "World/TrailLayout.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "World/AqueductMesh.h"
@@ -1959,6 +1960,75 @@ void ABattleSquareGameMode::AnunciarSagradoPerto(
 		/*Key=*/749);
 }
 
+void ABattleSquareGameMode::AnunciarTravessiaPerto(
+	const UIslandBakedPlan& Assado, const FVector2D& Onde)
+{
+	// A REGRA mora no assado, não aqui: a tela não decide regra (DP-ui-01).
+	const int32 Qual = Assado.CrossingAt(Onde);
+
+	if (Qual == INDEX_NONE)
+	{
+		// Apaga a linha ao sair, como o sagrado faz. Deixada, ela diria que se
+		// está numa ponte que ficou para trás.
+		FBattleDebugScreen::Show(TEXT(""), 0.0f, FColor::White, /*Key=*/751);
+		return;
+	}
+
+	const FBakedCrossing& Travessia = Assado.Crossings[Qual];
+	const TrailLayout::ECrossingKind Tipo =
+		static_cast<TrailLayout::ECrossingKind>(Travessia.Kind);
+
+	if (Tipo != TrailLayout::ECrossingKind::Ponte)
+	{
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("travessia: %s"),
+				Tipo == TrailLayout::ECrossingKind::Vau ? TEXT("vau")
+					: (Tipo == TrailLayout::ECrossingKind::Balsa
+						? TEXT("balsa") : TEXT("barranco"))),
+			0.0f, FColor(200, 200, 150), /*Key=*/751);
+		return;
+	}
+
+	// A PONTE DESTRUÍDA SE ANUNCIA ANTES DA TENTATIVA.
+	//
+	// Ela é a travessia que EXISTE E NÃO SERVE, e descobrir isso empurrando o
+	// personagem contra ela é a mesma caminhada até lá para descobrir que não
+	// valia. O vermelho e o "NAO PASSA" dizem o que a silhueta sozinha não diz.
+	const bool bPassa = Travessia.CanBeCrossed();
+
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("ponte de %s%s"),
+			TrailLayout::MaterialDebugName(
+				static_cast<TrailLayout::EBridgeMaterial>(Travessia.BridgeMaterial)),
+			bPassa ? TEXT("") : TEXT(" — NAO PASSA")),
+		0.0f,
+		bPassa ? FColor(210, 190, 140) : FColor(240, 120, 100),
+		/*Key=*/751);
+}
+
+void ABattleSquareGameMode::AnunciarAchadoEscondido(
+	const UIslandBakedPlan& Assado, const FVector2D& Onde)
+{
+	// O QUE A CARTA NÃO APONTA, O MUNDO REVELA ANDANDO.
+	//
+	// A carta conta três mercados-negros e não diz onde; aqui é o outro lado
+	// do mesmo trato. Sem esta linha, chegar a um deles seria indistinguível
+	// de chegar a uma clareira qualquer — e o segredo que ninguém percebe ter
+	// achado não é segredo, é ausência.
+	const int32 Qual = Assado.HiddenAt(Onde);
+
+	if (Qual == INDEX_NONE)
+	{
+		FBattleDebugScreen::Show(TEXT(""), 0.0f, FColor::White, /*Key=*/752);
+		return;
+	}
+
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("VOCE ACHOU: %s (a carta nao mostra este lugar)"),
+			AGroundUseActor::UseDebugName(Assado.GroundUses[Qual].Use)),
+		0.0f, FColor(240, 200, 120), /*Key=*/752);
+}
+
 int32 ABattleSquareGameMode::ConstruirUsosDoSolo(
 	const UIslandBakedPlan& Assado, const FActorSpawnParameters& Parametros)
 {
@@ -2094,6 +2164,38 @@ void ABattleSquareGameMode::RefreshRegionResidency()
 		const FVector2D Fluxo =
 			WaterFooting::FlowAt(*TracadoAssado, Onde, ForcaDaCorrente);
 		AplicarChaoMolhado(Jogador, Chao, Fluxo, ForcaDaCorrente);
+
+		// A FUNDURA SOB OS PÉS, e só quando há água.
+		//
+		// Nada de linha fixa dizendo "fundura: 0" em terra seca: ausência não
+		// ocupa altura no painel, e uma linha que diz zero em toda a ilha
+		// ensina a ignorá-la justo onde ela passa a importar — que é a mesma
+		// lição da linha da corrente, logo abaixo.
+		//
+		// O número ao lado da CINTURA é o que torna "vau" e "nado" uma conta
+		// que o jogador refaz: 84 de 70 explica por que este rio não se
+		// atravessa, e "fundo" sozinho não explica nada.
+		const float Fundura = WaterFooting::DepthUnitsAt(*TracadoAssado, Onde);
+		if (Fundura > 0.0f)
+		{
+			const float Cintura =
+				WaterFooting::WaistDepthUnitsFor(WaterFooting::DefaultHeightUnits());
+
+			FBattleDebugScreen::Show(
+				FString::Printf(TEXT("fundura: %.0f (cintura %.0f — %s)"),
+					Fundura, Cintura,
+					Fundura <= Cintura ? TEXT("da pe") : TEXT("NADO")),
+				0.0f,
+				Fundura <= Cintura ? FColor(150, 200, 255) : FColor(120, 140, 240),
+				/*Key=*/750);
+		}
+		else
+		{
+			FBattleDebugScreen::Show(TEXT(""), 0.0f, FColor::White, /*Key=*/750);
+		}
+
+		AnunciarTravessiaPerto(*TracadoAssado, Onde);
+		AnunciarAchadoEscondido(*TracadoAssado, Onde);
 
 		// O SAGRADO SE ANUNCIA DE PERTO.
 		//

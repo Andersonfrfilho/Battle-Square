@@ -153,8 +153,15 @@ namespace WaterFooting
 		return AtForHeight(Assado, Onde, DefaultHeightUnits());
 	}
 
-	EWaterFooting AtForHeight(const UIslandBakedPlan& Assado, const FVector2D& Onde,
-		float Altura)
+	/**
+	 * A MEDIÇÃO ÚNICA: o que o pé encontra, e QUANTO de água há.
+	 *
+	 * As duas respostas saem do mesmo percurso porque são a mesma leitura. Duas
+	 * funções percorrendo os rios em separado concordariam até alguém alargar
+	 * um, e a partir dali o painel diria uma fundura em que ninguém afunda.
+	 */
+	static EWaterFooting MedirChao(const UIslandBakedPlan& Assado, const FVector2D& Onde,
+		float Altura, float& FunduraSaida)
 	{
 		// FORA DA COSTA É MAR, e mar é FUNDO.
 		//
@@ -168,6 +175,10 @@ namespace WaterFooting
 		// terra acaba, e por isso nenhum laço sobre rios jamais o encontraria.
 		if (Onde.Size() > Assado.CoastRadiusAt(FMath::Atan2(Onde.Y, Onde.X)))
 		{
+			// O MAR NÃO TEM FUNDURA ASSADA, e zero aqui é "não sei" — não é
+			// "raso". Quem imprime o número decide não imprimir; inventar uma
+			// fundura para o mar seria a carta prometendo o que ninguém mediu.
+			FunduraSaida = 0.0f;
 			return EWaterFooting::Fundo;
 		}
 
@@ -276,8 +287,11 @@ namespace WaterFooting
 			}
 		}
 
+		FunduraSaida = MaiorFundura;
+
 		if (MaiorMeiaLargura <= 0.0f)
 		{
+			FunduraSaida = 0.0f;
 			return EWaterFooting::Seco;
 		}
 
@@ -348,6 +362,29 @@ namespace WaterFooting
 			? EWaterFooting::Vau
 			: EWaterFooting::Fundo;
 	}
+
+	EWaterFooting AtForHeight(const UIslandBakedPlan& Assado, const FVector2D& Onde,
+		float Altura)
+	{
+		float Fundura = 0.0f;
+		return MedirChao(Assado, Onde, Altura, Fundura);
+	}
+
+	float DepthUnitsAt(const UIslandBakedPlan& Assado, const FVector2D& Onde)
+	{
+		// A MESMA MEDIÇÃO que decide se o pé passa, e não uma segunda.
+		//
+		// Uma função própria que percorresse os rios de novo seria a segunda
+		// fonte da mesma verdade: ela concordaria com a do pé até alguém
+		// alargar um rio, e a partir dali o painel diria uma fundura em que o
+		// jogador não afunda.
+		float Fundura = 0.0f;
+		// A altura não muda a fundura da água: ela só muda se o pé passa. Aqui
+		// se quer o número do rio, então vale a de uma pessoa comum.
+		MedirChao(Assado, Onde, DefaultHeightUnits(), Fundura);
+		return Fundura;
+	}
+
 
 	EFluidKind FluidAt(const UIslandBakedPlan& Assado, const FVector2D& Onde)
 	{

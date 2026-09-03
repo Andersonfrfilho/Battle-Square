@@ -125,6 +125,60 @@ int32 UIslandBakedPlan::SacredAt(const FVector2D& Onde) const
 	return MaisPerto;
 }
 
+int32 UIslandBakedPlan::CrossingAt(const FVector2D& Onde) const
+{
+	// O alcance sai da LARGURA DA TRILHA, e não de um número próprio: a
+	// travessia é um trecho de trilha, e quem está sobre ela está dentro da
+	// largura dela. Um raio inventado aqui seria a segunda medida do mesmo
+	// lugar.
+	const float Alcance = TrailLayout::HalfWidthUnits() * 2.0f;
+
+	int32 MaisPerto = INDEX_NONE;
+	float MenorDistancia = TNumericLimits<float>::Max();
+
+	for (int32 Qual = 0; Qual < Crossings.Num(); ++Qual)
+	{
+		const float Distancia = FVector2D::Distance(Crossings[Qual].CenterUnits, Onde);
+		if (Distancia <= Alcance && Distancia < MenorDistancia)
+		{
+			MenorDistancia = Distancia;
+			MaisPerto = Qual;
+		}
+	}
+
+	return MaisPerto;
+}
+
+int32 UIslandBakedPlan::HiddenAt(const FVector2D& Onde) const
+{
+	// O alcance sai da meia-extensão da PRÓPRIA mancha, como no sagrado — e
+	// com MENOS folga: o templo se avista de longe, e o escondido não. Achar
+	// um segredo a três manchas de distância seria achá-lo sem procurar.
+	constexpr float FolgaDoAlcance = 1.0f;
+
+	int32 MaisPerto = INDEX_NONE;
+	float MenorDistancia = TNumericLimits<float>::Max();
+
+	for (int32 Qual = 0; Qual < GroundUses.Num(); ++Qual)
+	{
+		const FBakedGroundUse& Mancha = GroundUses[Qual];
+		if (!Mancha.bHidden)
+		{
+			continue;
+		}
+
+		const float Distancia = FVector2D::Distance(Mancha.CenterUnits, Onde);
+		if (Distancia <= Mancha.HalfExtentUnits * FolgaDoAlcance
+			&& Distancia < MenorDistancia)
+		{
+			MenorDistancia = Distancia;
+			MaisPerto = Qual;
+		}
+	}
+
+	return MaisPerto;
+}
+
 float UIslandBakedPlan::HighestWalkableHeightUnits() const
 {
 	// Calculado UMA vez e guardado: `BandAt` é perguntado por casa da grade ao

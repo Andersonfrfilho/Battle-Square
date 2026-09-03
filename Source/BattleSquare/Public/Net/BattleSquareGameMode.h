@@ -342,6 +342,12 @@ private:
 	int32 UsosDoSoloConstruidos = 0;
 
 	/** Diz no painel de que deus é o templo ou a ruína em que se está. */
+	/** A travessia sob os pés, e o aviso da ponte destruída antes da tentativa. */
+	void AnunciarTravessiaPerto(const UIslandBakedPlan& Baked, const FVector2D& PositionUnits);
+
+	/** O lugar que a carta conta e não aponta, revelado por andar até ele. */
+	void AnunciarAchadoEscondido(const UIslandBakedPlan& Baked, const FVector2D& PositionUnits);
+
 	void AnunciarSagradoPerto(const class UIslandBakedPlan& Assado, const FVector2D& Onde);
 
 	/** Ergue os usos do solo do assado. Devolve quantos. */

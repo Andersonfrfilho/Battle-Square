@@ -1175,6 +1175,19 @@ namespace
 	}
 }
 
+const TCHAR* TrailLayout::MaterialDebugName(EBridgeMaterial Material)
+{
+	switch (Material)
+	{
+	case EBridgeMaterial::Bloco:     return TEXT("bloco");
+	case EBridgeMaterial::Madeira:   return TEXT("madeira");
+	case EBridgeMaterial::Destruida: return TEXT("destruida");
+	case EBridgeMaterial::Nenhum:
+	default: break;
+	}
+	return TEXT("nenhum");
+}
+
 TArray<TrailLayout::FCrossing> TrailLayout::Crossings()
 {
 	TArray<FCrossing> Travessias;

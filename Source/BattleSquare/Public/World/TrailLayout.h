@@ -132,6 +132,15 @@ namespace TrailLayout
 		Destruida
 	};
 
+	/**
+	 * O nome do material, para o painel e para o despejo.
+	 *
+	 * Mora aqui, ao lado do enum, e não em quem imprime: a tabela vivia dentro
+	 * do teste de despejo, e uma segunda cópia dela no painel concordaria com a
+	 * primeira até alguém acrescentar um quarto material.
+	 */
+	BATTLESQUARE_API const TCHAR* MaterialDebugName(EBridgeMaterial Material);
+
 	enum class ECrossingKind : uint8
 	{
 		/** VAU: raso o bastante para passar andando. Não constrói nada. */

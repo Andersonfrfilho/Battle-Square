@@ -606,6 +606,25 @@ public:
 	int32 SacredAt(const FVector2D& PositionUnits) const;
 
 	/**
+	 * A TRAVESSIA em que se está, ou `INDEX_NONE`.
+	 *
+	 * A regra mora aqui e não na tela (DP-ui-01): quem chega precisa saber que
+	 * a ponte é de madeira — e, sobretudo, que ela está DESTRUÍDA — antes de
+	 * tentar passar. Descobrir na tentativa é a mesma caminhada até lá para
+	 * descobrir que não valia.
+	 */
+	int32 CrossingAt(const FVector2D& PositionUnits) const;
+
+	/**
+	 * A mancha ESCONDIDA em que se está, ou `INDEX_NONE`.
+	 *
+	 * A carta conta e não aponta; o mundo revela ANDANDO. As duas visões não
+	 * se fundem — o gabarito é documento do mundo, e isto é o que aquele
+	 * jogador viu.
+	 */
+	int32 HiddenAt(const FVector2D& PositionUnits) const;
+
+	/**
 	 * O chão mais alto em que se PODE ESTAR — fora da mancha queimada.
 	 *
 	 * É a régua do cume. O ponto mais alto da ilha é o vulcão, e medir por ele

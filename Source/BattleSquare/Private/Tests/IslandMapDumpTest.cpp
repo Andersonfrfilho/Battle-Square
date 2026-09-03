@@ -350,14 +350,9 @@ bool FIslandMapDumpTest::RunTest(const FString& Parameters)
 
 		// O MATERIAL e o PASSA no despejo, porque é por aqui que se investiga —
 		// e a lição de ontem foi que despejo incompleto se lê como conclusivo.
-		const TCHAR* Material = TEXT("nenhum");
-		switch (Travessias[Indice].Material)
-		{
-		case TrailLayout::EBridgeMaterial::Bloco:     Material = TEXT("bloco"); break;
-		case TrailLayout::EBridgeMaterial::Madeira:   Material = TEXT("madeira"); break;
-		case TrailLayout::EBridgeMaterial::Destruida: Material = TEXT("destruida"); break;
-		default: break;
-		}
+		// O nome sai do traçado, e não de uma tabela aqui: esta era a única
+		// cópia dela, e o painel do mundo passou a precisar do mesmo nome.
+		const TCHAR* Material = TrailLayout::MaterialDebugName(Travessias[Indice].Material);
 
 		Json += FString::Printf(
 			TEXT("    {\"tipo\":\"%s\",\"x\":%.0f,\"y\":%.0f,\"fundura\":%.0f,")

@@ -72,7 +72,7 @@ de ser cenário que só colide.
       gesto continua no campo; ou o campo ganha a confirmação em duas etapas —
       são produtos diferentes, e a escolha é do usuário.
 - [x] **CI5** — Mercado vende o pet capturado pela tabela já testada
-- [ ] **CI6** — ~~Marco de retorno teleporta~~ **o Marco é PONTO DE
+- [x] **CI6** — ~~Marco de retorno teleporta~~ **o Marco é PONTO DE
       RENASCIMENTO, e quem cai acorda no hospital**
       Reescrita pela decisão 60. Ninguém viaja por vontade própria — o Marco
       diz onde se volta quando se perde, e o lugar é o Centro de Recuperação,

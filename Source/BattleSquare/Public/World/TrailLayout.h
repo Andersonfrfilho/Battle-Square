@@ -87,6 +87,51 @@ namespace TrailLayout
 	 * pé; ponte ali é obra sem motivo, e denuncia que ninguém pensou na
 	 * travessia.
 	 */
+	/**
+	 * DE QUE a ponte é feita, e se ela ainda serve.
+	 *
+	 * É propriedade da travessia, e NÃO um tipo novo de `ECrossingKind`. Um
+	 * `PonteDeMadeira` ao lado de `Ponte` obrigaria todo `switch` do mundo a
+	 * tratar os dois — e o terceiro que alguém acrescentasse cairia no
+	 * `default` de metade deles, que é o defeito que a cor dos prédios já
+	 * custou uma vez.
+	 *
+	 * A ponte continua sendo `ECrossingKind::Ponte`; isto diz COMO ela é.
+	 */
+	enum class EBridgeMaterial : uint8
+	{
+		/** Não é ponte. É o que toda travessia que não é ponte carrega. */
+		Nenhum,
+
+		/**
+		 * BLOCO: pedra encaixada, o vão curto que a rocha permite.
+		 *
+		 * É a que dura. Onde há pedra à mão e o vão é curto, ninguém corta
+		 * árvore.
+		 */
+		Bloco,
+
+		/**
+		 * MADEIRA: o vão longo, onde carregar pedra não compensa.
+		 *
+		 * Mais barata e mais frágil — e é ela que a água leva.
+		 */
+		Madeira,
+
+		/**
+		 * DESTRUÍDA: a ponte que EXISTE E NÃO SERVE.
+		 *
+		 * Não é ausência de ponte, e a diferença é o conteúdo: ausência é um
+		 * rio que ninguém atravessou; ruína é a promessa de um caminho que
+		 * alguém já teve. Quem chega vê que houve passagem ali, e que hoje não
+		 * há — e isso conta uma história que o vazio não conta.
+		 *
+		 * ⚠️ Ela NÃO deixa passar. Ponte destruída que se atravessa é
+		 * decoração, e decoração não muda mapa.
+		 */
+		Destruida
+	};
+
 	enum class ECrossingKind : uint8
 	{
 		/** VAU: raso o bastante para passar andando. Não constrói nada. */
@@ -123,6 +168,20 @@ namespace TrailLayout
 
 		/** A fundura estimada da água ali, que é o que decide. */
 		float DepthUnits = 0.0f;
+
+		/**
+		 * De que a ponte é feita. `Nenhum` em tudo que não é ponte.
+		 *
+		 * Fica ao lado do tipo, e não dentro dele: ver a nota em
+		 * `EBridgeMaterial`.
+		 */
+		EBridgeMaterial Material = EBridgeMaterial::Nenhum;
+
+		/** Dá para passar por aqui? Falso só na ponte destruída. */
+		bool CanBeCrossed() const
+		{
+			return Material != EBridgeMaterial::Destruida;
+		}
 	};
 
 	/** Onde cada trilha encontra água, e o que se faz ali. */

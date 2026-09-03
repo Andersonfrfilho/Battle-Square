@@ -391,6 +391,41 @@ struct BATTLESQUARE_API FBakedCrossing
 	UPROPERTY()
 	uint8 Kind = 0;
 
+	/**
+	 * DE QUE a ponte é feita, como `EBridgeMaterial`.
+	 *
+	 * Viaja como `uint8` pelo mesmo motivo do tipo: o enum vive dentro de um
+	 * `namespace`, onde `UENUM` não existe.
+	 *
+	 * Zero é `Nenhum`, que é o que toda travessia que não é ponte carrega — e
+	 * é também o que um assado ANTIGO traz, gravado antes desta feature. As
+	 * duas coisas coincidem de propósito: uma travessia sem material declarado
+	 * não é uma ponte quebrada, é uma travessia que não é ponte.
+	 */
+	UPROPERTY()
+	uint8 BridgeMaterial = 0;
+
+	/**
+	 * Dá para passar por aqui?
+	 *
+	 * Falso SÓ na ponte destruída. É a única travessia que existe e não serve
+	 * — e é por isso que a pergunta precisa existir: quem lê `Kind == Ponte`
+	 * concluiria que há passagem, e concluiria errado.
+	 */
+	bool CanBeCrossed() const
+	{
+		// O VALOR, e não o tipo. `EBridgeMaterial` vive dentro de
+		// `namespace TrailLayout`, e este cabeçalho não o inclui — pelo mesmo
+		// motivo que `Kind` viaja como `uint8`: metade destas estruturas não
+		// pode ganhar reflexão, e incluir o traçado aqui inverteria a
+		// dependência (o assado é lido pelo mundo, não pelo gerador).
+		//
+		// O 3 é `EBridgeMaterial::Destruida`, e o `static_assert` no `.cpp`
+		// reprova a compilação se alguém reordenar o enum.
+		constexpr uint8 DestruidaComoNumero = 3;
+		return BridgeMaterial != DestruidaComoNumero;
+	}
+
 	UPROPERTY()
 	float DepthUnits = 0.0f;
 };

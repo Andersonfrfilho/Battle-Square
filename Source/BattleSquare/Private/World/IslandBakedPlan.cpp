@@ -532,6 +532,19 @@ namespace IslandBakedPlan
 			Assada.CenterUnits = Travessia.CenterUnits;
 			Assada.Kind = static_cast<uint8>(Travessia.Kind);
 			Assada.DepthUnits = Travessia.DepthUnits;
+
+			// O MATERIAL viaja junto do tipo. Sem ele, a ponte destruída
+			// chegaria ao mundo como ponte inteira — e o jogador atravessaria
+			// uma ruína, que é exatamente o que ela existe para não permitir.
+			// O 3 de `CanBeCrossed` no cabeçalho tem de continuar sendo
+			// `Destruida`. Sem esta afirmação, reordenar o enum faria a ponte
+			// destruída virar atravessável em silêncio — e o único sintoma
+			// seria o jogador andando sobre uma ruína.
+			static_assert(static_cast<uint8>(TrailLayout::EBridgeMaterial::Destruida) == 3,
+				"EBridgeMaterial::Destruida deve valer 3 — FBakedCrossing::CanBeCrossed "
+				"compara com o numero, porque o assado nao inclui o tracado.");
+
+			Assada.BridgeMaterial = static_cast<uint8>(Travessia.Material);
 			Out.Crossings.Add(Assada);
 		}
 

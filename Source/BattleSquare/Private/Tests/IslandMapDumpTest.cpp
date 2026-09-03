@@ -346,10 +346,23 @@ bool FIslandMapDumpTest::RunTest(const FString& Parameters)
 		if (Travessias[Indice].Kind == TrailLayout::ECrossingKind::Barranco) { Tipo = TEXT("barranco"); }
 		if (Travessias[Indice].Kind == TrailLayout::ECrossingKind::Balsa) { Tipo = TEXT("balsa"); }
 
+		// O MATERIAL e o PASSA no despejo, porque é por aqui que se investiga —
+		// e a lição de ontem foi que despejo incompleto se lê como conclusivo.
+		const TCHAR* Material = TEXT("nenhum");
+		switch (Travessias[Indice].Material)
+		{
+		case TrailLayout::EBridgeMaterial::Bloco:     Material = TEXT("bloco"); break;
+		case TrailLayout::EBridgeMaterial::Madeira:   Material = TEXT("madeira"); break;
+		case TrailLayout::EBridgeMaterial::Destruida: Material = TEXT("destruida"); break;
+		default: break;
+		}
+
 		Json += FString::Printf(
-			TEXT("    {\"tipo\":\"%s\",\"x\":%.0f,\"y\":%.0f,\"fundura\":%.0f}%s\n"),
+			TEXT("    {\"tipo\":\"%s\",\"x\":%.0f,\"y\":%.0f,\"fundura\":%.0f,")
+			TEXT("\"material\":\"%s\",\"passa\":%s}%s\n"),
 			Tipo, Travessias[Indice].CenterUnits.X, Travessias[Indice].CenterUnits.Y,
-			Travessias[Indice].DepthUnits,
+			Travessias[Indice].DepthUnits, Material,
+			Travessias[Indice].CanBeCrossed() ? TEXT("true") : TEXT("false"),
 			Indice + 1 < Travessias.Num() ? TEXT(",") : TEXT(""));
 	}
 	Json += TEXT("  ],\n");

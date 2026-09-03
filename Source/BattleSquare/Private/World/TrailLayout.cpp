@@ -1141,6 +1141,19 @@ namespace
 	 */
 	float MaiorVaoDePonte() { return 2500.0f; }
 
+	/**
+	 * Quantas em cada cem pontes de madeira estão DESTRUÍDAS.
+	 *
+	 * ⚠️ É decisão de ARTE, e portanto do dono do jogo — está aqui para a
+	 * regra existir e ser mensurável, e mudá-la não mexe em linha de lógica.
+	 *
+	 * 30 é o que faz a ruína ser encontrável sem virar o normal: com poucas,
+	 * o jogador nunca acha uma e a mecânica não existe para ele; com muitas, a
+	 * ponte quebrada deixa de ser notícia e vira o estado padrão do mundo — e
+	 * aí quem estranha é a ponte inteira.
+	 */
+	int32 RuinaEmCemPontes() { return 30; }
+
 	/** A largura da água num ponto, para saber se a ponte alcança a outra margem. */
 	float LarguraDaAguaEm(const FVector2D& Onde)
 	{
@@ -1223,6 +1236,50 @@ TArray<TrailLayout::FCrossing> TrailLayout::Crossings()
 					else
 					{
 						Travessia.Kind = ECrossingKind::Ponte;
+
+						// DE QUE ELA É FEITA — decidido pelo VÃO, e não
+						// sorteado.
+						//
+						// Onde a pedra alcança, ninguém corta árvore: bloco é
+						// mais trabalhoso de erguer e dura muito mais, e um
+						// vão curto é onde ele compensa. O vão longo pede
+						// madeira porque carregar pedra por vinte metros não
+						// compensa para ninguém.
+						//
+						// A METADE do maior vão é o corte, e ele não é
+						// escolhido no vazio: `MaiorVaoDePonte` são 2500
+						// unidades — "acima disso a obra deixa de ser tronco
+						// atravessado e vira engenharia". Metade disso é o
+						// vão que uma pedra encaixada vence sem cimbre.
+						const bool bAlcancaComPedra = Largura <= MaiorVaoDePonte() * 0.5f;
+
+						Travessia.Material = bAlcancaComPedra
+							? EBridgeMaterial::Bloco
+							: EBridgeMaterial::Madeira;
+
+						// E A DESTRUÍDA: a que a água levou.
+						//
+						// Só a de MADEIRA se perde — a de bloco fica. E o que
+						// derruba é a água que passa por baixo: onde o rio
+						// desce forte, a enchente arranca.
+						//
+						// A escolha sai da GEOMETRIA do lugar (posição e
+						// largura), nunca do índice do laço: assim a mesma
+						// travessia é sempre a mesma se alguém reordenar o
+						// código — é a regra 5 de
+						// `geracao-procedural-de-mapas.md`, a mesma que decide
+						// quais passagens saem retas.
+						if (Travessia.Material == EBridgeMaterial::Madeira)
+						{
+							const int32 DoLugar = static_cast<int32>(
+								FMath::Abs(Aqui.X * 7.0f + Aqui.Y * 13.0f
+									+ Largura * 31.0f)) % 100;
+
+							if (DoLugar < RuinaEmCemPontes())
+							{
+								Travessia.Material = EBridgeMaterial::Destruida;
+							}
+						}
 					}
 
 					Travessias.Add(Travessia);

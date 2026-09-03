@@ -75,25 +75,37 @@ bool FChartFrozenBeforeTheStepTest::RunTest(const FString& Parameters)
 	// OS DOZE DO SOLO. Estes são os que o degrau na rocha pode mover sem que
 	// ninguém tenha pedido: a rocha decide onde há terra plana, e é a terra
 	// plana que decide onde cabe fazenda, templo ou cemitério.
-	const TPair<EGroundUse, int32> DoSolo[] = {
-		{ EGroundUse::Bosque,       9 },
-		{ EGroundUse::Clareira,     6 },
-		{ EGroundUse::Fazenda,      8 },
-		{ EGroundUse::Criadouro,    4 },
-		{ EGroundUse::Loja,         4 },
-		{ EGroundUse::Acampamento,  6 },
-		{ EGroundUse::Pomar,        3 },
-		{ EGroundUse::Deck,         7 },
-		{ EGroundUse::Templo,       5 },
-		{ EGroundUse::Ruina,        4 },
-		{ EGroundUse::Cemiterio,    7 },
+	// Struct local em vez de `TPair`: o par exigiria um cabeçalho a mais por um
+	// ganho nenhum, e um nome de campo diz mais que `.Key` e `.Value`.
+	struct FCongelado
+	{
+		EGroundUse Uso;
+		int32 Quantas;
+		const TCHAR* Nome;
 	};
 
-	for (const TPair<EGroundUse, int32>& Qual : DoSolo)
+	const FCongelado DoSolo[] = {
+		{ EGroundUse::Bosque,          9, TEXT("bosques") },
+		{ EGroundUse::ClareiraFechada, 6, TEXT("clareiras") },
+		{ EGroundUse::Fazenda,         8, TEXT("fazendas") },
+		{ EGroundUse::Criadouro,       4, TEXT("criadouros") },
+		{ EGroundUse::Loja,            4, TEXT("lojas") },
+		{ EGroundUse::Acampamento,     6, TEXT("acampamentos") },
+		{ EGroundUse::Pomar,           3, TEXT("pomares") },
+		{ EGroundUse::Deck,            7, TEXT("decks") },
+		{ EGroundUse::Templo,          5, TEXT("templos") },
+		{ EGroundUse::Ruina,           4, TEXT("ruinas") },
+		{ EGroundUse::Cemiterio,       7, TEXT("cemiterios") },
+	};
+
+	for (const FCongelado& Qual : DoSolo)
 	{
-		TestEqual(*FString::Printf(TEXT("congelado em 02/09: %d manchas do uso %d"),
-			Qual.Value, static_cast<int32>(Qual.Key)),
-			GabaritoCongeladoDe0209::ManchasDe(*Assado, Qual.Key), Qual.Value);
+		// O NOME na mensagem, e não o número do enum: quando este teste
+		// reprovar — e ele existe para reprovar — quem lê precisa saber que
+		// foram os cemitérios que mudaram, não "o uso 13".
+		TestEqual(*FString::Printf(TEXT("congelado em 02/09: %d %s"),
+			Qual.Quantas, Qual.Nome),
+			GabaritoCongeladoDe0209::ManchasDe(*Assado, Qual.Uso), Qual.Quantas);
 	}
 
 	// AS TRAVESSIAS, que são o que esta feature MEXE de propósito. Congelá-las
@@ -107,19 +119,25 @@ bool FChartFrozenBeforeTheStepTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("congelado em 02/09: 56 travessias ao todo"),
 		Assado->Crossings.Num(), 56);
 
-	// E O QUE A ILHA É, por baixo de tudo. Estes três são os que dizem se a
-	// rocha se mexeu: se o raio ou a contagem de assentamentos mudar, o degrau
-	// mexeu em coisa que ninguém pediu que ele mexesse.
-	TestEqual(TEXT("congelado em 02/09: 7 assentamentos"),
-		Assado->Settlements.Num(), 7);
+	// E O QUE A ILHA É POR BAIXO. As cavernas e o total de manchas dizem se a
+	// rocha se mexeu em coisa que ninguém pediu que ela mexesse.
+	//
+	// ⚠️ Os SETE ASSENTAMENTOS ficam de fora, e é medição, não esquecimento: o
+	// assado não os guarda (`UIslandBakedPlan` tem rios, córregos, fontes,
+	// trilhas, travessias, usos do solo, cavernas, ligações submersas e
+	// aquedutos — e nenhum campo de assentamento). O número 7 que eu media vem
+	// do JSON do bake, não do que o jogo carrega. Afirmar aqui exigiria uma
+	// segunda fonte, que é justamente o que esta feature combate.
 	TestEqual(TEXT("congelado em 02/09: 16 cavernas"),
 		Assado->Caves.Num(), 16);
+	TestEqual(TEXT("congelado em 02/09: 79 manchas de solo ao todo"),
+		Assado->GroundUses.Num(), 79);
 
 	AddInfo(FString::Printf(
 		TEXT("CONGELADO em 02/09/2026 — %d manchas de solo, %d travessias, "
-			 "%d assentamentos, %d cavernas"),
+			 "%d cavernas, %d aquedutos"),
 		Assado->GroundUses.Num(), Assado->Crossings.Num(),
-		Assado->Settlements.Num(), Assado->Caves.Num()));
+		Assado->Caves.Num(), Assado->Aqueducts.Num()));
 
 	return true;
 }

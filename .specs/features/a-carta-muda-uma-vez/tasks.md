@@ -1,6 +1,6 @@
 # A carta muda uma vez — tarefas
 
-## M1 — CONGELAR o gabarito de hoje, antes de mexer
+## M1 — CONGELAR o gabarito de hoje, antes de mexer ✅ FEITO
 > 🤖 Modelo: `sonnet`
 
 **Dependências:** nenhuma. É a primeira porque só se sabe o que mudou quem

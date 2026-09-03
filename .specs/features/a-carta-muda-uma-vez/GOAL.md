@@ -31,7 +31,7 @@ comentário previu.
 
 ## PRONTO é isto, e nada menos
 
-- [ ] **M1** — o gabarito de hoje está CONGELADO em números, antes de mexer
+- [x] **M1** — o gabarito de hoje está CONGELADO em números, antes de mexer
 - [ ] **M2** — a rocha ganha degrau na queda, e o poço deixa de ser prato
 - [ ] **M3** — a fundura existe POR PONTO no assado, e quem a decide é o gerador
 - [ ] **M4** — a estimativa privada do traçado MORRE, e o traçado passa a LER

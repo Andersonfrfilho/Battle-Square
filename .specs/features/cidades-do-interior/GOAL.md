@@ -33,11 +33,27 @@ de ser cenário que só colide.
       Começa com **100** (decisão 56). Paga Arena e trabalho; o **achado** é
       task própria, depois que a carteira existir para receber (decisão 57).
 - [ ] **CI2** — um prédio reage a alguém entrando nele
-- [ ] **CI3** — Centro de Recuperação cura de verdade, ~~e cobra fora da vila
+- [⛔] **CI3** — Centro de Recuperação cura de verdade, ~~e cobra fora da vila
       inicial~~ **e NÃO cobra**
       ⚠️ **REESCRITA pela decisão 16, "curar é de graça"**, que é anterior a
       esta caixa. `SettlementEconomy::CuraNaCidade = 25` fica sem cliente — não
       apagar sem o usuário mandar: é tabela testada, e apagá-la é decisão dele.
+
+      ⚠️ **PAROU em 03/09/2026 — NÃO HÁ O QUE CURAR, medido.** A própria
+      spec.md lista "perder vida é permanente até o próximo nível" como o
+      PROBLEMA que esta task resolve (linha 18). Mas `MaxHealth` vem do
+      catálogo (`PetDataLoader.cpp:297`) e não existe campo de vida ATUAL em
+      `FOwnedPetInstance` nem em lugar nenhum fora da batalha — grep por
+      `CurrentHealth`/`PersistentHealth`/`SavedHealth` em `Source/` não acha
+      nada. Toda batalha começa com a vida cheia do catálogo, sempre: hoje NÃO
+      SE PERDE vida entre batalhas, e "curar de verdade" não tem alvo.
+
+      **É decisão de conteúdo, não wiring.** Fazer a vida persistir exige
+      escolher: onde ela mora (novo campo em `FOwnedPetInstance`, com o mesmo
+      cuidado de compatibilidade de save que `BiologySkin` já documenta),
+      quando ela é debitada (fim de toda batalha? só derrota?), e o que
+      acontece com um pet a 0 fora de batalha (não pode lutar? cura sozinho
+      com o tempo?). Nenhuma dessas está na spec nem em `tasks.md`.
 - [ ] **CI4** — Escola especializa pelo prédio, mesma função do console
 - [ ] **CI5** — Mercado vende o pet capturado pela tabela já testada
 - [ ] **CI6** — ~~Marco de retorno teleporta~~ **o Marco é PONTO DE

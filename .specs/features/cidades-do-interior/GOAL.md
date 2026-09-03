@@ -29,10 +29,10 @@ de ser cenário que só colide.
 > dependem seguem `[⛔]` com a pergunta nomeada ao lado. Abrir as nove de uma vez
 > seria escolher os números por omissão, que é o que este bloqueio impede.
 
-- [ ] **CI1** — a carteira existe e aparece na tela
+- [x] **CI1** — a carteira existe e aparece na tela
       Começa com **100** (decisão 56). Paga Arena e trabalho; o **achado** é
       task própria, depois que a carteira existir para receber (decisão 57).
-- [ ] **CI2** — um prédio reage a alguém entrando nele
+- [x] **CI2** — um prédio reage a alguém entrando nele
 - [⛔] **CI3** — Centro de Recuperação cura de verdade, ~~e cobra fora da vila
       inicial~~ **e NÃO cobra**
       ⚠️ **REESCRITA pela decisão 16, "curar é de graça"**, que é anterior a

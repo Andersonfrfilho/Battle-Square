@@ -19,13 +19,13 @@ sem nunca tocar o balde do jogador, e que nunca age em silêncio.**
 
 ## PRONTO é isto, e nada menos
 
-- [⛔] **MN1** — medir o panteão: "rebrota" e "censo" já estão construídos? (não)
+- [x] **MN1** — medir o panteão: "rebrota" e "censo" já estão construídos? (não)
 - [x] **MN2** — o corretor nasce puro: censo entra, correção sai, nada mais
 - [x] **MN3** — toda correção é delatada — correção sem registro é bug
 - [x] **MN4** — torneira, nunca balde: teste negativo prova o limite
-- [⛔] **MN5** — o preço do assentamento vira número de configuração
+- [x] **MN5** — o preço do assentamento vira número de configuração
 - [⛔] **MN6** — espécie rara migra quando o censo cai — depende de censo agregado, que não existe
-- [⛔] **MN7** — Mãe Natureza age devagar e fora de vista — mas o jogador vê
+- [x] **MN7** — Mãe Natureza age devagar e fora de vista — mas o jogador vê
 - [ ] O grep fora de `/Tests/` acha quem CHAMA `NatureBalance::Correct`
 - [ ] Bateria completa verde — o total do dia em que a feature abrir (hoje **858**); o número só sobe
 - [ ] As cinco auditorias limpas, e a sonda de isolação sem `NatureBalance` importando mundo

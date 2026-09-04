@@ -595,3 +595,23 @@ coleta, só menos.
 **68-d. O BOSQUE plantado é do ASSENTAMENTO (decisão 35); a mata selvagem é
 regulada.** Cortar livre no bosque que o assentamento plantou; na mata selvagem,
 o Guarda Florestal regula (o mesmo padrão exceção-com-prazo de MV3/MV4).
+
+**69. O PET NÃO É BICHO REAL — é criatura com poder (04/09).** O design nasce
+**inspirado em animais**, mas se afasta deles de propósito: cada pet tem
+peculiaridade e **poder**, na tradição do colecionador de monstros — Pokémon,
+Digimon, Yu-Gi-Oh, Monster Hunter, Zatch Bell. Um lobo é referência, não o
+resultado.
+
+⚠️ **Consequência para a arte:** um pacote de ANIMAIS REAIS (ex. *Ultimate
+Animated Animal Pack*) **não serve como arte final de pet** — serve só como
+**stand-in** enquanto a criatura própria não existe. Cenário é diferente: árvore,
+pedra e arbusto de um pacote realista **servem como arte final**, porque ali o
+mundo é natural mesmo. Ou seja, a adoção de arte tem DUAS metades com destinos
+diferentes, e confundi-las faria o jogo parecer safári em vez de arena de
+monstros.
+
+**69-b. O elemento já é a ponte entre o bicho e o poder.** Os oito elementos
+(`Fogo, Agua, Planta, Terra, Fantasma, Luz, Ar, Raio`) e a biologia
+(`PetBiologyCatalog`: pele, porte, respiração, membros) **já existem** e já
+descrevem uma criatura, não uma espécie real — é sobre esse vocabulário que o
+design se apoia, não sobre um catálogo de fauna.

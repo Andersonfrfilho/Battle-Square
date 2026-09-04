@@ -4,8 +4,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Game\n"
-"POT-Creation-Date: 2026-09-04 12:00\n"
-"PO-Revision-Date: 2026-09-04 12:00\n"
+"POT-Creation-Date: 2026-09-04 12:16\n"
+"PO-Revision-Date: 2026-09-04 12:16\n"
 "Language-Team: \n"
 "Language: pt-BR\n"
 "MIME-Version: 1.0\n"
@@ -670,6 +670,20 @@ msgstr "Tropa de Elite"
 msgctxt "PoliceEscalation,ForcaFederal"
 msgid "Tropa Federal"
 msgstr "Tropa Federal"
+
+#. Key:	IdadeDesconhecida
+#. SourceLocation:	Source/BattleSquare/Private/Meta/WorldAge.cpp(22)
+#: Source/BattleSquare/Private/Meta/WorldAge.cpp(22)
+msgctxt "WorldAge,IdadeDesconhecida"
+msgid "idade do mundo: desconhecida"
+msgstr "idade do mundo: desconhecida"
+
+#. Key:	IdadeConhecida
+#. SourceLocation:	Source/BattleSquare/Private/Meta/WorldAge.cpp(25)
+#: Source/BattleSquare/Private/Meta/WorldAge.cpp(25)
+msgctxt "WorldAge,IdadeConhecida"
+msgid "idade do mundo: {Dias} dias"
+msgstr "idade do mundo: {Dias} dias"
 
 #. Key:	Committed
 #. SourceLocation:	Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(164)

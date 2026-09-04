@@ -15,6 +15,7 @@
 #include "Battle/BattleArena.h"
 #include "Environment/WorldTimeOfDay.h"
 #include "Data/BattleDataTranslator.h"
+#include "Meta/WorldAge.h"
 #include "Meta/PetCollectionSaveGame.h"
 #include "World/VillageResidents.h"
 #include "Meta/OwnershipCache.h"
@@ -505,11 +506,20 @@ private:
 	 */
 	TArray<FString> KnownWantedAccounts;
 
+	/** A idade do mundo lida do servidor (MV1). Desconhecida ate a leitura chegar. */
+	WorldAge::FWorldAge CurrentWorldAge;
+
 	/** Dispara a busca da posse em FUNDO. Falha não trava nada. */
 	void RefreshOwnershipInBackground();
 
 	/** Dispara a busca da lista de procurados em FUNDO (CR4). */
 	void RefreshWantedListInBackground();
+
+	/** Busca a idade do mundo no servidor; falha mantem "desconhecida" (MV1). */
+	void RefreshWorldAgeInBackground();
+
+	/** Desenha a linha da idade do mundo no painel (Key fixa 772). */
+	void MostrarIdadeDoMundo();
 
 	/** Mostra a lista de procurados no poste da praça (CR4). */
 	void MostrarPosteDeProcurados();

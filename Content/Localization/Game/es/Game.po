@@ -4,8 +4,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Game\n"
-"POT-Creation-Date: 2026-09-04 12:00\n"
-"PO-Revision-Date: 2026-09-04 12:00\n"
+"POT-Creation-Date: 2026-09-04 12:16\n"
+"PO-Revision-Date: 2026-09-04 12:16\n"
 "Language-Team: \n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
@@ -669,6 +669,20 @@ msgstr ""
 #: Source/BattleSquare/Private/Meta/PoliceEscalation.cpp(42)
 msgctxt "PoliceEscalation,ForcaFederal"
 msgid "Tropa Federal"
+msgstr ""
+
+#. Key:	IdadeDesconhecida
+#. SourceLocation:	Source/BattleSquare/Private/Meta/WorldAge.cpp(22)
+#: Source/BattleSquare/Private/Meta/WorldAge.cpp(22)
+msgctxt "WorldAge,IdadeDesconhecida"
+msgid "idade do mundo: desconhecida"
+msgstr ""
+
+#. Key:	IdadeConhecida
+#. SourceLocation:	Source/BattleSquare/Private/Meta/WorldAge.cpp(25)
+#: Source/BattleSquare/Private/Meta/WorldAge.cpp(25)
+msgctxt "WorldAge,IdadeConhecida"
+msgid "idade do mundo: {Dias} dias"
 msgstr ""
 
 #. Key:	Committed

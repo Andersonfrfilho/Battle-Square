@@ -469,6 +469,9 @@ FString ABattleSquareGameMode::SetUpWorldEncounterFlow()
 	// A lista de procurados (CR4), em fundo como tudo o mais.
 	RefreshWantedListInBackground();
 
+	// A idade do mundo (MV1), tambem em fundo — sem token, e publica.
+	RefreshWorldAgeInBackground();
+
 	if (WorldStatusRefreshSeconds > 0.0f)
 	{
 		World->GetTimerManager().SetTimer(WorldStatusTimer, this,
@@ -1144,6 +1147,14 @@ void ABattleSquareGameMode::SpawnStartingVillage()
 		FString::Printf(TEXT("regiao: %d assentamentos, %d predios, %d portas, %d campos, %d moradores"),
 			Erguidos, Predios, Portas, CamposDePatio, Moradores),
 		0.0f, FColor(200, 180, 120), /*Key=*/744);
+
+	// A IDADE DO MUNDO (MV1) numa linha propria: "desconhecida" quando o
+	// backend nao respondeu — nunca zero, que pareceria mundo recem-nascido.
+	FBattleDebugScreen::Show(
+		CurrentWorldAge.bKnown
+			? FString::Printf(TEXT("idade do mundo: %d dias"), CurrentWorldAge.AgeInDays)
+			: FString(TEXT("idade do mundo: desconhecida")),
+		0.0f, FColor(200, 180, 120), /*Key=*/772);
 }
 
 void ABattleSquareGameMode::ForceOwnershipMigration()
@@ -1237,6 +1248,73 @@ void ABattleSquareGameMode::RefreshWantedListInBackground()
 				}
 				Eu->KnownWantedAccounts = Novos;
 			}
+		});
+
+	Pedido->ProcessRequest();
+}
+
+void ABattleSquareGameMode::MostrarIdadeDoMundo()
+{
+	// A idade do mundo (MV1) numa linha propria e ESTAVEL (Key fixa, atualiza
+	// no lugar). "desconhecida" quando o backend nao respondeu — nunca zero,
+	// que pareceria um mundo recem-nascido.
+	FBattleDebugScreen::Show(
+		CurrentWorldAge.bKnown
+			? FString::Printf(TEXT("idade do mundo: %d dias"), CurrentWorldAge.AgeInDays)
+			: FString(TEXT("idade do mundo: desconhecida")),
+		0.0f, FColor(200, 180, 120), /*Key=*/772);
+}
+
+void ABattleSquareGameMode::RefreshWorldAgeInBackground()
+{
+	// A idade do mundo e publica (mesma para todos, nao revela ninguem): sem
+	// token. So precisa saber o endereco do servidor.
+	if (OwnershipApiUrl.IsEmpty())
+	{
+		return;
+	}
+
+	const TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Pedido =
+		FHttpModule::Get().CreateRequest();
+	Pedido->SetURL(OwnershipApiUrl / TEXT("v1/world"));
+	Pedido->SetVerb(TEXT("GET"));
+	Pedido->SetTimeout(5.0f);
+
+	TWeakObjectPtr<ABattleSquareGameMode> Fraco(this);
+	Pedido->OnProcessRequestComplete().BindLambda(
+		[Fraco](FHttpRequestPtr, FHttpResponsePtr Resposta, bool bOk)
+		{
+			ABattleSquareGameMode* Eu = Fraco.Get();
+			if (!Eu)
+			{
+				return;
+			}
+			if (!bOk || !Resposta.IsValid() || Resposta->GetResponseCode() != 200)
+			{
+				// Contrapeso da MV1: backend fora do ar NAO vira idade zero.
+				// Fica DESCONHECIDA — o estado inicial ja e esse, e a tela diz.
+				Eu->CurrentWorldAge = WorldAge::Unknown();
+				Eu->MostrarIdadeDoMundo();
+				return;
+			}
+
+			TSharedPtr<FJsonObject> Json;
+			const TSharedRef<TJsonReader<>> Leitor =
+				TJsonReaderFactory<>::Create(Resposta->GetContentAsString());
+			const TSharedPtr<FJsonObject>* Dados = nullptr;
+			double Dias = 0.0;
+			if (FJsonSerializer::Deserialize(Leitor, Json) && Json.IsValid()
+				&& Json->TryGetObjectField(TEXT("data"), Dados)
+				&& (*Dados)->TryGetNumberField(TEXT("ageInDays"), Dias))
+			{
+				Eu->CurrentWorldAge = WorldAge::Known(static_cast<int32>(Dias));
+			}
+			else
+			{
+				// Resposta ininteligivel tambem e desconhecimento, nao zero.
+				Eu->CurrentWorldAge = WorldAge::Unknown();
+			}
+			Eu->MostrarIdadeDoMundo();
 		});
 
 	Pedido->ProcessRequest();

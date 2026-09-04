@@ -1,5 +1,6 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
+import { handleGetWorldAge } from './world/world.controller';
 import { environment } from './config/environment';
 import {
   handleLogin,
@@ -118,6 +119,10 @@ const server = Bun.serve({
     // A LISTA DE PROCURADOS (CR4): publica para quem tem conta.
     if (url.pathname === '/v1/wanted' && request.method === 'GET') {
       return handleListWanted(request);
+    }
+
+    if (url.pathname === '/v1/world' && request.method === 'GET') {
+      return handleGetWorldAge();
     }
 
     // O ROUBO (CR2): NAO e /my/ — o pet e de OUTRO. O dono sai do token so

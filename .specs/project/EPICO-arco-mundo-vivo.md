@@ -16,7 +16,7 @@ abaixo mede o tempo por ela; nenhuma caixa reintroduz um segundo relógio.
 ## A ordem, e por que ela é esta
 
 - [x] **MV1** — a idade do mundo existe *(fundação, pronta)*
-- [ ] **MV2** — a árvore cresce com a idade do MUNDO (semente + idade), não com
+- [x] **MV2** — a árvore cresce com a idade do MUNDO (semente + idade), não com
       a dela própria — `mundo-vivo/tasks.md` MV2. *Depende de MV1.*
 - [ ] **MV3** — cortar deixa marca no SERVIDOR: a derrubada não volta antes do
       prazo — `mundo-vivo/tasks.md` MV3. *Depende de MV1 + posse-no-servidor.*

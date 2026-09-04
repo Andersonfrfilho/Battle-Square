@@ -25,7 +25,7 @@ quem está jogando agora.**
 - [x] **MV4** — o prazo de rebrota é número de configuração, nunca literal em C++
 - [x] **MV5** — idade do mundo e corte pendente aparecem na tela
 - [x] **MV6** — pets envelhecem — três perguntas de conteúdo sem resposta
-- [⛔] **MV7** — coleta de recursos, bosque e comerciante — dono, ferramenta e presença do pet em aberto
+- [x] **MV7** — coleta de recursos, bosque e comerciante — dono, ferramenta e presença do pet em aberto
 - [ ] O grep fora de `/Tests/` acha quem LÊ a idade do mundo em produção
 - [ ] Bateria completa verde — o total do dia em que a feature abrir (hoje **858**); o número só sobe
 - [ ] As cinco auditorias limpas

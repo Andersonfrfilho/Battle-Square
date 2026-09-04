@@ -360,6 +360,20 @@ FLinearColor ScenaryPalette::ColorFor(EScenaryRole Role, FName MaterialSlot)
 	return VerdeDaMata;
 }
 
+const TCHAR* ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive Primitive)
+{
+	// A fonte unica dos caminhos de primitiva (MV2/MV3). /Engine/BasicShapes/*
+	// ate alguem decidir o pacote (invariante 20); trocar o pacote e trocar aqui.
+	switch (Primitive)
+	{
+	case EScenaryPrimitive::Cube:     return TEXT("/Engine/BasicShapes/Cube.Cube");
+	case EScenaryPrimitive::Cylinder: return TEXT("/Engine/BasicShapes/Cylinder.Cylinder");
+	case EScenaryPrimitive::Sphere:   return TEXT("/Engine/BasicShapes/Sphere.Sphere");
+	case EScenaryPrimitive::Cone:     return TEXT("/Engine/BasicShapes/Cone.Cone");
+	}
+	return TEXT("/Engine/BasicShapes/Cube.Cube");
+}
+
 UMaterialInterface* ScenaryPalette::ColorableBaseMaterial()
 {
 	return LoadObject<UMaterialInterface>(

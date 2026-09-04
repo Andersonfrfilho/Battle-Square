@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Battle/PetView.h"
+#include "Environment/ScenaryPalette.h"
 #include "Battle/BattleTypes.h"
 #include "Components/SceneComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -78,10 +79,10 @@ APetView::APetView()
 	PrimaryActorTick.bCanEverTick = false;
 
 	// Conteúdo da engine, não vendorizado — mesmo princípio de AD-019.
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> Esfera(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> Cubo(TEXT("/Engine/BasicShapes/Cube.Cube"));
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> Cone(TEXT("/Engine/BasicShapes/Cone.Cone"));
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> Cilindro(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> Esfera(ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Sphere));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> Cubo(ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cube));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> Cone(ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cone));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> Cilindro(ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cylinder));
 
 	SphereAsset = Esfera.Succeeded() ? Esfera.Object : nullptr;
 	CubeAsset = Cubo.Succeeded() ? Cubo.Object : nullptr;

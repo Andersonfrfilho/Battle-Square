@@ -17,6 +17,22 @@ class UPrimitiveComponent;
  * eram o mesmo verde. Quem olha não distingue arbusto de capim, e o cenário
  * inteiro lê como uma mancha só.
  */
+/**
+ * A PRIMITIVA da engine de onde uma malha vem (a-malha-vem-de-fora, MV2/MV3).
+ *
+ * Escopo global com base explicita (a armadilha do enum incompleto ja mordeu
+ * este projeto). Os quatro solidos que os ~20 atores usam; o CAMINHO de cada um
+ * mora num lugar so (ScenaryPalette::PrimitiveMeshPath), ao lado da cor — nunca
+ * mais espalhado por 35 literais (invariante 18, a fonte unica do visual).
+ */
+enum class EScenaryPrimitive : uint8
+{
+	Cube,
+	Cylinder,
+	Sphere,
+	Cone,
+};
+
 enum class EScenaryRole : uint8
 {
 	/** Capim e folha rasteira, logo atrás da grade. */
@@ -254,6 +270,15 @@ namespace ScenaryPalette
 	 * Nulo se o conteúdo da engine não carregar, e quem chama trata: cenário
 	 * sem cor é feio, cenário que derruba o jogo é defeito.
 	 */
+	/**
+	 * O CAMINHO da malha de uma primitiva — a fonte unica (MV2/MV3).
+	 *
+	 * Aponta para /Engine/BasicShapes (invariante 20: o dado decide de ONDE
+	 * vem a malha, nao o estilo; a feature fecha verde ainda em primitiva da
+	 * engine). Trocar o pacote e trocar ISTO, num lugar so.
+	 */
+	BATTLESQUARE_API const TCHAR* PrimitiveMeshPath(EScenaryPrimitive Primitive);
+
 	BATTLESQUARE_API UMaterialInterface* ColorableBaseMaterial();
 
 	/**

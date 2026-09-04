@@ -20,7 +20,7 @@ abaixo mede o tempo por ela; nenhuma caixa reintroduz um segundo relógio.
       a dela própria — `mundo-vivo/tasks.md` MV2. *Depende de MV1.*
 - [x] **MV3** — cortar deixa marca no SERVIDOR: a derrubada não volta antes do
       prazo — `mundo-vivo/tasks.md` MV3. *Depende de MV1 + posse-no-servidor.*
-- [ ] **MV4** — o prazo de rebrota é NÚMERO DE CONFIGURAÇÃO, nunca literal —
+- [x] **MV4** — o prazo de rebrota é NÚMERO DE CONFIGURAÇÃO, nunca literal —
       `mundo-vivo/tasks.md` MV4. *Depende de MV3.*
 - [ ] **MV5** — idade do mundo e corte pendente aparecem na TELA —
       `mundo-vivo/tasks.md` MV5. *Depende de MV2 + MV3.*

@@ -75,3 +75,49 @@ As duas trilhas mexem em pastas DISJUNTAS, então `main` serve para as duas:
 Os modelos sem elemento — e os dois que mais importam, porque **têm evolução**:
 **Alpaking** (alpaca-rei: Terra ou Planta?) e **Armabee** (abelha blindada: Ar ou
 Planta?). Sem resposta, eles ficam fora do catálogo; nunca com elemento chutado.
+
+---
+
+## Achado da AR7 (04/09, medido) — o AnimBP NÃO sai pelo MCP
+
+**Duas descobertas estruturais, ambas por medição:**
+
+### 1. Quatro famílias de rig, e 128 esqueletos onde deviam ser 4
+
+Medido com `get_bone_names` em amostras:
+
+| família | ossos | estrutura |
+|---|---|---|
+| **Flying** (Dragon, Alpaking, +15) | 18 | **idênticas** |
+| **Blob** (Cat, PinkBlob, +15) | 7 | **idênticas** |
+| **Big** (Dino 59, Bunny 66, +14) | variável | núcleo igual, extras diferem (orelhas) |
+| **KayKit** (Knight, +9) | 24 | outro rig (`Rig_Medium`, minúsculas) |
+
+**O defeito é do import da AR1/AR2:** todas as malhas entraram com
+`skeleton: None`, então cada uma criou o SEU esqueleto — 128 no total. Um
+Animation Blueprint é amarrado a UM esqueleto, logo isso exigiria 128 AnimBPs, e
+mata o "um AnimBP serve várias criaturas".
+
+**A correção existe e foi PROVADA:** reimportar passando
+`skeleton: {refPath: <esqueleto da família>}` liga a malha ao esqueleto
+compartilhado (testado: `SK_TESTE_Alpaking` → `SK_Dragon_Skeleton`, 18 ossos, ok).
+Flying e Blob são consolidáveis com segurança (ossos idênticos); **Big NÃO é** —
+ligar o Bunny ao esqueleto do Dino perderia as 8 orelhas.
+
+### 2. `BlueprintTools.create` não cria AnimBlueprint — e TRAVA o editor
+
+`create` com `asset_type=/Script/Engine.AnimBlueprint` falha: a fábrica de
+AnimBlueprint exige `TargetSkeleton`, que o `create` genérico não passa. Na
+segunda tentativa (com a pasta já criada) ele abriu um **diálogo modal** pedindo
+o esqueleto — e **diálogo modal trava a thread de jogo, que é onde as chamadas
+MCP rodam**. O editor ficou sem responder até alguém fechar a janela à mão.
+
+⚠️ **Regra nova para esta trilha: nunca chamar `BlueprintTools.create` com um
+tipo cuja fábrica peça parâmetro** (AnimBlueprint é o caso conhecido). O custo
+não é o erro — é o editor travado, que derruba a trilha inteira.
+
+**Consequência para a AR7:** o Animation Blueprint precisa ser criado **à mão no
+editor** (Content Browser → Animation → Animation Blueprint → escolher o
+esqueleto), ou por Python do editor (que o sandbox do MCP não alcança). Depois de
+existir, o MCP CONSEGUE editá-lo (`create_node`, `connect_pins`,
+`write_graph_dsl`, `compile_blueprint`).

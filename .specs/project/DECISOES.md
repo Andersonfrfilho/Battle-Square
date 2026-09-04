@@ -216,7 +216,22 @@ inclusive em sociedade com outros.** 🆕
 
 ## Posse — `posse-no-servidor`
 
-**38. A coleção local DESAPARECE** (não vira cache).
+**38-b. OFFLINE NORMAL exige o LOCAL (03/09).** *"Lembrando que o jogo deve
+rodar normalmente offline."* Isto emenda a 38: a coleção local NÃO desaparece —
+ela é o CACHE que mantém o jogo inteiro sem rede (a recomendação da spec, agora
+decidida). Offline joga, captura e grava local; ao reconectar, sobe — e **o
+servidor manda no empate**. As três decisões restantes da posse (03/09):
+
+- **conta por CONFIG agora, tela de login depois** — token em configuração
+  local para desenvolvimento; a tela é feature futura registrada; quem não tem
+  conta joga offline normal;
+- **recusa por objeto é `403`** — honesto ("existe, mas não é seu"), escolhido
+  pelo dono SOBRE a recomendação de 404; o custo assumido: a rota vira oráculo
+  de existência de pet, e fica anotado;
+- **teto de 500 pets por conta**, como config do servidor — captura além do
+  teto recusa com código estável.
+
+**38 (original). A coleção local DESAPARECE** (não vira cache).
 
 **39. Offline joga-se local, com NPCs** — a vida acontece normalmente, e **pode
 até haver incremento de jogadores.** 🆕

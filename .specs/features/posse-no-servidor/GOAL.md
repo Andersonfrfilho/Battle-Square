@@ -5,7 +5,11 @@
 > Três itens seguem em aberto, e estão listados no fim daquele arquivo.
 
 
-**Escrito em 02/09/2026, e NÃO ABERTO.** Vem do último parágrafo de **B-005**,
+**ABERTO em 03/09/2026, pelo usuário** ("pode seguir para o multiplayer,
+posse-no-servidor" — e a emenda que reordena tudo: "o jogo deve rodar
+normalmente offline"). As seis decisões da spec estão respondidas na 38-b de
+`DECISOES.md`; a 5 (pet abandonado) segue fora de escopo, como a spec já
+mandava. **Escrito em 02/09/2026.** Vem do último parágrafo de **B-005**,
 que fechou o defeito de mistura e deixou escrito o que sobrou: *"este conserto
 tirou o defeito de mistura; a posse ainda não é do servidor."*
 
@@ -19,17 +23,17 @@ ser uma pergunta sobre a CONTA.**
 
 ## PRONTO é isto, e nada menos
 
-- [⛔] **PS1** — a tabela da posse existe no banco, com unicidade `(dono, catálogo)`
-- [⛔] **PS2** — o token do JOGADOR autentica, e `admin` não vira dono de nada
-- [⛔] **PS3** — a autorização é por OBJETO, com teste negativo de isolamento
-- [⛔] **PS4** — as rotas da posse existem, e a captura é idempotente
-- [⛔] **PS5** — o lado da batalha passa a ter CONTA, sem tocar em rede
-- [⛔] **PS6** — o jogo pode falar HTTP, e o núcleo continua sem alcançá-lo
-- [⛔] **PS7** — ler a coleção fora da batalha, e backend fora do ar não impede jogar
-- [⛔] **PS8** — a captura viaja por fila, e sobe uma vez só
-- [⛔] **PS9** — quem já joga migra sem perder nada, e a migração é repetível
-- [⛔] **PS10** — a posse na TELA, dizendo o que está pendente
-- [⛔] **PS11** — capturar passa a exigir SEM DONO
+- [ ] **PS1** — a tabela da posse existe no banco, com unicidade `(dono, catálogo)`
+- [ ] **PS2** — o token do JOGADOR autentica, e `admin` não vira dono de nada
+- [ ] **PS3** — a autorização é por OBJETO, com teste negativo de isolamento
+- [ ] **PS4** — as rotas da posse existem, e a captura é idempotente
+- [ ] **PS5** — o lado da batalha passa a ter CONTA, sem tocar em rede
+- [ ] **PS6** — o jogo pode falar HTTP, e o núcleo continua sem alcançá-lo
+- [ ] **PS7** — ler a coleção fora da batalha, e backend fora do ar não impede jogar
+- [ ] **PS8** — a captura viaja por fila, e sobe uma vez só
+- [ ] **PS9** — quem já joga migra sem perder nada, e a migração é repetível
+- [ ] **PS10** — a posse na TELA, dizendo o que está pendente
+- [ ] **PS11** — capturar passa a exigir SEM DONO
 - [ ] O grep fora de `/Tests/` acha quem PERGUNTA de quem é o pet
 - [ ] Bateria completa verde — o total do dia em que a feature abrir (hoje **858**); o número só sobe
 - [ ] As cinco auditorias limpas, e as sondas de isolação reprovando de propósito

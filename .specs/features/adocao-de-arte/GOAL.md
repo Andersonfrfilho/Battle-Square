@@ -43,10 +43,18 @@ A ARQUITETURA ja estava pronta e testada (`ScenaryPalette::MeshPathForRole`,
 ## PRONTO é isto, e nada menos
 
 - [⛔] **AR1** *(USUARIO — fisico)* — os packs Quaternius baixados (CC0) e
-      importados para `Content/Quaternius/`, mantendo a arvore de pastas.
-      Packs medidos em quaternius.com (04/09): **Ultimate Animated Animal Pack**
-      (os pets, riggados+animados), **Ultimate Nature Pack** e **Stylized Nature
-      MegaKit** (arvore, arbusto, flor, capim), e as rochas do MegaKit
+      importados para `Content/Quaternius/`. **DUAS METADES, destinos diferentes
+      (decisao 69):**
+      - **CENARIO = arte FINAL.** *Ultimate Nature Pack* + *Stylized Nature
+        MegaKit* (arvore, arbusto, flor, capim, rocha). Arvore e arvore — o
+        mundo e natural mesmo, e o pacote resolve de vez.
+      - **PETS = apenas STAND-IN.** *Ultimate Animated Animal Pack* e de
+        ANIMAIS REAIS; o pet e criatura com poder (69), inspirada em bicho mas
+        diferente dele. O pack entra so para provar o encanamento
+        (SkeletalMesh + AnimBP) e para nao ficar cilindro na tela — **nunca
+        como design final**. Mais perto do alvo, se quiser stand-in com cara de
+        monstro: *Animated Alien Pack* e *Animated Dinosaur Pack*.
+
 - [⛔] **AR2** *(AGENTE via ConfigSettings + tela)* — os sete papéis de cenário (`ForestTree`, `CanopyTree`, `Rock`,
       `DeadWood`, `Undergrowth`, `Accent`, `GroundCover`) apontados no
       `[/Script/BattleSquare.Art]`, e a tela confere que NENHUM caiu na primitiva
@@ -56,12 +64,17 @@ A ARQUITETURA ja estava pronta e testada (`ScenaryPalette::MeshPathForRole`,
 - [⛔] **AR4** *(AGENTE — auditoria em C++/script)* — uma auditoria de ADOÇÃO: para cada chave preenchida em
       `[/Script/BattleSquare.Art]`, o asset EXISTE e carrega — chave apontando
       para asset ausente REPROVA (o "adotado mas invisível" pego cedo)
-- [⛔] **AR5** *(AGENTE via BlueprintTools + SkeletalMeshTools)* — os PETS (`APetView`) ganham os modelos de Animais Quaternius —
+- [⛔] **AR5** *(AGENTE via BlueprintTools + SkeletalMeshTools)* — os PETS (`APetView`) ganham um modelo riggado (STAND-IN, decisao 69) —
       e como eles são RIGGADOS, isto pede um Animation Blueprint (Idle/Walk),
       um passo além da malha estática. Decisão de escopo: estático primeiro,
       animado depois
 - [⛔] **AR6** *(AGENTE)* — na tela: `bs.MalhaDeOnde` (já existe) passa a listar, por papel,
       se veio do PACOTE ou da primitiva — "adotei tudo?" vira pergunta com resposta
+- [⛔] **AR7** *(USUARIO — decisao de conteudo/arte)* — a CRIATURA PROPRIA: o
+      pet definitivo, inspirado em animal mas com poder e peculiaridade (69). O
+      stand-in do AR5 sai quando esta entrar. Caminhos: encomendar arte, modelar,
+      ou achar um pacote de MONSTROS (nao de fauna). O encanamento ja estara
+      pronto — trocar e apontar a config para outro asset.
 - [⛔] Bateria completa verde (o número só sobe a partir de **991**)
 - [⛔] As sete auditorias limpas (a de adoção, AR4, é a oitava quando existir)
 - [⛔] Um commit por task, cada um com o motivo

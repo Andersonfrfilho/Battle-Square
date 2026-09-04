@@ -21,7 +21,7 @@ tela.
   trajeto fica impossível por peso
 - [x] **MT4** — nem todo pet pode ser montado; dado de save antigo sem o
   campo novo carrega com default seguro
-- [⛔] **MT5** — o pet montado é visível na tela, com malha e cor atribuídas e
+- [x] **MT5** — o pet montado é visível na tela, com malha e cor atribuídas e
   testadas no construtor
 - [ ] bateria de testes completa verde (meça o total ao pegar a tarefa — não
   fixe um número aqui; o total só cresce)

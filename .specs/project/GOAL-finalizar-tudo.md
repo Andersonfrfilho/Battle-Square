@@ -34,7 +34,7 @@
 2. [x] **mundo-por-biomas** (MB1–MB4) — posto de fronteira, pet muda de elemento
        por bioma, vila veste a cor, desastre muda a vila. Reusa fontes já
        existentes (bioma, WorldEvents).
-3. [ ] **montaria-e-trilhas** (MT1–MT5) — montado é mais rápido, subir cansa
+3. [x] **montaria-e-trilhas** (MT1–MT5) — montado é mais rápido, subir cansa
        mais, peso cansa, nem todo pet monta, o montado aparece na tela.
 4. [ ] **mae-natureza** (MN1–MN7) — o corretor de censo (torneira, não balde),
        delatado, com preço de assentamento em config; migração de espécie rara.

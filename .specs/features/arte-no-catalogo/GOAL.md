@@ -89,9 +89,16 @@ FAMÍLIA, com quem decidiu e o motivo — o gerador aplica por cima do nome):
 Ainda abertas (6 itens em `decisoes`):
 - **Alpaking** — o insumo não traz cor por malha; pedir à trilha A um export
   da cor-base, e aí decidir Terra ou Planta.
-- **Luz** — o usuário espera outro pack. Pesquisa de 04/09: nenhum pack
-  gratuito com criatura de Luz ou Raio pelo nome (Quaternius, KayKit,
-  poly.pizza); ver o relatório da sessão.
+- **Luz** (e **Raio**) — o usuário espera outro pack, e o critério é
+  criatura estilizada tipo Pokémon/Digimon, NÃO animal realista (04/09).
+  Pesquisa refeita com esse filtro: nenhum pack GRATUITO traz Luz ou Raio
+  (Quaternius, itch.io, poly.pizza, Sketchfab). Pago e no estilo certo, com
+  3 evoluções por criatura e FBX: Meshtint *Cute Series* — `Angel Archangel
+  Mage` (Luz, US$ 23,90), `Cat Lightning Bolt` (Raio, US$ 31,90), `Alien Star
+  Twinkle` (Luz ou Raio, US$ 22,90), `Monsters Ultimate Pack 06` (15 bichos:
+  Angel/Death/Whirlwind/Ice/Fire × 3 estágios, US$ 109,90). Ressalva: a
+  Meshtint só dá suporte a Unity; o FBX importa, mas cada animação é um FBX
+  separado (trilha A). Decisão de compra é do usuário.
 - **Fish, Birb, Cactoro sem Adulto** — não há Blender nesta máquina e o editor
   é da trilha A; a rota viável é um Adulto derivado por escala, declarado em dado.
 

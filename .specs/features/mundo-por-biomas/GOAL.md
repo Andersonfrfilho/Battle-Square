@@ -18,7 +18,7 @@ para quem venceu o ranking regional.
 - [x] **MB2** — o pet selvagem que aparece muda de elemento conforme o bioma
   do encontro, e o encontro sem lugar (`EncounterLocation` vazio) continua
   sem filtro
-- [⛔] **MB3** — a vila veste a cor do bioma onde está, reusando a mesma fonte
+- [x] **MB3** — a vila veste a cor do bioma onde está, reusando a mesma fonte
   de paleta que a arena já usa (não uma segunda tabela)
 - [⛔] **MB4** — uma vila atingida por um desastre de `WorldEvents` muda de
   estado observável (prédio danificado, serviço que some), e sem desastre

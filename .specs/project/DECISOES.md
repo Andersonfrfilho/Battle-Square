@@ -355,6 +355,10 @@ existirem como destino.
 ⚠️ **O achado é conteúdo que nenhuma task previu.** Ele não cabe na CI1: entra
 como task própria, depois que a carteira existir para receber.
 
+*(ENTREGUE 04/09: `WorldFinding` — ruina, clareira fechada e mercado-negro
+guardam achado deterministico da semente do lugar, uma vez por lugar, creditado
+na carteira. Faixa em config.)*
+
 **58. O Portão do Posto de Fronteira NÃO TRANCA.** *"o usuário deve ter
 liberdade para viajar para onde quiser"*.
 

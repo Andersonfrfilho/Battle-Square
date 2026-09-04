@@ -509,6 +509,9 @@ private:
 	/** A idade do mundo lida do servidor (MV1). Desconhecida ate a leitura chegar. */
 	WorldAge::FWorldAge CurrentWorldAge;
 
+	/** Lugares onde o jogador ja achou dinheiro (decisao 57) — achado e uma vez por lugar. */
+	TSet<FString> CollectedFindings;
+
 	/**
 	 * A regiao teve o ranking vencido? (MB1) Um unico booleano por regiao no
 	 * estado do mundo — sem placar, sem tabela de pontos. O Posto de Fronteira

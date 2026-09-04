@@ -26,6 +26,7 @@
 #include "World/WorldCellKey.h"
 #include "World/BorderGate.h"
 #include "World/BiomeEncounterFilter.h"
+#include "World/WorldFinding.h"
 #include "World/SettlementDisaster.h"
 #include "World/NatureBalance.h"
 #include "World/TreeRegrowth.h"
@@ -1990,6 +1991,35 @@ void ABattleSquareGameMode::TickGroundWork()
 
 	const EGroundUse Uso =
 		LandUseLayout::UseAt(FVector2D(Jogador->GetActorLocation()));
+
+	// O ACHADO (decisao 57): ruina, clareira fechada e mercado-negro guardam
+	// dinheiro fora da trilha. Uma vez por lugar — o achado nao renasce a cada
+	// passo. O valor e deterministico da semente do LUGAR (regra 5).
+	if (WorldFinding::HasFinding(Uso))
+	{
+		const FString ChaveDoLugar = WorldCellKey::CellKeyOf(
+			FVector2D(Jogador->GetActorLocation()), WorldSceneryCellSizeUnits);
+		if (!CollectedFindings.Contains(ChaveDoLugar))
+		{
+			CollectedFindings.Add(ChaveDoLugar);
+
+			WorldFinding::FFindingConfig Config;
+			GConfig->GetInt(TEXT("/Script/BattleSquare.WorldFinding"),
+				TEXT("FindingMinAmount"), Config.MinAmount, GGameIni);
+			GConfig->GetInt(TEXT("/Script/BattleSquare.WorldFinding"),
+				TEXT("FindingMaxAmount"), Config.MaxAmount, GGameIni);
+
+			const uint32 SementeDoLugar =
+				BattleSpread::SeedFromText(ChaveDoLugar) ^ static_cast<uint32>(WorldScenerySeed);
+			const int32 Achado = WorldFinding::AmountAt(SementeDoLugar, Config);
+
+			FTrainerWalletRules::Earn(CachedTrainer, Achado);
+			FBattleDebugScreen::Show(
+				FString::Printf(TEXT("voce ACHOU %d de dinheiro aqui (carteira: %d)"),
+					Achado, CachedTrainer.Money),
+				5.0f, FColor(230, 210, 120), /*Key=*/737);
+		}
+	}
 
 	if (!GroundWorkRules::IsWorkPlace(Uso))
 	{

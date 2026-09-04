@@ -615,3 +615,26 @@ monstros.
 (`PetBiologyCatalog`: pele, porte, respiração, membros) **já existem** e já
 descrevem uma criatura, não uma espécie real — é sobre esse vocabulário que o
 design se apoia, não sobre um catálogo de fauna.
+
+**70. OS PACKS ESCOLHIDOS (04/09).** Todos CC0, do Quaternius.
+**Pets:** *Ultimate Monsters* (**50 monstros animados** — o maior),
+*Cute Animated Monsters Pack* (a veia Pokemon/Zatch Bell) e
+*Bestiary - Dungeon Monsters Kit* (**rigged e RETARGETABLE** — um AnimBP serve
+varias criaturas, ganho tecnico direto). *Cute Fish* cobre Agua.
+**Cenario/props:** *Fantasy Props MegaKit* e *Pirate Kit* (este ultimo serve a
+praia, ao deck e ao mercado do lago). O pack de FAUNA REAL nao entra em lugar
+nenhum (decisao 69).
+
+**70-b. O GERADOR DE ESPECIES, e por que ele e pequeno.** Casar ~50 modelos com
+os 115 pets do catalogo a mao seria digitar e errar em silencio. O gerador
+(`model-mapping.pure.ts`) faz a ponte, e precisa acertar **so o ELEMENTO** do
+modelo: `BiomeEncounterFilter` ja liga BIOMA -> ELEMENTO, e o catalogo ja
+identifica o pet por `Escola/Elemento`, entao **BIOMA -> PET ja e automatico**.
+O gerador NAO conhece bioma — escrever aquela tabela de novo seria a segunda
+fonte de verdade de L-032, e ha teste estrutural reprovando isso.
+
+⚠️ **Ele nao chuta:** modelo sem pista de nome fica `undefined` e e REPORTADO
+para decisao humana, nunca recebe um elemento inventado. E cadeia de evolucao so
+existe com dois estagios ou mais — prometer evolucao que nao acontece e pior que
+nao prometer. Os estagios sao os de `EPetGrowthStage`, que ja existia
+(Filhote/Adulto/Evoluido): a evolucao nao nasce no gerador, e RECONHECIDA por ele.

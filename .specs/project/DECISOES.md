@@ -189,6 +189,13 @@ multa vai para o usuário roubado**, no valor do que ele perdeu.
 **28. Sem saldo para a multa, DOBRA o tempo preso.** A recompensa sempre
 existe: **quem paga é o governo.**
 
+**28-b. A polícia ESCALA com quem a vence (04/09).** Cada policial que o
+suspeito derrota eleva o nível do PRÓXIMO enviado — o calor sobe a cada
+vitória sobre a lei, nunca desce sozinho. O primeiro policial vem no nível do
+próprio suspeito (briga justa); a partir daí, cada derrota da lei soma um
+degrau à força do reforço seguinte. O calor é contado das DERROTAS, não do
+relógio: dois suspeitos com o mesmo histórico enfrentam a mesma polícia.
+
 **29–31. O envelhecimento corre offline** — e **a prisão tem o que fazer
 dentro.** 🆕
 

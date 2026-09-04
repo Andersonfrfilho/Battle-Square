@@ -1,0 +1,701 @@
+{
+  "geradoEm": "2026-09-04",
+  "fonte": "assets-importados.json",
+  "chave": "nome do pet (PetDataLoader.h identifica por Name; catalogId so nasce no seed do banco)",
+  "pets": [
+    {
+      "pet": "Faísca",
+      "escola": "Natural",
+      "elemento": "Fogo",
+      "familia": "Dragon",
+      "origem": "autor",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Monsters/SK_Dragon",
+        "Evoluido": "/Game/Quaternius/Monsters/SK_Dragon_Evolved"
+      },
+      "variantes": [
+        "/Game/Quaternius/Monsters/SK_Dragon_Mon"
+      ],
+      "motivo": "o dragao e a cadeia assinada pelo autor; o pet inicial de fogo merece a evolucao completa"
+    },
+    {
+      "pet": "Cinza",
+      "escola": "Natural",
+      "elemento": "Fogo",
+      "familia": "Demon",
+      "origem": "porte",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Monsters/SK_Demon",
+        "Evoluido": "/Game/Quaternius/Monsters/SK_Demon_Big"
+      },
+      "variantes": [
+        "/Game/Quaternius/Monsters/SK_Demon_Flying"
+      ],
+      "motivo": "brasa que sobra: o demonio pequeno cresce para Demon_Big pelo porte"
+    },
+    {
+      "pet": "Brisa",
+      "escola": "Natural",
+      "elemento": "Planta",
+      "familia": "Deer",
+      "origem": "porte",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Monsters/SK_Deer"
+      },
+      "variantes": [],
+      "motivo": "planta natural: o cervo da mata. Cactoro seria a cadeia, mas so tem Blob e Big, sem Adulto"
+    },
+    {
+      "pet": "Musgo",
+      "escola": "Natural",
+      "elemento": "Planta",
+      "familia": "Mushnub",
+      "origem": "autor",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Monsters/SK_Mushnub",
+        "Evoluido": "/Game/Quaternius/Monsters/SK_Mushnub_Evolved"
+      },
+      "variantes": [],
+      "motivo": "fungo rasteiro, cadeia assinada pelo autor"
+    },
+    {
+      "pet": "Maré",
+      "escola": "Natural",
+      "elemento": "Agua",
+      "familia": "Glub",
+      "origem": "autor",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Monsters/SK_Glub",
+        "Evoluido": "/Game/Quaternius/Monsters/SK_Glub_Evolved"
+      },
+      "variantes": [],
+      "motivo": "agua inicial, cadeia assinada pelo autor"
+    },
+    {
+      "pet": "Corrente",
+      "escola": "Natural",
+      "elemento": "Agua",
+      "familia": "Penguin",
+      "origem": "porte",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Monsters/SK_Penguin"
+      },
+      "variantes": [],
+      "motivo": "nadador de correnteza fria"
+    },
+    {
+      "pet": "Vigília",
+      "escola": "Psiquica",
+      "elemento": "Agua",
+      "familia": "Squidle",
+      "origem": "porte",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Monsters/SK_Squidle"
+      },
+      "variantes": [],
+      "motivo": "agua psiquica: a lula, olhos grandes"
+    },
+    {
+      "pet": "Alfarrábio",
+      "escola": "Psiquica",
+      "elemento": "Fogo",
+      "familia": "BlueDemon",
+      "origem": "porte",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Monsters/SK_BlueDemon"
+      },
+      "variantes": [],
+      "motivo": "fogo psiquico, chama azul — a cor decide"
+    },
+    {
+      "pet": "Estalagmite",
+      "escola": "Fisica",
+      "elemento": "Terra",
+      "familia": "Goleling",
+      "origem": "autor",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Monsters/SK_Goleling",
+        "Evoluido": "/Game/Quaternius/Monsters/SK_Goleling_Evolved"
+      },
+      "variantes": [],
+      "motivo": "terra fisica, o golem com cadeia assinada pelo autor"
+    },
+    {
+      "pet": "Barro",
+      "escola": "Natural",
+      "elemento": "Terra",
+      "familia": "Pig",
+      "origem": "porte",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Monsters/SK_Pig"
+      },
+      "variantes": [],
+      "motivo": "terra natural: o porco no barro"
+    },
+    {
+      "pet": "Fornalha",
+      "escola": "Fisica",
+      "elemento": "Fogo",
+      "familia": "YellowDragon",
+      "origem": "porte",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Monsters/SK_YellowDragon"
+      },
+      "variantes": [],
+      "motivo": "fogo fisico e pesado; o dragao amarelo e o corpo mais parrudo do pack"
+    },
+    {
+      "pet": "Vagalhão",
+      "escola": "Fisica",
+      "elemento": "Agua",
+      "familia": "Shark",
+      "origem": "porte",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Fish/SK_Shark_CF"
+      },
+      "variantes": [
+        "/Game/Quaternius/Fish/SK_Shark_AF"
+      ],
+      "motivo": "agua fisica: o tubarao. O Fish do Monsters so tem Blob e Big, sem Adulto — e o pet nasce Adulto"
+    },
+    {
+      "pet": "Névoa",
+      "escola": "Psiquica",
+      "elemento": "Planta",
+      "familia": "Mushroom",
+      "origem": "autor",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Monsters/SK_Mushroom",
+        "Evoluido": "/Game/Quaternius/Monsters/SK_MushroomKing"
+      },
+      "variantes": [],
+      "motivo": "planta psiquica: o cogumelo que vira rei (MushroomKing)"
+    },
+    {
+      "pet": "Menir",
+      "escola": "Psiquica",
+      "elemento": "Terra",
+      "familia": "Cyclops",
+      "origem": "porte",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Monsters/SK_Cyclops"
+      },
+      "variantes": [],
+      "motivo": "terra psiquica: a pedra em pe com um olho"
+    },
+    {
+      "pet": "Véu",
+      "escola": "Espiritual",
+      "elemento": "Fantasma",
+      "familia": "Ghost",
+      "origem": "porte",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Monsters/SK_Ghost"
+      },
+      "variantes": [
+        "/Game/Quaternius/Monsters/SK_Ghost_Cute",
+        "/Game/Quaternius/Monsters/SK_Ghost_Skull"
+      ],
+      "motivo": "o fantasma classico; Ghost_Cute e Ghost_Skull ficam como variantes"
+    },
+    {
+      "pet": "Lume",
+      "escola": "Psiquica",
+      "elemento": "Luz",
+      "familia": "Wizard",
+      "origem": "porte",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Monsters/SK_Wizard"
+      },
+      "variantes": [],
+      "motivo": "luz psiquica: o unico modelo de Luz do insumo"
+    },
+    {
+      "pet": "Bruma",
+      "escola": "Natural",
+      "elemento": "Fantasma",
+      "familia": "Skull",
+      "origem": "porte",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Monsters/SK_Skull"
+      },
+      "variantes": [],
+      "motivo": "fantasma natural: a caveira solta na neblina"
+    },
+    {
+      "pet": "Afogado",
+      "escola": "Espiritual",
+      "elemento": "Agua",
+      "familia": "Anglerfish",
+      "origem": "porte",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Fish/SK_Anglerfish"
+      },
+      "variantes": [],
+      "motivo": "agua espiritual: o peixe do fundo com a luz na cabeca"
+    },
+    {
+      "pet": "Rajada",
+      "escola": "Natural",
+      "elemento": "Ar",
+      "familia": "Pigeon",
+      "origem": "porte",
+      "estagios": {
+        "Filhote": "/Game/Quaternius/Monsters/SK_Pigeon_Blob",
+        "Adulto": "/Game/Quaternius/Monsters/SK_Pigeon_Flying"
+      },
+      "variantes": [],
+      "motivo": "ar natural: o pombo voando e o Adulto, o Blob e o filhote. Birb nao tem Adulto (so Blob e Big)"
+    },
+    {
+      "pet": "Cirro",
+      "escola": "Psiquica",
+      "elemento": "Ar",
+      "familia": "Bat",
+      "origem": "porte",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Monsters/SK_Bat_CM"
+      },
+      "variantes": [
+        "/Game/Quaternius/Monsters/SK_Bat_AM"
+      ],
+      "motivo": "ar psiquico; a pele do Cute Monsters e a \"veia Pokemon\" da decisao 70"
+    }
+  ],
+  "semModelo": [
+    {
+      "pet": "Zunido",
+      "elemento": "Planta",
+      "motivo": "e a abelha, mas Bee sugere Planta E Ar e Armabee nao sugere nada: aguarda a decisao do usuario"
+    },
+    {
+      "pet": "Candeia",
+      "elemento": "Luz",
+      "motivo": "Luz so tem Wizard no insumo, e ele ja veste o Lume: falta pack de Luz"
+    },
+    {
+      "pet": "Farol",
+      "elemento": "Luz",
+      "motivo": "idem Candeia — falta pack de Luz"
+    }
+  ],
+  "familiasLivres": {
+    "Fogo": [
+      "GreenDemon"
+    ],
+    "Agua": [
+      "ArmoredCatfish",
+      "Betta",
+      "BlackLionFish",
+      "Blobfish",
+      "BlueGoldfish",
+      "BlueTang",
+      "ButterflyFish",
+      "CardinalFish",
+      "Clownfish",
+      "CoralGrouper",
+      "Cowfish",
+      "Crab",
+      "Dolphin",
+      "Fish1",
+      "Fish2",
+      "Fish3",
+      "Fish",
+      "Flatfish",
+      "FlowerHorn",
+      "Frog",
+      "GoblinShark",
+      "Goldfish",
+      "Humphead",
+      "Koi",
+      "Lionfish",
+      "MandarinFish",
+      "MantaRay",
+      "MoorishIdol",
+      "ParrotFish",
+      "Piranha",
+      "Puffer",
+      "RedSnapper",
+      "RoyalGramma",
+      "Sunfish",
+      "Swordfish",
+      "Tang",
+      "Tetra",
+      "Tuna",
+      "Turbot",
+      "Whale",
+      "YellowTang",
+      "ZebraClownFish"
+    ],
+    "Planta": [
+      "Cactoro",
+      "Cactus",
+      "Tree"
+    ],
+    "Terra": [
+      "Bunny",
+      "Dino",
+      "Monkroose",
+      "Orc",
+      "Panda",
+      "Yeti"
+    ],
+    "Fantasma": [
+      "Cthulhu",
+      "Skeleton",
+      "Skeleton_Mage",
+      "Skeleton_Minion",
+      "Skeleton_Rogue",
+      "Skeleton_Warrior"
+    ],
+    "Luz": [],
+    "Ar": [
+      "Birb",
+      "Chicken"
+    ],
+    "Raio": [
+      "Hywirl"
+    ]
+  },
+  "cadeias": [
+    {
+      "family": "Alien",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Monsters/SK_Alien",
+        "Evoluido": "/Game/Quaternius/Monsters/SK_Alien_Big",
+        "Filhote": "/Game/Quaternius/Monsters/SK_Alien_Blob"
+      },
+      "variantes": [
+        "/Game/Quaternius/Monsters/SK_Alien_Tall"
+      ],
+      "origem": "porte"
+    },
+    {
+      "family": "Alpaking",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Monsters/SK_Alpaking",
+        "Evoluido": "/Game/Quaternius/Monsters/SK_Alpaking_Evolved"
+      },
+      "variantes": [],
+      "origem": "autor"
+    },
+    {
+      "family": "Armabee",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Monsters/SK_Armabee",
+        "Evoluido": "/Game/Quaternius/Monsters/SK_Armabee_Evolved"
+      },
+      "variantes": [],
+      "origem": "autor"
+    },
+    {
+      "family": "Birb",
+      "element": "Ar",
+      "estagios": {
+        "Evoluido": "/Game/Quaternius/Monsters/SK_Birb_Big",
+        "Filhote": "/Game/Quaternius/Monsters/SK_Birb_Blob"
+      },
+      "variantes": [],
+      "origem": "porte"
+    },
+    {
+      "family": "Cactoro",
+      "element": "Planta",
+      "estagios": {
+        "Evoluido": "/Game/Quaternius/Monsters/SK_Cactoro_Big",
+        "Filhote": "/Game/Quaternius/Monsters/SK_Cactoro_Blob"
+      },
+      "variantes": [],
+      "origem": "porte"
+    },
+    {
+      "family": "Demon",
+      "element": "Fogo",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Monsters/SK_Demon",
+        "Evoluido": "/Game/Quaternius/Monsters/SK_Demon_Big"
+      },
+      "variantes": [
+        "/Game/Quaternius/Monsters/SK_Demon_Flying"
+      ],
+      "origem": "porte"
+    },
+    {
+      "family": "Dragon",
+      "element": "Fogo",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Monsters/SK_Dragon",
+        "Evoluido": "/Game/Quaternius/Monsters/SK_Dragon_Evolved"
+      },
+      "variantes": [
+        "/Game/Quaternius/Monsters/SK_Dragon_Mon"
+      ],
+      "origem": "autor"
+    },
+    {
+      "family": "Fish",
+      "element": "Agua",
+      "estagios": {
+        "Evoluido": "/Game/Quaternius/Monsters/SK_Fish_Big",
+        "Filhote": "/Game/Quaternius/Monsters/SK_Fish_Blob"
+      },
+      "variantes": [],
+      "origem": "porte"
+    },
+    {
+      "family": "Glub",
+      "element": "Agua",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Monsters/SK_Glub",
+        "Evoluido": "/Game/Quaternius/Monsters/SK_Glub_Evolved"
+      },
+      "variantes": [],
+      "origem": "autor"
+    },
+    {
+      "family": "Goleling",
+      "element": "Terra",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Monsters/SK_Goleling",
+        "Evoluido": "/Game/Quaternius/Monsters/SK_Goleling_Evolved"
+      },
+      "variantes": [],
+      "origem": "autor"
+    },
+    {
+      "family": "Mushnub",
+      "element": "Planta",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Monsters/SK_Mushnub",
+        "Evoluido": "/Game/Quaternius/Monsters/SK_Mushnub_Evolved"
+      },
+      "variantes": [],
+      "origem": "autor"
+    },
+    {
+      "family": "Mushroom",
+      "element": "Planta",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Monsters/SK_Mushroom",
+        "Evoluido": "/Game/Quaternius/Monsters/SK_MushroomKing"
+      },
+      "variantes": [],
+      "origem": "autor"
+    },
+    {
+      "family": "Ninja",
+      "estagios": {
+        "Evoluido": "/Game/Quaternius/Monsters/SK_Ninja_Big",
+        "Filhote": "/Game/Quaternius/Monsters/SK_Ninja_Blob"
+      },
+      "variantes": [],
+      "origem": "porte"
+    },
+    {
+      "family": "Orc",
+      "element": "Terra",
+      "estagios": {
+        "Evoluido": "/Game/Quaternius/Monsters/SK_Orc_Big",
+        "Filhote": "/Game/Quaternius/Monsters/SK_Orc_Blob",
+        "Adulto": "/Game/Quaternius/Monsters/SK_Orc_Skull"
+      },
+      "variantes": [],
+      "origem": "porte"
+    },
+    {
+      "family": "Pigeon",
+      "element": "Ar",
+      "estagios": {
+        "Filhote": "/Game/Quaternius/Monsters/SK_Pigeon_Blob",
+        "Adulto": "/Game/Quaternius/Monsters/SK_Pigeon_Flying"
+      },
+      "variantes": [],
+      "origem": "porte"
+    },
+    {
+      "family": "Tribal",
+      "estagios": {
+        "Evoluido": "/Game/Quaternius/Monsters/SK_Tribal_Big",
+        "Adulto": "/Game/Quaternius/Monsters/SK_Tribal_Flying"
+      },
+      "variantes": [],
+      "origem": "porte"
+    },
+    {
+      "family": "Yeti",
+      "element": "Terra",
+      "estagios": {
+        "Adulto": "/Game/Quaternius/Monsters/SK_Yeti",
+        "Evoluido": "/Game/Quaternius/Monsters/SK_Yeti_Big",
+        "Filhote": "/Game/Quaternius/Monsters/SK_Yeti_Blob"
+      },
+      "variantes": [],
+      "origem": "porte"
+    }
+  ],
+  "classificacao": {
+    "total": 128,
+    "criaturas": 121,
+    "humanos": [
+      "Barbarian",
+      "Knight",
+      "Mage",
+      "Ranger",
+      "Rogue",
+      "Rogue_Hooded"
+    ],
+    "props": [
+      "Worm"
+    ],
+    "comElemento": {
+      "Fogo": [
+        "BlueDemon",
+        "Demon",
+        "Demon_Big",
+        "Demon_Flying",
+        "Dragon",
+        "Dragon_Evolved",
+        "Dragon_Mon",
+        "GreenDemon",
+        "YellowDragon"
+      ],
+      "Agua": [
+        "Anglerfish",
+        "ArmoredCatfish",
+        "Betta",
+        "BlackLionFish",
+        "Blobfish",
+        "BlueGoldfish",
+        "BlueTang",
+        "ButterflyFish",
+        "CardinalFish",
+        "Clownfish",
+        "CoralGrouper",
+        "Cowfish",
+        "Crab",
+        "Dolphin",
+        "Fish1",
+        "Fish2",
+        "Fish3",
+        "Fish_Big",
+        "Fish_Blob",
+        "Flatfish",
+        "FlowerHorn",
+        "Frog",
+        "Glub",
+        "Glub_Evolved",
+        "GoblinShark",
+        "Goldfish",
+        "Humphead",
+        "Koi",
+        "Lionfish",
+        "MandarinFish",
+        "MantaRay",
+        "MoorishIdol",
+        "ParrotFish",
+        "Penguin",
+        "Piranha",
+        "Puffer",
+        "RedSnapper",
+        "RoyalGramma",
+        "Shark_AF",
+        "Shark_CF",
+        "Squidle",
+        "Sunfish",
+        "Swordfish",
+        "Tang",
+        "Tetra",
+        "Tuna",
+        "Turbot",
+        "Whale",
+        "YellowTang",
+        "ZebraClownFish"
+      ],
+      "Planta": [
+        "Cactoro_Big",
+        "Cactoro_Blob",
+        "Cactus",
+        "Deer",
+        "Mushnub",
+        "Mushnub_Evolved",
+        "Mushroom",
+        "MushroomKing",
+        "Tree"
+      ],
+      "Terra": [
+        "Bunny",
+        "Cyclops",
+        "Dino",
+        "Goleling",
+        "Goleling_Evolved",
+        "Monkroose",
+        "Orc_Big",
+        "Orc_Blob",
+        "Orc_Skull",
+        "Panda",
+        "Pig",
+        "Yeti",
+        "Yeti_Big",
+        "Yeti_Blob"
+      ],
+      "Fantasma": [
+        "Cthulhu",
+        "Ghost",
+        "Ghost_Cute",
+        "Ghost_Skull",
+        "Skeleton",
+        "Skeleton_Mage",
+        "Skeleton_Minion",
+        "Skeleton_Rogue",
+        "Skeleton_Warrior",
+        "Skull"
+      ],
+      "Luz": [
+        "Wizard"
+      ],
+      "Ar": [
+        "Bat_AM",
+        "Bat_CM",
+        "Birb_Big",
+        "Birb_Blob",
+        "Chicken",
+        "Chicken_Cute",
+        "Pigeon_Blob",
+        "Pigeon_Flying"
+      ],
+      "Raio": [
+        "Hywirl"
+      ]
+    },
+    "semElemento": [
+      "Alien",
+      "Alien_Big",
+      "Alien_Blob",
+      "Alien_Tall",
+      "Alpaking",
+      "Alpaking_Evolved",
+      "Armabee",
+      "Armabee_Evolved",
+      "Bee",
+      "Cat",
+      "Dog",
+      "GreenBlob",
+      "GreenSpikyBlob",
+      "Ninja_Big",
+      "Ninja_Blob",
+      "PinkBlob",
+      "Slime",
+      "Tribal_Big",
+      "Tribal_Flying"
+    ],
+    "conflitos": [
+      {
+        "modelName": "Bee",
+        "elementos": [
+          "Planta",
+          "Ar"
+        ]
+      }
+    ]
+  }
+}

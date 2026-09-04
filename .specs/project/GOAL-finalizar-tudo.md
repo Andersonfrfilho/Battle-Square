@@ -6,6 +6,16 @@
 > decisão que só o usuário resolve — essa se REGISTRA e se pula, não trava o
 > resto.
 
+## Decisões do usuário (04/09)
+
+1. **Profundidade: FEATURE-COMPLETA, uma a uma.** Cada caixa fecha de ponta a
+   ponta — regra pura + teste (contrapeso) + tela + wiring físico em mundo —
+   antes da próxima. Sem "regra-pura-primeiro em largura".
+2. **O cluster de geometria (P7–P10, cavernas CQ1–4, fundura F1) SE RESOLVE na
+   raiz: REGENERAR O ASSADO do mundo** com fundura por ponto. É empreitada
+   estrutural, e destrava nado, poço e cavernas de uma vez. Deixa de ser
+   "registrar e pular".
+
 ## A regra de não-pausa
 
 - Cada caixa acionável: regra pura → teste (com contrapeso) → fiação → bateria +
@@ -37,13 +47,15 @@
 8. [ ] **mundo-vivo/MV7** — coleta, bosque, comerciante. SISTEMA NOVO inteiro
        (GuardaFlorestal, Comerciante, compra em sociedade). O maior; por último.
 
-## Registrados como TRAVADOS (fato, não falta de vontade)
+## O cluster de geometria — via REGENERAR O ASSADO (decisão do usuário)
 
-- **pendencias P7–P10** e **cavernas CQ1–CQ4 / fundura F1**: marcados "PARA" na
-  spec por MEDIÇÃO — não há fundura por ponto no assado, a caverna mais próxima
-  está a 2710u de uma queda cujo poço tem 886u, e `ChartConformance` exige carta
-  e mundo idênticos. Destravar exige mexer no ASSADO do mundo (gerar fundura por
-  ponto), que é decisão de escopo do usuário. Enquanto isso, ficam pulados.
+- **fundura-no-tracado F1** é a raiz: gerar **fundura por ponto** no assado do
+  mundo (hoje não existe). Feito isso, destravam em cascata: **pendencias P7**
+  (nadar quando a água passa da cintura), **P8/cavernas CQ2** (o poço se lê pela
+  fundura), **P9/cavernas CQ1/CQ3** (caverna por dentro da cachoeira — hoje a
+  mais perto está a 2710u de um poço de 886u, o assado precisa aproximá-las),
+  **P10/SC/ChartConformance** (carta e mundo idênticos). Ordem: F1 → assado →
+  poço/nado → cavernas → conformidade da carta.
 
 ## Invariantes (valem em toda caixa)
 

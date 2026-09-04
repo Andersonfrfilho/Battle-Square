@@ -34,7 +34,7 @@ Animation Blueprint —, tudo por MCP, sem clique manual.
       Fantasy Props (94), Pirate Kit (143), Kenney fantasy-town (167),
       mini-dungeon (30), city-kit (41), Nature (29), + os 11 props que a AR2
       separou (`Boat`, `Dock_*`, `Lure_*`, `FishingRod_*`)
-- [⛔] **AR5** — os sete papéis apontados em `[/Script/BattleSquare.Art]`, e
+- [x] **AR5** — os sete papéis apontados em `[/Script/BattleSquare.Art]`, e
       nenhum caindo na primitiva (é edição de `.ini`, não pede build)
 - [⛔] **AR6** — Blueprint por pet: `BlueprintTools.create` + `set_parent`,
       `SkeletalMeshComponent` com o modelo, e **compilado**

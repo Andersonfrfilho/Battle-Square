@@ -14,6 +14,11 @@ import {
   handleRecordModerationEvent,
 } from './moderation/moderation.controller';
 import {
+  handleGetMyPet,
+  handleListMyPets,
+  handleRegisterCapture,
+} from './ownership/ownership.controller';
+import {
   handleCreatePet,
   handleDeletePet,
   handleExportPets,
@@ -24,6 +29,7 @@ import {
 
 const UUID_PATTERN = '[0-9a-fA-F-]{36}';
 const petByIdPattern = new RegExp(`^/v1/pets/(${UUID_PATTERN})$`);
+const myPetByIdPattern = new RegExp(`^/v1/my/pets/(${UUID_PATTERN})$`);
 const accountModerationEventsPattern = new RegExp(`^/v1/accounts/(${UUID_PATTERN})/moderation-events$`);
 const accountBansPattern = new RegExp(`^/v1/accounts/(${UUID_PATTERN})/bans$`);
 const banByIdPattern = new RegExp(`^/v1/bans/(${UUID_PATTERN})$`);
@@ -90,6 +96,20 @@ const server = Bun.serve({
     const banMatch = url.pathname.match(banByIdPattern);
     if (banMatch) {
       if (request.method === 'DELETE') return handleLiftBan(request, banMatch[1]!);
+    }
+
+    // A POSSE (posse-no-servidor, PS4): rotas de JOGADOR — o dono sai do
+    // token, nunca da URL: /my/ é a conta autenticada, e conta na URL seria
+    // o cliente escolhendo de quem é a coleção.
+    if (url.pathname === '/v1/my/pets' && request.method === 'GET') {
+      return handleListMyPets(request);
+    }
+    if (url.pathname === '/v1/my/pets/captures' && request.method === 'POST') {
+      return handleRegisterCapture(request);
+    }
+    const myPetMatch = url.pathname.match(myPetByIdPattern);
+    if (myPetMatch?.[1] && request.method === 'GET') {
+      return handleGetMyPet(request, myPetMatch[1]);
     }
 
     if (url.pathname === '/v1/pets/export') {

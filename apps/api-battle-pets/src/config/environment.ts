@@ -8,6 +8,13 @@ import { z } from 'zod';
 const environmentSchema = z.object({
   DATABASE_URL: z.url(),
   PORT: z.coerce.number().default(3100),
+
+  /**
+   * O teto da coleção por conta (decisão 38-b: 500). Config do servidor, e
+   * não constante: "sem limite" seria decisão financeira disfarçada de
+   * ausência de decisão — e o número certo se descobre operando.
+   */
+  COLLECTION_CAP: z.coerce.number().int().positive().default(500),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   ADMIN_API_TOKEN: z.string().min(32, 'ADMIN_API_TOKEN precisa ter ao menos 32 caracteres'),
   SYNC_API_TOKEN: z.string().min(32, 'SYNC_API_TOKEN precisa ter ao menos 32 caracteres'),

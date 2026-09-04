@@ -24,7 +24,7 @@ existiria sem componente. Nos dois casos, bateria verde e nada na tela.
 
 ## PRONTO é isto, e nada menos
 
-- [⛔] **MV1** — a linha de base MEDIDA: cada `FObjectFinder` de malha/material
+- [x] **MV1** — a linha de base MEDIDA: cada `FObjectFinder` de malha/material
       do projeto, com arquivo e linha, congelada antes de mexer
 - [⛔] **MV2** — nasce o dado: malha + material por PAPEL, num lugar só
 - [⛔] **MV3** — `ScenaryPalette` VIRA o ponto por onde o material é escolhido —

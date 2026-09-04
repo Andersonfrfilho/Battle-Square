@@ -85,6 +85,7 @@
 #include "Meta/TrainerSpecialtyRules.h"
 #include "Battle/AutoBattleResolver.h"
 #include "Meta/LeadershipRules.h"
+#include "Meta/OwnershipCache.h"
 #include "Meta/PetHealthRules.h"
 #include "Meta/PlayStyleRules.h"
 #include "Meta/PetSaleRules.h"
@@ -447,6 +448,13 @@ FString ABattleSquareGameMode::SetUpWorldEncounterFlow()
 		0.0f, FColor::Silver, /*Key=*/723);
 
 	ReloadOwnedPetSnapshot();
+
+	// A POSSE se busca em FUNDO, ao entrar no mundo (PS7): o jogo já está
+	// jogável com o save local ANTES de a resposta chegar — e se ela não
+	// chegar, continua jogável. Backend fora do ar não impede jogar (decisão
+	// 38-b, e a lembrança do dono: offline é normal).
+	RefreshOwnershipInBackground();
+
 	if (WorldStatusRefreshSeconds > 0.0f)
 	{
 		World->GetTimerManager().SetTimer(WorldStatusTimer, this,
@@ -1117,6 +1125,89 @@ void ABattleSquareGameMode::SpawnStartingVillage()
 		FString::Printf(TEXT("regiao: %d assentamentos, %d predios, %d portas, %d campos, %d moradores"),
 			Erguidos, Predios, Portas, CamposDePatio, Moradores),
 		0.0f, FColor(200, 180, 120), /*Key=*/744);
+}
+
+void ABattleSquareGameMode::RefreshOwnershipInBackground()
+{
+	// SEM conta, sem token ou sem URL, não há o que buscar — e isso é o
+	// offline puro, não um erro: a posse conhecida (se houver) continua
+	// valendo, e o save local monta o mundo.
+	if (PlayerAccountId.IsEmpty() || PlayerAccessToken.IsEmpty() || OwnershipApiUrl.IsEmpty())
+	{
+		return;
+	}
+
+	const TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Pedido =
+		FHttpModule::Get().CreateRequest();
+	Pedido->SetURL(OwnershipApiUrl / TEXT("v1/my/pets?perPage=100"));
+	Pedido->SetVerb(TEXT("GET"));
+	Pedido->SetHeader(TEXT("Authorization"),
+		FString::Printf(TEXT("Bearer %s"), *PlayerAccessToken));
+
+	// Curto, e a resposta NÃO está no caminho crítico: se demorar, o jogo já
+	// está rodando com o cache. Cortar cedo só evita segurar o socket.
+	Pedido->SetTimeout(5.0f);
+
+	const double Agora = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
+
+	// `this` fraco: a resposta pode chegar depois de o GameMode morrer (viagem
+	// para a arena, saída), e escrever num ponteiro morto é o defeito que
+	// derruba o processo longe da causa.
+	TWeakObjectPtr<ABattleSquareGameMode> Fraco(this);
+	Pedido->OnProcessRequestComplete().BindLambda(
+		[Fraco, Agora](FHttpRequestPtr, FHttpResponsePtr Resposta, bool bOk)
+		{
+			ABattleSquareGameMode* Eu = Fraco.Get();
+			if (!Eu)
+			{
+				return;
+			}
+
+			// TODA falha — rede, HTTP, corpo malformado — deixa o cache
+			// INTACTO (fail-closed, o mesmo desenho da conversa dinâmica). A
+			// posse não some porque o Wi-Fi caiu; ela só para de atualizar.
+			if (!bOk || !Resposta.IsValid() || Resposta->GetResponseCode() != 200)
+			{
+				Eu->KnownOwnership = OwnershipCache::AfterFailedFetch(Eu->KnownOwnership);
+				return;
+			}
+
+			TArray<OwnershipCache::FKnownPet> DoServidor;
+			TSharedPtr<FJsonObject> Json;
+			const TSharedRef<TJsonReader<>> Leitor =
+				TJsonReaderFactory<>::Create(Resposta->GetContentAsString());
+			const TArray<TSharedPtr<FJsonValue>>* Itens = nullptr;
+			if (FJsonSerializer::Deserialize(Leitor, Json) && Json.IsValid()
+				&& Json->TryGetArrayField(TEXT("data"), Itens))
+			{
+				for (const TSharedPtr<FJsonValue>& Item : *Itens)
+				{
+					const TSharedPtr<FJsonObject> Obj = Item->AsObject();
+					if (!Obj.IsValid())
+					{
+						continue;
+					}
+
+					OwnershipCache::FKnownPet Pet;
+					Pet.CatalogId = Obj->GetStringField(TEXT("catalogId"));
+					FString Roubado;
+					Pet.bStolen = Obj->TryGetStringField(TEXT("stolenFromAccountId"), Roubado)
+						&& !Roubado.IsEmpty();
+					DoServidor.Add(Pet);
+				}
+
+				Eu->KnownOwnership =
+					OwnershipCache::AfterSuccessfulFetch(DoServidor, Agora);
+			}
+			else
+			{
+				// Corpo 200 mas ilegível é falha, não posse vazia: apagar a
+				// coleção por um JSON torto seria pior que não atualizar.
+				Eu->KnownOwnership = OwnershipCache::AfterFailedFetch(Eu->KnownOwnership);
+			}
+		});
+
+	Pedido->ProcessRequest();
 }
 
 void ABattleSquareGameMode::MostrarCarteira() const

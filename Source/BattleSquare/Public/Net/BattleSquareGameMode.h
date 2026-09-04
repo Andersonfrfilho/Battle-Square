@@ -17,6 +17,7 @@
 #include "Data/BattleDataTranslator.h"
 #include "Meta/PetCollectionSaveGame.h"
 #include "World/VillageResidents.h"
+#include "Meta/OwnershipCache.h"
 #include "BattleSquareGameMode.generated.h"
 
 /**
@@ -478,6 +479,27 @@ private:
 	 */
 	UPROPERTY(config, EditDefaultsOnly, Category = "Conta")
 	FString PlayerAccountId;
+
+	/**
+	 * O token de acesso do jogador (posse-no-servidor, decisão 38-b: por
+	 * config agora). Vazio é offline puro — sem buscar posse nenhuma.
+	 */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Conta")
+	FString PlayerAccessToken;
+
+	/**
+	 * A raiz da API da posse — `<url>/v1/my/pets`. Vazia desliga a busca: o
+	 * jogo roda com a última posse conhecida (ou só o save local), e é o
+	 * offline normal que a decisão 38-b garante.
+	 */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Conta")
+	FString OwnershipApiUrl;
+
+	/** A posse conhecida, atualizada em fundo — nunca no caminho crítico. */
+	OwnershipCache::FState KnownOwnership;
+
+	/** Dispara a busca da posse em FUNDO. Falha não trava nada. */
+	void RefreshOwnershipInBackground();
 
 	/** Tipo por id do catálogo, para a predominância por lugar (decisão 62). */
 	TMap<FString, FString> CatalogTypeById;

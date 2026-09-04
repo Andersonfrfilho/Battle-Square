@@ -79,3 +79,37 @@ export const ownedPets = pgTable(
 
 export type OwnedPet = typeof ownedPets.$inferSelect;
 export type NewOwnedPet = typeof ownedPets.$inferInsert;
+
+
+/**
+ * A TRILHA DE POSSE (crime-e-recompensa, CR3): toda transferencia por roubo
+ * deixa rastro. Posse que muda sem registro e roubo que ninguem pode provar —
+ * e a devolucao, a recompensa e a policia todas leem daqui.
+ *
+ * SO IDS OPACOS (invariante 17, security.md §1): pet, contas de origem e
+ * destino, acao e instante. Nunca nome, e-mail nem qualquer PII — nem em
+ * debug.
+ */
+export const ownershipAuditLog = pgTable(
+  'ownership_audit_log',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+
+    petId: uuid('pet_id').notNull(),
+
+    /** 'theft' | 'return' | 'confiscation' — varchar, nunca ENUM (code-standart §8). */
+    action: varchar('action', { length: 16 }).notNull(),
+
+    /** De quem saiu, e para quem foi. Contas opacas. */
+    fromAccountId: uuid('from_account_id').notNull(),
+    toAccountId: uuid('to_account_id').notNull(),
+
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    // Por pet: "o historico DESTE pet" e a pergunta da devolucao e da policia.
+    index('ownership_audit_pet_idx').on(table.petId),
+  ],
+);
+
+export type OwnershipAuditEntry = typeof ownershipAuditLog.$inferSelect;

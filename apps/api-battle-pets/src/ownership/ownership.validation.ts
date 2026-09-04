@@ -18,3 +18,9 @@ export const listOwnedQuerySchema = z.object({
 });
 
 export type ListOwnedQuery = z.infer<typeof listOwnedQuerySchema>;
+
+export const stealBodySchema = z.object({
+  expectedOwnerAccountId: z.string().min(1).max(64),
+});
+
+export type StealBody = z.infer<typeof stealBodySchema>;

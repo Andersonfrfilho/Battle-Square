@@ -35,7 +35,7 @@ bool FPetSaleRemovesExactlyOneTest::RunTest(const FString&)
 	// Dois pets do MESMO tipo, ids diferentes: capturas independentes. Vender
 	// um não pode levar o outro — é por isso que a chave é o id de catálogo.
 	TestEqual(TEXT("vende o pedido"),
-		static_cast<int32>(FPetSaleRules::TrySell(Colecao, TEXT("cap-2"), TEXT("ativo-0"))),
+		static_cast<int32>(FPetSaleRules::TrySell(Colecao, TEXT("cap-2"), TEXT("ativo-0"), TSet<FString>())),
 		static_cast<int32>(EPetSaleVerdict::Sold));
 	TestEqual(TEXT("saiu exatamente um"), Colecao.Num(), 2);
 	TestTrue(TEXT("e foi o CERTO — o gemeo de tipo ficou"),
@@ -44,7 +44,7 @@ bool FPetSaleRemovesExactlyOneTest::RunTest(const FString&)
 	// Vender de novo o mesmo id é recusa nomeada, não silêncio: "nada
 	// aconteceu" é indistinguível de defeito.
 	TestEqual(TEXT("revender o vendido e NotOwned"),
-		static_cast<int32>(FPetSaleRules::TrySell(Colecao, TEXT("cap-2"), TEXT("ativo-0"))),
+		static_cast<int32>(FPetSaleRules::TrySell(Colecao, TEXT("cap-2"), TEXT("ativo-0"), TSet<FString>())),
 		static_cast<int32>(EPetSaleVerdict::NotOwned));
 	TestEqual(TEXT("e a recusa nao mexe na colecao"), Colecao.Num(), 2);
 
@@ -66,14 +66,14 @@ bool FPetSaleRefusesTheCompanionTest::RunTest(const FString&)
 	};
 
 	TestEqual(TEXT("o ativo e recusado COMO ativo, nao como ausente"),
-		static_cast<int32>(FPetSaleRules::TrySell(Colecao, TEXT("ativo-0"), TEXT("ativo-0"))),
+		static_cast<int32>(FPetSaleRules::TrySell(Colecao, TEXT("ativo-0"), TEXT("ativo-0"), TSet<FString>())),
 		static_cast<int32>(EPetSaleVerdict::ActivePet));
 	TestEqual(TEXT("e continua na colecao"), Colecao.Num(), 2);
 
 	// Sem ativo declarado (vazio), nada é companheiro — cadastro antigo não
 	// ganha proteção que ninguém pediu.
 	TestEqual(TEXT("com ativo vazio, vende normal"),
-		static_cast<int32>(FPetSaleRules::TrySell(Colecao, TEXT("ativo-0"), FString())),
+		static_cast<int32>(FPetSaleRules::TrySell(Colecao, TEXT("ativo-0"), FString(), TSet<FString>())),
 		static_cast<int32>(EPetSaleVerdict::Sold));
 
 	return true;
@@ -111,6 +111,36 @@ bool FPetSalePayoutComesFromTheTableTest::RunTest(const FString&)
 			> SettlementEconomy::SalePayout(ESettlementKind::CidadeGrande));
 	TestEqual(TEXT("e onde nao ha Mercado nao ha venda"),
 		SettlementEconomy::SalePayout(ESettlementKind::VilaInicial), 0);
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FPetSaleRefusesStolenTest,
+	"BattleSquare.Meta.Venda.RoubadoNaoSeVende",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FPetSaleRefusesStolenTest::RunTest(const FString&)
+{
+	// CR6: pet marcado como roubado nao se vende no Mercado comum — e onde o
+	// roubo tentaria virar dinheiro limpo. A marca vem do cache da posse (do
+	// servidor), passada como o conjunto de roubados.
+	TArray<FOwnedPetInstance> Colecao = {
+		VendaDePetTeste::PetCapturadoParaVenda(TEXT("roubado-1"), TEXT("Fisica/Fogo")),
+		VendaDePetTeste::PetCapturadoParaVenda(TEXT("limpo-2"), TEXT("Fisica/Agua")),
+	};
+
+	TSet<FString> Roubados;
+	Roubados.Add(TEXT("roubado-1"));
+
+	TestEqual(TEXT("o roubado e RECUSADO, e nao sai da colecao"),
+		static_cast<int32>(FPetSaleRules::TrySell(Colecao, TEXT("roubado-1"), TEXT("ativo"), Roubados)),
+		static_cast<int32>(EPetSaleVerdict::Stolen));
+	TestEqual(TEXT("a colecao segue com os dois"), Colecao.Num(), 2);
+
+	// E o LIMPO vende normal — a marca e por pet, nao por coleção.
+	TestEqual(TEXT("o pet limpo vende"),
+		static_cast<int32>(FPetSaleRules::TrySell(Colecao, TEXT("limpo-2"), TEXT("ativo"), Roubados)),
+		static_cast<int32>(EPetSaleVerdict::Sold));
 
 	return true;
 }

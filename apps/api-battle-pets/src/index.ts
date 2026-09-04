@@ -17,6 +17,7 @@ import {
   handleGetMyPet,
   handleListMyPets,
   handleRegisterCapture,
+  handleStealPet,
 } from './ownership/ownership.controller';
 import {
   handleCreatePet,
@@ -30,6 +31,7 @@ import {
 const UUID_PATTERN = '[0-9a-fA-F-]{36}';
 const petByIdPattern = new RegExp(`^/v1/pets/(${UUID_PATTERN})$`);
 const myPetByIdPattern = new RegExp(`^/v1/my/pets/(${UUID_PATTERN})$`);
+const stealPetPattern = new RegExp(`^/v1/pets/(${UUID_PATTERN})/steal$`);
 const accountModerationEventsPattern = new RegExp(`^/v1/accounts/(${UUID_PATTERN})/moderation-events$`);
 const accountBansPattern = new RegExp(`^/v1/accounts/(${UUID_PATTERN})/bans$`);
 const banByIdPattern = new RegExp(`^/v1/bans/(${UUID_PATTERN})$`);
@@ -110,6 +112,13 @@ const server = Bun.serve({
     const myPetMatch = url.pathname.match(myPetByIdPattern);
     if (myPetMatch?.[1] && request.method === 'GET') {
       return handleGetMyPet(request, myPetMatch[1]);
+    }
+
+    // O ROUBO (CR2): NAO e /my/ — o pet e de OUTRO. O dono sai do token so
+    // como LADRAO, nunca como dono do objeto roubado.
+    const stealMatch = url.pathname.match(stealPetPattern);
+    if (stealMatch?.[1] && request.method === 'POST') {
+      return handleStealPet(request, stealMatch[1]);
     }
 
     if (url.pathname === '/v1/pets/export') {

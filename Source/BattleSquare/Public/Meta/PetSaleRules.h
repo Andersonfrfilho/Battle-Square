@@ -25,7 +25,16 @@ enum class EPetSaleVerdict : uint8
 	 * metade reversível: permitir depois é acrescentar; ter permitido e
 	 * proibir depois seria tirar dinheiro que alguém já contou.
 	 */
-	ActivePet
+	ActivePet,
+
+	/**
+	 * É ROUBADO (crime-e-recompensa, CR6): pet marcado como roubado não se
+	 * vende nem se troca — a marca segue o pet inclusive para quem comprou de
+	 * boa-fé, e o Mercado é justamente onde o roubo tentaria virar dinheiro
+	 * limpo. Vender roubado no Mercado comum apagaria o crime; só o
+	 * mercado-negro (K3) o aceita, e é feature própria.
+	 */
+	Stolen
 };
 
 /**
@@ -47,5 +56,6 @@ public:
 	 * levar o outro.
 	 */
 	static EPetSaleVerdict TrySell(TArray<FOwnedPetInstance>& Collection,
-		const FString& CatalogId, const FString& ActiveCatalogId);
+		const FString& CatalogId, const FString& ActiveCatalogId,
+		const TSet<FString>& StolenCatalogIds);
 };

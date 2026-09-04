@@ -1412,7 +1412,20 @@ void ABattleSquareGameMode::SellOwnedPet(const FString& CatalogId)
 	TArray<FOwnedPetInstance> Colecao =
 		FPetCollectionService::LoadCollection(PetCollectionSlotName);
 
-	switch (FPetSaleRules::TrySell(Colecao, CatalogId, WorldEncounterPlayerCatalogId))
+	// Os roubados que o CACHE da posse conhece (CR6): a marca e do servidor,
+	// nunca uma verdade local (invariante 18). Vazio quando o cache nao tem
+	// nada — offline vende o que sempre vendeu, e o servidor recusa no envio
+	// se o pet virou roubado sem o cache saber.
+	TSet<FString> Roubados;
+	for (const OwnershipCache::FKnownPet& Pet : KnownOwnership.Pets)
+	{
+		if (Pet.bStolen)
+		{
+			Roubados.Add(Pet.CatalogId);
+		}
+	}
+
+	switch (FPetSaleRules::TrySell(Colecao, CatalogId, WorldEncounterPlayerCatalogId, Roubados))
 	{
 	case EPetSaleVerdict::NotOwned:
 		FBattleDebugScreen::Show(
@@ -1423,6 +1436,12 @@ void ABattleSquareGameMode::SellOwnedPet(const FString& CatalogId)
 	case EPetSaleVerdict::ActivePet:
 		FBattleDebugScreen::Show(TEXT("este e o SEU pet — o companheiro nao se vende"),
 			6.0f, FColor::Orange, /*Key=*/-1);
+		return;
+
+	case EPetSaleVerdict::Stolen:
+		FBattleDebugScreen::Show(
+			TEXT("este pet e ROUBADO — o Mercado nao compra o que tem dono de verdade"),
+			8.0f, FColor(240, 120, 100), /*Key=*/-1);
 		return;
 
 	case EPetSaleVerdict::Sold:

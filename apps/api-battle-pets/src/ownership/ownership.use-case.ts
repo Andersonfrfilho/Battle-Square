@@ -3,7 +3,8 @@
 import { and, count, eq } from 'drizzle-orm';
 
 import { db } from '../db/client';
-import { AcquisitionKind, ownedPets, type OwnedPet } from './ownership.schema';
+import { transferOwnership, type PetOwnership } from './ownership.pure';
+import { AcquisitionKind, ownedPets, ownershipAuditLog, type OwnedPet } from './ownership.schema';
 
 /**
  * O banco INJETADO com o global por padrão: os testes de isolamento rodam num
@@ -144,5 +145,83 @@ export async function registerCapture(
       return { kind: 'collection-full', cap: params.cap } as CaptureResult;
     }
     throw error;
+  });
+}
+
+
+export type TheftResult =
+  | { kind: 'stolen'; pet: OwnedPet }
+  /** O pet não é de quem se acha que é: a posse mudou entre a batalha e agora. */
+  | { kind: 'owner-mismatch' }
+  /** Não existe: nada a roubar. */
+  | { kind: 'not-found' };
+
+/**
+ * O ROUBO efetuado no servidor (CR2): a posse muda de mão, e a MUDANÇA é
+ * auditada (CR3) na mesma transação.
+ *
+ * A decisão de PODER roubar é do jogo (`TheftRules`, batalha vencida + escolha);
+ * aqui o servidor só EFETUA — e confere que o pet ainda é de quem a batalha
+ * dizia, porque entre a batalha e este POST a posse pode ter mudado (o dono
+ * vendeu, outro roubou). Efetuar sem conferir seria roubar de um dono que já
+ * não existe.
+ */
+export async function stealPet(
+  params: {
+    petId: string;
+    expectedOwnerAccountId: string;
+    thiefAccountId: string;
+  },
+  database: Database = db,
+): Promise<TheftResult> {
+  return database.transaction(async (tx) => {
+    const [pet] = await tx
+      .select()
+      .from(ownedPets)
+      .where(eq(ownedPets.id, params.petId))
+      .limit(1);
+
+    if (!pet) {
+      return { kind: 'not-found' } as const;
+    }
+
+    // A posse mudou desde a batalha: recusa em vez de roubar de um fantasma.
+    if (pet.ownerAccountId !== params.expectedOwnerAccountId) {
+      return { kind: 'owner-mismatch' } as const;
+    }
+
+    // A regra PURA decide o novo estado — a mesma que o teste do backend já
+    // cobre. Reescrever o "vira STOLEN, guarda stolenFrom" aqui seria a
+    // segunda fonte da mesma verdade (L-032).
+    const before: PetOwnership = {
+      catalogId: pet.catalogId,
+      ownerAccountId: pet.ownerAccountId,
+      acquisition: pet.acquisition as PetOwnership['acquisition'],
+      stolenFromAccountId: pet.stolenFromAccountId,
+    };
+    const after = transferOwnership(before, params.thiefAccountId, 'theft');
+
+    const [updated] = await tx
+      .update(ownedPets)
+      .set({
+        ownerAccountId: after.ownerAccountId,
+        acquisition: after.acquisition,
+        stolenFromAccountId: after.stolenFromAccountId,
+        updatedAt: new Date(),
+      })
+      .where(eq(ownedPets.id, params.petId))
+      .returning();
+
+    // A TRILHA (CR3), na MESMA transação: posse que muda sem registro é roubo
+    // que ninguém pode provar. IDs opacos, nunca PII (invariante 17,
+    // security.md §1).
+    await tx.insert(ownershipAuditLog).values({
+      petId: params.petId,
+      action: 'theft',
+      fromAccountId: params.expectedOwnerAccountId,
+      toAccountId: params.thiefAccountId,
+    });
+
+    return { kind: 'stolen', pet: updated! } as const;
   });
 }

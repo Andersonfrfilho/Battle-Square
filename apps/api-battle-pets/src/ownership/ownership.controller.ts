@@ -3,7 +3,7 @@
 import { authenticate } from '../auth/auth.middleware';
 import { environment } from '../config/environment';
 import * as OwnershipUseCase from './ownership.use-case';
-import { captureBodySchema, listOwnedQuerySchema } from './ownership.validation';
+import { captureBodySchema, listOwnedQuerySchema, stealBodySchema } from './ownership.validation';
 
 function jsonError(status: number, code: string, message: string, details?: unknown) {
   return Response.json({ error: { code, message, ...(details ? { details } : {}) } }, { status });
@@ -69,6 +69,32 @@ export async function handleGetMyPet(request: Request, petId: string): Promise<R
       // vira oráculo de existência) foi assumido pelo dono e está anotado na
       // decisão.
       return jsonError(403, 'OWNED_BY_ANOTHER', 'Este pet pertence a outra conta');
+  }
+}
+
+export async function handleStealPet(request: Request, petId: string): Promise<Response> {
+  const auth = requirePlayer(request);
+  if (!auth.ok) return auth.response;
+
+  const body = await request.json().catch(() => null);
+  const parsed = stealBodySchema.safeParse(body);
+  if (!parsed.success) {
+    return jsonError(400, 'VALIDATION_ERROR', 'Payload inválido');
+  }
+
+  const result = await OwnershipUseCase.stealPet({
+    petId,
+    expectedOwnerAccountId: parsed.data.expectedOwnerAccountId,
+    thiefAccountId: auth.accountId,
+  });
+
+  switch (result.kind) {
+    case 'stolen':
+      return Response.json({ data: result.pet }, { status: 200 });
+    case 'not-found':
+      return jsonError(404, 'PET_NOT_FOUND', 'Pet não encontrado');
+    case 'owner-mismatch':
+      return jsonError(409, 'OWNER_CHANGED', 'A posse deste pet mudou');
   }
 }
 

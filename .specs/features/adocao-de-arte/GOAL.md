@@ -48,12 +48,17 @@ A ARQUITETURA ja estava pronta e testada (`ScenaryPalette::MeshPathForRole`,
       - **CENARIO = arte FINAL.** *Ultimate Nature Pack* + *Stylized Nature
         MegaKit* (arvore, arbusto, flor, capim, rocha). Arvore e arvore — o
         mundo e natural mesmo, e o pacote resolve de vez.
-      - **PETS = apenas STAND-IN.** *Ultimate Animated Animal Pack* e de
-        ANIMAIS REAIS; o pet e criatura com poder (69), inspirada em bicho mas
-        diferente dele. O pack entra so para provar o encanamento
-        (SkeletalMesh + AnimBP) e para nao ficar cilindro na tela — **nunca
-        como design final**. Mais perto do alvo, se quiser stand-in com cara de
-        monstro: *Animated Alien Pack* e *Animated Dinosaur Pack*.
+      - **PETS = packs de MONSTRO (medido 04/09).** O *Ultimate Animated Animal
+        Pack* NAO entra: e fauna real, e existem packs de criatura de verdade,
+        que servem a decisao 69 direto. Os tres que carregam o jogo:
+        **Bestiary - Dungeon Monsters Kit** (rigged e **RETARGETABLE** — um
+        AnimBP serve varias criaturas, ganho tecnico direto no AR5),
+        **Cute Animated Monsters Pack** (a veia Pokemon/Zatch Bell) e
+        **Animated Monster Pack** (a veia Digimon/Monster Hunter, para os
+        estagios maiores). Por elemento: *Animated Fish Pack* (Agua),
+        *Animated Dinosaur Pack* (Terra/Fogo), *Animated Alien Pack*
+        (Luz/Ar/Raio), *Animated Zombie Pack* (Fantasma). **Planta e Ar sao a
+        cobertura mais fina** — provavel alvo do AR7 (criatura propria).
 
 - [⛔] **AR2** *(AGENTE via ConfigSettings + tela)* — os sete papéis de cenário (`ForestTree`, `CanopyTree`, `Rock`,
       `DeadWood`, `Undergrowth`, `Accent`, `GroundCover`) apontados no

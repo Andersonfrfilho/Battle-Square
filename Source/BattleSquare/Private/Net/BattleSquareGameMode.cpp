@@ -24,6 +24,7 @@
 #include "Environment/CaveSystem.h"
 #include "Environment/ForestBackdrop.h"
 #include "World/WorldCellKey.h"
+#include "World/BorderGate.h"
 #include "World/TreeRegrowth.h"
 #include "Environment/FreshWater.h"
 #include "Environment/IslandFeatureLayout.h"
@@ -1383,6 +1384,16 @@ void ABattleSquareGameMode::FetchTreeCutsForChunk(const FIntPoint& Chunk, AFores
 	Pedido->ProcessRequest();
 }
 
+void ABattleSquareGameMode::SetRegionRanking(bool bWon)
+{
+	bRegionRankingWon = bWon;
+	FBattleDebugScreen::Show(
+		bWon
+			? TEXT("ranking da regiao: VENCIDO — o Posto de Fronteira abre")
+			: TEXT("ranking da regiao: pendente — o Posto de Fronteira barra"),
+		6.0f, FColor(200, 200, 150), /*Key=*/774);
+}
+
 void ABattleSquareGameMode::MostrarIdadeDoMundo()
 {
 	// A idade do mundo (MV1) numa linha propria e ESTAVEL (Key fixa, atualiza
@@ -2476,6 +2487,17 @@ void ABattleSquareGameMode::AnunciarPortaCruzada(EVillageBuilding Predio,
 		{
 			FBattleDebugScreen::Show(TEXT(""), 0.0f, FColor::White, Chave);
 		}
+		return;
+	}
+
+	// O PORTÃO DA FRONTEIRA (MB1): o Posto só deixa passar quem venceu o ranking
+	// da região. Barrado, a tela diz o motivo e a entrada NÃO se efetiva — o pet
+	// não atravessa. Toda outra passagem é livre (BorderGate cuida disso).
+	if (!BorderGate::AllowsPassage(DeQueVila, bRegionRankingWon))
+	{
+		FBattleDebugScreen::Show(
+			TEXT("Posto de Fronteira TRANCADO: vença o ranking da região para passar"),
+			6.0f, FColor(230, 120, 120), /*Key=*/774);
 		return;
 	}
 
@@ -4739,6 +4761,24 @@ namespace
 
 				GameMode->SetAutoDefense(
 					Args[0].Equals(TEXT("on"), ESearchCase::IgnoreCase));
+			}));
+
+	// O PORTÃO da fronteira pelo console (MB1): vira o booleano do ranking da
+	// regiao sem recompilar — o aceite pede exatamente isto.
+	FAutoConsoleCommandWithWorldAndArgs GRankingRegiaoCommand(
+		TEXT("bs.SetRegionRanking"),
+		TEXT("bs.SetRegionRanking [on|off] — vence (on) ou zera (off) o ranking da regiao; o Posto de Fronteira abre com on."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(
+			[](const TArray<FString>& Args, UWorld* World)
+			{
+				ABattleSquareGameMode* GameMode =
+					World ? World->GetAuthGameMode<ABattleSquareGameMode>() : nullptr;
+				if (!GameMode)
+				{
+					return;
+				}
+				GameMode->SetRegionRanking(
+					Args.Num() >= 1 && Args[0].Equals(TEXT("on"), ESearchCase::IgnoreCase));
 			}));
 
 	// A CONVERSA pelo console (decisão 67): fala com quem está te ouvindo.

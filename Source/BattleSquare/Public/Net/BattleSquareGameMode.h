@@ -509,6 +509,13 @@ private:
 	/** A idade do mundo lida do servidor (MV1). Desconhecida ate a leitura chegar. */
 	WorldAge::FWorldAge CurrentWorldAge;
 
+	/**
+	 * A regiao teve o ranking vencido? (MB1) Um unico booleano por regiao no
+	 * estado do mundo — sem placar, sem tabela de pontos. O Posto de Fronteira
+	 * consulta isto antes de deixar passar.
+	 */
+	bool bRegionRankingWon = false;
+
 	/** Dispara a busca da posse em FUNDO. Falha não trava nada. */
 	void RefreshOwnershipInBackground();
 
@@ -524,6 +531,9 @@ private:
 public:
 	/** Grava no servidor que uma árvore foi cortada aqui (MV3), sem bloquear. */
 	void RecordTreeCutInBackground(const FString& ChunkKey, const FString& CellKey);
+
+	/** Liga/desliga o ranking vencido da regiao (MB1) — vira o Posto sem recompilar. */
+	void SetRegionRanking(bool bWon);
 
 private:
 	/** Busca os cortes ativos do pedaço e some com as árvores cortadas (MV3). */

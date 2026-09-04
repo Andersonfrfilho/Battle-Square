@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "World/MountView.h"
+#include "Environment/ScenaryPalette.h"
 
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -32,7 +33,7 @@ AMountView::AMountView()
 	// A MALHA NO CONSTRUTOR — a regra três vezes paga. Componente sem asset
 	// passa em toda bateria e não existe na tela.
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> Cilindro(
-		TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
+		ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cylinder));
 	if (Cilindro.Succeeded())
 	{
 		Body->SetStaticMesh(Cilindro.Object);

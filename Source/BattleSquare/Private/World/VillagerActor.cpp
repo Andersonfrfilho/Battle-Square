@@ -64,9 +64,9 @@ AVillagerActor::AVillagerActor()
 	// AS MALHAS NO CONSTRUTOR — a regra três vezes paga. Componente sem asset
 	// passa em toda bateria e não existe na tela.
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> Cilindro(
-		TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
+		ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cylinder));
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> Esfera(
-		TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+		ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Sphere));
 
 	if (Cilindro.Succeeded())
 	{

@@ -139,7 +139,7 @@ AVillage::AVillage()
 	// atribuído passa em toda bateria e não existe na tela — três vezes neste
 	// projeto, e hoje há sonda para isso.
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> Cubo(
-		TEXT("/Engine/BasicShapes/Cube.Cube"));
+		ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cube));
 	if (Cubo.Succeeded())
 	{
 		BoxMesh = Cubo.Object;

@@ -24,10 +24,10 @@ namespace UsoDoSolo
 		float Esbeltez = 0.2f;
 	};
 
-	const TCHAR* Cubo = TEXT("/Engine/BasicShapes/Cube.Cube");
-	const TCHAR* Cilindro = TEXT("/Engine/BasicShapes/Cylinder.Cylinder");
-	const TCHAR* Cone = TEXT("/Engine/BasicShapes/Cone.Cone");
-	const TCHAR* Esfera = TEXT("/Engine/BasicShapes/Sphere.Sphere");
+	const TCHAR* Cubo = ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cube);
+	const TCHAR* Cilindro = ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cylinder);
+	const TCHAR* Cone = ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cone);
+	const TCHAR* Esfera = ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Sphere);
 
 	/**
 	 * O poço SECO não é o poço cheio.

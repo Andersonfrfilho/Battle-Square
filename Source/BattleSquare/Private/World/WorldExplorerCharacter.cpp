@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "World/WorldExplorerCharacter.h"
+#include "Environment/ScenaryPalette.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Components/StaticMeshComponent.h"
@@ -53,7 +54,7 @@ AWorldExplorerCharacter::AWorldExplorerCharacter()
 	FacingMarker->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CorpoMesh(
-		TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+		ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Sphere));
 	if (CorpoMesh.Succeeded())
 	{
 		BodyMesh->SetStaticMesh(CorpoMesh.Object);
@@ -61,7 +62,7 @@ AWorldExplorerCharacter::AWorldExplorerCharacter()
 	}
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> MarcaMesh(
-		TEXT("/Engine/BasicShapes/Cube.Cube"));
+		ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cube));
 	if (MarcaMesh.Succeeded())
 	{
 		// A esfera é simétrica: sem uma marca à frente, não dá para saber para
@@ -73,7 +74,7 @@ AWorldExplorerCharacter::AWorldExplorerCharacter()
 	}
 
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> CorpoMaterial(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+		ScenaryPalette::ColorableBaseMaterialPath());
 	if (CorpoMaterial.Succeeded())
 	{
 		BodyMesh->SetMaterial(0, CorpoMaterial.Object);

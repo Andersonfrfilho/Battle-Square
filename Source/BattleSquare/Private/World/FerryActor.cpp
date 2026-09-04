@@ -10,7 +10,7 @@
 
 namespace Balsa
 {
-	const TCHAR* MalhaDoConves = TEXT("/Engine/BasicShapes/Cube.Cube");
+	const TCHAR* MalhaDoConves = ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cube);
 
 	/**
 	 * Quanto ela flutua acima da lâmina.

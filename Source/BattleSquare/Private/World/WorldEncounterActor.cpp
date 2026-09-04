@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "World/WorldEncounterActor.h"
+#include "Environment/ScenaryPalette.h"
 #include "Components/StaticMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
@@ -19,7 +20,7 @@ AWorldEncounterActor::AWorldEncounterActor()
 	// defeito de APetView, que custou horas: a lógica passa em todos os testes
 	// justamente porque nenhum deles olha a tela.
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CorpoMesh(
-		TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+		ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Sphere));
 	if (CorpoMesh.Succeeded())
 	{
 		EncounterMesh->SetStaticMesh(CorpoMesh.Object);
@@ -31,7 +32,7 @@ AWorldEncounterActor::AWorldEncounterActor()
 	}
 
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> CorpoMaterial(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+		ScenaryPalette::ColorableBaseMaterialPath());
 	if (CorpoMaterial.Succeeded())
 	{
 		EncounterMesh->SetMaterial(0, CorpoMaterial.Object);

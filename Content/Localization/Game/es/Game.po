@@ -4,8 +4,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Game\n"
-"POT-Creation-Date: 2026-09-04 14:52\n"
-"PO-Revision-Date: 2026-09-04 14:52\n"
+"POT-Creation-Date: 2026-09-04 16:00\n"
+"PO-Revision-Date: 2026-09-04 16:00\n"
 "Language-Team: \n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
@@ -893,6 +893,111 @@ msgstr ""
 #: Source/BattleSquare/Private/World/MountEligibility.cpp(14)
 msgctxt "MountEligibility,NaoMontavel"
 msgid "este pet não pode ser montado"
+msgstr ""
+
+#. Key:	Madeira
+#. SourceLocation:	Source/BattleSquare/Private/World/ResourceCatalog.cpp(11)
+#: Source/BattleSquare/Private/World/ResourceCatalog.cpp(11)
+msgctxt "ResourceCatalog,Madeira"
+msgid "madeira"
+msgstr ""
+
+#. Key:	Pedra
+#. SourceLocation:	Source/BattleSquare/Private/World/ResourceCatalog.cpp(12)
+#: Source/BattleSquare/Private/World/ResourceCatalog.cpp(12)
+msgctxt "ResourceCatalog,Pedra"
+msgid "pedra"
+msgstr ""
+
+#. Key:	Fruta
+#. SourceLocation:	Source/BattleSquare/Private/World/ResourceCatalog.cpp(13)
+#: Source/BattleSquare/Private/World/ResourceCatalog.cpp(13)
+msgctxt "ResourceCatalog,Fruta"
+msgid "fruta"
+msgstr ""
+
+#. Key:	Flor
+#. SourceLocation:	Source/BattleSquare/Private/World/ResourceCatalog.cpp(14)
+#: Source/BattleSquare/Private/World/ResourceCatalog.cpp(14)
+msgctxt "ResourceCatalog,Flor"
+msgid "flor"
+msgstr ""
+
+#. Key:	Fibra
+#. SourceLocation:	Source/BattleSquare/Private/World/ResourceCatalog.cpp(15)
+#: Source/BattleSquare/Private/World/ResourceCatalog.cpp(15)
+msgctxt "ResourceCatalog,Fibra"
+msgid "fibra"
+msgstr ""
+
+#. Key:	Cogumelo
+#. SourceLocation:	Source/BattleSquare/Private/World/ResourceCatalog.cpp(16)
+#: Source/BattleSquare/Private/World/ResourceCatalog.cpp(16)
+msgctxt "ResourceCatalog,Cogumelo"
+msgid "cogumelo"
+msgstr ""
+
+#. Key:	Minerio
+#. SourceLocation:	Source/BattleSquare/Private/World/ResourceCatalog.cpp(17)
+#: Source/BattleSquare/Private/World/ResourceCatalog.cpp(17)
+msgctxt "ResourceCatalog,Minerio"
+msgid "minério"
+msgstr ""
+
+#. Key:	Cristal
+#. SourceLocation:	Source/BattleSquare/Private/World/ResourceCatalog.cpp(18)
+#: Source/BattleSquare/Private/World/ResourceCatalog.cpp(18)
+msgctxt "ResourceCatalog,Cristal"
+msgid "cristal"
+msgstr ""
+
+#. Key:	Mel
+#. SourceLocation:	Source/BattleSquare/Private/World/ResourceCatalog.cpp(19)
+#: Source/BattleSquare/Private/World/ResourceCatalog.cpp(19)
+msgctxt "ResourceCatalog,Mel"
+msgid "mel"
+msgstr ""
+
+#. Key:	Peixe
+#. SourceLocation:	Source/BattleSquare/Private/World/ResourceCatalog.cpp(20)
+#: Source/BattleSquare/Private/World/ResourceCatalog.cpp(20)
+msgctxt "ResourceCatalog,Peixe"
+msgid "peixe"
+msgstr ""
+
+#. Key:	Argila
+#. SourceLocation:	Source/BattleSquare/Private/World/ResourceCatalog.cpp(21)
+#: Source/BattleSquare/Private/World/ResourceCatalog.cpp(21)
+msgctxt "ResourceCatalog,Argila"
+msgid "argila"
+msgstr ""
+
+#. Key:	Sal
+#. SourceLocation:	Source/BattleSquare/Private/World/ResourceCatalog.cpp(22)
+#: Source/BattleSquare/Private/World/ResourceCatalog.cpp(22)
+msgctxt "ResourceCatalog,Sal"
+msgid "sal"
+msgstr ""
+
+#. Key:	Agua
+#. SourceLocation:	Source/BattleSquare/Private/World/ResourceCatalog.cpp(23)
+#: Source/BattleSquare/Private/World/ResourceCatalog.cpp(23)
+msgctxt "ResourceCatalog,Agua"
+msgid "água"
+msgstr ""
+
+#. Key:	Gelo
+#. SourceLocation:	Source/BattleSquare/Private/World/ResourceCatalog.cpp(24)
+#: Source/BattleSquare/Private/World/ResourceCatalog.cpp(24)
+msgctxt "ResourceCatalog,Gelo"
+msgid "gelo"
+msgstr ""
+
+#. Key:	Desconhecido
+#. SourceLocation:	Source/BattleSquare/Private/World/ResourceCatalog.cpp(25)
+#: Source/BattleSquare/Private/World/ResourceCatalog.cpp(25)
+msgctxt "ResourceCatalog,Desconhecido"
+msgid "recurso"
 msgstr ""
 
 #. Key:	SeusItens

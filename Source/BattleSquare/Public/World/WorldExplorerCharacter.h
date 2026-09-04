@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "World/ResourceCatalog.h"
 #include "WorldExplorerCharacter.generated.h"
 
 class UCameraComponent;
@@ -166,6 +167,15 @@ private:
 
 	/** O pet candidato a montaria pode ser montado? (MT4) Default nao — exige dado explicito. */
 	bool bCurrentPetMountable = false;
+
+	/** A ferramenta em maos para colher (MV7). Machado por padrao — cortar arvore. */
+	EGatherTool CurrentTool = EGatherTool::Machado;
+
+	/** Tem pet por perto ajudando a colher (MV7, decisao 68-c)? */
+	bool bPetNearbyToGather = false;
+
+	/** Quanta madeira o jogador ja juntou (MV7). */
+	int32 GatheredWood = 0;
 
 	/** Peso do pet montado (MT3). Default = referencia -> multiplicador neutro. */
 	float MountedPetWeight = 0.0f;

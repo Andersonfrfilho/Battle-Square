@@ -18,6 +18,8 @@
 #include "World/MountedMovement.h"
 #include "World/MountFatigue.h"
 #include "World/MountEligibility.h"
+#include "World/ResourceCatalog.h"
+#include "World/ResourceGathering.h"
 #include "Environment/IslandGeography.h"
 #include "Net/BattleSquareGameMode.h"
 #include "Environment/RegionResidency.h"
@@ -350,6 +352,24 @@ void AWorldExplorerCharacter::StrikeForward()
 			const FString CellKey = WorldCellKey::CellKeyOf(Onde, Modo->WorldSceneryCellSizeUnits);
 			Modo->RecordTreeCutInBackground(ChunkKey, CellKey);
 		}
+	}
+
+	// A ARVORE DERRUBADA RENDE MADEIRA (MV7, decisao 68): quanto depende da
+	// ferramenta (machado) e de o pet ajudar (68-c) — pela regra pura da
+	// colheita, nao por uma conta solta aqui.
+	if (bCaiu)
+	{
+		ResourceGathering::FGatherContext Contexto;
+		Contexto.Tool = CurrentTool;
+		Contexto.bPetHelps = bPetNearbyToGather;
+		const int32 Colhido = ResourceGathering::Yield(EWorldResource::Madeira, Contexto);
+		GatheredWood += Colhido;
+		FBattleDebugScreen::Show(
+			Colhido > 0
+				? *FString::Printf(TEXT("colheu %d de madeira (total: %d)%s"),
+					Colhido, GatheredWood, bPetNearbyToGather ? TEXT(" — o pet ajudou") : TEXT(""))
+				: TEXT("sem machado: a arvore caiu, mas nao rendeu madeira"),
+			3.0f, FColor(200, 170, 120), /*Key=*/734);
 	}
 }
 

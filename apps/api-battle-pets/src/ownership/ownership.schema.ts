@@ -59,6 +59,14 @@ export const ownedPets = pgTable(
       onDelete: 'set null',
     }),
 
+    /**
+     * A IDADE DO MUNDO em que o pet nasceu (MV6, decisao 33). A idade do pet e
+     * "idade do mundo agora - este carimbo" — offline-safe por construcao, o
+     * mesmo padrao da idade do mundo (MV1). Nao e createdAt (relogio de
+     * parede): o envelhecimento corre no tempo do MUNDO, nao no do servidor.
+     */
+    genesisWorldAgeDays: integer('genesis_world_age_days').notNull().default(0),
+
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },

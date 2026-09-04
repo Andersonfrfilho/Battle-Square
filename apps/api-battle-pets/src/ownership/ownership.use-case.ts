@@ -82,7 +82,7 @@ export type CaptureResult =
   | { kind: 'collection-full'; cap: number };
 
 export async function registerCapture(
-  params: { ownerAccountId: string; catalogId: string; cap: number },
+  params: { ownerAccountId: string; catalogId: string; cap: number; genesisWorldAgeDays?: number },
   database: Database = db,
 ): Promise<CaptureResult> {
   return database.transaction(async (tx) => {
@@ -106,6 +106,7 @@ export async function registerCapture(
         ownerAccountId: params.ownerAccountId,
         catalogId: params.catalogId,
         acquisition: AcquisitionKind.CAPTURED,
+        genesisWorldAgeDays: params.genesisWorldAgeDays ?? 0,
       })
       .onConflictDoNothing({
         target: [ownedPets.ownerAccountId, ownedPets.catalogId],

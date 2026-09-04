@@ -2,6 +2,7 @@
 
 import { authenticate } from '../auth/auth.middleware';
 import { environment } from '../config/environment';
+import { getWorldAge } from '../world/world.use-case';
 import * as OwnershipUseCase from './ownership.use-case';
 import { captureBodySchema, listOwnedQuerySchema, stealBodySchema } from './ownership.validation';
 
@@ -115,10 +116,14 @@ export async function handleRegisterCapture(request: Request): Promise<Response>
     return jsonError(400, 'VALIDATION_ERROR', 'Payload inválido');
   }
 
+  // O pet nasce carimbado com a idade do mundo (MV6): a idade dele e sempre
+  // "idade do mundo agora - este carimbo", offline-safe como a da mata.
+  const world = await getWorldAge();
   const result = await OwnershipUseCase.registerCapture({
     ownerAccountId: auth.accountId,
     catalogId: parsed.data.catalogId,
     cap: environment.COLLECTION_CAP,
+    genesisWorldAgeDays: world.ageInDays,
   });
 
   switch (result.kind) {

@@ -28,7 +28,7 @@ CC0 já baixados — **sem editar C++**, porque o slot dirigido por dado
 ## PRONTO é isto, e nada menos
 
 - [x] **AR1** — os packs baixados e extraídos, e os 50 monstros importados
-- [⛔] **AR2** — o RESTO das criaturas importado como SkeletalMesh, com animação:
+- [x] **AR2** — o RESTO das criaturas importado como SkeletalMesh, com animação:
       Cute Animated Monsters (21), Cute Fish (52), Animated Fish (7), Animated
       Monster (4), KayKit Skeletons (32), KayKit Adventurers (70). Nomes
       desambiguados quando repetem entre pastas — importar por cima em silêncio

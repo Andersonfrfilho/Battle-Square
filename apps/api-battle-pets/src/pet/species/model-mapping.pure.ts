@@ -133,6 +133,10 @@ export function stageFromModelName(modelName: string): Stage {
  */
 const NON_CREATURE_TOKENS = [
   'rig', 'lure', 'dock', 'boat', 'prop', 'anim', 'skeleton_rig', 'socket',
+  // Medidos no import de 04/09, que escaparam da primeira lista: o Cute Fish
+  // traz `FishingRod_Lvl1..5` (vara de pesca), e barco/doca ja estavam. Cada
+  // token aqui veio de um arquivo REAL que quase entrou como bicho.
+  'rod', 'fishingrod', 'crate', 'barrel', 'chest',
 ] as const;
 
 /** Este arquivo e uma CRIATURA, ou e rig/prop/cenario que entrou junto? */

@@ -116,6 +116,14 @@ describe('o que NAO e criatura', () => {
     expect(modelos.map((m) => m.modelName)).toEqual(['Goldfish']);
   });
 
+  test('a vara de pesca nao e bicho — medido no import real', () => {
+    // `FishingRod_Lvl1..5` escaparam da primeira lista e quase entraram como
+    // criatura no import de 04/09. Token, nao substring: `Rod` casa, e nenhum
+    // peixe se chama assim.
+    const modelos = classifyModels(['FishingRod_Lvl1', 'Clownfish', 'FishingRod_Lvl5']);
+    expect(modelos.map((m) => m.modelName)).toEqual(['Clownfish']);
+  });
+
   test('CONTRAPESO: nao corta bicho por acidente de substring', () => {
     // "Frigate" contem "rig", e e (hipoteticamente) um bicho. Token exato salva.
     expect(isCreature('Frigate')).toBe(true);

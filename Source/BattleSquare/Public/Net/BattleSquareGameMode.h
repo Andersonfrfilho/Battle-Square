@@ -501,6 +501,18 @@ private:
 	/** Dispara a busca da posse em FUNDO. Falha não trava nada. */
 	void RefreshOwnershipInBackground();
 
+	/**
+	 * Enfileira as capturas locais que o servidor ainda não conhece (PS8).
+	 *
+	 * A captura já aconteceu no jogo; isto só marca o EFEITO externo pendente.
+	 * Chamado ao entrar no mundo e depois de cada batalha — a fila é o que
+	 * sobrevive ao processo cair antes de a captura subir.
+	 */
+	void EnqueueUnsyncedCaptures();
+
+	/** Sobe a fila de capturas em FUNDO, uma por vez. Falha retenta com teto. */
+	void FlushCaptureQueueInBackground();
+
 	/** Tipo por id do catálogo, para a predominância por lugar (decisão 62). */
 	TMap<FString, FString> CatalogTypeById;
 	float TrainingCarrySeconds = 0.0f;

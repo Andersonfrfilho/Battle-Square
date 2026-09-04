@@ -85,6 +85,7 @@
 #include "Meta/TrainerSpecialtyRules.h"
 #include "Battle/AutoBattleResolver.h"
 #include "Meta/LeadershipRules.h"
+#include "Meta/CaptureQueueRules.h"
 #include "Meta/OwnershipCache.h"
 #include "Meta/PetHealthRules.h"
 #include "Meta/PlayStyleRules.h"
@@ -454,6 +455,11 @@ FString ABattleSquareGameMode::SetUpWorldEncounterFlow()
 	// chegar, continua jogável. Backend fora do ar não impede jogar (decisão
 	// 38-b, e a lembrança do dono: offline é normal).
 	RefreshOwnershipInBackground();
+
+	// E as capturas que ficaram para trás sobem (PS8): capturar offline
+	// gravou local e enfileirou; aqui a fila drena quando a rede volta.
+	EnqueueUnsyncedCaptures();
+	FlushCaptureQueueInBackground();
 
 	if (WorldStatusRefreshSeconds > 0.0f)
 	{
@@ -930,6 +936,11 @@ void ABattleSquareGameMode::HandleWorldBattleFinished(ABattleArena* Arena)
 	// luta — e o jogador veria o ganho passar na tela da batalha e sumir.
 	ReloadOwnedPetSnapshot();
 
+	// A batalha pode ter CAPTURADO: enfileira o que o servidor não conhece e
+	// tenta subir (PS8). Offline, fica na fila e sobe na próxima chance.
+	EnqueueUnsyncedCaptures();
+	FlushCaptureQueueInBackground();
+
 	// De volta ao mundo: cursor escondido e input de jogo, senão o explorador
 	// nasce sem responder e parece que a transição quebrou.
 	if (APlayerController* PlayerController = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr)
@@ -1125,6 +1136,107 @@ void ABattleSquareGameMode::SpawnStartingVillage()
 		FString::Printf(TEXT("regiao: %d assentamentos, %d predios, %d portas, %d campos, %d moradores"),
 			Erguidos, Predios, Portas, CamposDePatio, Moradores),
 		0.0f, FColor(200, 180, 120), /*Key=*/744);
+}
+
+void ABattleSquareGameMode::EnqueueUnsyncedCaptures()
+{
+	// Sem conta, nada sobe — e nada se enfileira: a fila é para quem tem para
+	// onde subir. Offline puro nunca acumula pendência que nunca vai drenar.
+	if (PlayerAccountId.IsEmpty())
+	{
+		return;
+	}
+
+	// O que o servidor JÁ conhece não precisa subir de novo — o cache da PS7
+	// é a resposta. Um `Set` para a diferença ser O(1) por pet, não O(n²).
+	TSet<FString> JaNoServidor;
+	for (const OwnershipCache::FKnownPet& Pet : KnownOwnership.Pets)
+	{
+		JaNoServidor.Add(Pet.CatalogId);
+	}
+
+	for (const FOwnedPetInstance& Local :
+		FPetCollectionService::LoadCollection(PetCollectionSlotName))
+	{
+		if (!JaNoServidor.Contains(Local.CatalogId))
+		{
+			// A chave de idempotência é (conta, catálogo): a mesma captura,
+			// reenviada de qualquer sessão, carrega a mesma chave — e o
+			// servidor descarta a repetição (PS4).
+			CaptureQueueRules::Enqueue(CachedTrainer.PendingCaptures, Local.CatalogId,
+				FString::Printf(TEXT("%s:%s"), *PlayerAccountId, *Local.CatalogId));
+		}
+	}
+
+	FPetCollectionService::SaveTrainerProfile(PetCollectionSlotName, CachedTrainer);
+}
+
+void ABattleSquareGameMode::FlushCaptureQueueInBackground()
+{
+	if (PlayerAccountId.IsEmpty() || PlayerAccessToken.IsEmpty() || OwnershipApiUrl.IsEmpty())
+	{
+		return;
+	}
+
+	// Uma por chamada: subir a fila inteira de uma vez seria uma rajada de
+	// requisições ao voltar de um longo offline. A próxima entrada no mundo,
+	// ou o fim da próxima batalha, drena a seguinte — a fila esvazia devagar,
+	// e devagar é o certo para efeito externo.
+	const TArray<FPendingCapture> Podem =
+		CaptureQueueRules::Sendable(CachedTrainer.PendingCaptures);
+	if (Podem.Num() == 0)
+	{
+		return;
+	}
+
+	const FPendingCapture Captura = Podem[0];
+
+	const TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Pedido =
+		FHttpModule::Get().CreateRequest();
+	Pedido->SetURL(OwnershipApiUrl / TEXT("v1/my/pets/captures"));
+	Pedido->SetVerb(TEXT("POST"));
+	Pedido->SetHeader(TEXT("Authorization"),
+		FString::Printf(TEXT("Bearer %s"), *PlayerAccessToken));
+	Pedido->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
+	// A chave de idempotência no header (security.md §6): o servidor a usa
+	// para descartar a repetição de um envio que a resposta não confirmou.
+	Pedido->SetHeader(TEXT("Idempotency-Key"), Captura.IdempotencyKey);
+	Pedido->SetContentAsString(
+		FString::Printf(TEXT("{\"catalogId\":\"%s\"}"), *Captura.CatalogId));
+	Pedido->SetTimeout(5.0f);
+
+	const FString CatalogId = Captura.CatalogId;
+	TWeakObjectPtr<ABattleSquareGameMode> Fraco(this);
+	Pedido->OnProcessRequestComplete().BindLambda(
+		[Fraco, CatalogId](FHttpRequestPtr, FHttpResponsePtr Resposta, bool bOk)
+		{
+			ABattleSquareGameMode* Eu = Fraco.Get();
+			if (!Eu)
+			{
+				return;
+			}
+
+			// 200 (já era) e 201 (subiu agora) são os DOIS sucessos: a
+			// idempotência da rota (PS4) faz o reenvio responder 200, e para
+			// a fila os dois significam "está lá, pode sair".
+			const int32 Codigo = Resposta.IsValid() ? Resposta->GetResponseCode() : 0;
+			if (bOk && (Codigo == 200 || Codigo == 201))
+			{
+				CaptureQueueRules::MarkSent(Eu->CachedTrainer.PendingCaptures, CatalogId);
+			}
+			else
+			{
+				// Falha conta uma tentativa. Estourou o teto → fica na fila
+				// como ABANDONADA, e PS10 a mostra: fila que retenta para
+				// sempre em silêncio é progresso perdido que ninguém vê.
+				CaptureQueueRules::RegisterAttempt(Eu->CachedTrainer.PendingCaptures, CatalogId);
+			}
+
+			FPetCollectionService::SaveTrainerProfile(
+				Eu->PetCollectionSlotName, Eu->CachedTrainer);
+		});
+
+	Pedido->ProcessRequest();
 }
 
 void ABattleSquareGameMode::RefreshOwnershipInBackground()

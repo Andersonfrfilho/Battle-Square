@@ -127,6 +127,36 @@ struct BATTLESQUARE_API FStyleTransition
 };
 
 /**
+ * UMA captura ESPERANDO subir ao servidor (posse-no-servidor, PS8).
+ *
+ * A captura offline não pode morrer com o processo: ela vira uma linha aqui, no
+ * mesmo save da coleção, e sobe quando a rede voltar. `AttemptCount` é o teto
+ * de tentativas — fila que retenta para sempre em silêncio é progresso perdido
+ * que ninguém sabe que perdeu, e o dono do pet é o último a descobrir (PS10).
+ */
+USTRUCT()
+struct BATTLESQUARE_API FPendingCapture
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FString CatalogId;
+
+	/**
+	 * A CHAVE DE IDEMPOTÊNCIA (security.md §6): a mesma captura reenviada
+	 * carrega a mesma chave, e o servidor descarta a repetição. Sem ela, um
+	 * retry depois de um sucesso que a resposta não confirmou criaria uma
+	 * segunda escrita — a duplicata que a fila existe para não ter.
+	 */
+	UPROPERTY()
+	FString IdempotencyKey;
+
+	/** Quantas vezes já se tentou subir. Estourou o teto: para e APARECE. */
+	UPROPERTY()
+	int32 AttemptCount = 0;
+};
+
+/**
  * O quanto o jogador JÁ CONHECE um morador (decisão 15).
  *
  * Mora no perfil do TREINADOR porque a relação é do jogador, não do mundo:
@@ -262,6 +292,13 @@ struct BATTLESQUARE_API FTrainerProfile
 	 */
 	UPROPERTY()
 	TArray<FStyleTransition> StyleTransitions;
+
+	/**
+	 * As capturas que ainda não subiram (PS8). Vazio no caso normal e no save
+	 * antigo — nada a sincronizar é o estado de quem sempre jogou local.
+	 */
+	UPROPERTY()
+	TArray<FPendingCapture> PendingCaptures;
 };
 
 /**

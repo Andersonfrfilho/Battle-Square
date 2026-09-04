@@ -4,8 +4,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Game\n"
-"POT-Creation-Date: 2026-09-04 02:17\n"
-"PO-Revision-Date: 2026-09-04 02:17\n"
+"POT-Creation-Date: 2026-09-04 12:00\n"
+"PO-Revision-Date: 2026-09-04 12:00\n"
 "Language-Team: \n"
 "Language: pt-BR\n"
 "MIME-Version: 1.0\n"
@@ -161,36 +161,36 @@ msgid "Ações: 0 de 3 — escolha o tipo"
 msgstr "Ações: 0 de 3 — escolha o tipo"
 
 #. Key:	AtributoSubiu
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1726)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1726)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1744)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1744)
 msgctxt "PetAttributes,AtributoSubiu"
 msgid "{Pet}: {Atributo} {Antes} → {Depois}"
 msgstr "{Pet}: {Atributo} {Antes} → {Depois}"
 
 #. Key:	GolpeDesbloqueado
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1759)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1759)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1777)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1777)
 msgctxt "PetAttributes,GolpeDesbloqueado"
 msgid "{Pet} desbloqueou {Golpe}!"
 msgstr "{Pet} desbloqueou {Golpe}!"
 
 #. Key:	GolpeUsado
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2428)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2428)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2446)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2446)
 msgctxt "BattleNarration,GolpeUsado"
 msgid "— usou {Move}"
 msgstr "— usou {Move}"
 
 #. Key:	SuperEfetivo
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2441)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2441)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2459)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2459)
 msgctxt "BattleNarration,SuperEfetivo"
 msgid "É super efetivo!"
 msgstr "É super efetivo!"
 
 #. Key:	PoucoEfetivo
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2447)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2447)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2465)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2465)
 msgctxt "BattleNarration,PoucoEfetivo"
 msgid "Não é muito efetivo..."
 msgstr "Não é muito efetivo..."
@@ -635,6 +635,41 @@ msgstr "Voo"
 msgctxt "PetAttributes,Subsolo"
 msgid "Subsolo"
 msgstr "Subsolo"
+
+#. Key:	ForcaRonda
+#. SourceLocation:	Source/BattleSquare/Private/Meta/PoliceEscalation.cpp(34)
+#: Source/BattleSquare/Private/Meta/PoliceEscalation.cpp(34)
+msgctxt "PoliceEscalation,ForcaRonda"
+msgid "Ronda"
+msgstr "Ronda"
+
+#. Key:	ForcaOstensiva
+#. SourceLocation:	Source/BattleSquare/Private/Meta/PoliceEscalation.cpp(36)
+#: Source/BattleSquare/Private/Meta/PoliceEscalation.cpp(36)
+msgctxt "PoliceEscalation,ForcaOstensiva"
+msgid "Polícia Ostensiva"
+msgstr "Polícia Ostensiva"
+
+#. Key:	ForcaInvestigadora
+#. SourceLocation:	Source/BattleSquare/Private/Meta/PoliceEscalation.cpp(38)
+#: Source/BattleSquare/Private/Meta/PoliceEscalation.cpp(38)
+msgctxt "PoliceEscalation,ForcaInvestigadora"
+msgid "Investigação"
+msgstr "Investigação"
+
+#. Key:	ForcaElite
+#. SourceLocation:	Source/BattleSquare/Private/Meta/PoliceEscalation.cpp(40)
+#: Source/BattleSquare/Private/Meta/PoliceEscalation.cpp(40)
+msgctxt "PoliceEscalation,ForcaElite"
+msgid "Tropa de Elite"
+msgstr "Tropa de Elite"
+
+#. Key:	ForcaFederal
+#. SourceLocation:	Source/BattleSquare/Private/Meta/PoliceEscalation.cpp(42)
+#: Source/BattleSquare/Private/Meta/PoliceEscalation.cpp(42)
+msgctxt "PoliceEscalation,ForcaFederal"
+msgid "Tropa Federal"
+msgstr "Tropa Federal"
 
 #. Key:	Committed
 #. SourceLocation:	Source/BattleSquare/Private/UI/BattleActionSelectorWidget.cpp(164)

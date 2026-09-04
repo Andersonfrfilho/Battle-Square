@@ -194,7 +194,15 @@ suspeito derrota eleva o nível do PRÓXIMO enviado — o calor sobe a cada
 vitória sobre a lei, nunca desce sozinho. O primeiro policial vem no nível do
 próprio suspeito (briga justa); a partir daí, cada derrota da lei soma um
 degrau à força do reforço seguinte. O calor é contado das DERROTAS, não do
-relógio: dois suspeitos com o mesmo histórico enfrentam a mesma polícia.
+relógio: dois suspeitos com o mesmo histórico enfrentam a mesma polícia. 
+
+**28-c. A polícia anda em DOIS, e o que escala é o TIPO de força (04/09).**
+Todo destacamento é uma dupla — nunca um policial solitário. O que o calor
+sobe é a PATENTE da força enviada, numa escada de cinco: **ronda → ostensiva →
+investigadora → tropa de elite → tropa federal**. Cada derrota da lei sobe um
+degrau; a escada TERMINA na federal (topo), mas dali o nível dos pets continua
+subindo — federal nunca vira briga fácil. O primeiro destacamento é uma dupla
+de ronda no nível do suspeito.
 
 **29–31. O envelhecimento corre offline** — e **a prisão tem o que fazer
 dentro.** 🆕

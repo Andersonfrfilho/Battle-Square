@@ -31,34 +31,56 @@ bool FPoliceEscalatesWithDefeatsTest::RunTest(const FString&)
 
 	const int32 SuspectLevel = 10;
 
-	// O PRIMEIRO reforço vem no nível do suspeito — briga justa, degrau 0.
+	// O PRIMEIRO destacamento: dupla de RONDA, no nível do suspeito, degrau 0.
 	FPoliceForce SemDerrota;
 	SemDerrota.CopsDefeatedBySuspect = 0;
 	FReinforcement Primeiro = NextReinforcement(SemDerrota, SuspectLevel);
-	TestEqual(TEXT("o primeiro reforco e par a par"), Primeiro.Tier, 0);
+	TestEqual(TEXT("o primeiro destacamento e par a par"), Primeiro.Tier, 0);
 	TestEqual(TEXT("o primeiro pet vem no nivel do suspeito"),
 		Primeiro.PetLevel, SuspectLevel);
+	TestTrue(TEXT("o primeiro tipo e a ronda"),
+		Primeiro.Type == EPoliceForceType::Ronda);
+	TestEqual(TEXT("a policia anda SEMPRE em dois"),
+		Primeiro.OfficerCount, 2);
 
-	// A CADA derrota, o próximo sobe um degrau — a espinha do pedido do usuário.
-	int32 NivelAnterior = Primeiro.PetLevel;
-	for (int32 Derrotas = 1; Derrotas <= 5; ++Derrotas)
+	// A ESCADA DE TIPOS (decisão 28-c): cada derrota sobe uma patente, na ordem.
+	const EPoliceForceType Escada[] = {
+		EPoliceForceType::Ronda,
+		EPoliceForceType::Ostensiva,
+		EPoliceForceType::Investigadora,
+		EPoliceForceType::Elite,
+		EPoliceForceType::Federal,
+	};
+	int32 NivelAnterior = -1;
+	for (int32 Derrotas = 0; Derrotas < 5; ++Derrotas)
 	{
 		FPoliceForce Force;
 		Force.CopsDefeatedBySuspect = Derrotas;
 		FReinforcement Reforco = NextReinforcement(Force, SuspectLevel);
-
-		TestEqual(TEXT("o degrau acompanha a contagem de derrotas"),
-			Reforco.Tier, Derrotas);
+		TestTrue(TEXT("a patente sobe na ordem da escada"),
+			Reforco.Type == Escada[Derrotas]);
 		TestTrue(TEXT("cada derrota deixa o proximo ESTRITAMENTE mais forte"),
 			Reforco.PetLevel > NivelAnterior);
+		TestEqual(TEXT("todo destacamento e uma dupla"), Reforco.OfficerCount, 2);
 		NivelAnterior = Reforco.PetLevel;
 	}
 
+	// O TOPO: a escada TRAVA na federal, mas o nivel dos pets segue subindo —
+	// federal nunca vira briga facil.
+	FPoliceForce Muitas; Muitas.CopsDefeatedBySuspect = 9;
+	FReinforcement AlemDoTopo = NextReinforcement(Muitas, SuspectLevel);
+	TestTrue(TEXT("acima do topo a patente TRAVA na federal"),
+		AlemDoTopo.Type == EPoliceForceType::Federal);
+	TestTrue(TEXT("mas o nivel dos pets continua subindo alem do topo"),
+		AlemDoTopo.PetLevel > NextReinforcement(
+			[]{ FPoliceForce F; F.CopsDefeatedBySuspect = 4; return F; }(),
+			SuspectLevel).PetLevel);
+
 	// DETERMINÍSTICO: mesmo histórico, mesma polícia — sem relógio no meio.
 	FPoliceForce Tres; Tres.CopsDefeatedBySuspect = 3;
-	TestEqual(TEXT("mesmo historico produz o mesmo reforco"),
-		NextReinforcement(Tres, SuspectLevel).PetLevel,
-		NextReinforcement(Tres, SuspectLevel).PetLevel);
+	TestTrue(TEXT("mesmo historico produz a mesma patente"),
+		NextReinforcement(Tres, SuspectLevel).Type ==
+		NextReinforcement(Tres, SuspectLevel).Type);
 
 	return true;
 }

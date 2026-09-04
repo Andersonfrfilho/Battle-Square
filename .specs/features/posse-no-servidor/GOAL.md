@@ -28,7 +28,7 @@ ser uma pergunta sobre a CONTA.**
 - [x] **PS3** — a autorização é por OBJETO, com teste negativo de isolamento
 - [x] **PS4** — as rotas da posse existem, e a captura é idempotente
 - [x] **PS5** — o lado da batalha passa a ter CONTA, sem tocar em rede
-- [ ] **PS6** — o jogo pode falar HTTP, e o núcleo continua sem alcançá-lo
+- [x] **PS6** — o jogo pode falar HTTP, e o núcleo continua sem alcançá-lo
 - [ ] **PS7** — ler a coleção fora da batalha, e backend fora do ar não impede jogar
 - [ ] **PS8** — a captura viaja por fila, e sobe uma vez só
 - [ ] **PS9** — quem já joga migra sem perder nada, e a migração é repetível

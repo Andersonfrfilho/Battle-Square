@@ -15,7 +15,7 @@ tela.
 
 - [x] **MT1** — andar montado é mais rápido que a pé no MESMO trecho de
   ladeira, respeitando a proporção de custo subida/descida que já existe
-- [⛔] **MT2** — subir acumula cansaço mais rápido que descer, num valor novo
+- [x] **MT2** — subir acumula cansaço mais rápido que descer, num valor novo
   e isolado, visível na tela
 - [⛔] **MT3** — pet mais pesado cansa mais no mesmo trajeto, mas nenhum
   trajeto fica impossível por peso

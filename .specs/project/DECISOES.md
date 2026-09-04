@@ -565,3 +565,26 @@ trabalhos. A mecânica é uma só, oferecida em Fazenda (8), Criadouro (4) e Pom
 (3) — o que muda de um para outro é **qual atributo do pet facilita**. Assim a
 CI9 continua sendo "um trabalho real", como a spec pede, e a liberdade é de
 escolha, não de quantidade.
+
+
+**68. OS RECURSOS DO MUNDO, e cada um vem de onde o mundo já o tem (04/09).**
+O que se coleta: **madeira** (árvore/bosque), **pedra** (rocha/montanha),
+**frutas** (pomar/árvore), **flores** (clareira/campo), **pets** (encontro), e
+mais o que o mundo já dá por bioma — **fibra** (planta/pântano), **cogumelo**
+(caverna/pântano, o lado Fantasma), **minério** (vulcão/caverna), **cristal**
+(caverna), **mel** (bosque), **peixe** (rio/água), **argila** (margem/pântano),
+**sal** (praia), **água** (poço/nascente) e **gelo** (geleira). A lista é fonte
+única em código; adicionar recurso é adicionar uma linha, nunca uma tabela nova.
+
+**68-b. A FERRAMENTA decide o que se colhe (decisão 36).** Mão vazia colhe o
+fácil (flor, fruta, cogumelo); o resto exige a ferramenta certa — machado para
+madeira, picareta para pedra/minério/cristal, vara para peixe, balde para água.
+Sem a ferramenta, o recurso aparece mas não rende.
+
+**68-c. O PET AJUDA A COLETAR (decisão 37).** Coletar com o pet por perto rende
+mais que o jogador sozinho — o pet é braço, não plateia. Sem pet, ainda se
+coleta, só menos.
+
+**68-d. O BOSQUE plantado é do ASSENTAMENTO (decisão 35); a mata selvagem é
+regulada.** Cortar livre no bosque que o assentamento plantou; na mata selvagem,
+o Guarda Florestal regula (o mesmo padrão exceção-com-prazo de MV3/MV4).

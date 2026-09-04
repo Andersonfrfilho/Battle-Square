@@ -27,11 +27,11 @@ mundo, e na próxima batalha em que o pet roubado aparecer.
 ## PRONTO é isto, e nada menos
 
 - [x] **CR1** — todo pet do mundo tem um dono explícito (ou "selvagem")
-- [~] **CR2** — roubo é consequência de batalha vencida, e é escolha do vencedor
-- [ ] **CR3** — toda transferência de posse por roubo grava trilha de auditoria
+- [x] **CR2** — roubo é consequência de batalha vencida, e é escolha do vencedor
+- [x] **CR3** — toda transferência de posse por roubo grava trilha de auditoria
 - [ ] **CR4** — o poste da praça mostra a lista de procurados
 - [ ] **CR5** — a recompensa é paga pelo criminoso, nunca do nada
-- [ ] **CR6** — pet marcado como roubado não pode ser vendido nem trocado
+- [x] **CR6** — pet marcado como roubado não pode ser vendido nem trocado
 - [ ] **CR7** — a marca de procurado sobrevive a desconectar
 - [ ] **CR8** — o pet roubado se denuncia numa batalha, só para quem viu a lista
 - [ ] **CR9** — a polícia patrulha, reage e prende

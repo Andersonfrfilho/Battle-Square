@@ -26,10 +26,10 @@ existiria sem componente. Nos dois casos, bateria verde e nada na tela.
 
 - [x] **MV1** — a linha de base MEDIDA: cada `FObjectFinder` de malha/material
       do projeto, com arquivo e linha, congelada antes de mexer
-- [⛔] **MV2** — nasce o dado: malha + material por PAPEL, num lugar só
-- [⛔] **MV3** — `ScenaryPalette` VIRA o ponto por onde o material é escolhido —
+- [x] **MV2** — nasce o dado: malha + material por PAPEL, num lugar só
+- [x] **MV3** — `ScenaryPalette` VIRA o ponto por onde o material é escolhido —
       não ganha uma irmã (L-032 pela quarta vez seria aqui)
-- [⛔] **MV4** — o primeiro ator migra (`APetView`), e o teste prova que a malha
+- [x] **MV4** — o primeiro ator migra (`APetView`), e o teste prova que a malha
       veio do DADO, não do construtor
 - [⛔] **MV5** — os atores de batalha migram (`PetOwnerView`, `BattleArena`)
 - [⛔] **MV6** — os atores de mundo migram (`Village`, `GroundUseActor`,

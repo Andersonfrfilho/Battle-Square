@@ -72,6 +72,13 @@ export async function handleGetMyPet(request: Request, petId: string): Promise<R
   }
 }
 
+export async function handleListWanted(request: Request): Promise<Response> {
+  const auth = requirePlayer(request);
+  if (!auth.ok) return auth.response;
+  const wanted = await OwnershipUseCase.listWantedAccounts();
+  return Response.json({ data: wanted });
+}
+
 export async function handleStealPet(request: Request, petId: string): Promise<Response> {
   const auth = requirePlayer(request);
   if (!auth.ok) return auth.response;

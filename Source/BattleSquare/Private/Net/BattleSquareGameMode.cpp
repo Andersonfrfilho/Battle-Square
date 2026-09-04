@@ -466,6 +466,9 @@ FString ABattleSquareGameMode::SetUpWorldEncounterFlow()
 	EnqueueUnsyncedCaptures();
 	FlushCaptureQueueInBackground();
 
+	// A lista de procurados (CR4), em fundo como tudo o mais.
+	RefreshWantedListInBackground();
+
 	if (WorldStatusRefreshSeconds > 0.0f)
 	{
 		World->GetTimerManager().SetTimer(WorldStatusTimer, this,
@@ -1191,6 +1194,77 @@ void ABattleSquareGameMode::MigrateCollectionToAccount()
 			FString::Printf(TEXT("migrando %d pets da colecao local para a sua conta"), Pendentes),
 			8.0f, FColor(180, 220, 255), /*Key=*/-1);
 	}
+}
+
+void ABattleSquareGameMode::RefreshWantedListInBackground()
+{
+	if (PlayerAccessToken.IsEmpty() || OwnershipApiUrl.IsEmpty())
+	{
+		return;
+	}
+
+	const TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Pedido =
+		FHttpModule::Get().CreateRequest();
+	Pedido->SetURL(OwnershipApiUrl / TEXT("v1/wanted"));
+	Pedido->SetVerb(TEXT("GET"));
+	Pedido->SetHeader(TEXT("Authorization"),
+		FString::Printf(TEXT("Bearer %s"), *PlayerAccessToken));
+	Pedido->SetTimeout(5.0f);
+
+	TWeakObjectPtr<ABattleSquareGameMode> Fraco(this);
+	Pedido->OnProcessRequestComplete().BindLambda(
+		[Fraco](FHttpRequestPtr, FHttpResponsePtr Resposta, bool bOk)
+		{
+			ABattleSquareGameMode* Eu = Fraco.Get();
+			if (!Eu || !bOk || !Resposta.IsValid() || Resposta->GetResponseCode() != 200)
+			{
+				// Falha mantém a última lista conhecida (fail-closed): a lista
+				// de procurados não some porque a rede caiu.
+				return;
+			}
+
+			TSharedPtr<FJsonObject> Json;
+			const TSharedRef<TJsonReader<>> Leitor =
+				TJsonReaderFactory<>::Create(Resposta->GetContentAsString());
+			const TArray<TSharedPtr<FJsonValue>>* Itens = nullptr;
+			if (FJsonSerializer::Deserialize(Leitor, Json) && Json.IsValid()
+				&& Json->TryGetArrayField(TEXT("data"), Itens))
+			{
+				TArray<FString> Novos;
+				for (const TSharedPtr<FJsonValue>& Item : *Itens)
+				{
+					Novos.Add(Item->AsString());
+				}
+				Eu->KnownWantedAccounts = Novos;
+			}
+		});
+
+	Pedido->ProcessRequest();
+}
+
+void ABattleSquareGameMode::MostrarPosteDeProcurados()
+{
+	// O poste conta QUANTOS há e SE VOCÊ está entre eles — nunca nomes nem
+	// e-mails (invariante 17). O jogador se reconhece pela própria conta; os
+	// outros são um número, porque a identidade real do procurado é aparência
+	// (decisão 23), que é feature própria.
+	if (KnownWantedAccounts.Num() == 0)
+	{
+		FBattleDebugScreen::Show(
+			TEXT("poste de procurados: ninguem procurado por aqui"),
+			8.0f, FColor(200, 200, 150), /*Key=*/771);
+		return;
+	}
+
+	const bool bEuProcurado = !PlayerAccountId.IsEmpty()
+		&& KnownWantedAccounts.Contains(PlayerAccountId);
+
+	FBattleDebugScreen::Show(
+		FString::Printf(TEXT("poste de procurados: %d na lista%s"),
+			KnownWantedAccounts.Num(),
+			bEuProcurado ? TEXT(" — e VOCE esta entre eles") : TEXT("")),
+		10.0f, bEuProcurado ? FColor(240, 120, 100) : FColor(220, 200, 255),
+		/*Key=*/771);
 }
 
 void ABattleSquareGameMode::EnqueueUnsyncedCaptures()
@@ -2210,6 +2284,13 @@ void ABattleSquareGameMode::AnunciarPortaCruzada(EVillageBuilding Predio,
 	if (Predio == EVillageBuilding::Escola && bHasCachedOwnedPet)
 	{
 		MostrarQuadroDeLicoes();
+	}
+
+	// O POSTE DA PRAÇA mostra a lista de procurados (CR4): a Praça é onde o
+	// mundo pendura o cartaz, e a CI2 já dispara ao entrar no lote dela.
+	if (Predio == EVillageBuilding::Praca)
+	{
+		MostrarPosteDeProcurados();
 	}
 
 	// A CASA TEM GENTE DENTRO (decisão 65): entrar apresenta o morador, e ele

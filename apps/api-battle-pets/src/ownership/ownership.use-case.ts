@@ -4,6 +4,7 @@ import { and, count, eq } from 'drizzle-orm';
 
 import { db } from '../db/client';
 import { transferOwnership, type PetOwnership } from './ownership.pure';
+import { wantedAccounts } from './wanted.pure';
 import { AcquisitionKind, ownedPets, ownershipAuditLog, type OwnedPet } from './ownership.schema';
 
 /**
@@ -224,4 +225,19 @@ export async function stealPet(
 
     return { kind: 'stolen', pet: updated! } as const;
   });
+}
+
+
+/**
+ * A LISTA DE PROCURADOS (CR4), derivada da trilha: as contas que roubaram
+ * mais de uma vez. Le o rastro e aplica a regra pura — a lista nao e um estado
+ * guardado, e uma consequencia do que aconteceu.
+ */
+export async function listWantedAccounts(database: Database = db): Promise<string[]> {
+  const thefts = await database
+    .select({ thiefAccountId: ownershipAuditLog.toAccountId })
+    .from(ownershipAuditLog)
+    .where(eq(ownershipAuditLog.action, 'theft'));
+
+  return wantedAccounts(thefts);
 }

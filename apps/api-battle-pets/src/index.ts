@@ -17,6 +17,7 @@ import {
   handleGetMyPet,
   handleListMyPets,
   handleRegisterCapture,
+  handleListWanted,
   handleStealPet,
 } from './ownership/ownership.controller';
 import {
@@ -112,6 +113,11 @@ const server = Bun.serve({
     const myPetMatch = url.pathname.match(myPetByIdPattern);
     if (myPetMatch?.[1] && request.method === 'GET') {
       return handleGetMyPet(request, myPetMatch[1]);
+    }
+
+    // A LISTA DE PROCURADOS (CR4): publica para quem tem conta.
+    if (url.pathname === '/v1/wanted' && request.method === 'GET') {
+      return handleListWanted(request);
     }
 
     // O ROUBO (CR2): NAO e /my/ — o pet e de OUTRO. O dono sai do token so

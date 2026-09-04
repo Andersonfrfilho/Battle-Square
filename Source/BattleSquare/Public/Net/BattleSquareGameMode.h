@@ -498,8 +498,21 @@ private:
 	/** A posse conhecida, atualizada em fundo — nunca no caminho crítico. */
 	OwnershipCache::FState KnownOwnership;
 
+	/**
+	 * As contas PROCURADAS (crime-e-recompensa, CR4), a última lista conhecida.
+	 * Buscada em fundo como a posse: o poste da praça a mostra, e ela nunca
+	 * bloqueia o jogo — sem rede, vale a última que se viu.
+	 */
+	TArray<FString> KnownWantedAccounts;
+
 	/** Dispara a busca da posse em FUNDO. Falha não trava nada. */
 	void RefreshOwnershipInBackground();
+
+	/** Dispara a busca da lista de procurados em FUNDO (CR4). */
+	void RefreshWantedListInBackground();
+
+	/** Mostra a lista de procurados no poste da praça (CR4). */
+	void MostrarPosteDeProcurados();
 
 	/**
 	 * Enfileira as capturas locais que o servidor ainda não conhece (PS8).

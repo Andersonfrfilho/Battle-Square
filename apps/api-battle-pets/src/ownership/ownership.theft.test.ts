@@ -11,7 +11,7 @@ import { beforeAll, describe, expect, test } from 'bun:test';
 import { playerAccounts } from '../account/account.schema';
 import { isStolen } from './ownership.pure';
 import { ownershipAuditLog } from './ownership.schema';
-import { registerCapture, stealPet } from './ownership.use-case';
+import { listWantedAccounts, registerCapture, stealPet } from './ownership.use-case';
 
 /**
  * CR2/CR3 no servidor — o roubo efetua e DEIXA RASTRO, num Postgres de verdade.
@@ -99,5 +99,24 @@ describe('a trilha de auditoria (CR3)', () => {
     for (const proibido of ['email', 'name', 'nome', 'password', 'message']) {
       expect(colunas).not.toContain(proibido);
     }
+  });
+});
+
+describe('a lista de procurados (CR4)', () => {
+  test('UM roubo nao procura; a REINCIDENCIA sim', async () => {
+    // O setup ja roubou fire-drake uma vez (ladrao). Um roubo so nao procura.
+    expect(await listWantedAccounts(database)).not.toContain(ladrao);
+
+    // O ladrao rouba de novo: um segundo pet de outra vitima. Agora e
+    // procurado — a reincidencia cruza o limiar.
+    const outro = await registerCapture(
+      { ownerAccountId: vitima, catalogId: 'moss-turtle-02', cap: 500 }, database);
+    if (outro.kind !== 'captured') throw new Error('setup do segundo pet falhou');
+
+    const segundoRoubo = await stealPet(
+      { petId: outro.pet.id, expectedOwnerAccountId: vitima, thiefAccountId: ladrao }, database);
+    expect(segundoRoubo.kind).toBe('stolen');
+
+    expect(await listWantedAccounts(database)).toContain(ladrao);
   });
 });

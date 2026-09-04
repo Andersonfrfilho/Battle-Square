@@ -33,11 +33,11 @@ ser uma pergunta sobre a CONTA.**
 - [x] **PS8** — a captura viaja por fila, e sobe uma vez só
 - [x] **PS9** — quem já joga migra sem perder nada, e a migração é repetível
 - [x] **PS10** — a posse na TELA, dizendo o que está pendente
-- [ ] **PS11** — capturar passa a exigir SEM DONO
-- [ ] O grep fora de `/Tests/` acha quem PERGUNTA de quem é o pet
-- [ ] Bateria completa verde — o total do dia em que a feature abrir (hoje **858**); o número só sobe
-- [ ] As cinco auditorias limpas, e as sondas de isolação reprovando de propósito
-- [ ] Um commit por task, cada um com o motivo — não só o quê
+- [x] **PS11** — capturar passa a exigir SEM DONO
+- [x] O grep fora de `/Tests/` acha quem PERGUNTA de quem é o pet
+- [x] Bateria completa verde — **953** em 03/09/2026
+- [x] As seis auditorias limpas, e as sondas de isolação reprovando de propósito
+- [x] Um commit por task, cada um com o motivo — não só o quê
 
 Enquanto qualquer caixa estiver aberta, o objetivo **continua**.
 

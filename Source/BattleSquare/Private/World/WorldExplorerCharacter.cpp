@@ -600,6 +600,28 @@ static FAutoConsoleCommandWithWorldAndArgs GMontarCommand(
 			Explorador->SetMounted(Args.Num() < 1 || Args[0].Equals(TEXT("on"), ESearchCase::IgnoreCase));
 		}));
 
+// MV10 — "de onde veio a malha": reporta os caminhos que a FONTE UNICA resolve.
+// Com isto, "nao apareceu" (componente sem malha) e "veio do lugar errado"
+// (caminho inesperado) viram perguntas diferentes, nao o mesmo silencio.
+static FAutoConsoleCommandWithWorld GMalhaDeOndeCommand(
+	TEXT("bs.MalhaDeOnde"),
+	TEXT("bs.MalhaDeOnde — mostra os caminhos de malha/material da fonte unica (ScenaryPalette)."),
+	FConsoleCommandWithWorldDelegate::CreateStatic(
+		[](UWorld*)
+		{
+			FBattleDebugScreen::Show(
+				FString::Printf(TEXT("malha (fonte unica): cubo=%s | cilindro=%s"),
+					ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cube),
+					ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cylinder)),
+				10.0f, FColor(180, 200, 220), /*Key=*/735);
+			FBattleDebugScreen::Show(
+				FString::Printf(TEXT("malha (fonte unica): esfera=%s | cone=%s | material=%s"),
+					ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Sphere),
+					ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cone),
+					ScenaryPalette::ColorableBaseMaterialPath()),
+				10.0f, FColor(180, 200, 220), /*Key=*/736);
+		}));
+
 // Marca o pet candidato como montavel (MT4, dev): sem isto, bs.Montar recusa.
 static FAutoConsoleCommandWithWorldAndArgs GPetMontavelCommand(
 	TEXT("bs.PetMontavel"),

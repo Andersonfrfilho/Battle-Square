@@ -101,7 +101,7 @@ APetView::APetView()
 	BuildCharacter();
 	BuildHealthBar();
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MaterialBasico(TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MaterialBasico(ScenaryPalette::ColorableBaseMaterialPath());
 	if (MaterialBasico.Succeeded())
 	{
 		TInlineComponentArray<UStaticMeshComponent*> Malhas(this);

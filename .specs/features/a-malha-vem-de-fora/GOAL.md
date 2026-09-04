@@ -32,7 +32,7 @@ existiria sem componente. Nos dois casos, bateria verde e nada na tela.
 - [x] **MV4** — o primeiro ator migra (`APetView`), e o teste prova que a malha
       veio do DADO, não do construtor
 - [x] **MV5** — os atores de batalha migram (`PetOwnerView`, `BattleArena`)
-- [⛔] **MV6** — os atores de mundo migram (`Village`, `GroundUseActor`,
+- [x] **MV6** — os atores de mundo migram (`Village`, `GroundUseActor`,
       `FerryActor`, `WorldEncounterActor`, `WorldExplorerCharacter`)
 - [⛔] **MV7** — os atores de cenário migram (`ForestBackdrop`, `MountainRange`,
       `WalkableMountain`, `CaveSystem`, `Volcano`, `AuroraCurtain`,

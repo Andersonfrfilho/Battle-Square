@@ -4,6 +4,12 @@
 > Elas foram desenhadas para NÃO se cruzarem — leia
 > `.specs/handoffs/2026-09-04-arte-duas-sessoes.md` se precisar do porquê.
 
+> 🤖 **Modelo: `fable`** (ou `opus`) — esta trilha é 🧠 do começo ao fim, pelo
+> critério do `model-economy.md`. O trabalho central (AR4c) não é tabela: é
+> decidir QUAL criatura cabe em qual pet, o que é sabor, coerência de mundo e a
+> decisão 69 no meio. A AR4d é modelo de dado novo, e a AR4e é redigir a decisão
+> para o usuário. Nada disso tem aceite mecânico.
+
 ## ⚠️ A regra que não se quebra
 
 **NÃO ABRA A UNREAL. NÃO RODE `./Tools/build_editor.sh`.**

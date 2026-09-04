@@ -10,6 +10,12 @@
 convivem. Esta trilha fica com a Unreal e **nunca compila C++**; a trilha B
 nunca abre o editor. Só assim as duas rodam ao mesmo tempo.
 
+> 🤖 **Modelo: `sonnet`** — o trabalho é volume mecânico (montar lote, conferir
+> colisão, chamar o MCP, repetir), com aceite verificável a cada passo.
+> **Exceção: a AR7 é 🧠** — máquina de estados e o retargeting (um AnimBP para
+> várias criaturas) é decisão estrutural. Subir para `fable`/`opus` nela, e
+> voltar depois.
+
 ## O objetivo, numa frase
 
 O CENÁRIO e os PETS ganham corpo dentro do editor — import, Blueprint e
@@ -32,7 +38,7 @@ Animation Blueprint —, tudo por MCP, sem clique manual.
       nenhum caindo na primitiva (é edição de `.ini`, não pede build)
 - [⛔] **AR6** — Blueprint por pet: `BlueprintTools.create` + `set_parent`,
       `SkeletalMeshComponent` com o modelo, e **compilado**
-- [⛔] **AR7** — o Animation Blueprint: Idle e Walk ligados. As animações já vêm
+- [⛔] **AR7** 🧠 (`fable`/`opus`) — o Animation Blueprint: Idle e Walk ligados. As animações já vêm
       nomeadas por ação (Idle, Walk, Punch, Headbutt, HitReact, Death)
 - [⛔] **AR8** — a VILA veste o Medieval Builder: os 12 prédios de
       `EVillageBuilding` deixam de ser caixa colorida

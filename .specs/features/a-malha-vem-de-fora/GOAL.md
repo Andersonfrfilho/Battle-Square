@@ -37,11 +37,11 @@ existiria sem componente. Nos dois casos, bateria verde e nada na tela.
 - [x] **MV7** — os atores de cenário migram (`ForestBackdrop`, `MountainRange`,
       `WalkableMountain`, `CaveSystem`, `Volcano`, `AuroraCurtain`,
       `WorldBoundaryWater`)
-- [⛔] **MV8** — os cinco de malha procedural pegam MATERIAL pelo dado
+- [x] **MV8** — os cinco de malha procedural pegam MATERIAL pelo dado
       (`TrailMesh`, `AqueductMesh`, `RiverMesh`, `TerrainMesh`, `CrossingMesh`)
-- [⛔] **MV9** — o padrão hardcoded não VOLTA: auditoria que reprova
+- [x] **MV9** — o padrão hardcoded não VOLTA: auditoria que reprova
       `FObjectFinder` de malha novo fora do dado
-- [⛔] **MV10** — na tela: o painel diz de onde veio a malha de cada ator, para
+- [x] **MV10** — na tela: o painel diz de onde veio a malha de cada ator, para
       que "não apareceu" e "veio do lugar errado" sejam perguntas diferentes
 - [⛔] Bateria completa verde (hoje **873**; o número só sobe)
 - [⛔] As sete auditorias limpas

@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Battle/PetOwnerView.h"
+#include "Environment/ScenaryPalette.h"
 
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -61,11 +62,11 @@ APetOwnerView::APetOwnerView()
 	OwnerRoot = CreateDefaultSubobject<USceneComponent>(TEXT("OwnerRoot"));
 	SetRootComponent(OwnerRoot);
 
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> Cilindro(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> Esfera(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> Cone(TEXT("/Engine/BasicShapes/Cone.Cone"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> Cilindro(ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cylinder));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> Esfera(ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Sphere));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> Cone(ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cone));
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MaterialBasico(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+		ScenaryPalette::ColorableBaseMaterialPath());
 
 	LegsMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Legs"));
 	LegsMesh->SetupAttachment(OwnerRoot);

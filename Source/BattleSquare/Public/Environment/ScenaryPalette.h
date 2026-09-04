@@ -281,6 +281,9 @@ namespace ScenaryPalette
 
 	BATTLESQUARE_API UMaterialInterface* ColorableBaseMaterial();
 
+	/** O CAMINHO do material colorivel — a fonte unica para call sites de FObjectFinder (MV5/MV8). */
+	BATTLESQUARE_API const TCHAR* ColorableBaseMaterialPath();
+
 	/**
 	 * Pinta TODOS os slots de um componente com a paleta do papel dado, e
 	 * devolve quantos pintou.

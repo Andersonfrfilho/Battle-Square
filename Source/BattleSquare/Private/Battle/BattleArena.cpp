@@ -504,7 +504,7 @@ void ABattleArena::BuildArenaGeometry()
 	using namespace ArenaGeometria;
 
 	// Conteúdo da engine, não vendorizado — mesmo princípio de AD-019.
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> CuboDaArena(TEXT("/Engine/BasicShapes/Cube.Cube"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CuboDaArena(ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cube));
 	// Caminhos dos materiais autorados em /Game/Arena/Materials. Soft: o CDO
 	// não carrega textura nenhuma no boot do módulo, e o editor continua
 	// podendo trocar a paleta sem recompilar.

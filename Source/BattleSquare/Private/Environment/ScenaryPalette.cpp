@@ -374,6 +374,11 @@ const TCHAR* ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive Primitive)
 	return TEXT("/Engine/BasicShapes/Cube.Cube");
 }
 
+const TCHAR* ScenaryPalette::ColorableBaseMaterialPath()
+{
+	return PaletaDoCenario::MaterialColorivel;
+}
+
 UMaterialInterface* ScenaryPalette::ColorableBaseMaterial()
 {
 	return LoadObject<UMaterialInterface>(

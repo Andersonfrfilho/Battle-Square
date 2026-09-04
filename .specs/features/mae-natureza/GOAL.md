@@ -24,7 +24,7 @@ sem nunca tocar o balde do jogador, e que nunca age em silêncio.**
 - [x] **MN3** — toda correção é delatada — correção sem registro é bug
 - [x] **MN4** — torneira, nunca balde: teste negativo prova o limite
 - [x] **MN5** — o preço do assentamento vira número de configuração
-- [⛔] **MN6** — espécie rara migra quando o censo cai — depende de censo agregado, que não existe
+- [x] **MN6** — espécie rara migra quando o censo cai — depende de censo agregado, que não existe
 - [x] **MN7** — Mãe Natureza age devagar e fora de vista — mas o jogador vê
 - [ ] O grep fora de `/Tests/` acha quem CHAMA `NatureBalance::Correct`
 - [ ] Bateria completa verde — o total do dia em que a feature abrir (hoje **858**); o número só sobe

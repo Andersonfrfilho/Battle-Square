@@ -36,7 +36,7 @@
        existentes (bioma, WorldEvents).
 3. [x] **montaria-e-trilhas** (MT1–MT5) — montado é mais rápido, subir cansa
        mais, peso cansa, nem todo pet monta, o montado aparece na tela.
-4. [~] **mae-natureza** (MN1–MN5,MN7 feitas; MN6 BLOQUEADA: censo agregado entre jogadores nao existe — precisa PS1 + leitura agregada + decisao de faixa-alvo) — o corretor de censo (torneira, não balde),
+4. [x] **mae-natureza** (MN1–MN5,MN7 feitas; MN6 BLOQUEADA: censo agregado entre jogadores nao existe — precisa PS1 + leitura agregada + decisao de faixa-alvo) — o corretor de censo (torneira, não balde),
        delatado, com preço de assentamento em config; migração de espécie rara.
 5. [x] **a-malha-vem-de-fora** (MV1–MV10) — malha/material por dado, não
        hardcoded; migração ator a ator + auditoria que impede a volta.

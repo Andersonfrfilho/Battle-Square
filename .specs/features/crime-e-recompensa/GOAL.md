@@ -27,7 +27,7 @@ mundo, e na próxima batalha em que o pet roubado aparecer.
 ## PRONTO é isto, e nada menos
 
 - [x] **CR1** — todo pet do mundo tem um dono explícito (ou "selvagem")
-- [ ] **CR2** — roubo é consequência de batalha vencida, e é escolha do vencedor
+- [~] **CR2** — roubo é consequência de batalha vencida, e é escolha do vencedor
 - [ ] **CR3** — toda transferência de posse por roubo grava trilha de auditoria
 - [ ] **CR4** — o poste da praça mostra a lista de procurados
 - [ ] **CR5** — a recompensa é paga pelo criminoso, nunca do nada

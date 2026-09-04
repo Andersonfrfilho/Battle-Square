@@ -34,7 +34,7 @@ mundo, e na próxima batalha em que o pet roubado aparecer.
 - [x] **CR6** — pet marcado como roubado não pode ser vendido nem trocado
 - [x] **CR7** — a marca de procurado sobrevive a desconectar
 - [x] **CR8** — o pet roubado se denuncia numa batalha, só para quem viu a lista
-- [ ] **CR9** — a polícia patrulha, reage e prende
+- [x] **CR9** — a polícia patrulha, reage e prende
 - [ ] **CR10** — o pet capturado envelhece, por decisão do usuário primeiro
 - [x] `posse-no-servidor` está fechada e CR1 deixou de estar bloqueada por ela
 - [ ] Todas as perguntas de "Decisões que são do usuário" em `tasks.md` têm

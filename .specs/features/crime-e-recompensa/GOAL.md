@@ -5,7 +5,11 @@
 > Três itens seguem em aberto, e estão listados no fim daquele arquivo.
 
 
-**Spec escrita em 31/08/2026, sem `tasks.md` até agora.** Diferente de
+**ABERTA em 04/09/2026, pelo usuário** ("pode seguir para crime-e-recompensa").
+Os dois portões que o GOAL exige estão abertos: `posse-no-servidor` FECHOU (o
+bloqueio técnico de CR1–CR9 caiu), e as decisões de conteúdo 22–31 de
+`DECISOES.md` respondem as perguntas de `tasks.md`. **Spec escrita em
+31/08/2026.** Diferente de
 `cidades-do-interior`, a medição em `Source/` não achou nada construído por
 fora do processo — `Crime`, `Theft`, `Wanted`, `Ownership` e `OwnerId` não
 aparecem em lugar nenhum. Este objetivo nasce **bloqueado**, e por dois
@@ -22,17 +26,17 @@ mundo, e na próxima batalha em que o pet roubado aparecer.
 
 ## PRONTO é isto, e nada menos
 
-- [⛔] **CR1** — todo pet do mundo tem um dono explícito (ou "selvagem")
-- [⛔] **CR2** — roubo é consequência de batalha vencida, e é escolha do vencedor
-- [⛔] **CR3** — toda transferência de posse por roubo grava trilha de auditoria
-- [⛔] **CR4** — o poste da praça mostra a lista de procurados
-- [⛔] **CR5** — a recompensa é paga pelo criminoso, nunca do nada
-- [⛔] **CR6** — pet marcado como roubado não pode ser vendido nem trocado
-- [⛔] **CR7** — a marca de procurado sobrevive a desconectar
-- [⛔] **CR8** — o pet roubado se denuncia numa batalha, só para quem viu a lista
-- [⛔] **CR9** — a polícia patrulha, reage e prende
-- [⛔] **CR10** — o pet capturado envelhece, por decisão do usuário primeiro
-- [ ] `posse-no-servidor` está fechada e CR1 deixou de estar bloqueada por ela
+- [ ] **CR1** — todo pet do mundo tem um dono explícito (ou "selvagem")
+- [ ] **CR2** — roubo é consequência de batalha vencida, e é escolha do vencedor
+- [ ] **CR3** — toda transferência de posse por roubo grava trilha de auditoria
+- [ ] **CR4** — o poste da praça mostra a lista de procurados
+- [ ] **CR5** — a recompensa é paga pelo criminoso, nunca do nada
+- [ ] **CR6** — pet marcado como roubado não pode ser vendido nem trocado
+- [ ] **CR7** — a marca de procurado sobrevive a desconectar
+- [ ] **CR8** — o pet roubado se denuncia numa batalha, só para quem viu a lista
+- [ ] **CR9** — a polícia patrulha, reage e prende
+- [ ] **CR10** — o pet capturado envelhece, por decisão do usuário primeiro
+- [x] `posse-no-servidor` está fechada e CR1 deixou de estar bloqueada por ela
 - [ ] Todas as perguntas de "Decisões que são do usuário" em `tasks.md` têm
       resposta registrada antes da tarefa correspondente abrir
 - [ ] Bateria completa verde, zero falhas, zero crash

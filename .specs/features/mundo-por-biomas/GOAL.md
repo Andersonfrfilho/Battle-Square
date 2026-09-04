@@ -13,7 +13,7 @@ para quem venceu o ranking regional.
 
 ## PRONTO é isto, e nada menos
 
-- [⛔] **MB1** — o Posto de Fronteira barra a passagem quando a região não
+- [x] **MB1** — o Posto de Fronteira barra a passagem quando a região não
   venceu o ranking, e libera a MESMA passagem quando vence
 - [⛔] **MB2** — o pet selvagem que aparece muda de elemento conforme o bioma
   do encontro, e o encontro sem lugar (`EncounterLocation` vazio) continua

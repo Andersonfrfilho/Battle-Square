@@ -4,6 +4,7 @@
 
 #include "GameFramework/Actor.h"
 #include "World/VillageLayout.h"
+#include "Environment/IslandGeography.h"
 #include "Village.generated.h"
 
 class UBoxComponent;
@@ -110,6 +111,9 @@ public:
 	 * copiando-a — e duas cópias concordam até a primeira edição.
 	 */
 	static FLinearColor BuildingColor(EVillageBuilding Building);
+
+	/** A cor do prédio JÁ vestida pelo bioma (MB3) — base * BiomeTint::Of. */
+	static FLinearColor BuildingColorInBiome(EVillageBuilding Building, EIslandBiome Biome);
 
 	/** O cinza do `default` — a cor de "ninguém escreveu o case ainda". */
 	static FLinearColor FallbackColor();

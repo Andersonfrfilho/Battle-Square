@@ -1,6 +1,8 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "World/Village.h"
+#include "Environment/BiomeTint.h"
+#include "Environment/IslandGeography.h"
 
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -111,6 +113,13 @@ FLinearColor AVillage::BuildingColor(EVillageBuilding Predio)
 	return Vila::CorDoPredio(Predio);
 }
 
+FLinearColor AVillage::BuildingColorInBiome(EVillageBuilding Predio, EIslandBiome Biome)
+{
+	// A identidade do prédio (a base) vestida pelo tom do bioma. Multiplicação,
+	// não substituição: o roxo do Mercado continua roxo, só muda de clima.
+	return Vila::CorDoPredio(Predio) * BiomeTint::Of(Biome);
+}
+
 FLinearColor AVillage::FallbackColor()
 {
 	// O MESMO literal do `default`, num lugar só? Não: o literal fica lá, e
@@ -166,6 +175,12 @@ void AVillage::BuildVillage()
 		return;
 	}
 
+	// A VILA VESTE O BIOMA (MB3): o tom sai do bioma do LUGAR onde ela está,
+	// pela fonte única BiomeTint. A identidade do prédio sobrevive; só o clima
+	// da cor muda entre a Geleira e o Vulcão.
+	const EIslandBiome BiomaDaVila =
+		IslandGeography::BiomeAt(FVector2D(GetActorLocation()));
+
 	int32 Indice = 0;
 	for (const FVillagePlacement& Peca : VillageLayout::PlanFor(Kind))
 	{
@@ -188,7 +203,7 @@ void AVillage::BuildVillage()
 		Parede->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		Parede->SetCollisionResponseToAllChannels(ECR_Block);
 
-		Vila::Pintar(Parede, Vila::CorDoPredio(Peca.Building));
+		Vila::Pintar(Parede, AVillage::BuildingColorInBiome(Peca.Building, BiomaDaVila));
 		BuiltMeshes.Add(Parede);
 
 		// A PRAÇA não tem telhado: ela é chão, e um telhado sobre ela seria
@@ -211,7 +226,7 @@ void AVillage::BuildVillage()
 			Telhado->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 			Telhado->SetCollisionResponseToAllChannels(ECR_Block);
 
-			Vila::Pintar(Telhado, Vila::CorDoTelhado(Peca.Building));
+			Vila::Pintar(Telhado, AVillage::BuildingColorInBiome(Peca.Building, BiomaDaVila) * 0.45f);
 			BuiltRoofs.Add(Telhado);
 		}
 

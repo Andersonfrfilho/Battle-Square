@@ -15,6 +15,9 @@
 #include "Environment/ForestBackdrop.h"
 #include "EngineUtils.h"
 #include "World/WorldObstacleBreaking.h"
+#include "Net/BattleSquareGameMode.h"
+#include "Environment/RegionResidency.h"
+#include "World/WorldCellKey.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/PlayerController.h"
@@ -330,6 +333,20 @@ void AWorldExplorerCharacter::StrikeForward()
 			? TEXT("derrubou!")
 			: *FString::Printf(TEXT("golpe: %d de dano, falta %d"), Dano, QueFalta),
 		2.0f, bCaiu ? FColor::Green : FColor::Yellow, /*Key=*/760);
+
+	// A árvore CAIU deixa marca no mundo compartilhado (MV3): grava no servidor
+	// carimbada pela posição, para o próximo jogador ver o mesmo vazio. A
+	// identidade é a célula quantizada, a mesma do replantio.
+	if (bCaiu)
+	{
+		if (ABattleSquareGameMode* Modo = GetWorld()->GetAuthGameMode<ABattleSquareGameMode>())
+		{
+			const FVector2D Onde(Candidatos[Alvo].Location);
+			const FString ChunkKey = WorldCellKey::ChunkKeyOf(RegionResidency::ChunkAt(Onde));
+			const FString CellKey = WorldCellKey::CellKeyOf(Onde, Modo->WorldSceneryCellSizeUnits);
+			Modo->RecordTreeCutInBackground(ChunkKey, CellKey);
+		}
+	}
 }
 
 void AWorldExplorerCharacter::ToggleWorldMap()

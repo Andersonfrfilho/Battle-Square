@@ -2,6 +2,7 @@
 
 #include "Environment/ForestBackdrop.h"
 #include "Environment/TreeGrowth.h"
+#include "World/WorldCellKey.h"
 #include "World/VillageLayout.h"
 #include "World/LandUseLayout.h"
 
@@ -1750,4 +1751,54 @@ bool AForestBackdrop::IsSolidSpecies(int32 SpeciesIndex) const
 {
 	return SpeciesRoles.IsValidIndex(SpeciesIndex)
 		&& FWorldObstacleBreaking::StartingHealthFor(SpeciesRoles[SpeciesIndex]) > 0;
+}
+
+int32 AForestBackdrop::SuppressCutCells(const TSet<FString>& CutCellKeys, float QuantumUnits)
+{
+	if (CutCellKeys.Num() == 0)
+	{
+		return 0;
+	}
+
+	int32 Removidas = 0;
+	for (int32 Especie = 0; Especie < SpeciesClusters.Num(); ++Especie)
+	{
+		// Só o que se derruba: capim e flor não são corte de ninguém.
+		if (!IsSolidSpecies(Especie))
+		{
+			continue;
+		}
+		UHierarchicalInstancedStaticMeshComponent* Grupo = SpeciesClusters[Especie];
+		if (!Grupo)
+		{
+			continue;
+		}
+
+		// Índices em ordem DECRESCENTE: remover instância desloca as de cima,
+		// e apagar de trás para frente mantém os índices válidos.
+		TArray<int32> Alvos;
+		const int32 Quantas = Grupo->GetInstanceCount();
+		for (int32 Instancia = 0; Instancia < Quantas; ++Instancia)
+		{
+			FTransform Onde;
+			if (!Grupo->GetInstanceTransform(Instancia, Onde, /*bWorldSpace=*/true))
+			{
+				continue;
+			}
+			const FString Chave = WorldCellKey::CellKeyOf(
+				FVector2D(Onde.GetLocation()), QuantumUnits);
+			if (CutCellKeys.Contains(Chave))
+			{
+				Alvos.Add(Instancia);
+			}
+		}
+		for (int32 I = Alvos.Num() - 1; I >= 0; --I)
+		{
+			if (Grupo->RemoveInstance(Alvos[I]))
+			{
+				++Removidas;
+			}
+		}
+	}
+	return Removidas;
 }

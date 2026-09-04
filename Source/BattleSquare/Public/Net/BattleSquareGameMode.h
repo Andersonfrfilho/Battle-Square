@@ -521,6 +521,17 @@ private:
 	/** Desenha a linha da idade do mundo no painel (Key fixa 772). */
 	void MostrarIdadeDoMundo();
 
+public:
+	/** Grava no servidor que uma árvore foi cortada aqui (MV3), sem bloquear. */
+	void RecordTreeCutInBackground(const FString& ChunkKey, const FString& CellKey);
+
+private:
+	/** Busca os cortes ativos do pedaço e some com as árvores cortadas (MV3). */
+	void FetchTreeCutsForChunk(const FIntPoint& Chunk, class AForestBackdrop* Mata);
+
+	/** Prazo de rebrota (dias) de DefaultGame.ini — número de config (MV4). */
+	int32 TreeRegrowthDeadlineDays() const;
+
 	/** Mostra a lista de procurados no poste da praça (CR4). */
 	void MostrarPosteDeProcurados();
 

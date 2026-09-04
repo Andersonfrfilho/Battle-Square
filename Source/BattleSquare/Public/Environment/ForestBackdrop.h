@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Environment/IslandGeography.h"
 #include "Environment/TreeGrowth.h"
+#include "World/WorldCellKey.h"
 #include "Environment/ScenaryPalette.h"
 #include "GameFramework/Actor.h"
 #include "ForestBackdrop.generated.h"
@@ -103,6 +104,15 @@ public:
 	 * até a primeira vez que o pacote muda de pasta (§16, L-032).
 	 */
 	static FString SpeciesAssetPath(const FString& SpeciesName);
+
+	/**
+	 * Some com as árvores SÓLIDAS cujas células estão cortadas (MV3).
+	 *
+	 * A base é a mata que a semente plantou; isto aplica a EXCEÇÃO — só o que
+	 * foi cortado e ainda não rebrotou. Capim e flor não são obstáculo e não
+	 * entram: um corte é sobre o que se derruba. Devolve quantas removeu.
+	 */
+	int32 SuppressCutCells(const TSet<FString>& CutCellKeys, float QuantumUnits);
 
 	/** Espécies da mata, para o teste que exige asset atribuído em todas. */
 	const TArray<TObjectPtr<UHierarchicalInstancedStaticMeshComponent>>& GetSpeciesClusters() const { return SpeciesClusters; }

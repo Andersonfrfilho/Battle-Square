@@ -2044,3 +2044,61 @@ bool FForestGrowsWithWorldAgeTest::RunTest(const FString&)
 	DestroyForestTestWorld(World);
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FForestSuppressesCutCellsTest,
+	"BattleSquare.World.Rebrota.CorteSumeComAArvore",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FForestSuppressesCutCellsTest::RunTest(const FString&)
+{
+	// MV3 — a marca do corte apaga a árvore sólida daquela célula, e SÓ dela.
+	UWorld* World = CreateForestTestWorld();
+	AForestBackdrop* Mata = World->SpawnActor<AForestBackdrop>();
+	if (!Mata)
+	{
+		DestroyForestTestWorld(World);
+		return false;
+	}
+
+	Mata->BuildRegion(CasaDeTeste, 31u, EIslandBiome::Forest, LadoDoPedacoDeTeste, /*WorldAgeInDays=*/3000);
+
+	const float Quantum = CasaDeTeste;
+
+	// Acha a célula de UMA árvore sólida plantada, pela posição de mundo.
+	FString CelulaAlvo;
+	for (int32 E = 0; E < Mata->GetSpeciesClusters().Num() && CelulaAlvo.IsEmpty(); ++E)
+	{
+		if (!Mata->IsSolidSpecies(E))
+		{
+			continue;
+		}
+		UHierarchicalInstancedStaticMeshComponent* Grupo = Mata->GetSpeciesClusters()[E].Get();
+		if (Grupo && Grupo->GetInstanceCount() > 0)
+		{
+			FTransform Onde;
+			Grupo->GetInstanceTransform(0, Onde, /*bWorldSpace=*/true);
+			CelulaAlvo = WorldCellKey::CellKeyOf(FVector2D(Onde.GetLocation()), Quantum);
+		}
+	}
+	TestFalse(TEXT("achou uma árvore sólida para cortar"), CelulaAlvo.IsEmpty());
+
+	const int32 AntesDoCorte = Mata->GetPlantedCount();
+
+	// CONTRAPESO: uma célula sem árvore nenhuma não remove nada.
+	TSet<FString> Longe;
+	Longe.Add(TEXT("999999:999999"));
+	TestEqual(TEXT("célula sem árvore não remove nada"),
+		Mata->SuppressCutCells(Longe, Quantum), 0);
+	TestEqual(TEXT("e a contagem não mexeu"), Mata->GetPlantedCount(), AntesDoCorte);
+
+	// O CORTE: a célula da árvore some ao menos uma sólida.
+	TSet<FString> Cortadas;
+	Cortadas.Add(CelulaAlvo);
+	const int32 Removidas = Mata->SuppressCutCells(Cortadas, Quantum);
+	TestTrue(TEXT("o corte removeu ao menos uma árvore"), Removidas > 0);
+	TestEqual(TEXT("a contagem caiu pelo que foi removido"),
+		Mata->GetPlantedCount(), AntesDoCorte - Removidas);
+
+	DestroyForestTestWorld(World);
+	return true;
+}

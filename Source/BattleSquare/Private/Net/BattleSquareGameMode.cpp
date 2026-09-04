@@ -23,6 +23,7 @@
 #include "Environment/AuroraCurtain.h"
 #include "Environment/CaveSystem.h"
 #include "Environment/ForestBackdrop.h"
+#include "World/WorldCellKey.h"
 #include "Environment/FreshWater.h"
 #include "Environment/IslandFeatureLayout.h"
 #include "Environment/IslandGeography.h"
@@ -50,6 +51,7 @@
 #include "Engine/StaticMeshActor.h"
 #include "World/IslandBakedPlan.h"
 #include "HttpModule.h"
+#include "GenericPlatform/GenericPlatformHttp.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
 #include "Serialization/JsonReader.h"
@@ -1248,6 +1250,102 @@ void ABattleSquareGameMode::RefreshWantedListInBackground()
 				}
 				Eu->KnownWantedAccounts = Novos;
 			}
+		});
+
+	Pedido->ProcessRequest();
+}
+
+int32 ABattleSquareGameMode::TreeRegrowthDeadlineDays() const
+{
+	// Número de config (MV4), nunca literal. Ausente, cai num default são de
+	// uma semana de mundo.
+	int32 Dias = 7;
+	GConfig->GetInt(TEXT("/Script/BattleSquare.WorldAge"),
+		TEXT("TreeRegrowthDeadlineDays"), Dias, GGameIni);
+	return Dias;
+}
+
+void ABattleSquareGameMode::RecordTreeCutInBackground(const FString& ChunkKey, const FString& CellKey)
+{
+	// Cortar é evento com efeito no MUNDO, não na conta: não espera resposta e
+	// não precisa de token de jogador. Só do endereço do servidor.
+	if (OwnershipApiUrl.IsEmpty())
+	{
+		return;
+	}
+
+	const TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Pedido =
+		FHttpModule::Get().CreateRequest();
+	Pedido->SetURL(OwnershipApiUrl / TEXT("v1/world/tree-cuts"));
+	Pedido->SetVerb(TEXT("POST"));
+	Pedido->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
+	Pedido->SetTimeout(5.0f);
+
+	const TSharedRef<FJsonObject> Corpo = MakeShared<FJsonObject>();
+	Corpo->SetStringField(TEXT("chunkKey"), ChunkKey);
+	Corpo->SetStringField(TEXT("cellKey"), CellKey);
+	FString Json;
+	const TSharedRef<TJsonWriter<>> Escritor = TJsonWriterFactory<>::Create(&Json);
+	FJsonSerializer::Serialize(Corpo, Escritor);
+	Pedido->SetContentAsString(Json);
+
+	// Dispara e esquece: a marca no servidor é a verdade; se a rede caiu, a
+	// árvore volta na próxima sessão, e isso é honesto — não travou o jogador.
+	Pedido->ProcessRequest();
+}
+
+void ABattleSquareGameMode::FetchTreeCutsForChunk(const FIntPoint& Chunk, AForestBackdrop* Mata)
+{
+	if (OwnershipApiUrl.IsEmpty() || !Mata)
+	{
+		return;
+	}
+
+	const FString ChunkKey = WorldCellKey::ChunkKeyOf(Chunk);
+	const float Quantum = WorldSceneryCellSizeUnits;
+
+	const TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Pedido =
+		FHttpModule::Get().CreateRequest();
+	Pedido->SetURL(FString::Printf(TEXT("%s/v1/world/tree-cuts?chunkKey=%s&deadlineDays=%d"),
+		*OwnershipApiUrl, *FGenericPlatformHttp::UrlEncode(ChunkKey), TreeRegrowthDeadlineDays()));
+	Pedido->SetVerb(TEXT("GET"));
+	Pedido->SetTimeout(5.0f);
+
+	TWeakObjectPtr<ABattleSquareGameMode> Fraco(this);
+	TWeakObjectPtr<AForestBackdrop> MataFraca(Mata);
+	Pedido->OnProcessRequestComplete().BindLambda(
+		[Fraco, MataFraca, Quantum](FHttpRequestPtr, FHttpResponsePtr Resposta, bool bOk)
+		{
+			AForestBackdrop* AMata = MataFraca.Get();
+			if (!Fraco.Get() || !AMata || !bOk || !Resposta.IsValid()
+				|| Resposta->GetResponseCode() != 200)
+			{
+				// Falha mantém a mata inteira: o corte volta a valer na próxima
+				// vez que a leitura chegar. Nunca some árvore por engano de rede.
+				return;
+			}
+
+			TSharedPtr<FJsonObject> Json;
+			const TSharedRef<TJsonReader<>> Leitor =
+				TJsonReaderFactory<>::Create(Resposta->GetContentAsString());
+			const TArray<TSharedPtr<FJsonValue>>* Itens = nullptr;
+			if (!FJsonSerializer::Deserialize(Leitor, Json) || !Json.IsValid()
+				|| !Json->TryGetArrayField(TEXT("data"), Itens))
+			{
+				return;
+			}
+
+			TSet<FString> Cortadas;
+			for (const TSharedPtr<FJsonValue>& Item : *Itens)
+			{
+				const TSharedPtr<FJsonObject> Obj = Item->AsObject();
+				FString Celula;
+				if (Obj.IsValid() && Obj->TryGetStringField(TEXT("cellKey"), Celula))
+				{
+					Cortadas.Add(Celula);
+				}
+			}
+			AMata->SuppressCutCells(Cortadas, Quantum);
 		});
 
 	Pedido->ProcessRequest();
@@ -3663,6 +3761,11 @@ void ABattleSquareGameMode::BuildResidentChunk(const FIntPoint& Pedaco)
 		// A mata do mundo cresce com a idade do mundo (MV2). Desconhecida
 		// (backend fora) -> -1 -> mata adulta, nunca um vazio de mudas.
 		CurrentWorldAge.bKnown ? CurrentWorldAge.AgeInDays : -1);
+
+	// Aplica a EXCEÇÃO (MV3): busca os cortes ativos deste pedaço e some com as
+	// árvores cortadas que ainda não rebrotaram. A base já está plantada; isto
+	// só remove o que alguém derrubou.
+	FetchTreeCutsForChunk(Pedaco, Mata);
 
 	ResidentChunks.Add(Pedaco, Mata);
 }

@@ -1,6 +1,6 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
-import { handleGetWorldAge } from './world/world.controller';
+import { handleGetWorldAge, handleListTreeCuts, handleRecordTreeCut } from './world/world.controller';
 import { environment } from './config/environment';
 import {
   handleLogin,
@@ -123,6 +123,11 @@ const server = Bun.serve({
 
     if (url.pathname === '/v1/world' && request.method === 'GET') {
       return handleGetWorldAge();
+    }
+
+    if (url.pathname === '/v1/world/tree-cuts') {
+      if (request.method === 'POST') return handleRecordTreeCut(request);
+      if (request.method === 'GET') return handleListTreeCuts(request);
     }
 
     // O ROUBO (CR2): NAO e /my/ — o pet e de OUTRO. O dono sai do token so

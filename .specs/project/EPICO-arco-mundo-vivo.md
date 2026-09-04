@@ -28,7 +28,7 @@ abaixo mede o tempo por ela; nenhuma caixa reintroduz um segundo relógio.
       de conteúdo (a idade tem fim? corre offline? cuidado ativo?) JÁ têm
       resposta nas decisões 32, 33 e 34 — confirmar antes de codar, e o número
       de envelhecimento nasce em config. *Depende de MV1.*
-- [ ] **CR10** — o pet capturado envelhece na prisão —
+- [x] **CR10** — o pet capturado envelhece na prisão —
       `crime-e-recompensa/tasks.md` CR10. É a prisão CONSUMINDO o relógio de
       MV6, nunca um segundo envelhecimento. *Depende de MV6.*
 - [ ] **MV7** — coleta de recursos, bosque e comerciante —

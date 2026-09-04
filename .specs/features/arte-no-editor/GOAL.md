@@ -40,7 +40,7 @@ Animation Blueprint —, tudo por MCP, sem clique manual.
       `SkeletalMeshComponent` com o modelo, e **compilado**
 - [⛔] **AR7** 🧠 (`fable`/`opus`) — o Animation Blueprint: Idle e Walk ligados. As animações já vêm
       nomeadas por ação (Idle, Walk, Punch, Headbutt, HitReact, Death)
-- [⛔] **AR8** — a VILA veste o Medieval Builder: os 12 prédios de
+- [x] **AR8** — a VILA veste o Medieval Builder: os 12 prédios de
       `EVillageBuilding` deixam de ser caixa colorida
 - [⛔] Nenhum import com colisão de nome silenciosa
 - [⛔] Um commit por caixa, com o motivo

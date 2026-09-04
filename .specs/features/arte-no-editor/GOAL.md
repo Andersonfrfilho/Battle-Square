@@ -30,7 +30,7 @@ Animation Blueprint —, tudo por MCP, sem clique manual.
 
 ## PRONTO é isto, e nada menos
 
-- [⛔] **AR3** — o CENÁRIO como StaticMesh (~730): KayKit Medieval Builder (226),
+- [x] **AR3** — o CENÁRIO como StaticMesh (~730): KayKit Medieval Builder (226),
       Fantasy Props (94), Pirate Kit (143), Kenney fantasy-town (167),
       mini-dungeon (30), city-kit (41), Nature (29), + os 11 props que a AR2
       separou (`Boat`, `Dock_*`, `Lure_*`, `FishingRod_*`)

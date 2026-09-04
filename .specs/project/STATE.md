@@ -856,6 +856,12 @@ medição.** Bastava listar o que ela casava antes de confiar nela.
 
 **Descoberto:** 02/09/2026, ao fechar C4.
 
+**Recorreu 03/09** (fechando PS5): duas rodadas seguidas travaram em
+`AqueductMesh.BuildsEveryOne`, e a terceira veio 945/945 limpa. `AqueductMesh`
+sozinho: 4/4. `Battle.Arena`+`AqueductMesh` (o par com o teste novo de PS5):
+26/26. Confirma o padrao: o teste que aparece no log NAO e a causa, e o par
+nao reproduz.
+
 **O que acontece:** a bateria completa morre com
 `Assertion failed: Err == 0 [PThreadsSharedMutex.h:32]` e `SIGSEGV` em 0x3. O
 processo cai no meio, e **todo teste que viria depois em ordem alfabética

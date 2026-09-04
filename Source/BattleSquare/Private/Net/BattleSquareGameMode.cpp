@@ -830,6 +830,17 @@ void ABattleSquareGameMode::HandleWorldBattleStarted(ABattleArena* Arena)
 	Arena->OnBattleFinished.AddUObject(this,
 		&ABattleSquareGameMode::HandleWorldBattleFinished, Arena);
 
+	// A CONTA DO JOGADOR entra no lado DELE (PS5) — e SÓ quando existe:
+	// sem conta configurada, nada é tocado e o caminho de Standalone segue
+	// idêntico, que é o contrapeso da task. O lado do encontro fica sem dono,
+	// como sempre foi.
+	if (!PlayerAccountId.IsEmpty())
+	{
+		const uint8 LadoDoJogador = Arena->GetControlledPlayerNumber() - 1;
+		Arena->SideOwners[LadoDoJogador].CollectionSlot = PetCollectionSlotName;
+		Arena->SideOwners[LadoDoJogador].AccountId = PlayerAccountId;
+	}
+
 	// O ESTILO SE COLHE DAS JOGADAS REAIS (decisão 15-d): cada commit do
 	// jogador soma no perfil — em memória; quem grava é o fim da batalha,
 	// senão seria um save por turno.

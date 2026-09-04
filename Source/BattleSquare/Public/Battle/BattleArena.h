@@ -379,8 +379,26 @@ public:
 	 * VAZIO significa "este lado não tem dono": o selvagem, o oponente de IA.
 	 * Lado sem dono não captura e não ganha experiência, que é exatamente o
 	 * comportamento de hoje para o lado da máquina.
+	 *
+	 * A CONTA entrou AQUI (PS5, invariante 17): trocou-se o que a costura
+	 * GUARDA — o dono do lado é slot + conta, UMA coisa — em vez de pôr um
+	 * `AccountId` ao lado do slot. Duas respostas para "de quem é este lado"
+	 * concordariam até a primeira partida em rede, que é como B-005 nasceu.
 	 */
-	FString PetCollectionSlotForSide[2];
+	struct FBattleSideOwner
+	{
+		/** O save local do dono — o de sempre. */
+		FString CollectionSlot;
+
+		/**
+		 * A CONTA do dono no servidor. Vazia em Standalone sem conta
+		 * configurada, e vazia no selvagem — o jogo inteiro funciona sem ela
+		 * (decisão 38-b: offline é normal, não exceção).
+		 */
+		FString AccountId;
+	};
+
+	FBattleSideOwner SideOwners[2];
 
 	/**
 	 * A coleção daquele lado, ou vazio quando ele não tem dono.
@@ -390,6 +408,16 @@ public:
 	 * exatamente como antes desta correção.
 	 */
 	FString ResolveCollectionSlotForSide(uint8 Side) const;
+
+	/**
+	 * A conta daquele lado, ou vazio quando ele não tem conta.
+	 *
+	 * SEM fallback, ao contrário do slot: o slot local existe desde sempre e
+	 * Standalone depende dele; conta só existe se alguém a configurou — um
+	 * fallback aqui inventaria identidade, e identidade inventada num
+	 * servidor é posse de ninguém com cara de posse de alguém.
+	 */
+	FString ResolveAccountIdForSide(uint8 Side) const;
 
 	/** A progressão de UM lado, na coleção dele. */
 	void GrantExperienceToSide(uint8 Side, const FBattleEvent& EndEvent);

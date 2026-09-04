@@ -470,6 +470,15 @@ private:
 	FTimerHandle WorkTimer;
 
 
+	/**
+	 * A CONTA deste jogador (posse-no-servidor, decisão 38-b: por CONFIG
+	 * agora; a tela de login é feature futura). VAZIA é o jogo de sempre —
+	 * offline normal, save local, nenhuma exigência: conta é upgrade, nunca
+	 * requisito.
+	 */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Conta")
+	FString PlayerAccountId;
+
 	/** Tipo por id do catálogo, para a predominância por lugar (decisão 62). */
 	TMap<FString, FString> CatalogTypeById;
 	float TrainingCarrySeconds = 0.0f;

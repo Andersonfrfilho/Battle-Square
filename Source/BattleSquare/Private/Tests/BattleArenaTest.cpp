@@ -605,8 +605,8 @@ bool FBattleArenaCadaLadoTemSuaColecaoTest::RunTest(const FString& Parameters)
 	}
 
 	// Dois donos DIFERENTES, e a tela é do lado zero.
-	Arena->PetCollectionSlotForSide[0] = SlotDoLadoZero;
-	Arena->PetCollectionSlotForSide[1] = SlotDoLadoUm;
+	Arena->SideOwners[0].CollectionSlot = SlotDoLadoZero;
+	Arena->SideOwners[1].CollectionSlot = SlotDoLadoUm;
 
 	FBattleState InitialState;
 	FPetState PetDoZero;
@@ -681,5 +681,48 @@ bool FBattleArenaCadaLadoTemSuaColecaoTest::RunTest(const FString& Parameters)
 		}
 	}
 	DestroyHeadlessTestWorld(World);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FArenaSideOwnerCarriesTheAccountTest,
+	"BattleSquare.Battle.Arena.OLadoCarregaAConta",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FArenaSideOwnerCarriesTheAccountTest::RunTest(const FString& Parameters)
+{
+	// PS5: a costura de B-005 trocou o que GUARDA — o dono do lado é slot +
+	// conta, UMA coisa (invariante 17). E o contrapeso: sem nada configurado,
+	// o comportamento é o de Standalone, byte a byte.
+	UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
+	FWorldContext& Contexto = GEngine->CreateNewWorldContext(EWorldType::Game);
+	Contexto.SetCurrentWorld(World);
+	World->InitializeActorsForPlay(FURL());
+
+	ABattleArena* Arena = World->SpawnActor<ABattleArena>();
+
+	// SEM configuração: o slot local cai no nome único (Standalone de
+	// sempre), e a CONTA é vazia — fallback de conta inventaria identidade,
+	// e identidade inventada num servidor é posse de ninguém com cara de
+	// posse de alguém.
+	TestFalse(TEXT("o lado local tem slot (o de sempre)"),
+		Arena->ResolveCollectionSlotForSide(0).IsEmpty());
+	TestTrue(TEXT("mas conta NAO se inventa"),
+		Arena->ResolveAccountIdForSide(0).IsEmpty());
+	TestTrue(TEXT("e o lado sem dono segue sem slot"),
+		Arena->ResolveCollectionSlotForSide(1).IsEmpty());
+
+	// COM dono configurado, o lado carrega os dois — e cada lado o SEU.
+	Arena->SideOwners[0].CollectionSlot = TEXT("slot-do-zero");
+	Arena->SideOwners[0].AccountId = TEXT("conta-do-zero");
+	Arena->SideOwners[1].CollectionSlot = TEXT("slot-do-um");
+	Arena->SideOwners[1].AccountId = TEXT("conta-do-um");
+
+	TestEqual(TEXT("o lado zero responde a conta do zero"),
+		Arena->ResolveAccountIdForSide(0), FString(TEXT("conta-do-zero")));
+	TestEqual(TEXT("e o lado um, a do um — nunca a de quem olha a tela"),
+		Arena->ResolveAccountIdForSide(1), FString(TEXT("conta-do-um")));
+
+	GEngine->DestroyWorldContext(World);
+	World->DestroyWorld(false);
 	return true;
 }

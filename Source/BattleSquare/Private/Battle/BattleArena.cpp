@@ -1605,15 +1605,20 @@ void ABattleArena::RegisterOwnPetInCollection()
 
 FString ABattleArena::ResolveCollectionSlotForSide(uint8 Side) const
 {
-	if (Side < 2 && !PetCollectionSlotForSide[Side].IsEmpty())
+	if (Side < 2 && !SideOwners[Side].CollectionSlot.IsEmpty())
 	{
-		return PetCollectionSlotForSide[Side];
+		return SideOwners[Side].CollectionSlot;
 	}
 
 	// Ninguém configurou os lados: vale o nome único, e só para o lado LOCAL.
 	// É o caminho de Standalone e do Editor, e mantê-lo é o que faz esta
 	// correção não mudar o jogo de hoje.
 	return (Side == LocalPlayerSide) ? PetCollectionSlotName : FString();
+}
+
+FString ABattleArena::ResolveAccountIdForSide(uint8 Side) const
+{
+	return Side < 2 ? SideOwners[Side].AccountId : FString();
 }
 
 void ABattleArena::CheckForCapture(const TArray<FBattleEvent>& Trace)

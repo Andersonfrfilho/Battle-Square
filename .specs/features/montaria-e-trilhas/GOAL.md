@@ -17,7 +17,7 @@ tela.
   ladeira, respeitando a proporção de custo subida/descida que já existe
 - [x] **MT2** — subir acumula cansaço mais rápido que descer, num valor novo
   e isolado, visível na tela
-- [⛔] **MT3** — pet mais pesado cansa mais no mesmo trajeto, mas nenhum
+- [x] **MT3** — pet mais pesado cansa mais no mesmo trajeto, mas nenhum
   trajeto fica impossível por peso
 - [⛔] **MT4** — nem todo pet pode ser montado; dado de save antigo sem o
   campo novo carrega com default seguro

@@ -513,6 +513,16 @@ private:
 	/** Sobe a fila de capturas em FUNDO, uma por vez. Falha retenta com teto. */
 	void FlushCaptureQueueInBackground();
 
+	/**
+	 * Migra a coleção local INTEIRA para a conta (PS9), uma vez.
+	 *
+	 * Repetível: chamar de novo não duplica — a fila deduplica e o servidor
+	 * tem a unicidade de PS1. NUNCA apaga o save local (a coleção vira cache,
+	 * decisão 38-b): apagar antes da resposta escolheria pelo jogador no
+	 * sentido que não tem volta.
+	 */
+	void MigrateCollectionToAccount();
+
 	/** Tipo por id do catálogo, para a predominância por lugar (decisão 62). */
 	TMap<FString, FString> CatalogTypeById;
 	float TrainingCarrySeconds = 0.0f;
@@ -554,6 +564,9 @@ public:
 	 * responde "aqui não se vende".
 	 */
 	void SellOwnedPet(const FString& CatalogId);
+
+	/** Força a migração da posse de novo, ignorando a marca (repetível). Console. */
+	void ForceOwnershipMigration();
 
 	/**
 	 * A conversa livre (decisão 67): `bs.Falar <texto>` com o morador que

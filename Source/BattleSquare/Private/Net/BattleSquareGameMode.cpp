@@ -456,6 +456,11 @@ FString ABattleSquareGameMode::SetUpWorldEncounterFlow()
 	// 38-b, e a lembrança do dono: offline é normal).
 	RefreshOwnershipInBackground();
 
+	// QUEM JÁ JOGAVA MIGRA (PS9): na primeira entrada com conta, a coleção
+	// local inteira sobe — e a marca no perfil evita revarrer toda sessão.
+	// Repetível e sem apagar nada, então é seguro chamar sempre.
+	MigrateCollectionToAccount();
+
 	// E as capturas que ficaram para trás sobem (PS8): capturar offline
 	// gravou local e enfileirou; aqui a fila drena quando a rede volta.
 	EnqueueUnsyncedCaptures();
@@ -1136,6 +1141,56 @@ void ABattleSquareGameMode::SpawnStartingVillage()
 		FString::Printf(TEXT("regiao: %d assentamentos, %d predios, %d portas, %d campos, %d moradores"),
 			Erguidos, Predios, Portas, CamposDePatio, Moradores),
 		0.0f, FColor(200, 180, 120), /*Key=*/744);
+}
+
+void ABattleSquareGameMode::ForceOwnershipMigration()
+{
+	// Ignora a marca de propósito: é o "garantir de novo" depois de um longo
+	// offline. Não duplica — a fila e o servidor deduplicam.
+	if (PlayerAccountId.IsEmpty())
+	{
+		FBattleDebugScreen::Show(TEXT("sem conta configurada — nada a migrar"),
+			6.0f, FColor::Orange, /*Key=*/-1);
+		return;
+	}
+	CachedTrainer.bOwnershipMigrated = true;
+	FPetCollectionService::SaveTrainerProfile(PetCollectionSlotName, CachedTrainer);
+	EnqueueUnsyncedCaptures();
+	FlushCaptureQueueInBackground();
+}
+
+void ABattleSquareGameMode::MigrateCollectionToAccount()
+{
+	// Sem conta, não há para onde migrar — e a coleção local segue sendo o
+	// jogo inteiro (offline normal, decisão 38-b). Não é erro nem pendência.
+	if (PlayerAccountId.IsEmpty())
+	{
+		return;
+	}
+
+	// Já migrado: nada a fazer. A marca é a economia — a migração em si é
+	// idempotente (o EnqueueUnsyncedCaptures abaixo deduplica), mas revarrer a
+	// coleção inteira toda sessão é trabalho por nada.
+	if (CachedTrainer.bOwnershipMigrated)
+	{
+		return;
+	}
+
+	// A migração É enfileirar a coleção inteira: PS8 já construiu a máquina
+	// que sobe sem perder e sem duplicar. Reescrever um caminho de migração à
+	// parte seria a segunda fonte da mesma verdade (L-032).
+	EnqueueUnsyncedCaptures();
+
+	CachedTrainer.bOwnershipMigrated = true;
+	FPetCollectionService::SaveTrainerProfile(PetCollectionSlotName, CachedTrainer);
+
+	const int32 Pendentes = CachedTrainer.PendingCaptures.Num();
+	if (Pendentes > 0)
+	{
+		FBattleDebugScreen::Show(
+			FString::Printf(TEXT("migrando %d pets da colecao local para a sua conta"), Pendentes),
+			8.0f, FColor(180, 220, 255), /*Key=*/-1);
+	}
 }
 
 void ABattleSquareGameMode::EnqueueUnsyncedCaptures()
@@ -4287,6 +4342,30 @@ namespace
 				FBattleDebugScreen::Show(
 					FString::Printf(TEXT("conversa DINAMICA ligada: %s"), *Args[0]),
 					8.0f, FColor::Green, /*Key=*/-1);
+			}));
+
+	// A MIGRACAO pelo console (PS9): forca subir a colecao local para a conta.
+	// Repetivel de proposito — nao duplica, e serve para quem quer garantir
+	// depois de um longo offline.
+	FAutoConsoleCommandWithWorldAndArgs GMigrarPosseCommand(
+		TEXT("bs.MigrarPosse"),
+		TEXT("Sobe a colecao local inteira para a sua conta (repetivel, nao duplica)."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(
+			[](const TArray<FString>&, UWorld* World)
+			{
+				ABattleSquareGameMode* GameMode =
+					World ? World->GetAuthGameMode<ABattleSquareGameMode>() : nullptr;
+				if (!GameMode)
+				{
+					return;
+				}
+
+				// Reusa o metodo publico da migracao. Ele respeita a marca —
+				// mas forcar deve subir o que ficou de fora mesmo ja migrado,
+				// entao chama tambem o enqueue+flush publicos via um so ponto.
+				GameMode->ForceOwnershipMigration();
+				FBattleDebugScreen::Show(TEXT("migracao de posse disparada"),
+					6.0f, FColor::Green, /*Key=*/-1);
 			}));
 
 	// A ESCOLHA DA DEFESA (decisão 15, emendada): batalhar quando avisado, ou

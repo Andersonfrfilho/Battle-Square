@@ -299,6 +299,16 @@ struct BATTLESQUARE_API FTrainerProfile
 	 */
 	UPROPERTY()
 	TArray<FPendingCapture> PendingCaptures;
+
+	/**
+	 * A coleção deste save JÁ foi migrada para a conta (posse-no-servidor,
+	 * PS9)? Falso no save antigo — que é o certo: quem já jogava chega aqui
+	 * como "ainda não migrado", e a migração enfileira a coleção inteira UMA
+	 * vez. Repetir não duplica (a fila deduplica, e o servidor tem a
+	 * unicidade de PS1), mas a marca evita revarrer a coleção toda sessão.
+	 */
+	UPROPERTY()
+	bool bOwnershipMigrated = false;
 };
 
 /**

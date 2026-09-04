@@ -1,5 +1,6 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
+#include "Meta/CaptureQueueRules.h"
 #include "Meta/PetCollectionService.h"
 #include "Meta/TrainerSpecialtyRules.h"
 #include "Kismet/GameplayStatics.h"
@@ -129,6 +130,73 @@ bool FSavingOneHalfKeepsTheOtherTest::RunTest(const FString& Parameters)
 		FString(TEXT("flight")));
 	TestEqual(TEXT("E a experiência foi gravada"),
 		FPetCollectionService::LoadCollection(TestSlotName)[0].Experience, 50);
+
+	CleanupTestSlot();
+	return true;
+}
+
+// PS9: quem já joga migra, e o save antigo SOBREVIVE — a invariante 14.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FOwnershipMigrationKeepsTheSaveTest,
+	"BattleSquare.Meta.Posse.MigracaoNaoApagaOSave",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FOwnershipMigrationKeepsTheSaveTest::RunTest(const FString& Parameters)
+{
+	CleanupTestSlot();
+
+	// Um save "ANTIGO": a coleção existe, e os campos da posse estão como um
+	// UPROPERTY ausente desserializa — vazios e falso. É exatamente o estado
+	// de quem gravou o save antes desta feature.
+	{
+		UPetCollectionSaveGame* Antigo = Cast<UPetCollectionSaveGame>(
+			UGameplayStatics::CreateSaveGameObject(UPetCollectionSaveGame::StaticClass()));
+		Antigo->OwnedPets.Add(MakeInstance(TEXT("id-fogo-1"), TEXT("Brasa"), TEXT("Fogo")));
+		Antigo->OwnedPets.Add(MakeInstance(TEXT("id-agua-2"), TEXT("Gota"), TEXT("Agua")));
+		// Não tocamos em PendingCaptures nem bOwnershipMigrated: eles têm de
+		// nascer vazios sozinhos.
+		UGameplayStatics::SaveGameToSlot(Antigo, TestSlotName, 0);
+	}
+
+	// O save antigo carrega, e a posse nasce "não migrada, nada pendente".
+	FTrainerProfile Perfil = FPetCollectionService::LoadTrainerProfile(TestSlotName);
+	TestFalse(TEXT("save antigo nasce NAO migrado"), Perfil.bOwnershipMigrated);
+	TestEqual(TEXT("e sem captura pendente"), Perfil.PendingCaptures.Num(), 0);
+
+	const TArray<FOwnedPetInstance> Colecao = FPetCollectionService::LoadCollection(TestSlotName);
+	TestEqual(TEXT("a colecao antiga carregou inteira"), Colecao.Num(), 2);
+
+	// A MIGRAÇÃO enfileira a coleção inteira (sem servidor: usa as regras
+	// puras que o GameMode usa) e MARCA — e o save continua legível depois.
+	for (const FOwnedPetInstance& Pet : Colecao)
+	{
+		CaptureQueueRules::Enqueue(Perfil.PendingCaptures, Pet.CatalogId,
+			FString::Printf(TEXT("conta:%s"), *Pet.CatalogId));
+	}
+	Perfil.bOwnershipMigrated = true;
+	FPetCollectionService::SaveTrainerProfile(TestSlotName, Perfil);
+
+	// RELÊ do disco: a coleção NÃO foi apagada (contrapeso da task), e a fila
+	// gravou junto.
+	const TArray<FOwnedPetInstance> DepoisDaMigracao =
+		FPetCollectionService::LoadCollection(TestSlotName);
+	TestEqual(TEXT("migracao NAO apaga o save local"), DepoisDaMigracao.Num(), 2);
+
+	const FTrainerProfile Remigravel = FPetCollectionService::LoadTrainerProfile(TestSlotName);
+	TestTrue(TEXT("a marca de migrado persistiu"), Remigravel.bOwnershipMigrated);
+	TestEqual(TEXT("os dois pets estao na fila para subir"),
+		Remigravel.PendingCaptures.Num(), 2);
+
+	// REPETÍVEL: enfileirar de novo não duplica — a fila deduplica por
+	// catálogo (e o servidor tem a unicidade de PS1 por baixo).
+	FTrainerProfile SegundaPassada = Remigravel;
+	for (const FOwnedPetInstance& Pet : DepoisDaMigracao)
+	{
+		CaptureQueueRules::Enqueue(SegundaPassada.PendingCaptures, Pet.CatalogId,
+			FString::Printf(TEXT("conta:%s"), *Pet.CatalogId));
+	}
+	TestEqual(TEXT("a segunda passada NAO duplica"),
+		SegundaPassada.PendingCaptures.Num(), 2);
 
 	CleanupTestSlot();
 	return true;

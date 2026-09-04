@@ -19,7 +19,7 @@ quem está jogando agora.**
 
 ## PRONTO é isto, e nada menos
 
-- [⛔] **MV1** — a idade do mundo existe, e ela não para quando o jogo fecha
+- [x] **MV1** — a idade do mundo existe, e ela não para quando o jogo fecha
 - [⛔] **MV2** — a árvore cresce com a idade do mundo, não com a dela própria
 - [⛔] **MV3** — cortar deixa marca: a árvore derrubada não volta sozinha amanhã
 - [⛔] **MV4** — o prazo de rebrota é número de configuração, nunca literal em C++

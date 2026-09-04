@@ -1,121 +1,102 @@
-# OBJETIVO — Adotar a arte (o pacote, não o slot)
+# OBJETIVO — Adotar a arte (o mundo deixa de ser primitiva)
 
-> **Aberto em 04/09/2026**, quando a camada de adoção ficou pronta. Sucede
-> `a-malha-vem-de-fora` (o SLOT, fechado): aqui entra o PACOTE. As decisões de
-> conteúdo (qual estilo) são do usuário — registradas em `docs/assets/PRONTOS.md`.
+> **Reescrito em 04/09/2026**, depois que a medição derrubou a premissa do GOAL
+> anterior. Ele dizia que o import era físico e do usuário; **é falso**: o MCP
+> importa (`SkeletalMeshTools.import_file`, `StaticMeshTools.import_file`), e os
+> 50 monstros do Ultimate Monsters já entraram por ele, com esqueleto, física e
+> 513 animações. O agente faz o arco inteiro.
 
 ## O objetivo, numa frase
 
-O jogo troca as primitivas da engine por modelos de um pacote CC0 (Quaternius, o
-recomendado), **sem tocar em C++** — preenchendo `[/Script/BattleSquare.Art]` e
-importando os assets, com a primitiva sempre de fallback.
+Os ~20 atores do jogo param de ser cubo e cilindro e passam a vestir os modelos
+CC0 já baixados — **sem editar C++**, porque o slot dirigido por dado
+(`a-malha-vem-de-fora`) já existe e a adoção é troca de config.
 
-## O que mudou em 04/09: o MCP da Unreal CONECTOU
+## O que JÁ está pronto (medido, não suposto)
 
-O plugin `ModelContextProtocol` esta vivo (editor escutando em `localhost:8000`),
-e o agente enxerga os toolsets. Isso REDIVIDE o trabalho desta feature:
-
-| toolset | serve a |
-|---|---|
-| `BlueprintTools` (53 ferramentas: `create`, `set_parent`, `create_node`, `connect_pins`, `write_graph_dsl`, `compile_blueprint`) | AR5 — o Blueprint do pet e o Animation Blueprint |
-| `ActorTools`, `PrimitiveTools` | componentes nos atores |
-| `StaticMeshTools`, `SkeletalMeshTools` | AR2/AR3/AR5 — malha estatica e a esqueletal riggada |
-| `AssetTools` | achar/inspecionar os assets importados |
-| `MaterialTools`, `MaterialInstanceTools` | material por papel |
-| `ConfigSettingsToolset` | AR2 — escrever `[/Script/BattleSquare.Art]` |
-| `AutomationTestToolset` | rodar a bateria pelo MCP |
-
-**So o AR1 continua sendo fisico** (baixar e importar os `.fbx`): o MCP EDITA
-assets que existem, nao baixa modelos da internet. **Do AR2 em diante o agente
-faz por MCP** — sem clique manual.
-
-A ARQUITETURA ja estava pronta e testada (`ScenaryPalette::MeshPathForRole`,
-`ArtAdoptionTest`); agora o braco para aplica-la tambem esta.
-
-## O que JÁ está pronto (a ponte, fechada em a-malha)
-
-- `ScenaryPalette::MeshPathForRole(papel, fallback)` — override de config por
-  papel, primitiva de fallback. Verde sem pacote (invariante 20).
-- `[/Script/BattleSquare.Art]` — seção vazia e comentada, chaves prontas.
-- `docs/assets/ADOCAO-QUATERNIUS.md` — o passo a passo.
-- `ArtAdoptionTest` — sem config → primitiva; com → o asset; vazio → primitiva.
+- **A ponte de dado:** `ScenaryPalette::MeshPathForRole(papel, fallback)` — override
+  de config por papel, primitiva de fallback. Verde sem pacote nenhum.
+- **Os 16 packs extraídos** em `ArtSource/` (fora de `Content/`, gitignorado):
+  **1.121 FBX**, todos CC0.
+- **50 monstros JÁ IMPORTADOS** em `/Game/Quaternius/Monsters`: 50 SkeletalMesh,
+  50 Skeleton, 50 PhysicsAsset, **513 AnimSequence**. Zero falhas.
+- **O gerador de espécies** (`model-mapping.pure.ts`, 16 testes): modelo →
+  elemento → família → cadeia de evolução, corrigido pelos nomes reais.
+- **6 cadeias de evolução** já identificadas: Dragon, Alpaking, Armabee, Glub,
+  Goleling, Mushnub (o pack traz os pares `X`/`X_Evolved`).
 
 ## PRONTO é isto, e nada menos
 
-- [⛔] **AR1** *(USUARIO — fisico)* — os packs Quaternius baixados (CC0) e
-      importados para `Content/Quaternius/`. **DUAS METADES, destinos diferentes
-      (decisao 69):**
-      - **CENARIO = arte FINAL.** *Ultimate Nature Pack* + *Stylized Nature
-        MegaKit* (arvore, arbusto, flor, capim, rocha). Arvore e arvore — o
-        mundo e natural mesmo, e o pacote resolve de vez.
-      - **PETS = packs de MONSTRO (medido 04/09).** O *Ultimate Animated Animal
-        Pack* NAO entra: e fauna real, e existem packs de criatura de verdade,
-        que servem a decisao 69 direto. Os tres que carregam o jogo:
-        **Bestiary - Dungeon Monsters Kit** (rigged e **RETARGETABLE** — um
-        AnimBP serve varias criaturas, ganho tecnico direto no AR5),
-        **Cute Animated Monsters Pack** (a veia Pokemon/Zatch Bell) e
-        **Animated Monster Pack** (a veia Digimon/Monster Hunter, para os
-        estagios maiores). Por elemento: *Animated Fish Pack* (Agua),
-        *Animated Dinosaur Pack* (Terra/Fogo), *Animated Alien Pack*
-        (Luz/Ar/Raio), *Animated Zombie Pack* (Fantasma). **Planta e Ar sao a
-        cobertura mais fina** — provavel alvo do AR7 (criatura propria).
-
-- [⛔] **AR2** *(AGENTE via ConfigSettings + tela)* — os sete papéis de cenário (`ForestTree`, `CanopyTree`, `Rock`,
-      `DeadWood`, `Undergrowth`, `Accent`, `GroundCover`) apontados no
+- [x] **AR1** — os packs baixados e extraídos, e os 50 monstros importados
+- [⛔] **AR2** — o RESTO das criaturas importado como SkeletalMesh, com animação:
+      Cute Animated Monsters (21), Cute Fish (52), Animated Fish (7), Animated
+      Monster (4), KayKit Skeletons (32), KayKit Adventurers (70). Nomes
+      desambiguados quando repetem entre pastas — importar por cima em silêncio
+      é o defeito que a medição do Ultimate Monsters já pegou
+- [⛔] **AR3** — o CENÁRIO importado como StaticMesh: KayKit Medieval Builder
+      (226 — os 12 prédios da vila), Fantasy Props (94), Pirate Kit (71+72),
+      Kenney fantasy-town (167), mini-dungeon (30), city-kit (41), Nature (29)
+- [⛔] **AR4** — o gerador roda sobre os assets IMPORTADOS (via
+      `AssetTools.find_assets`, não sobre nomes de arquivo) e casa modelo com os
+      115 pets do catálogo. O relatório curto do que ele não soube classificar
+      vai ao usuário — **ele nunca chuta elemento**
+- [⛔] **AR5** — os sete papéis de cenário apontados em
       `[/Script/BattleSquare.Art]`, e a tela confere que NENHUM caiu na primitiva
-- [⛔] **AR3** *(AGENTE via MCP + C++)* — os atores que hoje pedem primitiva por PAPEL passam a chamar
-      `MeshPathForRole` (ForestBackdrop e cenário), provado pelo teste de
-      atribuição de cada um (invariante 19)
-- [⛔] **AR4** *(AGENTE — auditoria em C++/script)* — uma auditoria de ADOÇÃO: para cada chave preenchida em
-      `[/Script/BattleSquare.Art]`, o asset EXISTE e carrega — chave apontando
-      para asset ausente REPROVA (o "adotado mas invisível" pego cedo)
-- [⛔] **AR5** *(AGENTE via BlueprintTools + SkeletalMeshTools)* — os PETS (`APetView`) ganham um modelo riggado (STAND-IN, decisao 69) —
-      e como eles são RIGGADOS, isto pede um Animation Blueprint (Idle/Walk),
-      um passo além da malha estática. Decisão de escopo: estático primeiro,
-      animado depois
-- [⛔] **AR6** *(AGENTE)* — na tela: `bs.MalhaDeOnde` (já existe) passa a listar, por papel,
-      se veio do PACOTE ou da primitiva — "adotei tudo?" vira pergunta com resposta
-- [⛔] **AR7** *(USUARIO — decisao de conteudo/arte)* — a CRIATURA PROPRIA: o
-      pet definitivo, inspirado em animal mas com poder e peculiaridade (69). O
-      stand-in do AR5 sai quando esta entrar. Caminhos: encomendar arte, modelar,
-      ou achar um pacote de MONSTROS (nao de fauna). O encanamento ja estara
-      pronto — trocar e apontar a config para outro asset.
+- [⛔] **AR6** — os PETS ganham corpo: Blueprint por pet (`BlueprintTools.create`
+      + `set_parent`), `SkeletalMeshComponent` com o modelo, e **compilado**
+- [⛔] **AR7** — o Animation Blueprint: Idle e Walk ligados. As animações já vêm
+      nomeadas por ação (Idle, Punch, Headbutt, HitReact, Death), e elas casam
+      com o combate que já existe
+- [⛔] **AR8** — a VILA veste o Medieval Builder: os 12 prédios
+      (`EVillageBuilding`) deixam de ser caixa colorida
+- [⛔] **AR9** — na tela: `bs.MalhaDeOnde` diz, por papel, se veio do PACOTE ou
+      da primitiva — "adotei tudo?" vira pergunta com resposta
 - [⛔] Bateria completa verde (o número só sobe a partir de **991**)
-- [⛔] As sete auditorias limpas (a de adoção, AR4, é a oitava quando existir)
-- [⛔] Um commit por task, cada um com o motivo
+- [⛔] As sete auditorias limpas
+- [⛔] Um commit por task, cada um com o motivo — não só o quê
 
 Enquanto qualquer caixa estiver aberta, o objetivo **continua**.
 
-## Invariantes (as de `corrente` + três desta feature)
+## Decisões que são do USUÁRIO (e não travam o resto)
 
-18. **Uma fonte de verdade para o VISUAL.** Malha entra por `ScenaryPalette`,
-    ao lado da cor. Nunca uma segunda tabela cor×malha (L-032).
-19. **Componente criado não é componente visível.** Todo ator que trocar de
-    malha mantém o teste que verifica a ATRIBUIÇÃO — e agora, com asset externo,
-    o teste vale mais: asset que não carrega tem de cair na primitiva, nunca em
-    nulo.
-20. **O jogo fecha verde SEM o pacote.** A primitiva é o fallback permanente. Se
-    uma caixa exigir asset novo para a BATERIA passar, ela virou outra feature —
-    o pacote é do runtime do usuário, não do teste.
+1. **O elemento dos 15 sem pista** — Tribal, Ninja, Alien, Alien_Tall, Dog, Cat,
+   Slime, PinkBlob, GreenBlob, GreenSpikyBlob e, os mais importantes,
+   **Alpaking** e **Armabee** (têm evolução, não têm elemento). O gerador os
+   reporta; enquanto não houver resposta, eles ficam de fora do catálogo — nunca
+   com elemento chutado.
+2. **AR10, a criatura própria** (decisão 69): o pet definitivo, inspirado em
+   animal mas com poder. Os monstros importados são o stand-in que faz o jogo
+   ter cara hoje; trocar depois é apontar a config para outro asset.
+
+## Invariantes (as de `corrente` + quatro desta feature)
+
+18. **Uma fonte de verdade para o VISUAL.** Malha entra por `ScenaryPalette`, ao
+    lado da cor. Nunca uma segunda tabela cor×malha (L-032).
+19. **Componente criado não é componente visível.** Todo ator que trocar de malha
+    mantém o teste que verifica a ATRIBUIÇÃO — e com asset externo isso vale
+    mais: asset que não carrega tem de cair na primitiva, nunca em nulo.
+20. **O jogo fecha verde SEM o pacote.** A primitiva é fallback permanente. Se
+    uma caixa exigir asset novo para a BATERIA passar, ela virou outra feature.
+21. **Nome que repete entre pastas é modelo DIFERENTE.** Medido no Ultimate
+    Monsters: `Alien` existe em `Big` e em `Blob`. Importar sem desambiguar
+    sobrescreve em silêncio — e silêncio é o modo de falhar que este projeto
+    mais paga.
 
 ## O que este objetivo NÃO faz
 
-- **Não escolhe o estilo por você.** Quaternius é a recomendação do `PRONTOS.md`;
-  trocar por Synty/Fab é decisão sua e muda só os caminhos.
-- **Não baixa nem importa** — isso é você, na sua Unreal.
-- **Não abre áudio nem VFX.** Zero medido, nenhum GOAL os pediu.
-- **Não mexe no traçado, no gabarito, nem na lógica de jogo.** Só de onde vem a
-  malha.
+- **Não escolhe o estilo por você.** Os packs já foram decididos (decisão 70).
+- **Não autora arte nova.** A criatura própria é AR10, decisão sua.
+- **Não abre áudio nem VFX.** Zero medido; nenhum GOAL os pediu (o Kenney tem
+  áudio CC0, e é o maior buraco do inventário — mas é outra frente).
+- **Não mexe no traçado, no gabarito, nem na lógica de jogo.**
 
-## Como começar (quando reabrir)
+## Como continuar (se o contexto for compactado)
 
-1. Ler este GOAL, `docs/assets/ADOCAO-QUATERNIUS.md`, `docs/assets/PRONTOS.md`.
-2. **Confirmar o MCP vivo**: o editor tem de estar ABERTO (o plugin so escuta com
-   ele de pe). `list_toolsets` deve devolver `BlueprintTools` etc. Se der
-   `ConnectionRefused`: abrir a Unreal e reconectar o MCP (`/mcp` em sessao
-   interativa).
-3. AR1 e do usuario (baixar/importar os `.fbx`). Do AR2 em diante, o agente
-   executa por MCP. Continuar da primeira caixa aberta, sem replanejar.
-4. **Antes de qualquer build**: FECHAR a Unreal (ela segura os dylibs). Depois
-   `./Tools/build_editor.sh` e so entao reabrir — abrir primeiro faz a Unreal
-   tentar compilar sozinha, que e o "could not be compiled" de 04/09.
+1. Ler este GOAL e `docs/assets/ADOCAO-QUATERNIUS.md`.
+2. **O editor tem de estar ABERTO** — o MCP só escuta com ele de pé.
+   `list_toolsets` deve devolver `BlueprintTools`, `SkeletalMeshTools`.
+3. **Import em lote é pelo `ProgrammaticToolset`** (`execute_tool_script`): ele
+   agrupa muitas chamadas num script só. Um a um estoura o orçamento.
+4. **Antes de qualquer build: FECHAR a Unreal** (ela segura os dylibs), rodar
+   `./Tools/build_editor.sh`, e só então reabrir.
+5. Continuar da primeira caixa aberta. Não recomeçar, não replanejar.

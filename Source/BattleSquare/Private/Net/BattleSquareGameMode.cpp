@@ -3073,6 +3073,38 @@ void ABattleSquareGameMode::RefreshWorldStatus()
 		}
 	}
 
+	// O ESTADO DA POSSE (PS10): a fila e o cache decidem a cor e o texto.
+	// A ordem importa — Abandoned vence Pending vence Stale: o pior estado é
+	// o que o jogador precisa ver, e "não subiu" é pior que "subindo".
+	const int32 Abandonadas =
+		CaptureQueueRules::Exhausted(CachedTrainer.PendingCaptures).Num();
+	const int32 Enviaveis =
+		CaptureQueueRules::Sendable(CachedTrainer.PendingCaptures).Num();
+	const double Agora = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
+
+	if (PlayerAccountId.IsEmpty())
+	{
+		Retrato.OwnershipStatus = FWorldStatusSnapshot::EOwnershipStatus::LocalOnly;
+	}
+	else if (Abandonadas > 0)
+	{
+		Retrato.OwnershipStatus = FWorldStatusSnapshot::EOwnershipStatus::Abandoned;
+		Retrato.PendingCaptureCount = Abandonadas;
+	}
+	else if (Enviaveis > 0)
+	{
+		Retrato.OwnershipStatus = FWorldStatusSnapshot::EOwnershipStatus::Pending;
+		Retrato.PendingCaptureCount = Enviaveis;
+	}
+	else if (OwnershipCache::IsStale(KnownOwnership, Agora, /*StaleAfter=*/120.0))
+	{
+		Retrato.OwnershipStatus = FWorldStatusSnapshot::EOwnershipStatus::Stale;
+	}
+	else
+	{
+		Retrato.OwnershipStatus = FWorldStatusSnapshot::EOwnershipStatus::Synced;
+	}
+
 	// Chaves FIXAS e consecutivas: a linha se reescreve no lugar em vez de
 	// empilhar. Empilhando, o painel encheria sozinho em segundos e engoliria
 	// tudo o que a batalha tem a dizer.

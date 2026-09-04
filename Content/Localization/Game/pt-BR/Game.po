@@ -4,8 +4,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Game\n"
-"POT-Creation-Date: 2026-09-03 15:37\n"
-"PO-Revision-Date: 2026-09-03 15:37\n"
+"POT-Creation-Date: 2026-09-04 02:17\n"
+"PO-Revision-Date: 2026-09-04 02:17\n"
 "Language-Team: \n"
 "Language: pt-BR\n"
 "MIME-Version: 1.0\n"
@@ -161,36 +161,36 @@ msgid "Ações: 0 de 3 — escolha o tipo"
 msgstr "Ações: 0 de 3 — escolha o tipo"
 
 #. Key:	AtributoSubiu
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1721)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1721)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1726)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1726)
 msgctxt "PetAttributes,AtributoSubiu"
 msgid "{Pet}: {Atributo} {Antes} → {Depois}"
 msgstr "{Pet}: {Atributo} {Antes} → {Depois}"
 
 #. Key:	GolpeDesbloqueado
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1754)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1754)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(1759)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(1759)
 msgctxt "PetAttributes,GolpeDesbloqueado"
 msgid "{Pet} desbloqueou {Golpe}!"
 msgstr "{Pet} desbloqueou {Golpe}!"
 
 #. Key:	GolpeUsado
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2420)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2420)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2428)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2428)
 msgctxt "BattleNarration,GolpeUsado"
 msgid "— usou {Move}"
 msgstr "— usou {Move}"
 
 #. Key:	SuperEfetivo
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2433)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2433)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2441)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2441)
 msgctxt "BattleNarration,SuperEfetivo"
 msgid "É super efetivo!"
 msgstr "É super efetivo!"
 
 #. Key:	PoucoEfetivo
-#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2439)
-#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2439)
+#. SourceLocation:	Source/BattleSquare/Private/Battle/BattleArena.cpp(2447)
+#: Source/BattleSquare/Private/Battle/BattleArena.cpp(2447)
 msgctxt "BattleNarration,PoucoEfetivo"
 msgid "Não é muito efetivo..."
 msgstr "Não é muito efetivo..."
@@ -853,23 +853,51 @@ msgctxt "WorldStatus,SuaMochila"
 msgid "mochila: {Itens}"
 msgstr "mochila: {Itens}"
 
+#. Key:	PosseSincronizada
+#. SourceLocation:	Source/BattleSquare/Private/World/WorldStatusReadout.cpp(133)
+#: Source/BattleSquare/Private/World/WorldStatusReadout.cpp(133)
+msgctxt "WorldStatus,PosseSincronizada"
+msgid "posse: no servidor"
+msgstr "posse: no servidor"
+
+#. Key:	PosseVelha
+#. SourceLocation:	Source/BattleSquare/Private/World/WorldStatusReadout.cpp(138)
+#: Source/BattleSquare/Private/World/WorldStatusReadout.cpp(138)
+msgctxt "WorldStatus,PosseVelha"
+msgid "posse: ultima conhecida (servidor fora do ar)"
+msgstr "posse: ultima conhecida (servidor fora do ar)"
+
+#. Key:	PossePendente
+#. SourceLocation:	Source/BattleSquare/Private/World/WorldStatusReadout.cpp(144)
+#: Source/BattleSquare/Private/World/WorldStatusReadout.cpp(144)
+msgctxt "WorldStatus,PossePendente"
+msgid "posse: {Quantos} captura(s) esperando subir"
+msgstr "posse: {Quantos} captura(s) esperando subir"
+
+#. Key:	PosseAbandonada
+#. SourceLocation:	Source/BattleSquare/Private/World/WorldStatusReadout.cpp(152)
+#: Source/BattleSquare/Private/World/WorldStatusReadout.cpp(152)
+msgctxt "WorldStatus,PosseAbandonada"
+msgid "posse: {Quantos} captura(s) NAO subiram — tente bs.MigrarPosse"
+msgstr "posse: {Quantos} captura(s) NAO subiram — tente bs.MigrarPosse"
+
 #. Key:	MundoVazio
-#. SourceLocation:	Source/BattleSquare/Private/World/WorldStatusReadout.cpp(127)
-#: Source/BattleSquare/Private/World/WorldStatusReadout.cpp(127)
+#. SourceLocation:	Source/BattleSquare/Private/World/WorldStatusReadout.cpp(166)
+#: Source/BattleSquare/Private/World/WorldStatusReadout.cpp(166)
 msgctxt "WorldStatus,MundoVazio"
 msgid "Nenhum adversário por perto"
 msgstr "Nenhum adversário por perto"
 
 #. Key:	AdversariosSemDistancia
-#. SourceLocation:	Source/BattleSquare/Private/World/WorldStatusReadout.cpp(136)
-#: Source/BattleSquare/Private/World/WorldStatusReadout.cpp(136)
+#. SourceLocation:	Source/BattleSquare/Private/World/WorldStatusReadout.cpp(175)
+#: Source/BattleSquare/Private/World/WorldStatusReadout.cpp(175)
 msgctxt "WorldStatus,AdversariosSemDistancia"
 msgid "{Quantos} adversário(s) no mundo"
 msgstr "{Quantos} adversário(s) no mundo"
 
 #. Key:	Adversarios
-#. SourceLocation:	Source/BattleSquare/Private/World/WorldStatusReadout.cpp(146)
-#: Source/BattleSquare/Private/World/WorldStatusReadout.cpp(146)
+#. SourceLocation:	Source/BattleSquare/Private/World/WorldStatusReadout.cpp(185)
+#: Source/BattleSquare/Private/World/WorldStatusReadout.cpp(185)
 msgctxt "WorldStatus,Adversarios"
 msgid "{Quantos} adversário(s) — o mais perto a {Metros} m"
 msgstr "{Quantos} adversário(s) — o mais perto a {Metros} m"

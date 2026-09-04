@@ -200,3 +200,72 @@ bool FWorldReadoutHidesEmptyItemLinesTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+// PS10: a posse na tela distingue os cinco estados — porque o pior estado
+// desta feature é o jogador achar que subiu e não.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FWorldReadoutShowsOwnershipStatusTest,
+	"BattleSquare.World.Readout.MostraOEstadoDaPosse",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FWorldReadoutShowsOwnershipStatusTest::RunTest(const FString& Parameters)
+{
+	FWorldStatusSnapshot Base;
+	Base.bHasOwnedPet = false;
+	Base.EncountersAlive = 0;
+
+	// OFFLINE PURO nao ocupa linha: sem conta, a posse e o save local, e
+	// dize-lo toda hora seria ruido.
+	{
+		FWorldStatusSnapshot Retrato = Base;
+		Retrato.OwnershipStatus = FWorldStatusSnapshot::EOwnershipStatus::LocalOnly;
+		TestFalse(TEXT("offline puro nao mostra linha de posse"),
+			AlgumaLinhaContem(FWorldStatusReadout::Build(Retrato), TEXT("posse:")));
+	}
+
+	// SINCRONIZADA: no servidor.
+	{
+		FWorldStatusSnapshot Retrato = Base;
+		Retrato.OwnershipStatus = FWorldStatusSnapshot::EOwnershipStatus::Synced;
+		TestTrue(TEXT("sincronizada diz 'no servidor'"),
+			AlgumaLinhaContem(FWorldStatusReadout::Build(Retrato), TEXT("no servidor")));
+	}
+
+	// VELHA: a ultima conhecida, e o jogo DIZ que e a ultima conhecida — o
+	// aceite da task e este: posse velha nao pode parecer sincronizada.
+	{
+		FWorldStatusSnapshot Retrato = Base;
+		Retrato.OwnershipStatus = FWorldStatusSnapshot::EOwnershipStatus::Stale;
+		const TArray<FWorldStatusLine> Linhas = FWorldStatusReadout::Build(Retrato);
+		TestTrue(TEXT("velha diz que o servidor esta fora"),
+			AlgumaLinhaContem(Linhas, TEXT("servidor fora")));
+		TestFalse(TEXT("e NAO se confunde com sincronizada"),
+			AlgumaLinhaContem(Linhas, TEXT("no servidor")));
+	}
+
+	// PENDENTE: quantas esperam subir.
+	{
+		FWorldStatusSnapshot Retrato = Base;
+		Retrato.OwnershipStatus = FWorldStatusSnapshot::EOwnershipStatus::Pending;
+		Retrato.PendingCaptureCount = 3;
+		const TArray<FWorldStatusLine> Linhas = FWorldStatusReadout::Build(Retrato);
+		TestTrue(TEXT("pendente diz que ha capturas esperando"),
+			AlgumaLinhaContem(Linhas, TEXT("esperando subir")));
+		TestTrue(TEXT("e diz quantas"), AlgumaLinhaContem(Linhas, TEXT("3")));
+	}
+
+	// ABANDONADA: o que NAO subiu, e nao some — o contrapeso da PS8 chegando
+	// a tela.
+	{
+		FWorldStatusSnapshot Retrato = Base;
+		Retrato.OwnershipStatus = FWorldStatusSnapshot::EOwnershipStatus::Abandoned;
+		Retrato.PendingCaptureCount = 2;
+		const TArray<FWorldStatusLine> Linhas = FWorldStatusReadout::Build(Retrato);
+		TestTrue(TEXT("abandonada avisa que NAO subiram"),
+			AlgumaLinhaContem(Linhas, TEXT("NAO subiram")));
+		TestTrue(TEXT("e aponta o conserto"),
+			AlgumaLinhaContem(Linhas, TEXT("bs.MigrarPosse")));
+	}
+
+	return true;
+}

@@ -122,6 +122,45 @@ TArray<FWorldStatusLine> FWorldStatusReadout::Build(const FWorldStatusSnapshot& 
 			}), FColor(180, 180, 200) });
 	}
 
+	// A POSSE no servidor (PS10), e a cor conta o estado antes do texto:
+	// verde no servidor, âmbar pendente, cinza offline, VERMELHO abandonado.
+	// O offline puro NÃO ocupa linha — sem conta, a posse é o save local e
+	// dizê-lo toda hora seria ruído; mas Stale e Abandoned SEMPRE aparecem,
+	// porque o pior estado desta feature é o jogador achar que subiu e não.
+	switch (Snapshot.OwnershipStatus)
+	{
+	case FWorldStatusSnapshot::EOwnershipStatus::Synced:
+		Linhas.Add({ LOCTEXT("PosseSincronizada", "posse: no servidor"),
+			FColor(150, 220, 150) });
+		break;
+
+	case FWorldStatusSnapshot::EOwnershipStatus::Stale:
+		Linhas.Add({ LOCTEXT("PosseVelha",
+			"posse: ultima conhecida (servidor fora do ar)"), FColor(200, 200, 150) });
+		break;
+
+	case FWorldStatusSnapshot::EOwnershipStatus::Pending:
+		Linhas.Add({ FText::Format(
+			LOCTEXT("PossePendente", "posse: {Quantos} captura(s) esperando subir"),
+			FFormatNamedArguments{
+				{ TEXT("Quantos"), FText::AsNumber(Snapshot.PendingCaptureCount) },
+			}), FColor(240, 200, 120) });
+		break;
+
+	case FWorldStatusSnapshot::EOwnershipStatus::Abandoned:
+		Linhas.Add({ FText::Format(
+			LOCTEXT("PosseAbandonada",
+				"posse: {Quantos} captura(s) NAO subiram — tente bs.MigrarPosse"),
+			FFormatNamedArguments{
+				{ TEXT("Quantos"), FText::AsNumber(Snapshot.PendingCaptureCount) },
+			}), FColor(240, 120, 100) });
+		break;
+
+	case FWorldStatusSnapshot::EOwnershipStatus::LocalOnly:
+	default:
+		break;
+	}
+
 	if (Snapshot.EncountersAlive <= 0)
 	{
 		Linhas.Add({ LOCTEXT("MundoVazio", "Nenhum adversário por perto"), FColor::Silver });

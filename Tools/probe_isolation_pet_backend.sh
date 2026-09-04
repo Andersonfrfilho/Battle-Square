@@ -68,8 +68,15 @@ const void* IsolationProbeOpenSSLRequiresLinking() { return (const void*)EVP_aes
 run_probe "battlesquare_headers" '#include "Data/PetDataLoader.h"
 void IsolationProbeReachesBattleSquareHeaders() { FLoadedPetRecord Unused; (void)Unused; }' || OVERALL_STATUS=1
 
+# PS6: o nucleo NAO alcanca HTTP. A posse escreve por HTTP DEPOIS da batalha,
+# e ResolveTurn nunca toca rede (AD-014, invariante 15). Se BattleSim
+# conseguisse incluir HttpModule, a batalha poderia passar a depender de
+# latencia — e a sonda existe para reprovar esse dia antes de ele chegar.
+run_probe "http" '#include "HttpModule.h"
+const void* IsolationProbeHttpRequiresLinking() { return (const void*)&FHttpModule::Get(); }' || OVERALL_STATUS=1
+
 if [ "$OVERALL_STATUS" -eq 0 ]; then
-  echo "probe_isolation_pet_backend: TODAS as sondas falharam como esperado — fronteira do núcleo intacta após a Fase 5."
+  echo "probe_isolation_pet_backend: TODAS as sondas falharam como esperado — fronteira do núcleo intacta (SQLite, OpenSSL, HTTP fora do nucleo)."
 else
   echo "probe_isolation_pet_backend: AO MENOS UMA sonda revelou vazamento de dependência para o núcleo." >&2
 fi

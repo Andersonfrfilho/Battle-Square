@@ -20,7 +20,7 @@ para quem venceu o ranking regional.
   sem filtro
 - [x] **MB3** — a vila veste a cor do bioma onde está, reusando a mesma fonte
   de paleta que a arena já usa (não uma segunda tabela)
-- [⛔] **MB4** — uma vila atingida por um desastre de `WorldEvents` muda de
+- [x] **MB4** — uma vila atingida por um desastre de `WorldEvents` muda de
   estado observável (prédio danificado, serviço que some), e sem desastre
   continua oferecendo tudo de sempre
 - [ ] bateria de testes completa verde (meça o total ao pegar a tarefa — não

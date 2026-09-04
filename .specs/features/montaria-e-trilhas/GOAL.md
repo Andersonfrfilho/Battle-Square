@@ -13,7 +13,7 @@ tela.
 
 ## PRONTO é isto, e nada menos
 
-- [⛔] **MT1** — andar montado é mais rápido que a pé no MESMO trecho de
+- [x] **MT1** — andar montado é mais rápido que a pé no MESMO trecho de
   ladeira, respeitando a proporção de custo subida/descida que já existe
 - [⛔] **MT2** — subir acumula cansaço mais rápido que descer, num valor novo
   e isolado, visível na tela

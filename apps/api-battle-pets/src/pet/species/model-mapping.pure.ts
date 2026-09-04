@@ -22,9 +22,14 @@ import {
   MODEL_PREFIX, NON_CREATURE_TOKENS, PACK_MARKERS, SHORT_HINT_LENGTH, STAGE_HINTS,
 } from './model-hints.constant';
 
-/** Os oito elementos do jogo (Config/PetTypes.json). */
+/**
+ * Os elementos do jogo. Os oito primeiros existem em `Config/PetTypes.json`;
+ * `Comum` foi pedido pelo usuario (04/09) para o bicho sem elemento, e o
+ * gerador AVISA enquanto o motor nao o conhecer — quem confere e o teste, nao
+ * a memoria de quem le esta lista.
+ */
 export const ELEMENTS = [
-  'Fogo', 'Agua', 'Planta', 'Terra', 'Fantasma', 'Luz', 'Ar', 'Raio',
+  'Fogo', 'Agua', 'Planta', 'Terra', 'Fantasma', 'Luz', 'Ar', 'Raio', 'Comum',
 ] as const;
 export type Element = (typeof ELEMENTS)[number];
 

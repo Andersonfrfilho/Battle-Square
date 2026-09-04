@@ -47,11 +47,11 @@ describe('as cadeias que o AUTOR assinou', () => {
   });
 });
 
-describe('as cadeias que so o PORTE sugere — leitura nossa, vao para decisao', () => {
-  test('Alien tem tres corpos em tres estagios e o Tall como variante', () => {
+describe('as cadeias que so o PORTE sugere — leitura nossa; o elemento veio de decisao', () => {
+  test('Alien tem tres corpos em tres estagios e o Tall como variante; Raio e provisorio (04/09)', () => {
     expect(chain('Alien')).toMatchObject({
       origem: 'porte',
-      element: undefined,
+      element: 'Raio',
       estagios: {
         Filhote: '/Game/Quaternius/Monsters/SK_Alien_Blob',
         Adulto: '/Game/Quaternius/Monsters/SK_Alien',

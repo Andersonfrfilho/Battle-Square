@@ -72,27 +72,35 @@ describe('gente da vila nao e pet (decisao 69)', () => {
   });
 });
 
-describe('o gerador NUNCA chuta elemento', () => {
-  test('SK_Bee sugere Planta E Ar — conflito vira undefined e entra na lista', () => {
-    expect(get('Bee').element).toBeUndefined();
-    expect(get('Bee').conflito).toEqual(['Planta', 'Ar']);
+describe('o gerador NUNCA chuta elemento — mas aplica o que foi DECIDIDO', () => {
+  test('SK_Bee sugere Planta E Ar; o usuario decidiu Ar (04/09) e o conflito sai da lista', () => {
+    expect(get('Bee').element).toBe('Ar');
+    expect(get('Bee').elementSource).toBe('decisao');
+    expect(get('Bee').conflito).toEqual([]);
   });
 
-  test('os sem pista do GOAL ficam undefined, sem conflito', () => {
-    const noHint = ['Alpaking', 'Armabee', 'Tribal_Big', 'Ninja_Blob', 'Alien', 'Alien_Tall',
-      'Dog', 'Cat', 'Slime', 'PinkBlob', 'GreenBlob', 'GreenSpikyBlob'];
-    for (const name of noHint) {
-      expect(get(name).element).toBeUndefined();
-      expect(get(name).conflito).toEqual([]);
+  test('a decisao e por FAMILIA: Armabee_Evolved herda o Ar da Armabee, Alien_Tall o Raio do Alien', () => {
+    expect(get('Armabee_Evolved')).toMatchObject({ element: 'Ar', elementSource: 'decisao' });
+    expect(get('Alien_Tall')).toMatchObject({ element: 'Raio', elementSource: 'decisao' });
+    expect(get('Ninja_Blob')).toMatchObject({ element: 'Fantasma', elementSource: 'decisao' });
+    expect(get('Tribal_Flying')).toMatchObject({ element: 'Terra', elementSource: 'decisao' });
+  });
+
+  test('os seis soltos sem pista sao Comum, o tipo que o usuario pediu para o bicho sem elemento', () => {
+    for (const name of ['Dog', 'Cat', 'Slime', 'PinkBlob', 'GreenBlob', 'GreenSpikyBlob']) {
+      expect(get(name), name).toMatchObject({ element: 'Comum', elementSource: 'decisao' });
     }
   });
 
-  test('a lista do que nao soube e exatamente esta (19 criaturas)', () => {
-    expect(summarizeClassification(classified).semElemento).toEqual([
-      'Alien', 'Alien_Big', 'Alien_Blob', 'Alien_Tall', 'Alpaking', 'Alpaking_Evolved',
-      'Armabee', 'Armabee_Evolved', 'Bee', 'Cat', 'Dog', 'GreenBlob', 'GreenSpikyBlob',
-      'Ninja_Big', 'Ninja_Blob', 'PinkBlob', 'Slime', 'Tribal_Big', 'Tribal_Flying',
-    ]);
+  test('o que ninguem decidiu continua undefined — so o Alpaking, que espera a cor', () => {
+    expect(get('Alpaking').element).toBeUndefined();
+    expect(summarizeClassification(classified).semElemento).toEqual(['Alpaking', 'Alpaking_Evolved']);
+  });
+
+  test('decisao nao se disfarca de pista: o relatorio lista o que entrou por decisao (17 malhas)', () => {
+    const { porDecisao } = summarizeClassification(classified);
+    expect(porDecisao).toHaveLength(17);
+    expect(porDecisao).toEqual(expect.arrayContaining(['Bee', 'Armabee', 'Alien_Blob', 'Slime']));
   });
 });
 
@@ -142,9 +150,10 @@ describe('o relatorio separa o que soube do que nao soube', () => {
     expect(report.humanos).toHaveLength(6);
     expect(report.props).toEqual(['Worm']);
     expect(report.criaturas).toBe(121);
-    expect(report.semElemento).toHaveLength(19);
+    expect(report.semElemento).toHaveLength(2);
     expect(report.comElemento.Agua).toHaveLength(42 + 8);
-    expect(report.comElemento.Raio).toEqual(['Hywirl']);
-    expect(report.conflitos).toEqual([{ modelName: 'Bee', elementos: ['Planta', 'Ar'] }]);
+    expect(report.comElemento.Raio).toEqual(['Alien', 'Alien_Big', 'Alien_Blob', 'Alien_Tall', 'Hywirl']);
+    expect(report.comElemento.Comum).toHaveLength(6);
+    expect(report.conflitos).toEqual([]);
   });
 });

@@ -35,7 +35,12 @@ export type PetModelsHandoff = {
   readonly decisoes: readonly UserDecision[];
 };
 
-export function buildPetModelsHandoff(insumo: ImportedAssetsFile): PetModelsHandoff {
+export type BuildPetModelsHandoffParams = {
+  readonly insumo: ImportedAssetsFile;
+  readonly elementosDoMotor: readonly string[];
+};
+
+export function buildPetModelsHandoff({ insumo, elementosDoMotor }: BuildPetModelsHandoffParams): PetModelsHandoff {
   const assets = classifyImportedAssets(insumo.malhas);
   const families = groupAssetsByFamily(assets);
   const match = matchCatalog({ seed: PET_CATALOG_SEED, assignments: PET_MODEL_ASSIGNMENTS, families });
@@ -50,7 +55,7 @@ export function buildPetModelsHandoff(insumo: ImportedAssetsFile): PetModelsHand
     familiasLivres: match.livres,
     cadeias,
     classificacao,
-    decisoes: buildUserDecisions({ classificacao, cadeias, match }),
+    decisoes: buildUserDecisions({ classificacao, cadeias, match, elementosDoMotor }),
   };
 }
 

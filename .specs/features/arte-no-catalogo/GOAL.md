@@ -74,12 +74,26 @@ defeitos que só apareceram com nomes reais.
 
 ## Decisões do USUÁRIO que travam parte da AR4c
 
-Modelos com evolução mas sem elemento — sem resposta, ficam fora do catálogo:
-- **Alpaking** / `Alpaking_Evolved` — alpaca-rei: Terra ou Planta?
-- **Armabee** / `Armabee_Evolved` — abelha blindada: Ar ou Planta?
+Respondidas em 04/09 e gravadas em `element-decisions.constant.ts` (por
+FAMÍLIA, com quem decidiu e o motivo — o gerador aplica por cima do nome):
 
-E os sem evolução: Tribal, Ninja, Alien, Alien_Tall, Dog, Cat, Slime, PinkBlob,
-GreenBlob, GreenSpikyBlob.
+- **Bee / Armabee → Ar** ("inseto voa"). Consequência: **Zunido** é
+  `Fisica/Planta` no seed e fica sem modelo até o seed mudar — decisão de seed.
+- **Alien → Raio, Ninja → Fantasma, Tribal → Terra** — provisórias do gerador,
+  a pedido ("vc decide por enquanto"). Marcadas `provisoria`; trocar é uma linha.
+- **Cat, Dog, Slime, PinkBlob, GreenBlob, GreenSpikyBlob → Comum** — tipo novo
+  pedido pelo usuário. Existe no gerador; **no motor ainda não** (item
+  `motor-Comum` do JSON, com a receita: entrada em `PetTypes.json` + linhas em
+  `TypeEffectiveness.json`, exige build → trilha A).
+
+Ainda abertas (6 itens em `decisoes`):
+- **Alpaking** — o insumo não traz cor por malha; pedir à trilha A um export
+  da cor-base, e aí decidir Terra ou Planta.
+- **Luz** — o usuário espera outro pack. Pesquisa de 04/09: nenhum pack
+  gratuito com criatura de Luz ou Raio pelo nome (Quaternius, KayKit,
+  poly.pizza); ver o relatório da sessão.
+- **Fish, Birb, Cactoro sem Adulto** — não há Blender nesta máquina e o editor
+  é da trilha A; a rota viável é um Adulto derivado por escala, declarado em dado.
 
 ## Como continuar
 

@@ -31,11 +31,11 @@ export const PET_MODEL_ASSIGNMENTS: readonly PetModelAssignment[] = [
   { pet: 'Cinza', familia: 'Demon', motivo: 'brasa que sobra: o demonio pequeno cresce para Demon_Big pelo porte' },
   { pet: 'Alfarrábio', familia: 'BlueDemon', motivo: 'fogo psiquico, chama azul — a cor decide' },
   { pet: 'Fornalha', familia: 'YellowDragon', motivo: 'fogo fisico e pesado; o dragao amarelo e o corpo mais parrudo do pack' },
-  // Planta (4 pets, 3 familias + decisao pendente)
+  // Planta (4 pets, 3 familias + Zunido, que o seed diz Planta e a arte diz Ar)
   { pet: 'Brisa', familia: 'Deer', motivo: 'planta natural: o cervo da mata. Cactoro seria a cadeia, mas so tem Blob e Big, sem Adulto' },
   { pet: 'Musgo', familia: 'Mushnub', motivo: 'fungo rasteiro, cadeia assinada pelo autor' },
   { pet: 'Névoa', familia: 'Mushroom', motivo: 'planta psiquica: o cogumelo que vira rei (MushroomKing)' },
-  { pet: 'Zunido', motivo: 'e a abelha, mas Bee sugere Planta E Ar e Armabee nao sugere nada: aguarda a decisao do usuario' },
+  { pet: 'Zunido', motivo: 'e a abelha, e o usuario decidiu (04/09) que abelha e Ar. Zunido e Fisica/Planta no seed: ou muda de elemento, ou fica sem modelo — decisao de seed, nao do gerador' },
   // Agua (5 pets, 5 familias)
   { pet: 'Maré', familia: 'Glub', motivo: 'agua inicial, cadeia assinada pelo autor' },
   { pet: 'Corrente', familia: 'Penguin', motivo: 'nadador de correnteza fria' },
@@ -61,5 +61,4 @@ export const PET_MODEL_ASSIGNMENTS: readonly PetModelAssignment[] = [
 /** Opcoes que o GOAL ja sugeriu para as cadeias sem elemento; o resto pergunta aberto. */
 export const SUGGESTED_ELEMENT_OPTIONS: Readonly<Record<string, string>> = {
   Alpaking: 'Terra ou Planta',
-  Armabee: 'Ar ou Planta',
 };

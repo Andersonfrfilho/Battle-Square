@@ -32,8 +32,10 @@ describe('a curadoria cobre o catalogo inteiro', () => {
 
   test('pet sem modelo diz o PORQUE — e uma decisao, nao um esquecimento', () => {
     const zunido = casamento.semModelo.find((s) => s.pet === 'Zunido');
+    // A arte diz que abelha e Ar (decisao de 04/09) e o seed diz Planta: o motivo tem de nomear os dois lados.
     expect(zunido?.elemento).toBe('Planta');
-    expect(zunido?.motivo).toContain('Bee');
+    expect(zunido?.motivo).toContain('Ar');
+    expect(zunido?.motivo).toContain('seed');
     for (const s of casamento.semModelo) expect(s.motivo.length).toBeGreaterThan(20);
   });
 });
@@ -77,8 +79,8 @@ describe('o que cada pet veste', () => {
 });
 
 describe('o estoque que sobra (livres)', () => {
-  test('Raio sobra inteiro: Hywirl sem pet de Raio no catalogo', () => {
-    expect(casamento.livres.Raio).toEqual(['Hywirl']);
+  test('Raio sobra inteiro: Alien (provisorio, 04/09) e Hywirl sem pet de Raio no catalogo', () => {
+    expect(casamento.livres.Raio).toEqual(['Alien', 'Hywirl']);
   });
 
   test('Luz nao sobra nada — e por isso Candeia e Farol ficam sem modelo', () => {
@@ -103,8 +105,9 @@ describe('CONTRAPESO: a curadoria errada REPROVA, com todos os problemas de uma 
     expect(casar(lista)).toThrow(/Faísca \(Fogo\): familia Glub e Agua/);
   });
 
-  test('familia sem elemento — nunca se veste um Slime sem decidir o elemento dele', () => {
-    expect(casar(troca('Barro', { familia: 'Slime' }))).toThrow(/Slime e sem elemento/);
+  test('familia sem elemento — nunca se veste o Alpaking sem decidir o elemento dele', () => {
+    // Era o Slime; ele virou Comum por decisao do usuario, e o Alpaking e o que ainda espera.
+    expect(casar(troca('Barro', { familia: 'Alpaking' }))).toThrow(/Alpaking e sem elemento/);
   });
 
   test('cadeia sem Adulto — o Fish do Monsters so tem Blob e Big (medido em 04/09)', () => {

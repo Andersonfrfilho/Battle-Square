@@ -2,16 +2,20 @@
 
 import { describe, expect, test } from 'bun:test';
 
+import { ENGINE_TYPES_PATH, loadEngineElements } from './engine-types.schema';
 import { IMPORTED_ASSETS_PATH, loadImportedAssets } from './imported-assets.pure';
 import { buildPetModelsHandoff } from './pet-models-report.pure';
 
 /**
- * AR4e — a lista de decisao do usuario, medida no insumo de 04/09/2026.
- * Cada item tem de dizer o PORQUE e o que a resposta desbloqueia.
+ * AR4e — a lista de decisao do usuario, medida no insumo de 04/09/2026 e ja
+ * com as respostas dele aplicadas (element-decisions.constant.ts). Cada item
+ * tem de dizer o PORQUE e o que a resposta desbloqueia.
  */
 const insumo = loadImportedAssets(await Bun.file(IMPORTED_ASSETS_PATH).text());
-const { decisoes } = buildPetModelsHandoff(insumo);
+const elementosDoMotor = loadEngineElements(await Bun.file(ENGINE_TYPES_PATH).text());
+const { decisoes } = buildPetModelsHandoff({ insumo, elementosDoMotor });
 const ids = decisoes.map((d) => d.id);
+const byId = (id: string) => decisoes.find((d) => d.id === id);
 
 describe('a lista de decisoes do usuario', () => {
   test('e curta, e cada item diz o porque e o que desbloqueia', () => {
@@ -22,36 +26,39 @@ describe('a lista de decisoes do usuario', () => {
     }
   });
 
-  test('as duas cadeias do GOAL, com as opcoes que ele sugeriu', () => {
-    expect(decisoes.find((d) => d.id === 'elemento-Alpaking')?.pergunta).toBe('Alpaking (Alpaking, Alpaking_Evolved): Terra ou Planta?');
-    expect(decisoes.find((d) => d.id === 'elemento-Armabee')?.pergunta).toBe('Armabee (Armabee, Armabee_Evolved): Ar ou Planta?');
+  test('so o Alpaking ainda pergunta elemento — o insumo nao traz cor, e a cor e o que decidiria', () => {
+    expect(byId('elemento-Alpaking')?.pergunta).toBe('Alpaking (Alpaking, Alpaking_Evolved): Terra ou Planta?');
+    for (const decidido of ['Armabee', 'Alien', 'Ninja', 'Tribal']) expect(ids).not.toContain(`elemento-${decidido}`);
   });
 
-  test('as cadeias de porte sem elemento tambem perguntam — Alien, Ninja, Tribal', () => {
-    expect(ids).toEqual(expect.arrayContaining(['elemento-Alien', 'elemento-Ninja', 'elemento-Tribal']));
-    expect(decisoes.find((d) => d.id === 'elemento-Alien')?.pergunta).toContain('que elemento?');
+  test('o que o usuario respondeu SAIU da lista: conflito da Bee e os soltos sem pista', () => {
+    expect(ids).not.toContain('conflito-Bee');
+    expect(ids).not.toContain('sem-pista-soltos');
   });
 
-  test('o conflito da Bee e a falta de Luz sao decisoes, com o pet que elas travam', () => {
-    expect(decisoes.find((d) => d.id === 'conflito-Bee')?.pergunta).toBe('Bee: Planta ou Ar?');
-    expect(decisoes.find((d) => d.id === 'falta-pack-Luz')?.pergunta).toContain('Candeia e Farol');
+  test('Comum existe no gerador e nao no motor: vira item medido, com a receita e as familias que ja o usam', () => {
+    const comum = byId('motor-Comum');
+    expect(comum?.pergunta).toContain('6 familias');
+    expect(comum?.pergunta).toContain('Slime');
+    expect(comum?.porque).toContain('PetTypes.json');
+    expect(comum?.desbloqueia).toContain('TypeEffectiveness.json');
+    expect(ids.filter((id) => id.startsWith('motor-'))).toEqual(['motor-Comum']);
   });
 
-  test('Raio tem modelo e nao tem pet; Fish, Birb e Cactoro nao tem Adulto', () => {
-    expect(decisoes.find((d) => d.id === 'sem-pet-Raio')?.pergunta).toContain('Hywirl');
-    const semAdulto = decisoes.find((d) => d.id === 'cadeias-sem-adulto');
+  test('a falta de Luz continua, com o pet que ela trava', () => {
+    expect(byId('falta-pack-Luz')?.pergunta).toContain('Candeia e Farol');
+  });
+
+  test('Raio agora tem Alien E Hywirl sem pet; Comum tem seis; Fish, Birb e Cactoro nao tem Adulto', () => {
+    expect(byId('sem-pet-Raio')?.pergunta).toContain('Alien, Hywirl');
+    expect(byId('sem-pet-Comum')?.pergunta).toContain('Cat, Dog');
+    const semAdulto = byId('cadeias-sem-adulto');
     for (const f of ['Fish', 'Birb', 'Cactoro']) expect(semAdulto?.pergunta).toContain(f);
   });
 
-  test('os soltos sem pista vao num item so, e nao repetem quem ja esta em cadeia ou conflito', () => {
-    const soltos = decisoes.find((d) => d.id === 'sem-pista-soltos');
-    expect(soltos?.pergunta).toContain('Slime');
-    expect(soltos?.pergunta).toContain('PinkBlob');
-    for (const repetido of ['Alien', 'Bee', 'Alpaking', 'Ninja']) expect(soltos?.pergunta).not.toContain(repetido);
-  });
-
-  test('a ordem e fixa: o que trava cadeia vem antes do que so engorda o estoque', () => {
-    expect(ids[0]).toBe('elemento-Alien');
-    expect(ids.at(-1)).toBe('sem-pista-soltos');
+  test('a ordem e fixa: o que trava cadeia vem antes, o motor logo depois, o estoque por ultimo', () => {
+    expect(ids[0]).toBe('elemento-Alpaking');
+    expect(ids.indexOf('motor-Comum')).toBeLessThan(ids.indexOf('falta-pack-Luz'));
+    expect(ids.at(-1)).toBe('sem-pet-Comum');
   });
 });

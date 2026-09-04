@@ -266,7 +266,7 @@
     {
       "pet": "Zunido",
       "elemento": "Planta",
-      "motivo": "e a abelha, mas Bee sugere Planta E Ar e Armabee nao sugere nada: aguarda a decisao do usuario"
+      "motivo": "e a abelha, e o usuario decidiu (04/09) que abelha e Ar. Zunido e Fisica/Planta no seed: ou muda de elemento, ou fica sem modelo — decisao de seed, nao do gerador"
     },
     {
       "pet": "Candeia",
@@ -338,10 +338,12 @@
       "Monkroose",
       "Orc",
       "Panda",
+      "Tribal",
       "Yeti"
     ],
     "Fantasma": [
       "Cthulhu",
+      "Ninja",
       "Skeleton",
       "Skeleton_Mage",
       "Skeleton_Minion",
@@ -350,16 +352,28 @@
     ],
     "Luz": [],
     "Ar": [
+      "Armabee",
+      "Bee",
       "Birb",
       "Chicken"
     ],
     "Raio": [
+      "Alien",
       "Hywirl"
+    ],
+    "Comum": [
+      "Cat",
+      "Dog",
+      "GreenBlob",
+      "GreenSpikyBlob",
+      "PinkBlob",
+      "Slime"
     ]
   },
   "cadeias": [
     {
       "family": "Alien",
+      "element": "Raio",
       "estagios": {
         "Adulto": "/Game/Quaternius/Monsters/SK_Alien",
         "Evoluido": "/Game/Quaternius/Monsters/SK_Alien_Big",
@@ -381,6 +395,7 @@
     },
     {
       "family": "Armabee",
+      "element": "Ar",
       "estagios": {
         "Adulto": "/Game/Quaternius/Monsters/SK_Armabee",
         "Evoluido": "/Game/Quaternius/Monsters/SK_Armabee_Evolved"
@@ -484,6 +499,7 @@
     },
     {
       "family": "Ninja",
+      "element": "Fantasma",
       "estagios": {
         "Evoluido": "/Game/Quaternius/Monsters/SK_Ninja_Big",
         "Filhote": "/Game/Quaternius/Monsters/SK_Ninja_Blob"
@@ -514,6 +530,7 @@
     },
     {
       "family": "Tribal",
+      "element": "Terra",
       "estagios": {
         "Evoluido": "/Game/Quaternius/Monsters/SK_Tribal_Big",
         "Adulto": "/Game/Quaternius/Monsters/SK_Tribal_Flying"
@@ -634,6 +651,8 @@
         "Orc_Skull",
         "Panda",
         "Pig",
+        "Tribal_Big",
+        "Tribal_Flying",
         "Yeti",
         "Yeti_Big",
         "Yeti_Blob"
@@ -643,6 +662,8 @@
         "Ghost",
         "Ghost_Cute",
         "Ghost_Skull",
+        "Ninja_Big",
+        "Ninja_Blob",
         "Skeleton",
         "Skeleton_Mage",
         "Skeleton_Minion",
@@ -654,8 +675,11 @@
         "Wizard"
       ],
       "Ar": [
+        "Armabee",
+        "Armabee_Evolved",
         "Bat_AM",
         "Bat_CM",
+        "Bee",
         "Birb_Big",
         "Birb_Blob",
         "Chicken",
@@ -664,16 +688,30 @@
         "Pigeon_Flying"
       ],
       "Raio": [
+        "Alien",
+        "Alien_Big",
+        "Alien_Blob",
+        "Alien_Tall",
         "Hywirl"
+      ],
+      "Comum": [
+        "Cat",
+        "Dog",
+        "GreenBlob",
+        "GreenSpikyBlob",
+        "PinkBlob",
+        "Slime"
       ]
     },
     "semElemento": [
+      "Alpaking",
+      "Alpaking_Evolved"
+    ],
+    "porDecisao": [
       "Alien",
       "Alien_Big",
       "Alien_Blob",
       "Alien_Tall",
-      "Alpaking",
-      "Alpaking_Evolved",
       "Armabee",
       "Armabee_Evolved",
       "Bee",
@@ -688,23 +726,9 @@
       "Tribal_Big",
       "Tribal_Flying"
     ],
-    "conflitos": [
-      {
-        "modelName": "Bee",
-        "elementos": [
-          "Planta",
-          "Ar"
-        ]
-      }
-    ]
+    "conflitos": []
   },
   "decisoes": [
-    {
-      "id": "elemento-Alien",
-      "pergunta": "Alien (Alien, Alien_Big, Alien_Blob): que elemento?",
-      "porque": "e uma cadeia de evolucao inteira sem pista de elemento no nome; o gerador nao chuta",
-      "desbloqueia": "uma cadeia de 3 estagios para um pet desse elemento"
-    },
     {
       "id": "elemento-Alpaking",
       "pergunta": "Alpaking (Alpaking, Alpaking_Evolved): Terra ou Planta?",
@@ -712,28 +736,10 @@
       "desbloqueia": "uma cadeia de 2 estagios para um pet desse elemento"
     },
     {
-      "id": "elemento-Armabee",
-      "pergunta": "Armabee (Armabee, Armabee_Evolved): Ar ou Planta?",
-      "porque": "e uma cadeia de evolucao inteira sem pista de elemento no nome; o gerador nao chuta",
-      "desbloqueia": "uma cadeia de 2 estagios para um pet desse elemento"
-    },
-    {
-      "id": "elemento-Ninja",
-      "pergunta": "Ninja (Ninja_Big, Ninja_Blob): que elemento?",
-      "porque": "e uma cadeia de evolucao inteira sem pista de elemento no nome; o gerador nao chuta",
-      "desbloqueia": "uma cadeia de 2 estagios para um pet desse elemento"
-    },
-    {
-      "id": "elemento-Tribal",
-      "pergunta": "Tribal (Tribal_Big, Tribal_Flying): que elemento?",
-      "porque": "e uma cadeia de evolucao inteira sem pista de elemento no nome; o gerador nao chuta",
-      "desbloqueia": "uma cadeia de 2 estagios para um pet desse elemento"
-    },
-    {
-      "id": "conflito-Bee",
-      "pergunta": "Bee: Planta ou Ar?",
-      "porque": "o nome sugere dois elementos, e o gerador so aceita um",
-      "desbloqueia": "o pet que hoje esta sem modelo por causa dele (ver semModelo)"
+      "id": "motor-Comum",
+      "pergunta": "Comum: 6 familias ja o usam (Cat, Dog, GreenBlob, GreenSpikyBlob, PinkBlob, Slime); a trilha A o cria no motor?",
+      "porque": "o elemento existe no gerador e NAO em Config/PetTypes.json; sem ele, pet desse tipo nao carrega",
+      "desbloqueia": "uma entrada em PetTypes.json (cor, tilt, skill reusada) + as linhas em TypeEffectiveness.json; exige build, logo e da trilha A"
     },
     {
       "id": "falta-pack-Luz",
@@ -743,21 +749,21 @@
     },
     {
       "id": "cadeias-sem-adulto",
-      "pergunta": "Birb (Birb_Big, Birb_Blob); Cactoro (Cactoro_Big, Cactoro_Blob); Fish (Fish_Big, Fish_Blob): o Big vira Adulto e o Blob Filhote?",
+      "pergunta": "Birb (Birb_Big, Birb_Blob); Cactoro (Cactoro_Big, Cactoro_Blob); Fish (Fish_Big, Fish_Blob); Ninja (Ninja_Big, Ninja_Blob): o Big vira Adulto e o Blob Filhote?",
       "porque": "sao cadeias de porte com Blob e Big mas sem forma do meio, e EPetGrowthStage nasce em Adulto",
       "desbloqueia": "tres cadeias de dois estagios que hoje ficam livres"
     },
     {
       "id": "sem-pet-Raio",
-      "pergunta": "Raio: criar pet no seed para Hywirl, ou deixar o modelo parado?",
+      "pergunta": "Raio: criar pet no seed para Alien, Hywirl, ou deixar o modelo parado?",
       "porque": "ha modelo desse elemento e nenhum pet no catalogo para vesti-lo",
       "desbloqueia": "um pet novo com modelo pronto"
     },
     {
-      "id": "sem-pista-soltos",
-      "pergunta": "Cat, Dog, GreenBlob, GreenSpikyBlob, PinkBlob, Slime: que elemento tem cada um — ou ficam de fora?",
-      "porque": "modelos unicos sem pista no nome; sao estoque, nao cadeia, entao decidir nao e urgente",
-      "desbloqueia": "6 modelos a mais no estoque de familias livres"
+      "id": "sem-pet-Comum",
+      "pergunta": "Comum: criar pet no seed para Cat, Dog, GreenBlob, GreenSpikyBlob, PinkBlob, Slime, ou deixar o modelo parado?",
+      "porque": "ha modelo desse elemento e nenhum pet no catalogo para vesti-lo",
+      "desbloqueia": "um pet novo com modelo pronto"
     }
   ]
 }

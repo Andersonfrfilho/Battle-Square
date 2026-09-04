@@ -7,6 +7,7 @@
  * PASTA do import, que e fato medido (o pack de peixes fica em `Fish`), e o
  * caminho do asset, que e o que a trilha A vai apontar no Blueprint.
  */
+import { elementDecisionFor } from './element-decisions.constant';
 import { HUMAN_CLASS_TOKENS, MODEL_PREFIX } from './model-hints.constant';
 import type { Element, Stage, StageOrigin } from './model-mapping.pure';
 import {
@@ -33,7 +34,8 @@ export const FOLDER_POLICIES: Readonly<Record<string, FolderPolicy>> = {
 };
 
 export type AssetKind = 'criatura' | 'humano' | 'prop';
-export type ElementSource = 'nome' | 'pasta';
+/** `decisao` = alguem decidiu por familia (element-decisions.constant.ts), por cima do nome e da pasta. */
+export type ElementSource = 'nome' | 'pasta' | 'decisao';
 
 export type ClassifiedAsset = {
   readonly asset: string;
@@ -43,7 +45,7 @@ export type ClassifiedAsset = {
   readonly kind: AssetKind;
   readonly element: Element | undefined;
   readonly elementSource: ElementSource | undefined;
-  /** Quando o nome sugeriu mais de um elemento — a lista, para o humano decidir. */
+  /** Quando o nome sugeriu mais de um elemento E ninguem decidiu — a lista, para o humano. */
   readonly conflito: readonly Element[];
   readonly stage: Stage;
   readonly stageOrigin: StageOrigin;
@@ -64,7 +66,15 @@ function kindOf(modelName: string, byName: readonly Element[]): AssetKind {
 
 type ResolvedElement = { element: Element | undefined; source: ElementSource | undefined };
 
-function resolveElement(byName: readonly Element[], policy: FolderPolicy | undefined): ResolvedElement {
+type ResolveElementParams = {
+  readonly family: string;
+  readonly byName: readonly Element[];
+  readonly policy: FolderPolicy | undefined;
+};
+
+function resolveElement({ family, byName, policy }: ResolveElementParams): ResolvedElement {
+  const decided = elementDecisionFor(family);
+  if (decided) return { element: decided.elemento, source: 'decisao' };
   const fromName = byName.length === 1 ? byName[0] : undefined;
   if (policy?.autoritaria) {
     return fromName === policy.element
@@ -80,8 +90,9 @@ export function classifyImportedAsset(asset: ImportedAsset): ClassifiedAsset {
   const modelName = asset.nome.replace(MODEL_PREFIX, '');
   const byName = elementsSuggestedBy(modelName);
   const kind = kindOf(modelName, byName);
+  const family = familyOf(modelName);
   const resolved = kind === 'criatura'
-    ? resolveElement(byName, FOLDER_POLICIES[asset.pasta])
+    ? resolveElement({ family, byName, policy: FOLDER_POLICIES[asset.pasta] })
     : { element: undefined, source: undefined };
   return {
     asset: asset.asset,
@@ -90,10 +101,10 @@ export function classifyImportedAsset(asset: ImportedAsset): ClassifiedAsset {
     kind,
     element: resolved.element,
     elementSource: resolved.source,
-    conflito: byName.length > 1 ? byName : [],
+    conflito: byName.length > 1 && resolved.source !== 'decisao' ? byName : [],
     stage: stageFromModelName(modelName),
     stageOrigin: stageOriginOf(modelName),
-    family: familyOf(modelName),
+    family,
   };
 }
 
@@ -109,6 +120,8 @@ export type ClassificationReport = {
   readonly props: readonly string[];
   readonly comElemento: Readonly<Record<Element, readonly string[]>>;
   readonly semElemento: readonly string[];
+  /** O que entrou por DECISAO registrada, nao por pista — separado para nao parecer que o gerador soube. */
+  readonly porDecisao: readonly string[];
   readonly conflitos: ReadonlyArray<{ readonly modelName: string; readonly elementos: readonly Element[] }>;
 };
 
@@ -124,6 +137,7 @@ export function summarizeClassification(assets: readonly ClassifiedAsset[]): Cla
     props: names(assets.filter((a) => a.kind === 'prop')),
     comElemento,
     semElemento: names(criaturas.filter((a) => a.element === undefined)),
+    porDecisao: names(criaturas.filter((a) => a.elementSource === 'decisao')),
     conflitos: criaturas
       .filter((a) => a.conflito.length > 0)
       .map((a) => ({ modelName: a.modelName, elementos: a.conflito })),

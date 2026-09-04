@@ -4,8 +4,8 @@
  * AR4e — o que so o USUARIO decide, derivado do dado, com o porque.
  *
  * Nada aqui e opiniao do gerador: cada item nasce de uma medicao (cadeia sem
- * elemento, conflito de pista, elemento sem pack, cadeia sem Adulto) e diz o
- * que a resposta DESBLOQUEIA. Responder e barato; chutar no lugar do usuario
+ * elemento, conflito de pista, elemento sem pack, cadeia sem Adulto, elemento
+ * que o MOTOR nao conhece) e diz o que a resposta DESBLOQUEIA. Responder e barato; chutar no lugar do usuario
  * encheria o catalogo de erro silencioso (invariante 1).
  */
 import { PET_CATALOG_SEED } from '../seed/pet-catalog.seed';
@@ -26,6 +26,8 @@ export type BuildUserDecisionsParams = {
   readonly classificacao: ClassificationReport;
   readonly cadeias: readonly AssetFamily[];
   readonly match: CatalogMatch;
+  /** Os nomes de `Config/PetTypes.json` — lidos do arquivo, nunca lembrados. */
+  readonly elementosDoMotor: readonly string[];
 };
 
 function stageNames(family: AssetFamily): string {
@@ -93,11 +95,22 @@ function chainsWithoutAdult(cadeias: readonly AssetFamily[]): UserDecision[] {
   }];
 }
 
+function elementsMissingInEngine(match: CatalogMatch, elementosDoMotor: readonly string[]): UserDecision[] {
+  const known = new Set(elementosDoMotor);
+  return ELEMENTS.filter((e) => !known.has(e)).map((e) => ({
+    id: `motor-${e}`,
+    pergunta: `${e}: ${match.livres[e].length} familias ja o usam (${match.livres[e].join(', ')}); a trilha A o cria no motor?`,
+    porque: 'o elemento existe no gerador e NAO em Config/PetTypes.json; sem ele, pet desse tipo nao carrega',
+    desbloqueia: 'uma entrada em PetTypes.json (cor, tilt, skill reusada) + as linhas em TypeEffectiveness.json; exige build, logo e da trilha A',
+  }));
+}
+
 export function buildUserDecisions(params: BuildUserDecisionsParams): UserDecision[] {
-  const { classificacao, cadeias, match } = params;
+  const { classificacao, cadeias, match, elementosDoMotor } = params;
   return [
     ...chainsWithoutElement(cadeias),
     ...conflicts(classificacao),
+    ...elementsMissingInEngine(match, elementosDoMotor),
     ...elementsWithoutStock(match),
     ...chainsWithoutAdult(cadeias),
     ...elementsWithoutPet(match),

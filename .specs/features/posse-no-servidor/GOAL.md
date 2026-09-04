@@ -32,7 +32,7 @@ ser uma pergunta sobre a CONTA.**
 - [x] **PS7** — ler a coleção fora da batalha, e backend fora do ar não impede jogar
 - [x] **PS8** — a captura viaja por fila, e sobe uma vez só
 - [x] **PS9** — quem já joga migra sem perder nada, e a migração é repetível
-- [ ] **PS10** — a posse na TELA, dizendo o que está pendente
+- [x] **PS10** — a posse na TELA, dizendo o que está pendente
 - [ ] **PS11** — capturar passa a exigir SEM DONO
 - [ ] O grep fora de `/Tests/` acha quem PERGUNTA de quem é o pet
 - [ ] Bateria completa verde — o total do dia em que a feature abrir (hoje **858**); o número só sobe

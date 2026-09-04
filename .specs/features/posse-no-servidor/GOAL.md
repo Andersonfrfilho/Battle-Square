@@ -23,10 +23,10 @@ ser uma pergunta sobre a CONTA.**
 
 ## PRONTO é isto, e nada menos
 
-- [ ] **PS1** — a tabela da posse existe no banco, com unicidade `(dono, catálogo)`
-- [ ] **PS2** — o token do JOGADOR autentica, e `admin` não vira dono de nada
-- [ ] **PS3** — a autorização é por OBJETO, com teste negativo de isolamento
-- [ ] **PS4** — as rotas da posse existem, e a captura é idempotente
+- [x] **PS1** — a tabela da posse existe no banco, com unicidade `(dono, catálogo)`
+- [x] **PS2** — o token do JOGADOR autentica, e `admin` não vira dono de nada
+- [x] **PS3** — a autorização é por OBJETO, com teste negativo de isolamento
+- [x] **PS4** — as rotas da posse existem, e a captura é idempotente
 - [ ] **PS5** — o lado da batalha passa a ter CONTA, sem tocar em rede
 - [ ] **PS6** — o jogo pode falar HTTP, e o núcleo continua sem alcançá-lo
 - [ ] **PS7** — ler a coleção fora da batalha, e backend fora do ar não impede jogar

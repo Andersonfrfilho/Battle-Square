@@ -24,7 +24,7 @@ abaixo mede o tempo por ela; nenhuma caixa reintroduz um segundo relógio.
       `mundo-vivo/tasks.md` MV4. *Depende de MV3.*
 - [x] **MV5** — idade do mundo e corte pendente aparecem na TELA —
       `mundo-vivo/tasks.md` MV5. *Depende de MV2 + MV3.*
-- [ ] **MV6** — pets envelhecem — `mundo-vivo/tasks.md` MV6. As três perguntas
+- [x] **MV6** — pets envelhecem — `mundo-vivo/tasks.md` MV6. As três perguntas
       de conteúdo (a idade tem fim? corre offline? cuidado ativo?) JÁ têm
       resposta nas decisões 32, 33 e 34 — confirmar antes de codar, e o número
       de envelhecimento nasce em config. *Depende de MV1.*

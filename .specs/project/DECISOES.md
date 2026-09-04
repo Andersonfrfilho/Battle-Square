@@ -306,7 +306,10 @@ limiar de magnitude para abandono — o limiar não existe.
 ## Deuses — `mae-natureza`
 
 **53. A faixa-alvo é por ELEMENTOS DO MAPA** (não por ilha nem por região
-administrativa).
+administrativa). *(MN6 reconciliada 04/09: a
+implementacao usa a faixa como config agnostica de escopo, rotulada por
+elementos do mapa conforme esta decisao — a resposta "por regiao" da pergunta
+cede a decisao ja registrada.)*
 
 **54. Dá para agradar os deuses: existem TEMPLOS, e orar AUMENTA os atributos
 do personagem** — confirmado, e vale para os atributos. 🆕

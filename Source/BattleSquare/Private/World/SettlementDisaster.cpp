@@ -2,22 +2,25 @@
 
 #include "World/SettlementDisaster.h"
 
-bool SettlementDisaster::IsAbandoned(float DisasterMagnitude, float Threshold)
+bool SettlementDisaster::IsDisrupted(float DisasterMagnitude, float Threshold)
 {
-	// Limiar não-positivo nunca abandona: config degenerada deixa a vila de pé,
-	// não a some por um zero esquecido.
+	// Limiar não-positivo nunca interrompe: config degenerada deixa a vila de
+	// pé, nao a some por um zero esquecido.
 	if (Threshold <= 0.0f)
 	{
 		return false;
 	}
+	// Temporario por construcao: verdadeiro so enquanto a magnitude (janela do
+	// desastre) esta alta. Passado o evento, cai — a vila se reconstroi (52).
 	return DisasterMagnitude >= Threshold;
 }
 
-bool SettlementDisaster::OffersAfterDisaster(
-	ESettlementKind Kind, ESettlementService Service, bool bAbandoned)
+bool SettlementDisaster::OffersDuringDisaster(
+	ESettlementKind Kind, ESettlementService Service, bool bDisrupted)
 {
-	// Abandonada, nenhum serviço. De pé, a tabela de sempre — sem segunda fonte.
-	if (bAbandoned)
+	// Interrompida, nenhum serviço enquanto o desastre passa. Fora disso, a
+	// tabela de sempre — sem segunda fonte.
+	if (bDisrupted)
 	{
 		return false;
 	}

@@ -19,7 +19,7 @@ bool FSpeciesMigrationTest::RunTest(const FString&)
 {
 	using namespace NatureBalance;
 
-	// A faixa-alvo por regiao (config MN6).
+	// A faixa-alvo por ELEMENTOS DO MAPA (decisao 53), config MN6.
 	FNatureFaixaAlvo Faixa; Faixa.Min = 3.0f; Faixa.Max = 20.0f;
 
 	// ESPECIE RARA (censo agregado real = 1, abaixo do minimo): migra para

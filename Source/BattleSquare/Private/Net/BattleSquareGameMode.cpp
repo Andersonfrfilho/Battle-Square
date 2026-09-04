@@ -1395,7 +1395,7 @@ void ABattleSquareGameMode::FetchTreeCutsForChunk(const FIntPoint& Chunk, AFores
 	Pedido->ProcessRequest();
 }
 
-bool ABattleSquareGameMode::VilaAbandonadaPorDesastre(const FVector2D& Onde) const
+bool ABattleSquareGameMode::VilaInterrompidaPorDesastre(const FVector2D& Onde) const
 {
 	if (!CenaDoMundo)
 	{
@@ -1410,7 +1410,7 @@ bool ABattleSquareGameMode::VilaAbandonadaPorDesastre(const FVector2D& Onde) con
 	GConfig->GetFloat(TEXT("/Script/BattleSquare.WorldEvents"),
 		TEXT("SettlementAbandonMagnitude"), Limiar, GGameIni);
 
-	return SettlementDisaster::IsAbandoned(Magnitude, Limiar);
+	return SettlementDisaster::IsDisrupted(Magnitude, Limiar);
 }
 
 void ABattleSquareGameMode::SetRegionRanking(bool bWon)
@@ -1811,13 +1811,13 @@ void ABattleSquareGameMode::ChallengeArena(bool bAutoPlay)
 		return;
 	}
 
-	// MB4: vila abandonada por desastre nao paga premio — o servico caiu com ela.
+	// MB4 (52): vila interrompida por desastre nao paga premio enquanto o evento passa.
 	const APlayerController* CtrlPremio = GetWorld()->GetFirstPlayerController();
 	const APawn* JogadorPremio = CtrlPremio ? CtrlPremio->GetPawn() : nullptr;
-	const bool bVilaCaiu = JogadorPremio
-		&& VilaAbandonadaPorDesastre(FVector2D(JogadorPremio->GetActorLocation()));
-	if (!SettlementDisaster::OffersAfterDisaster(
-			CurrentBuildingKind, ESettlementService::PremioDeRanking, bVilaCaiu))
+	const bool bVilaInterrompida = JogadorPremio
+		&& VilaInterrompidaPorDesastre(FVector2D(JogadorPremio->GetActorLocation()));
+	if (!SettlementDisaster::OffersDuringDisaster(
+			CurrentBuildingKind, ESettlementService::PremioDeRanking, bVilaInterrompida))
 	{
 		FBattleDebugScreen::Show(TEXT("esta Arena nao paga premio"),
 			6.0f, FColor::Orange, /*Key=*/-1);
@@ -2536,15 +2536,15 @@ void ABattleSquareGameMode::AnunciarPortaCruzada(EVillageBuilding Predio,
 		return;
 	}
 
-	// CIDADE ABANDONADA POR DESASTRE (MB4): se o lugar foi atingido acima do
+	// VILA ATINGIDA POR DESASTRE (MB4, decisao 52): interrompida enquanto o
 	// limiar, a vila caiu — avisa na tela, e os servicos deixam de valer aqui.
 	{
 		const APlayerController* Ctrl = GetWorld()->GetFirstPlayerController();
 		const APawn* JogadorAqui = Ctrl ? Ctrl->GetPawn() : nullptr;
-		if (JogadorAqui && VilaAbandonadaPorDesastre(FVector2D(JogadorAqui->GetActorLocation())))
+		if (JogadorAqui && VilaInterrompidaPorDesastre(FVector2D(JogadorAqui->GetActorLocation())))
 		{
 			FBattleDebugScreen::Show(
-				TEXT("vila ABANDONADA por desastre — sem servicos aqui"),
+				TEXT("vila ATINGIDA por desastre — em reconstrucao, sem servicos agora"),
 				8.0f, FColor(180, 120, 100), /*Key=*/775);
 		}
 	}

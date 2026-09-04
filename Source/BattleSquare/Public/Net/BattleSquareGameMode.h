@@ -536,8 +536,8 @@ public:
 	void SetRegionRanking(bool bWon);
 
 private:
-	/** A vila neste ponto foi abandonada por um desastre de WorldEvents? (MB4) */
-	bool VilaAbandonadaPorDesastre(const FVector2D& Onde) const;
+	/** A vila neste ponto esta interrompida por um desastre agora? (MB4, decisao 52) */
+	bool VilaInterrompidaPorDesastre(const FVector2D& Onde) const;
 
 private:
 	/** Busca os cortes ativos do pedaço e some com as árvores cortadas (MV3). */

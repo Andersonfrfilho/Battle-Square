@@ -1,0 +1,646 @@
+{
+ "geradoEm": "2026-09-04",
+ "total": 128,
+ "malhas": [
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Alien",
+   "nome": "SK_Alien",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Alien_Big",
+   "nome": "SK_Alien_Big",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Alien_Blob",
+   "nome": "SK_Alien_Blob",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Alien_Tall",
+   "nome": "SK_Alien_Tall",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Alpaking",
+   "nome": "SK_Alpaking",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Alpaking_Evolved",
+   "nome": "SK_Alpaking_Evolved",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_Anglerfish",
+   "nome": "SK_Anglerfish",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Armabee",
+   "nome": "SK_Armabee",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Armabee_Evolved",
+   "nome": "SK_Armabee_Evolved",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_ArmoredCatfish",
+   "nome": "SK_ArmoredCatfish",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/KayKit/Characters/SK_Barbarian",
+   "nome": "SK_Barbarian",
+   "pasta": "Characters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Bat_AM",
+   "nome": "SK_Bat_AM",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Bat_CM",
+   "nome": "SK_Bat_CM",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Bee",
+   "nome": "SK_Bee",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_Betta",
+   "nome": "SK_Betta",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Birb_Big",
+   "nome": "SK_Birb_Big",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Birb_Blob",
+   "nome": "SK_Birb_Blob",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_BlackLionFish",
+   "nome": "SK_BlackLionFish",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_Blobfish",
+   "nome": "SK_Blobfish",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_BlueDemon",
+   "nome": "SK_BlueDemon",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_BlueGoldfish",
+   "nome": "SK_BlueGoldfish",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_BlueTang",
+   "nome": "SK_BlueTang",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Bunny",
+   "nome": "SK_Bunny",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_ButterflyFish",
+   "nome": "SK_ButterflyFish",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Cactoro_Big",
+   "nome": "SK_Cactoro_Big",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Cactoro_Blob",
+   "nome": "SK_Cactoro_Blob",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Cactus",
+   "nome": "SK_Cactus",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_CardinalFish",
+   "nome": "SK_CardinalFish",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Cat",
+   "nome": "SK_Cat",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Chicken",
+   "nome": "SK_Chicken",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Chicken_Cute",
+   "nome": "SK_Chicken_Cute",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_Clownfish",
+   "nome": "SK_Clownfish",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_CoralGrouper",
+   "nome": "SK_CoralGrouper",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_Cowfish",
+   "nome": "SK_Cowfish",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Crab",
+   "nome": "SK_Crab",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Cthulhu",
+   "nome": "SK_Cthulhu",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Cyclops",
+   "nome": "SK_Cyclops",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Deer",
+   "nome": "SK_Deer",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Demon",
+   "nome": "SK_Demon",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Demon_Big",
+   "nome": "SK_Demon_Big",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Demon_Flying",
+   "nome": "SK_Demon_Flying",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Dino",
+   "nome": "SK_Dino",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Dog",
+   "nome": "SK_Dog",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_Dolphin",
+   "nome": "SK_Dolphin",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Dragon",
+   "nome": "SK_Dragon",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Dragon_Evolved",
+   "nome": "SK_Dragon_Evolved",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Dragon_Mon",
+   "nome": "SK_Dragon_Mon",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_Fish1",
+   "nome": "SK_Fish1",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_Fish2",
+   "nome": "SK_Fish2",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_Fish3",
+   "nome": "SK_Fish3",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Fish_Big",
+   "nome": "SK_Fish_Big",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Fish_Blob",
+   "nome": "SK_Fish_Blob",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_Flatfish",
+   "nome": "SK_Flatfish",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_FlowerHorn",
+   "nome": "SK_FlowerHorn",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Frog",
+   "nome": "SK_Frog",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Ghost",
+   "nome": "SK_Ghost",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Ghost_Cute",
+   "nome": "SK_Ghost_Cute",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Ghost_Skull",
+   "nome": "SK_Ghost_Skull",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Glub",
+   "nome": "SK_Glub",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Glub_Evolved",
+   "nome": "SK_Glub_Evolved",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_GoblinShark",
+   "nome": "SK_GoblinShark",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_Goldfish",
+   "nome": "SK_Goldfish",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Goleling",
+   "nome": "SK_Goleling",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Goleling_Evolved",
+   "nome": "SK_Goleling_Evolved",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_GreenBlob",
+   "nome": "SK_GreenBlob",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_GreenDemon",
+   "nome": "SK_GreenDemon",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_GreenSpikyBlob",
+   "nome": "SK_GreenSpikyBlob",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_Humphead",
+   "nome": "SK_Humphead",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Hywirl",
+   "nome": "SK_Hywirl",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/KayKit/Characters/SK_Knight",
+   "nome": "SK_Knight",
+   "pasta": "Characters"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_Koi",
+   "nome": "SK_Koi",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_Lionfish",
+   "nome": "SK_Lionfish",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/KayKit/Characters/SK_Mage",
+   "nome": "SK_Mage",
+   "pasta": "Characters"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_MandarinFish",
+   "nome": "SK_MandarinFish",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_MantaRay",
+   "nome": "SK_MantaRay",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Monkroose",
+   "nome": "SK_Monkroose",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_MoorishIdol",
+   "nome": "SK_MoorishIdol",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Mushnub",
+   "nome": "SK_Mushnub",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Mushnub_Evolved",
+   "nome": "SK_Mushnub_Evolved",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Mushroom",
+   "nome": "SK_Mushroom",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_MushroomKing",
+   "nome": "SK_MushroomKing",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Ninja_Big",
+   "nome": "SK_Ninja_Big",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Ninja_Blob",
+   "nome": "SK_Ninja_Blob",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Orc_Big",
+   "nome": "SK_Orc_Big",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Orc_Blob",
+   "nome": "SK_Orc_Blob",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Orc_Skull",
+   "nome": "SK_Orc_Skull",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Panda",
+   "nome": "SK_Panda",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_ParrotFish",
+   "nome": "SK_ParrotFish",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Penguin",
+   "nome": "SK_Penguin",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Pig",
+   "nome": "SK_Pig",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Pigeon_Blob",
+   "nome": "SK_Pigeon_Blob",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Pigeon_Flying",
+   "nome": "SK_Pigeon_Flying",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_PinkBlob",
+   "nome": "SK_PinkBlob",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_Piranha",
+   "nome": "SK_Piranha",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_Puffer",
+   "nome": "SK_Puffer",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/KayKit/Characters/SK_Ranger",
+   "nome": "SK_Ranger",
+   "pasta": "Characters"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_RedSnapper",
+   "nome": "SK_RedSnapper",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/KayKit/Characters/SK_Rogue",
+   "nome": "SK_Rogue",
+   "pasta": "Characters"
+  },
+  {
+   "asset": "/Game/KayKit/Characters/SK_Rogue_Hooded",
+   "nome": "SK_Rogue_Hooded",
+   "pasta": "Characters"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_RoyalGramma",
+   "nome": "SK_RoyalGramma",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_Shark_AF",
+   "nome": "SK_Shark_AF",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_Shark_CF",
+   "nome": "SK_Shark_CF",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Skeleton",
+   "nome": "SK_Skeleton",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/KayKit/Characters/SK_Skeleton_Mage",
+   "nome": "SK_Skeleton_Mage",
+   "pasta": "Characters"
+  },
+  {
+   "asset": "/Game/KayKit/Characters/SK_Skeleton_Minion",
+   "nome": "SK_Skeleton_Minion",
+   "pasta": "Characters"
+  },
+  {
+   "asset": "/Game/KayKit/Characters/SK_Skeleton_Rogue",
+   "nome": "SK_Skeleton_Rogue",
+   "pasta": "Characters"
+  },
+  {
+   "asset": "/Game/KayKit/Characters/SK_Skeleton_Warrior",
+   "nome": "SK_Skeleton_Warrior",
+   "pasta": "Characters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Skull",
+   "nome": "SK_Skull",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Slime",
+   "nome": "SK_Slime",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Squidle",
+   "nome": "SK_Squidle",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_Sunfish",
+   "nome": "SK_Sunfish",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_Swordfish",
+   "nome": "SK_Swordfish",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_Tang",
+   "nome": "SK_Tang",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_Tetra",
+   "nome": "SK_Tetra",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Tree",
+   "nome": "SK_Tree",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Tribal_Big",
+   "nome": "SK_Tribal_Big",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Tribal_Flying",
+   "nome": "SK_Tribal_Flying",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_Tuna",
+   "nome": "SK_Tuna",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_Turbot",
+   "nome": "SK_Turbot",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_Whale",
+   "nome": "SK_Whale",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Wizard",
+   "nome": "SK_Wizard",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_Worm",
+   "nome": "SK_Worm",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_YellowDragon",
+   "nome": "SK_YellowDragon",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_YellowTang",
+   "nome": "SK_YellowTang",
+   "pasta": "Fish"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Yeti",
+   "nome": "SK_Yeti",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Yeti_Big",
+   "nome": "SK_Yeti_Big",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Monsters/SK_Yeti_Blob",
+   "nome": "SK_Yeti_Blob",
+   "pasta": "Monsters"
+  },
+  {
+   "asset": "/Game/Quaternius/Fish/SK_ZebraClownFish",
+   "nome": "SK_ZebraClownFish",
+   "pasta": "Fish"
+  }
+ ]
+}

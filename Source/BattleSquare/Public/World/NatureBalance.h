@@ -31,6 +31,8 @@ enum class ENatureTap : uint8
 	Price,
 	/** Prêmio de ranking. */
 	RankingPrize,
+	/** Peso de encontro de uma espécie — a torneira da migração (MN6). */
+	EncounterWeight,
 };
 
 namespace NatureBalance

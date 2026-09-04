@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 import { handleGetWorldAge, handleListTreeCuts, handleRecordTreeCut } from './world/world.controller';
+import { handleSpeciesCensus } from './census/census.controller';
 import { environment } from './config/environment';
 import {
   handleLogin,
@@ -123,6 +124,10 @@ const server = Bun.serve({
 
     if (url.pathname === '/v1/world' && request.method === 'GET') {
       return handleGetWorldAge();
+    }
+
+    if (url.pathname === '/v1/species-census' && request.method === 'GET') {
+      return handleSpeciesCensus();
     }
 
     if (url.pathname === '/v1/world/tree-cuts') {

@@ -25,6 +25,7 @@
 #include "Environment/ForestBackdrop.h"
 #include "World/WorldCellKey.h"
 #include "World/BorderGate.h"
+#include "World/BiomeEncounterFilter.h"
 #include "World/TreeRegrowth.h"
 #include "Environment/FreshWater.h"
 #include "Environment/IslandFeatureLayout.h"
@@ -4358,9 +4359,26 @@ void ABattleSquareGameMode::SpawnOneEncounter(const FVector& Centro, FRandomStre
 		}
 	}
 
-	TArray<int32> PesosDoLugar;
-	PesosDoLugar.Reserve(WorldEncounterCatalogIds.Num());
+	// O BIOMA FILTRA A ESPÉCIE (MB2): o pet selvagem é EXCLUSIVO do bioma do
+	// lugar — o de Vulcão não aparece na Geleira. Filtra a lista deste encontro
+	// antes de pesar. Se nenhuma espécie do catálogo couber no bioma, cai na
+	// lista inteira: um bioma sem fauna própria é melhor que um mundo vazio.
+	const EIslandBiome BiomaDoEncontro = IslandGeography::BiomeAt(FVector2D(Posicao));
+	TArray<FString> IdsDoBioma;
 	for (const FString& Id : WorldEncounterCatalogIds)
+	{
+		const FString* Tipo = CatalogTypeById.Find(Id);
+		if (Tipo && BiomeEncounterFilter::FitsBiome(*Tipo, BiomaDoEncontro))
+		{
+			IdsDoBioma.Add(Id);
+		}
+	}
+	const TArray<FString>& PoolDoEncontro =
+		IdsDoBioma.Num() > 0 ? IdsDoBioma : WorldEncounterCatalogIds;
+
+	TArray<int32> PesosDoLugar;
+	PesosDoLugar.Reserve(PoolDoEncontro.Num());
+	for (const FString& Id : PoolDoEncontro)
 	{
 		const FString* Tipo = CatalogTypeById.Find(Id);
 		// Tipo desconhecido pesa neutro: ausência não decide nada.
@@ -4369,14 +4387,14 @@ void ABattleSquareGameMode::SpawnOneEncounter(const FVector& Centro, FRandomStre
 	}
 
 	const int32 CatalogoIndice = WorldTimeOfDay::PickSpeciesForPhaseAndPlace(
-		WorldEncounterCatalogIds, CurrentEncounterPhase(), PesosDoLugar, Sorteio);
+		PoolDoEncontro, CurrentEncounterPhase(), PesosDoLugar, Sorteio);
 	if (CatalogoIndice == INDEX_NONE)
 	{
 		Encontro->Destroy();
 		return;
 	}
 
-	Encontro->CatalogId = FName(*WorldEncounterCatalogIds[CatalogoIndice]);
+	Encontro->CatalogId = FName(*PoolDoEncontro[CatalogoIndice]);
 
 	UEncounterRoamingComponent* Passeio = NewObject<UEncounterRoamingComponent>(Encontro);
 	Passeio->RegisterComponent();

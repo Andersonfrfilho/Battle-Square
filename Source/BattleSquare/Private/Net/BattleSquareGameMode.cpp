@@ -27,6 +27,7 @@
 #include "World/BorderGate.h"
 #include "World/BiomeEncounterFilter.h"
 #include "World/SettlementDisaster.h"
+#include "World/NatureBalance.h"
 #include "World/TreeRegrowth.h"
 #include "Environment/FreshWater.h"
 #include "Environment/IslandFeatureLayout.h"
@@ -146,6 +147,14 @@ void ABattleSquareGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 	EnsureRoomRegistry();
+
+	// MN1 — o panteao atualizado no boot: a leitura errada da tabela do spec
+	// ("Mae Natureza ja tem rebrota e censo") custou caro a quem media pela
+	// tabela. Hoje o corretor de torneira EXISTE (NatureBalance); a linha diz a
+	// verdade para a proxima pessoa nao repetir a leitura.
+	FBattleDebugScreen::Show(
+		TEXT("Mae Natureza: corretor de torneira ATIVO (rebrota/censo existem) — panteao atualizado"),
+		0.0f, FColor(150, 200, 150), /*Key=*/776);
 
 	// A tela de carregamento sobe ANTES de qualquer montagem, e é o único
 	// momento em que ela pode subir: a montagem acontece no Tick, num quadro
@@ -4817,6 +4826,40 @@ namespace
 
 				GameMode->SetAutoDefense(
 					Args[0].Equals(TEXT("on"), ESearchCase::IgnoreCase));
+			}));
+
+	// MN7 — Mae Natureza age fora de vista, mas o jogador VE: este comando roda
+	// uma correcao de exemplo e a MOSTRA na tela, provando que toda correcao
+	// registrada (MN3) aparece no turno em que e aplicada. Dev-only.
+	FAutoConsoleCommandWithWorldAndArgs GNatureCorrigirCommand(
+		TEXT("bs.NatureCorrigir"),
+		TEXT("bs.NatureCorrigir <nivel> <min> <max> — roda a correcao de Mae Natureza e mostra na tela."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(
+			[](const TArray<FString>& Args, UWorld*)
+			{
+				NatureBalance::FNatureCenso Censo;
+				Censo.Tap = ENatureTap::RegrowthDeadline;
+				Censo.CurrentLevel = Args.Num() > 0 ? FCString::Atof(*Args[0]) : 0.0f;
+				NatureBalance::FNatureFaixaAlvo Faixa;
+				Faixa.Min = Args.Num() > 1 ? FCString::Atof(*Args[1]) : 10.0f;
+				Faixa.Max = Args.Num() > 2 ? FCString::Atof(*Args[2]) : 20.0f;
+
+				const NatureBalance::FNatureCorrecao Corr = NatureBalance::Correct(Censo, Faixa);
+				TArray<NatureBalance::FNatureLogEntry> Registro;
+				if (NatureBalance::ApplyAndLog(Corr, Censo.CurrentLevel, Registro))
+				{
+					// Toda correcao registrada aparece na tela — MN7.
+					FBattleDebugScreen::Show(
+						FString::Printf(TEXT("Mae Natureza girou a torneira: nivel %.0f, ajuste %+.1f"),
+							Registro[0].FromLevel, Registro[0].Adjustment),
+						8.0f, FColor(150, 220, 170), /*Key=*/-1);
+				}
+				else
+				{
+					FBattleDebugScreen::Show(
+						TEXT("Mae Natureza: nada a corrigir (nivel dentro da faixa)"),
+						6.0f, FColor(150, 200, 150), /*Key=*/-1);
+				}
 			}));
 
 	// O PORTÃO da fronteira pelo console (MB1): vira o booleano do ranking da

@@ -32,8 +32,12 @@ abaixo mede o tempo por ela; nenhuma caixa reintroduz um segundo relógio.
       `crime-e-recompensa/tasks.md` CR10. É a prisão CONSUMINDO o relógio de
       MV6, nunca um segundo envelhecimento. *Depende de MV6.*
 - [ ] **MV7** — coleta de recursos, bosque e comerciante —
-      `mundo-vivo/tasks.md` MV7. Dono, ferramenta e presença do pet em aberto —
-      decisão de conteúdo antes de codar. *Depende de MV2/MV3.*
+      `mundo-vivo/tasks.md` MV7. As três perguntas de conteúdo estão
+      RESPONDIDAS (35 plantação é do assentamento/comprável, 36 a ferramenta
+      importa, 37 o pet ajuda a coletar) — mas é um SISTEMA NOVO inteiro
+      (GuardaFlorestal, Comerciante, coleta, compra em sociedade), não uma
+      caixa. Merece empreitada própria. *Depende de MV2/MV3 (padrão
+      exceção-com-prazo, já pronto).*
 
 ## As invariantes que valem em TODA caixa deste arco
 
@@ -50,5 +54,7 @@ abaixo mede o tempo por ela; nenhuma caixa reintroduz um segundo relógio.
 5. **Defeito vira TESTE antes de virar conserto.**
 6. **O mundo construído bate com `docs/mundo/carta-ilha-de-mata.html`.**
 
-Fechadas as oito caixas, o arco do tempo está completo e o crime tem o ciclo
-inteiro do roubo — do flagrante à cela que envelhece o pet.
+**ESTADO (04/09): o arco do TEMPO está COMPLETO.** MV1–MV6 fechadas e o crime
+que dependia delas (CR7–CR10) também — do flagrante à cela que envelhece o pet.
+Só resta MV7, que é uma economia nova por si só, destravada mas fora do arco do
+tempo: é a próxima empreitada, não a continuação desta.

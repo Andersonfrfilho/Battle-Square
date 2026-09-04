@@ -49,8 +49,11 @@
 
 ## O cluster de geometria — via REGENERAR O ASSADO (decisão do usuário)
 
-- **fundura-no-tracado F1** é a raiz: gerar **fundura por ponto** no assado do
-  mundo (hoje não existe). Feito isso, destravam em cascata: **pendencias P7**
+- **CORRECAO (04/09, por medicao):** a fundura por ponto JA EXISTE no assado —
+  a-carta-muda-uma-vez M3 (`DepthUnits`, `PlungePoolDepthUnits`) a construiu
+  DEPOIS do BLOQUEIO.md de 02/09. O bloqueio estava estale. F1/P7/P8/P10 e
+  a marca escondida ja tem os DADOS; falta verificar o GAMEPLAY (nadar,
+  poco-por-fundura) sobre eles — nao regenerar o assado. Feito isso, destravam em cascata: **pendencias P7**
   (nadar quando a água passa da cintura), **P8/cavernas CQ2** (o poço se lê pela
   fundura), **P9/cavernas CQ1/CQ3** (caverna por dentro da cachoeira — hoje a
   mais perto está a 2710u de um poço de 886u, o assado precisa aproximá-las),

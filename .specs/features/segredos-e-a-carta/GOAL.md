@@ -1,3 +1,9 @@
+> NOTA (04/09): esta feature foi SATISFEITA por `a-carta-muda-uma-vez` M9
+> (a carta diz "escondido") e M11 (o achado na tela). A infra existe e e
+> testada: `FBakedGroundUse::bHidden`, `IslandChart::FUseCount{Shown,Hidden}`,
+> `IslandChart::CountOf`, `UIslandBakedPlan::HiddenAt`. Construir de novo
+> duplicaria (L-032/L-033). Verificado por medicao, nao por leitura da spec.
+
 # OBJETIVO — Segredos e a carta
 
 > **As decisões de conteúdo desta feature foram respondidas em 02/09/2026.**
@@ -17,14 +23,14 @@ menciona **depois** de ele andar até lá.
 
 ## PRONTO é isto, e nada menos
 
-- [⛔] **SC1** — o gabarito aprende a dizer "escondido": mostrado, escondido e a SOMA
+- [x] **SC1** — o gabarito aprende a dizer "escondido": mostrado, escondido e a SOMA
       ⚠️ **JÁ FEITA em 03/09/2026 pela M9 de `a-carta-muda-uma-vez`**, depois de
       as respostas de 02/09 (K3, K4, J4) fecharem a dúvida para o mercado-negro.
       A terceira contagem existe em `World/IslandChart.h`, e a marca mora na
       mancha (`bHidden`). **Não reescrever** — ler o que está lá.
-- [⛔] **SC2** — "escondido" é marca na mancha, não lista ao lado
-- [⛔] **SC3** — o mapa do jogador revela por andar; a carta continua calada
-- [⛔] **SC4** — o achado aparece na tela, em `LOCTEXT`
+- [x] **SC2** — "escondido" é marca na mancha, não lista ao lado
+- [x] **SC3** — o mapa do jogador revela por andar; a carta continua calada
+- [x] **SC4** — o achado aparece na tela, em `LOCTEXT`
 - [ ] Esconder passa e APAGAR reprova — as duas metades, provadas
 - [ ] `PomarSelvagem`, `CemiterioEsquecido` e as 16 cavernas afirmados em teste
 - [ ] Assado antigo carrega e conta ZERO escondidos

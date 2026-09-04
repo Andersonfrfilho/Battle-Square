@@ -107,6 +107,9 @@ protected:
 public:
 	/** Correr enquanto a tecla estiver pressionada. */
 	void StartSprinting();
+
+	/** Monta/desmonta (MT1): mais rapido pelo custo de trajeto que ja existe. */
+	void SetMounted(bool bWantMounted);
 	void StopSprinting();
 
 	/** Alterna terceira pessoa → primeira pessoa → de cima → terceira. */
@@ -144,6 +147,13 @@ private:
 
 	ECameraMode CameraMode = ECameraMode::TerceiraPessoa;
 	float WalkSpeedBeforeSprint = 0.0f;
+
+	/** Velocidade antes de montar (MT1). > 0 quando montado. */
+	float WalkSpeedBeforeMount = 0.0f;
+
+	/** O ganho de velocidade de montaria — config (MT1), afinavel sem recompilar. */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Montaria")
+	float MountSpeedMultiplier = 1.6f;
 
 	static constexpr float SprintSpeedMultiplier = 1.8f;
 	static constexpr float FirstPersonArmLengthUnits = 0.0f;

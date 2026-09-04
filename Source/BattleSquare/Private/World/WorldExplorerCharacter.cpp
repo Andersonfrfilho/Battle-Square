@@ -15,6 +15,7 @@
 #include "Environment/ForestBackdrop.h"
 #include "EngineUtils.h"
 #include "World/WorldObstacleBreaking.h"
+#include "World/MountedMovement.h"
 #include "Net/BattleSquareGameMode.h"
 #include "Environment/RegionResidency.h"
 #include "World/WorldCellKey.h"
@@ -404,6 +405,37 @@ void AWorldExplorerCharacter::Tick(float DeltaSeconds)
 	CheckFallGuard();
 }
 
+void AWorldExplorerCharacter::SetMounted(bool bWantMounted)
+{
+	UCharacterMovementComponent* Movement = GetCharacterMovement();
+	if (!Movement)
+	{
+		return;
+	}
+
+	const bool bMounted = WalkSpeedBeforeMount > 0.0f;
+	if (bWantMounted == bMounted)
+	{
+		return;
+	}
+
+	if (bWantMounted)
+	{
+		// Guarda a velocidade a pe e sobe pela conta de montaria (MT1) — o
+		// ganho vem da fonte unica, nao de um multiplicador solto aqui.
+		WalkSpeedBeforeMount = Movement->MaxWalkSpeed;
+		Movement->MaxWalkSpeed =
+			MountedMovement::MountedBaseSpeed(WalkSpeedBeforeMount, MountSpeedMultiplier);
+		FBattleDebugScreen::Show(TEXT("montado"), 0.0f, FColor(150, 220, 150), /*Key=*/732);
+	}
+	else
+	{
+		Movement->MaxWalkSpeed = WalkSpeedBeforeMount;
+		WalkSpeedBeforeMount = 0.0f;
+		FBattleDebugScreen::Show(TEXT("a pe"), 0.0f, FColor::Silver, /*Key=*/732);
+	}
+}
+
 void AWorldExplorerCharacter::StartSprinting()
 {
 	UCharacterMovementComponent* Movement = GetCharacterMovement();
@@ -479,3 +511,20 @@ void AWorldExplorerCharacter::ApplyCameraMode()
 	FBattleDebugScreen::Show(FString::Printf(TEXT("câmera: %s"), Nome),
 		0.0f, FColor::Cyan, /*Key=*/731);
 }
+
+// A MONTARIA pelo console (MT1): monta/desmonta sem depender de input bindado.
+static FAutoConsoleCommandWithWorldAndArgs GMontarCommand(
+	TEXT("bs.Montar"),
+	TEXT("bs.Montar [on|off] — monta (on) ou desmonta (off); montado anda mais rapido."),
+	FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(
+		[](const TArray<FString>& Args, UWorld* World)
+		{
+			const APlayerController* Ctrl = World ? World->GetFirstPlayerController() : nullptr;
+			AWorldExplorerCharacter* Explorador =
+				Ctrl ? Cast<AWorldExplorerCharacter>(Ctrl->GetPawn()) : nullptr;
+			if (!Explorador)
+			{
+				return;
+			}
+			Explorador->SetMounted(Args.Num() < 1 || Args[0].Equals(TEXT("on"), ESearchCase::IgnoreCase));
+		}));

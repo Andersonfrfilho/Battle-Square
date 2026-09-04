@@ -23,7 +23,7 @@ quem está jogando agora.**
 - [x] **MV2** — a árvore cresce com a idade do mundo, não com a dela própria
 - [x] **MV3** — cortar deixa marca: a árvore derrubada não volta sozinha amanhã
 - [x] **MV4** — o prazo de rebrota é número de configuração, nunca literal em C++
-- [⛔] **MV5** — idade do mundo e corte pendente aparecem na tela
+- [x] **MV5** — idade do mundo e corte pendente aparecem na tela
 - [⛔] **MV6** — pets envelhecem — três perguntas de conteúdo sem resposta
 - [⛔] **MV7** — coleta de recursos, bosque e comerciante — dono, ferramenta e presença do pet em aberto
 - [ ] O grep fora de `/Tests/` acha quem LÊ a idade do mundo em produção

@@ -22,7 +22,7 @@ abaixo mede o tempo por ela; nenhuma caixa reintroduz um segundo relógio.
       prazo — `mundo-vivo/tasks.md` MV3. *Depende de MV1 + posse-no-servidor.*
 - [x] **MV4** — o prazo de rebrota é NÚMERO DE CONFIGURAÇÃO, nunca literal —
       `mundo-vivo/tasks.md` MV4. *Depende de MV3.*
-- [ ] **MV5** — idade do mundo e corte pendente aparecem na TELA —
+- [x] **MV5** — idade do mundo e corte pendente aparecem na TELA —
       `mundo-vivo/tasks.md` MV5. *Depende de MV2 + MV3.*
 - [ ] **MV6** — pets envelhecem — `mundo-vivo/tasks.md` MV6. As três perguntas
       de conteúdo (a idade tem fim? corre offline? cuidado ativo?) JÁ têm

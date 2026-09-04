@@ -279,6 +279,22 @@ namespace ScenaryPalette
 	 */
 	BATTLESQUARE_API const TCHAR* PrimitiveMeshPath(EScenaryPrimitive Primitive);
 
+	/**
+	 * O caminho da malha de um PAPEL, ja pronto para a ADOCAO de um pacote de
+	 * arte. Le um override de config ([/Script/BattleSquare.Art], chave por
+	 * papel); se o papel NAO tem override, cai na primitiva de `Fallback`.
+	 *
+	 * E assim que "trocar de pacote e trocar dado" (PRONTOS.md §5): sem config,
+	 * o jogo roda em primitiva (verde, invariante 20); ao adotar Quaternius, o
+	 * usuario preenche a config e importa os assets, sem tocar em C++. O
+	 * fallback garante que papel sem asset NUNCA fica invisivel — cai na
+	 * primitiva, o defeito tres vezes pago nao volta pela porta da adocao.
+	 */
+	BATTLESQUARE_API FString MeshPathForRole(EScenaryRole Role, EScenaryPrimitive Fallback);
+
+	/** A chave estavel de config de um papel (para o override de arte). */
+	BATTLESQUARE_API const TCHAR* RoleConfigKey(EScenaryRole Role);
+
 	BATTLESQUARE_API UMaterialInterface* ColorableBaseMaterial();
 
 	/** O CAMINHO do material colorivel — a fonte unica para call sites de FObjectFinder (MV5/MV8). */

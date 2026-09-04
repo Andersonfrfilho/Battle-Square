@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Environment/ScenaryPalette.h"
+#include "Misc/ConfigCacheIni.h"
 
 #include "Components/PrimitiveComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -358,6 +359,40 @@ FLinearColor ScenaryPalette::ColorFor(EScenaryRole Role, FName MaterialSlot)
 	}
 
 	return VerdeDaMata;
+}
+
+const TCHAR* ScenaryPalette::RoleConfigKey(EScenaryRole Role)
+{
+	// Chave estavel por papel — muda o rotulo do papel a vontade, a chave de
+	// config do asset nao se mexe. So os papeis que um pacote de arte costuma
+	// cobrir; o resto usa a primitiva.
+	switch (Role)
+	{
+	case EScenaryRole::ForestTree:  return TEXT("Mesh_ForestTree");
+	case EScenaryRole::CanopyTree:  return TEXT("Mesh_CanopyTree");
+	case EScenaryRole::Rock:        return TEXT("Mesh_Rock");
+	case EScenaryRole::DeadWood:    return TEXT("Mesh_DeadWood");
+	case EScenaryRole::Undergrowth: return TEXT("Mesh_Undergrowth");
+	case EScenaryRole::Accent:      return TEXT("Mesh_Accent");
+	case EScenaryRole::GroundCover: return TEXT("Mesh_GroundCover");
+	default:                        return TEXT("");
+	}
+}
+
+FString ScenaryPalette::MeshPathForRole(EScenaryRole Role, EScenaryPrimitive Fallback)
+{
+	const TCHAR* Chave = RoleConfigKey(Role);
+	if (Chave && *Chave)
+	{
+		FString Override;
+		if (GConfig->GetString(TEXT("/Script/BattleSquare.Art"), Chave, Override, GGameIni)
+			&& !Override.IsEmpty())
+		{
+			return Override;
+		}
+	}
+	// Sem override: a primitiva de sempre. Verde sem pacote nenhum.
+	return PrimitiveMeshPath(Fallback);
 }
 
 const TCHAR* ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive Primitive)

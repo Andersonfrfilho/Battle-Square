@@ -41,3 +41,6 @@ Build/
 # do manifesto e dos .po, que SÃO versionados.
 Content/Localization/*/*/*.locres
 Content/Localization/*/*.locmeta
+
+# Fonte de arte (fbx crus dos packs CC0). O que entra no jogo e o .uasset em Content/.
+ArtSource/

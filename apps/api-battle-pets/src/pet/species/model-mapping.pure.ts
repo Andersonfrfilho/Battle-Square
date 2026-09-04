@@ -33,26 +33,66 @@ export type Stage = (typeof STAGES)[number];
  * Minusculas, comparadas por conteudo.
  */
 const ELEMENT_HINTS: ReadonlyArray<readonly [Element, readonly string[]]> = [
-  ['Fogo',     ['flame', 'fire', 'lava', 'magma', 'ember', 'burn', 'inferno', 'demon', 'imp']],
-  ['Agua',     ['water', 'aqua', 'fish', 'shark', 'squid', 'crab', 'wave', 'sea', 'octo', 'frog']],
-  ['Planta',   ['plant', 'leaf', 'vine', 'flower', 'mush', 'fung', 'tree', 'forest', 'ent', 'moss']],
-  ['Terra',    ['rock', 'stone', 'golem', 'earth', 'sand', 'crystal', 'dino', 'raptor', 'rex']],
-  ['Fantasma', ['ghost', 'spirit', 'skele', 'undead', 'zombie', 'wraith', 'phantom', 'bone', 'reaper']],
-  ['Luz',      ['light', 'holy', 'angel', 'radiant', 'sun', 'star', 'divine', 'cleric']],
-  ['Ar',       ['air', 'wind', 'bird', 'wing', 'sky', 'cloud', 'bat', 'harpy', 'gryph']],
-  ['Raio',     ['thunder', 'lightning', 'shock', 'spark', 'volt', 'storm', 'electric']],
+  ['Fogo',     ['flame', 'fire', 'lava', 'magma', 'ember', 'burn', 'inferno', 'demon', 'imp',
+                'dragon']],
+  ['Agua',     ['water', 'aqua', 'fish', 'shark', 'squid', 'squidle', 'crab', 'wave', 'sea',
+                'octo', 'frog', 'glub', 'penguin', 'turtle']],
+  ['Planta',   ['plant', 'leaf', 'vine', 'flower', 'mush', 'fung', 'tree', 'forest', 'ent',
+                'moss', 'cact', 'bee', 'deer']],
+  ['Terra',    ['rock', 'stone', 'golem', 'gole', 'earth', 'sand', 'crystal', 'dino', 'raptor',
+                'rex', 'orc', 'cyclops', 'yeti', 'panda', 'pig', 'bunny', 'monk']],
+  ['Fantasma', ['ghost', 'spirit', 'skele', 'skull', 'undead', 'zombie', 'wraith', 'phantom',
+                'bone', 'reaper', 'cthulhu']],
+  ['Luz',      ['light', 'holy', 'angel', 'radiant', 'sun', 'star', 'divine', 'cleric',
+                'wizard']],
+  ['Ar',       ['air', 'wind', 'bird', 'birb', 'wing', 'sky', 'cloud', 'bat', 'harpy',
+                'gryph', 'pigeon', 'chicken', 'bee']],
+  ['Raio',     ['thunder', 'lightning', 'shock', 'spark', 'volt', 'storm', 'electric',
+                'hywirl']],
 ];
 
 /** Pistas de NOME por estagio — o pacote costuma marcar o porte no nome. */
 const STAGE_HINTS: ReadonlyArray<readonly [Stage, readonly string[]]> = [
-  ['Filhote',  ['baby', 'small', 'mini', 'cute', 'little', 'young', 'tiny', 'cub']],
+  ['Filhote',  ['baby', 'small', 'mini', 'little', 'young', 'tiny', 'cub']],
   ['Evoluido', ['king', 'giant', 'alpha', 'elder', 'greater', 'lord', 'ancient', 'boss', 'large']],
 ];
 
-function normalize(modelName: string): string {
-  // "SK_FlameImp_01" -> "flameimp01": tira prefixo de asset, separador e caixa,
-  // para a pista casar tanto em "Flame_Imp" quanto em "FlameImp".
-  return modelName.toLowerCase().replace(/[^a-z0-9]/g, '');
+/**
+ * O sufixo que o pacote usa para marcar a forma evoluida (medido no Ultimate
+ * Monsters: Alpaking/Alpaking_Evolved, Dragon/Dragon_Evolved, ...). Isto NAO e
+ * heuristica de nome — e convencao explicita do autor, e por isso ganha da
+ * heuristica.
+ */
+const EVOLVED_SUFFIX = /_evolved$/i;
+
+/**
+ * A FAMILIA de um modelo: o nome sem o sufixo de forma. `Alpaking_Evolved` e
+ * `Alpaking` sao a MESMA familia — e e por familia que a evolucao se agrupa,
+ * nunca por elemento (agrupar por elemento fundiria Dragon e Demon na mesma
+ * cadeia, que sao bichos diferentes).
+ */
+export function familyOf(modelName: string): string {
+  return modelName.replace(EVOLVED_SUFFIX, '').replace(/[_-]+$/, '');
+}
+
+/**
+ * Quebra o nome em TOKENS: "SK_FlameImp_01" -> ["sk","flame","imp","01"].
+ *
+ * Por token, e nao por substring, porque substring produz falso positivo caro:
+ * "Alpaking" contem "king" e viraria forma evoluida por acidente; "Cactoro"
+ * contem "cact" de verdade, e esse deve valer. Token separa os dois casos.
+ */
+function tokensOf(modelName: string): string[] {
+  return modelName
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2') // camelCase vira duas palavras
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
+}
+
+/** A pista casa quando um TOKEN comeca por ela (cobre plural e sufixo curto). */
+function matchesHint(tokens: readonly string[], hint: string): boolean {
+  return tokens.some((t) => t === hint || t.startsWith(hint));
 }
 
 /**
@@ -63,20 +103,44 @@ function normalize(modelName: string): string {
  * Chutar encheria o catalogo de erro silencioso.
  */
 export function elementFromModelName(modelName: string): Element | undefined {
-  const n = normalize(modelName);
+  // A forma evoluida herda o elemento da familia: `Dragon_Evolved` e Fogo
+  // porque `Dragon` e Fogo — o sufixo nao muda o que o bicho e.
+  const tokens = tokensOf(familyOf(modelName));
   for (const [element, hints] of ELEMENT_HINTS) {
-    if (hints.some((h) => n.includes(h))) return element;
+    if (hints.some((h) => matchesHint(tokens, h))) return element;
   }
   return undefined;
 }
 
 /** O estagio que o nome sugere. Sem pista, `Adulto` — o meio, nunca um extremo. */
 export function stageFromModelName(modelName: string): Stage {
-  const n = normalize(modelName);
+  // A convencao do autor manda: o sufixo e explicito, a heuristica e palpite.
+  if (EVOLVED_SUFFIX.test(modelName)) return 'Evoluido';
+  const tokens = tokensOf(modelName);
   for (const [stage, hints] of STAGE_HINTS) {
-    if (hints.some((h) => n.includes(h))) return stage;
+    if (hints.some((h) => matchesHint(tokens, h))) return stage;
   }
   return 'Adulto';
+}
+
+/**
+ * Tokens que denunciam que o arquivo NAO e criatura: rig, prop, cenario.
+ *
+ * Medido: o Cute Fish Pack traz `Lure_1..6`, `Dock_Long`, `Boat`; os packs de
+ * personagem trazem `Rig_Medium_General`. Reportar isso como "sem pista, decida
+ * o elemento" seria pedir ao humano que classificasse uma DOCA como bicho — o
+ * relatorio precisa ser curto para ser lido, e ruido o mata.
+ */
+const NON_CREATURE_TOKENS = [
+  'rig', 'lure', 'dock', 'boat', 'prop', 'anim', 'skeleton_rig', 'socket',
+] as const;
+
+/** Este arquivo e uma CRIATURA, ou e rig/prop/cenario que entrou junto? */
+export function isCreature(modelName: string): boolean {
+  const tokens = tokensOf(modelName);
+  // `Skeletons` (o pack) e criatura; `Rig_Medium` nao. Token exato, nao prefixo:
+  // "rig" pega `Rig_Medium`, e nao pega `Frigate`.
+  return !NON_CREATURE_TOKENS.some((bad) => tokens.includes(bad));
 }
 
 export type ClassifiedModel = {
@@ -85,11 +149,25 @@ export type ClassifiedModel = {
   readonly stage: Stage;
 };
 
-/** Classifica uma leva de modelos (o que a MCP AssetTools devolve ao listar). */
-export function classifyModels(modelNames: readonly string[]): ClassifiedModel[] {
-  return modelNames.map((modelName) => ({
+/**
+ * Classifica uma leva de modelos (o que a MCP AssetTools devolve ao listar).
+ *
+ * `packElement` e a pista do PACOTE, e ela existe por medicao: o Cute Fish Pack
+ * traz `Tetra`, `Betta`, `Koi`, `Piranha` — nomes de ESPECIE, que o nome sozinho
+ * nao denuncia, mas cujo pacote nao deixa duvida. Ela e o ULTIMO recurso: o nome
+ * ganha sempre, para um monstro de fogo dentro de um pacote de peixe continuar
+ * sendo de fogo.
+ */
+export function classifyModels(
+  modelNames: readonly string[],
+  packElement?: Element,
+): ClassifiedModel[] {
+  // Rig e prop saem ANTES de classificar: eles nao sao bicho, e pedir elemento
+  // para uma doca e ruido no relatorio que o humano vai ler.
+  return modelNames.filter(isCreature).map((modelName) => ({
     modelName,
-    element: elementFromModelName(modelName),
+    // O nome primeiro; o pacote so preenche o que o nome nao soube dizer.
+    element: elementFromModelName(modelName) ?? packElement,
     stage: stageFromModelName(modelName),
   }));
 }
@@ -100,7 +178,9 @@ export function unclassified(models: readonly ClassifiedModel[]): ClassifiedMode
 }
 
 export type EvolutionChain = {
-  readonly element: Element;
+  /** A familia: `Alpaking` para `Alpaking` + `Alpaking_Evolved`. */
+  readonly family: string;
+  readonly element: Element | undefined;
   /** Um modelo por estagio, na ordem Filhote -> Adulto -> Evoluido. */
   readonly stages: Partial<Record<Stage, string>>;
 };
@@ -113,18 +193,21 @@ export type EvolutionChain = {
  * Modelos sem elemento ficam de fora (ver `unclassified`).
  */
 export function buildEvolutionChains(models: readonly ClassifiedModel[]): EvolutionChain[] {
-  const byElement = new Map<Element, Partial<Record<Stage, string>>>();
+  // Por FAMILIA (o nome-base), nao por elemento: `Dragon` e `Demon` sao ambos
+  // Fogo e NAO evoluem um no outro. Agrupar por elemento inventaria parentesco.
+  const byFamily = new Map<string, { element: Element | undefined; stages: Partial<Record<Stage, string>> }>();
 
   for (const m of models) {
-    if (!m.element) continue;
-    const chain = byElement.get(m.element) ?? {};
+    const family = familyOf(m.modelName);
+    const entry = byFamily.get(family) ?? { element: m.element, stages: {} };
     // O primeiro de cada estagio fica: determinismo por ordem de entrada, sem
     // sorteio — a mesma lista de modelos da sempre a mesma cadeia.
-    if (!chain[m.stage]) chain[m.stage] = m.modelName;
-    byElement.set(m.element, chain);
+    if (!entry.stages[m.stage]) entry.stages[m.stage] = m.modelName;
+    entry.element = entry.element ?? m.element;
+    byFamily.set(family, entry);
   }
 
-  return [...byElement.entries()]
-    .map(([element, stages]) => ({ element, stages }))
+  return [...byFamily.entries()]
+    .map(([family, e]) => ({ family, element: e.element, stages: e.stages }))
     .filter((c) => Object.keys(c.stages).length >= 2);
 }

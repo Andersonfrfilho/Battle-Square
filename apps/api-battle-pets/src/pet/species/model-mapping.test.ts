@@ -3,7 +3,9 @@
 import { describe, expect, test } from 'bun:test';
 
 import {
+  isCreature,
   buildEvolutionChains,
+  familyOf,
   classifyModels,
   elementFromModelName,
   stageFromModelName,
@@ -49,31 +51,42 @@ describe('modelo -> estagio (EPetGrowthStage)', () => {
 
 describe('as cadeias de evolucao', () => {
   const modelos = classifyModels([
-    'BabyFlame', 'FlameImp', 'KingFlame',   // Fogo: os tres estagios
-    'CuteFish', 'SharkLord',                 // Agua: dois estagios
-    'Thunder_Drake',                         // Raio: um so
-    'Monster_07',                            // sem pista
+    'Alpaking', 'Alpaking_Evolved',   // familia com duas formas (medido no pack)
+    'Dragon', 'Dragon_Evolved',       // outra familia, tambem Fogo
+    'Squidle',                        // uma forma so
+    'Monster_07',                     // sem pista de elemento
   ]);
 
-  test('agrupa por elemento, na ordem dos estagios', () => {
+  test('agrupa por FAMILIA, e o sufixo _Evolved e a forma evoluida', () => {
     const cadeias = buildEvolutionChains(modelos);
-    const fogo = cadeias.find((c) => c.element === 'Fogo');
-    expect(fogo?.stages.Filhote).toBe('BabyFlame');
-    expect(fogo?.stages.Adulto).toBe('FlameImp');
-    expect(fogo?.stages.Evoluido).toBe('KingFlame');
+    const alpaking = cadeias.find((c) => c.family === 'Alpaking');
+    expect(alpaking?.stages.Adulto).toBe('Alpaking');
+    expect(alpaking?.stages.Evoluido).toBe('Alpaking_Evolved');
+  });
+
+  test('CONTRAPESO: duas familias do MESMO elemento nao viram uma cadeia so', () => {
+    // Dragon e Alpaking podem ser Fogo os dois, e NAO evoluem um no outro.
+    // Agrupar por elemento inventaria parentesco que nao existe.
+    const cadeias = buildEvolutionChains(modelos);
+    expect(cadeias.filter((c) => c.family === 'Dragon')).toHaveLength(1);
+    expect(cadeias.find((c) => c.family === 'Dragon')?.stages.Evoluido).toBe('Dragon_Evolved');
+  });
+
+  test('a forma evoluida HERDA o elemento da familia', () => {
+    expect(elementFromModelName('Dragon_Evolved')).toBe(elementFromModelName('Dragon'));
+    expect(familyOf('Dragon_Evolved')).toBe('Dragon');
   });
 
   test('CONTRAPESO: um modelo sozinho NAO vira evolucao', () => {
     // Prometer evolucao que nao acontece e pior que nao prometer.
     const cadeias = buildEvolutionChains(modelos);
-    expect(cadeias.find((c) => c.element === 'Raio')).toBeUndefined();
-    // Mas dois estagios ja e uma cadeia legitima.
-    expect(cadeias.find((c) => c.element === 'Agua')).toBeDefined();
+    expect(cadeias.find((c) => c.family === 'Squidle')).toBeUndefined();
+    // Mas duas formas ja e uma cadeia legitima.
+    expect(cadeias.find((c) => c.family === 'Alpaking')).toBeDefined();
   });
 
   test('o modelo sem pista fica de fora, e e REPORTADO', () => {
     const cadeias = buildEvolutionChains(modelos);
-    expect(cadeias.some((c) => Object.values(c.stages).includes('Monster_07'))).toBe(false);
     expect(unclassified(modelos).map((m) => m.modelName)).toContain('Monster_07');
   });
 
@@ -93,5 +106,40 @@ describe('a fronteira que este modulo NAO cruza', () => {
     for (const bioma of ['Forest', 'Swamp', 'Glacier', 'Volcano', 'Beach', 'Desert']) {
       expect(corpo).not.toContain(bioma);
     }
+  });
+});
+
+describe('o que NAO e criatura', () => {
+  test('rig e prop saem antes de classificar — o relatorio tem de ser legivel', () => {
+    // Medido nos packs: o Cute Fish traz iscas e docas; os de personagem, rigs.
+    const modelos = classifyModels(['Goldfish', 'Lure_1', 'Dock_Long', 'Rig_Medium_General', 'Boat']);
+    expect(modelos.map((m) => m.modelName)).toEqual(['Goldfish']);
+  });
+
+  test('CONTRAPESO: nao corta bicho por acidente de substring', () => {
+    // "Frigate" contem "rig", e e (hipoteticamente) um bicho. Token exato salva.
+    expect(isCreature('Frigate')).toBe(true);
+    expect(isCreature('Rig_Medium')).toBe(false);
+  });
+});
+
+describe('a pista do PACOTE', () => {
+  test('preenche o que o nome nao disse — nome de especie num pacote de peixe', () => {
+    // Medido: Cute Fish Pack traz Tetra, Betta, Koi. O nome nao diz "agua"; o
+    // pacote diz.
+    const modelos = classifyModels(['Tetra', 'Betta', 'Koi'], 'Agua');
+    expect(modelos.every((m) => m.element === 'Agua')).toBe(true);
+  });
+
+  test('CONTRAPESO: o NOME ganha do pacote, sempre', () => {
+    // Um monstro de fogo dentro de um pacote de peixe continua sendo de fogo —
+    // senao a pista do pacote apagaria a informacao mais forte.
+    const [dragao] = classifyModels(['Dragon'], 'Agua');
+    expect(dragao!.element).toBe('Fogo');
+  });
+
+  test('sem pista de pacote, o desconhecido continua desconhecido', () => {
+    const [x] = classifyModels(['Slime']);
+    expect(x!.element).toBeUndefined();
   });
 });

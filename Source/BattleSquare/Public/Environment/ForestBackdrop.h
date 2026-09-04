@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Environment/IslandGeography.h"
+#include "Environment/TreeGrowth.h"
 #include "Environment/ScenaryPalette.h"
 #include "GameFramework/Actor.h"
 #include "ForestBackdrop.generated.h"
@@ -62,7 +63,7 @@ public:
 	 * já era: arena que ninguém situou continua sendo a mata de sempre.
 	 */
 	void BuildForest(float CellSize, uint32 Seed, const FVector2D& CameraGroundOffset,
-		EIslandBiome Biome = EIslandBiome::Forest);
+		EIslandBiome Biome = EIslandBiome::Forest, int32 WorldAgeInDays = -1);
 
 	/**
 	 * Monta um PEDAÇO do mundo: quadrado, sem tabuleiro e sem câmera a evitar.
@@ -82,7 +83,7 @@ public:
 	 * que a mata da arena tem, para um pedaço não parecer mais cheio que o
 	 * outro só por ser maior.
 	 */
-	void BuildRegion(float CellSize, uint32 Seed, EIslandBiome Biome, float SideUnits);
+	void BuildRegion(float CellSize, uint32 Seed, EIslandBiome Biome, float SideUnits, int32 WorldAgeInDays = -1);
 
 	/**
 	 * Nomes das malhas de espécie, na ordem da tabela.
@@ -257,6 +258,9 @@ public:
 	float CameraClearanceInCells = 3.0f;
 
 private:
+
+	/** Lê os números da curva de crescimento de DefaultGame.ini (MV2/MV4). */
+	TreeGrowth::FGrowthConfig LerConfigDeCrescimento() const;
 	/**
 	 * Veste o chão: o material do mundo quando há um, a paleta quando não há.
 	 *

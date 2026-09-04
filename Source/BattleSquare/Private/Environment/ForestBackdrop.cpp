@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Environment/ForestBackdrop.h"
+#include "Environment/TreeGrowth.h"
 #include "World/VillageLayout.h"
 #include "World/LandUseLayout.h"
 
@@ -1066,9 +1067,31 @@ TArray<FString> AForestBackdrop::SpeciesNames()
 	return Nomes;
 }
 
-void AForestBackdrop::BuildForest(float CellSize, uint32 Seed, const FVector2D& CameraGroundOffset,
-	EIslandBiome Biome)
+TreeGrowth::FGrowthConfig AForestBackdrop::LerConfigDeCrescimento() const
 {
+	// Números de balanceamento vêm de DefaultGame.ini, nunca literais na lógica
+	// (invariante 2). Ausentes, caem em defaults sãos — mata que cresce em um
+	// mês, muda comecando a um terço do adulto.
+	TreeGrowth::FGrowthConfig Config;
+	int32 Dias = Config.DaysToMaturity;
+	float Muda = Config.SaplingScale;
+	GConfig->GetInt(TEXT("/Script/BattleSquare.ForestBackdrop"),
+		TEXT("GrowthDaysToMaturity"), Dias, GGameIni);
+	GConfig->GetFloat(TEXT("/Script/BattleSquare.ForestBackdrop"),
+		TEXT("GrowthSaplingScale"), Muda, GGameIni);
+	Config.DaysToMaturity = Dias;
+	Config.SaplingScale = Muda;
+	return Config;
+}
+
+void AForestBackdrop::BuildForest(float CellSize, uint32 Seed, const FVector2D& CameraGroundOffset,
+	EIslandBiome Biome, int32 WorldAgeInDays)
+{
+	// A idade do mundo só mexe na ESCALA; a mata da arena é uma cena madura por
+	// padrao (idade desconhecida -> adulta), e o mundo passa a idade real.
+	const float FatorDeCrescimento =
+		TreeGrowth::ScaleFactorFor(WorldAgeInDays, LerConfigDeCrescimento());
+
 	using namespace MataDoCenario;
 
 	if (CellSize <= 0.0f)
@@ -1180,7 +1203,8 @@ void AForestBackdrop::BuildForest(float CellSize, uint32 Seed, const FVector2D& 
 		{
 			continue;
 		}
-		const float EscalaBase = (Especie.AlturaEmCasas * CellSize) / AlturaDaMalha;
+		const float EscalaBase =
+			((Especie.AlturaEmCasas * CellSize) / AlturaDaMalha) * FatorDeCrescimento;
 
 		// A cor vem da NOSSA paleta, não do pacote. Os dez materiais do kit
 		// são variações de uma faixa estreita: trocar um pelo outro moveria o
@@ -1232,8 +1256,11 @@ void AForestBackdrop::BuildForest(float CellSize, uint32 Seed, const FVector2D& 
 	}
 }
 
-void AForestBackdrop::BuildRegion(float CellSize, uint32 Seed, EIslandBiome Biome, float SideUnits)
+void AForestBackdrop::BuildRegion(float CellSize, uint32 Seed, EIslandBiome Biome, float SideUnits, int32 WorldAgeInDays)
 {
+	const float FatorDeCrescimento =
+		TreeGrowth::ScaleFactorFor(WorldAgeInDays, LerConfigDeCrescimento());
+
 	using namespace MataDoCenario;
 
 	if (CellSize <= 0.0f || SideUnits <= 0.0f)
@@ -1376,7 +1403,8 @@ void AForestBackdrop::BuildRegion(float CellSize, uint32 Seed, EIslandBiome Biom
 		{
 			continue;
 		}
-		const float EscalaBase = (Especie.AlturaEmCasas * CellSize) / AlturaDaMalha;
+		const float EscalaBase =
+			((Especie.AlturaEmCasas * CellSize) / AlturaDaMalha) * FatorDeCrescimento;
 
 		// Pedra da COR DO BIOMA. Pedra da cor do chão é pedra invisível — e
 		// pedra é justamente o que sobra onde não há mata.

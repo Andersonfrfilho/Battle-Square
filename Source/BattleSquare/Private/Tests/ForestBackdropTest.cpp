@@ -1971,3 +1971,76 @@ bool FForestSwampArenaGetsPoolsTest::RunTest(const FString& Parameters)
 	DestroyForestTestWorld(World);
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FForestGrowsWithWorldAgeTest,
+	"BattleSquare.Environment.Crescimento.MataCresceMasNaoSeMove",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FForestGrowsWithWorldAgeTest::RunTest(const FString&)
+{
+	// MV2 — o contrapeso: a MESMA semente, medida em duas idades do mundo,
+	// muda a ESCALA mas NÃO a posição nem a espécie. Crescer não é replantar.
+	UWorld* World = CreateForestTestWorld();
+
+	AForestBackdrop* Jovem = World->SpawnActor<AForestBackdrop>();
+	AForestBackdrop* Madura = World->SpawnActor<AForestBackdrop>();
+	if (!Jovem || !Madura)
+	{
+		DestroyForestTestWorld(World);
+		return false;
+	}
+
+	// Mesma semente, mesmo bioma, mesmo lado — só a idade do mundo difere.
+	Jovem->BuildRegion(CasaDeTeste, 31u, EIslandBiome::Forest, LadoDoPedacoDeTeste, /*WorldAgeInDays=*/0);
+	Madura->BuildRegion(CasaDeTeste, 31u, EIslandBiome::Forest, LadoDoPedacoDeTeste, /*WorldAgeInDays=*/3000);
+
+	const auto& EspeciesJovem = Jovem->GetSpeciesClusters();
+	const auto& EspeciesMadura = Madura->GetSpeciesClusters();
+	TestEqual(TEXT("o número de espécies não muda com a idade"),
+		EspeciesJovem.Num(), EspeciesMadura.Num());
+
+	int32 InstanciasComparadas = 0;
+	int32 MenoresQuandoJovem = 0;
+	for (int32 E = 0; E < EspeciesJovem.Num(); ++E)
+	{
+		UHierarchicalInstancedStaticMeshComponent* J = EspeciesJovem[E].Get();
+		UHierarchicalInstancedStaticMeshComponent* M = EspeciesMadura[E].Get();
+		if (!J || !M)
+		{
+			continue;
+		}
+		// Mesma quantidade por espécie: nada nasceu nem sumiu com a idade.
+		if (!TestEqual(TEXT("a espécie tem a mesma contagem nas duas idades"),
+			J->GetInstanceCount(), M->GetInstanceCount()))
+		{
+			continue;
+		}
+		for (int32 I = 0; I < J->GetInstanceCount(); ++I)
+		{
+			FTransform Tj, Tm;
+			J->GetInstanceTransform(I, Tj);
+			M->GetInstanceTransform(I, Tm);
+
+			// A POSIÇÃO vem só da semente — igual nas duas idades.
+			TestTrue(TEXT("a árvore não se moveu ao crescer"),
+				Tj.GetLocation().Equals(Tm.GetLocation(), 0.1f));
+
+			// A ESCALA cresce: a jovem é menor ou igual; ao menos uma, menor.
+			const float Ej = Tj.GetScale3D().X;
+			const float Em = Tm.GetScale3D().X;
+			TestTrue(TEXT("a muda nunca é maior que a adulta"), Ej <= Em + 0.001f);
+			if (Ej < Em - 0.001f)
+			{
+				++MenoresQuandoJovem;
+			}
+			++InstanciasComparadas;
+		}
+	}
+
+	TestTrue(TEXT("houve árvore para comparar"), InstanciasComparadas > 0);
+	TestTrue(TEXT("a mata jovem é de fato menor — a idade entra na escala"),
+		MenoresQuandoJovem > 0);
+
+	DestroyForestTestWorld(World);
+	return true;
+}

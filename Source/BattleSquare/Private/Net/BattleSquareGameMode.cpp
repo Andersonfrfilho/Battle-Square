@@ -3659,7 +3659,10 @@ void ABattleSquareGameMode::BuildResidentChunk(const FIntPoint& Pedaco)
 	Mata->BuildRegion(WorldSceneryCellSizeUnits,
 		RegionResidency::ChunkSeed(static_cast<uint32>(WorldScenerySeed), Pedaco),
 		IslandGeography::BiomeAt(Centro),
-		RegionResidency::ChunkSideUnits());
+		RegionResidency::ChunkSideUnits(),
+		// A mata do mundo cresce com a idade do mundo (MV2). Desconhecida
+		// (backend fora) -> -1 -> mata adulta, nunca um vazio de mudas.
+		CurrentWorldAge.bKnown ? CurrentWorldAge.AgeInDays : -1);
 
 	ResidentChunks.Add(Pedaco, Mata);
 }

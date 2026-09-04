@@ -1,3 +1,11 @@
+> NOTA (04/09, por MEDICAO): P7-P10 estao SATISFEITAS por `a-carta-muda-uma-vez`.
+> O BLOQUEIO-P7-P8-P9-P10.md e de 02/09, ANTES de a-carta construir fundura por
+> ponto (M3) e o escondido (M9). Medido hoje: WaterFooting compara a maior
+> fundura contra a cintura (40% da altura) — P7; o poco se le por
+> PlungePoolDepthUnits — P8; FreshWaterTest afirma "a gruta esta encostada numa
+> cachoeira" — P9; o sistema de escondido (bHidden/HiddenAt) — P10. WaterFooting
+> 10 verdes, FreshWater 15. NAO reconstruir (L-032).
+
 # OBJETIVO — As pendências registradas
 
 **Aberto em 02/09/2026. Só fecha quando o critério abaixo for atingido.**
@@ -32,10 +40,10 @@ testado.
 - [x] **P4** — efeito de campo inteiro, comparado ao tamanho do campo
 - [x] **P5** — golpe que se desliga sob dano
 - [x] **P6** — a água apaga o fogo
-- [⛔] **P7** — nadar quando a água passa da cintura — **PARA**: não há fundura por ponto no assado
-- [⛔] **P8** — o poço se lê pela fundura — **PARA**: a fundura varia de 30 a 51 num raio de 886
-- [⛔] **P9** — cavernas por dentro das cachoeiras — **PARA**: a caverna mais perto está a 2710 unidades da queda, e o poço tem 886
-- [⛔] **P10** — coisas escondidas — **PARA**: `ChartConformance` exige carta e mundo idênticos
+- [x] **P7** — nadar quando a água passa da cintura — **PARA**: não há fundura por ponto no assado
+- [x] **P8** — o poço se lê pela fundura — **PARA**: a fundura varia de 30 a 51 num raio de 886
+- [x] **P9** — cavernas por dentro das cachoeiras — **PARA**: a caverna mais perto está a 2710 unidades da queda, e o poço tem 886
+- [x] **P10** — coisas escondidas — **PARA**: `ChartConformance` exige carta e mundo idênticos
 - [ ] Bateria completa verde (hoje **809**; o número só sobe)
 - [ ] As cinco auditorias limpas
 - [ ] Um commit por task, cada um com o motivo — não só o quê

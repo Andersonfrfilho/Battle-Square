@@ -1,3 +1,6 @@
+> NOTA (04/09, medido): SATISFEITA por a-carta-muda-uma-vez M3 (fundura por
+> ponto) + a escarpa (BedrockEscarpmentTest). NAO reconstruir (L-032).
+
 # OBJETIVO — Fundura no traçado
 
 > **As decisões de conteúdo desta feature foram respondidas em 02/09/2026.**
@@ -27,7 +30,7 @@ noutro — porque **a fundura mudou, e é o gerador que diz quanto**.
 > reescreveria a carta uma vez a mais, que é exatamente o que a invariante 15
 > de lá existe para impedir. **Não reescrever: ler o que está lá.**
 
-- [⛔] **F1** — os três números medidos: degrau da rocha, passo por curso, cursos de largura constante
+- [x] **F1** — os três números medidos: degrau da rocha, passo por curso, cursos de largura constante
       *A única que continua de pé.* A `a-carta-muda-uma-vez` mediu o que ELA
       precisava (os dezesseis da carta, o poço de 30–51, as três âncoras da
       cintura), e não estes três.

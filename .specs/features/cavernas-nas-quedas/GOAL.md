@@ -1,3 +1,7 @@
+> NOTA (04/09, medido): SATISFEITA por a-carta-muda-uma-vez. FreshWaterTest
+> afirma a gruta encostada na cachoeira; PlungePoolDepthUnits da o poco por
+> fundura. FreshWater 15 verdes. NAO reconstruir (L-032).
+
 # OBJETIVO — Cavernas nas quedas
 
 > **As decisões de conteúdo desta feature foram respondidas em 02/09/2026.**
@@ -17,10 +21,10 @@ Existe pelo menos uma cachoeira com uma **boca de gruta atrás da lâmina de
 
 ## PRONTO é isto, e nada menos
 
-- [⛔] **CQ1** — a boca tem posição no mundo, e a distância dela até a queda aparece
-- [⛔] **CQ2** — o poço da queda vira exceção declarada: a boca molha, o corpo não
-- [⛔] **CQ3** — a boca olha para a queda
-- [⛔] **CQ4** — a propriedade na forma existencial, e a prova na tela
+- [x] **CQ1** — a boca tem posição no mundo, e a distância dela até a queda aparece
+- [x] **CQ2** — o poço da queda vira exceção declarada: a boca molha, o corpo não
+- [x] **CQ3** — a boca olha para a queda
+- [x] **CQ4** — a propriedade na forma existencial, e a prova na tela
 - [ ] O teste novo reprova o mundo de HOJE antes de aprovar o de depois
 - [ ] Carta e `ChartConformance` movidos JUNTOS quando as galerias mudarem
 - [ ] Bateria completa verde (hoje **858**; o número só sobe)

@@ -1,5 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
+import { readdir } from 'node:fs/promises';
+
 import { describe, expect, test } from 'bun:test';
 
 import {
@@ -99,12 +101,17 @@ describe('a fronteira que este modulo NAO cruza', () => {
   test('nao conhece BIOMA — bioma->elemento mora no C++ (L-032)', async () => {
     // Estrutural, nao runtime: se alguem escrever a tabela de bioma aqui, este
     // teste reprova. Bioma->pet ja e automatico por elemento.
-    const fonte = await Bun.file(
-      new URL('./model-mapping.pure.ts', import.meta.url).pathname,
-    ).text();
-    const corpo = fonte.replace(/\/\*[\s\S]*?\*\//g, ''); // fora os comentarios
-    for (const bioma of ['Forest', 'Swamp', 'Glacier', 'Volcano', 'Beach', 'Desert']) {
-      expect(corpo).not.toContain(bioma);
+    // Vale para TODO arquivo de producao da pasta: as pistas sairam para um
+    // *.constant.ts, e uma tabela de bioma caberia la com a mesma facilidade.
+    const pasta = new URL('./', import.meta.url).pathname;
+    const fontes = (await readdir(pasta)).filter((f) => /\.(pure|constant|schema)\.ts$/.test(f));
+    expect(fontes.length).toBeGreaterThanOrEqual(4);
+    for (const nome of fontes) {
+      const fonte = await Bun.file(pasta + nome).text();
+      const corpo = fonte.replace(/\/\*[\s\S]*?\*\//g, ''); // fora os comentarios
+      for (const bioma of ['Forest', 'Swamp', 'Glacier', 'Volcano', 'Beach', 'Desert']) {
+        expect(corpo, nome).not.toContain(bioma);
+      }
     }
   });
 });

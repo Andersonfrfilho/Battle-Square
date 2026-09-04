@@ -3,9 +3,9 @@
 /**
  * O GERADOR DE ESPECIES — de MODELO para PET (decisao 69).
  *
- * O problema real: chegam ~50+ modelos de monstro de um pacote, e o catalogo ja
- * tem 115 pets. Casar isso a mao e digitar 165 linhas e errar em silencio. Este
- * modulo faz a ponte, e ele so precisa acertar UMA coisa: o ELEMENTO do modelo.
+ * O problema real: chegam 128 modelos de tres pacotes, e o catalogo tem pets
+ * identificados por `Escola/Elemento`. Casar isso a mao e errar em silencio.
+ * Este modulo faz a ponte, e ele so precisa acertar UMA coisa: o ELEMENTO.
  *
  * Por que so o elemento — e por que isto NAO duplica nada:
  *   - `BiomeEncounterFilter` (C++) ja liga BIOMA -> ELEMENTO;
@@ -15,7 +15,12 @@
  *
  * O estagio (Filhote/Adulto/Evoluido) espelha `EPetGrowthStage` do C++, que ja
  * existe — a evolucao nao nasce aqui, ela e RECONHECIDA aqui.
+ * As pistas vivem em `model-hints.constant.ts`.
  */
+import {
+  BODY_MARKERS, BODY_STAGE_BIG, BODY_STAGE_BLOB, ELEMENT_HINTS, EVOLVED_SUFFIX,
+  MODEL_PREFIX, NON_CREATURE_TOKENS, PACK_MARKERS, SHORT_HINT_LENGTH, STAGE_HINTS,
+} from './model-hints.constant';
 
 /** Os oito elementos do jogo (Config/PetTypes.json). */
 export const ELEMENTS = [
@@ -27,52 +32,34 @@ export type Element = (typeof ELEMENTS)[number];
 export const STAGES = ['Filhote', 'Adulto', 'Evoluido'] as const;
 export type Stage = (typeof STAGES)[number];
 
-/**
- * Pistas de NOME por elemento. O nome do modelo e o unico dado que um pacote da
- * de graca, e ele quase sempre diz o elemento ("FlameImp", "IceGolem").
- * Minusculas, comparadas por conteudo.
- */
-const ELEMENT_HINTS: ReadonlyArray<readonly [Element, readonly string[]]> = [
-  ['Fogo',     ['flame', 'fire', 'lava', 'magma', 'ember', 'burn', 'inferno', 'demon', 'imp',
-                'dragon']],
-  ['Agua',     ['water', 'aqua', 'fish', 'shark', 'squid', 'squidle', 'crab', 'wave', 'sea',
-                'octo', 'frog', 'glub', 'penguin', 'turtle']],
-  ['Planta',   ['plant', 'leaf', 'vine', 'flower', 'mush', 'fung', 'tree', 'forest', 'ent',
-                'moss', 'cact', 'bee', 'deer']],
-  ['Terra',    ['rock', 'stone', 'golem', 'gole', 'earth', 'sand', 'crystal', 'dino', 'raptor',
-                'rex', 'orc', 'cyclops', 'yeti', 'panda', 'pig', 'bunny', 'monk']],
-  ['Fantasma', ['ghost', 'spirit', 'skele', 'skull', 'undead', 'zombie', 'wraith', 'phantom',
-                'bone', 'reaper', 'cthulhu']],
-  ['Luz',      ['light', 'holy', 'angel', 'radiant', 'sun', 'star', 'divine', 'cleric',
-                'wizard']],
-  ['Ar',       ['air', 'wind', 'bird', 'birb', 'wing', 'sky', 'cloud', 'bat', 'harpy',
-                'gryph', 'pigeon', 'chicken', 'bee']],
-  ['Raio',     ['thunder', 'lightning', 'shock', 'spark', 'volt', 'storm', 'electric',
-                'hywirl']],
-];
+const TRAILING_MARKER = new RegExp(
+  `_(${[...BODY_MARKERS, ...PACK_MARKERS, 'Evolved'].join('|')})$`, 'i',
+);
+const CAMEL_STAGE_WORD = new RegExp(
+  `(?<=[a-z])(${STAGE_HINTS.flatMap(([, w]) => w).map(capitalize).join('|')})$`,
+);
 
-/** Pistas de NOME por estagio — o pacote costuma marcar o porte no nome. */
-const STAGE_HINTS: ReadonlyArray<readonly [Stage, readonly string[]]> = [
-  ['Filhote',  ['baby', 'small', 'mini', 'little', 'young', 'tiny', 'cub']],
-  ['Evoluido', ['king', 'giant', 'alpha', 'elder', 'greater', 'lord', 'ancient', 'boss', 'large']],
-];
+function capitalize(word: string): string {
+  return word.charAt(0).toUpperCase() + word.slice(1);
+}
 
 /**
- * O sufixo que o pacote usa para marcar a forma evoluida (medido no Ultimate
- * Monsters: Alpaking/Alpaking_Evolved, Dragon/Dragon_Evolved, ...). Isto NAO e
- * heuristica de nome — e convencao explicita do autor, e por isso ganha da
- * heuristica.
- */
-const EVOLVED_SUFFIX = /_evolved$/i;
-
-/**
- * A FAMILIA de um modelo: o nome sem o sufixo de forma. `Alpaking_Evolved` e
- * `Alpaking` sao a MESMA familia — e e por familia que a evolucao se agrupa,
- * nunca por elemento (agrupar por elemento fundiria Dragon e Demon na mesma
- * cadeia, que sao bichos diferentes).
+ * A FAMILIA de um modelo: o nome sem prefixo de import e sem sufixo de forma.
+ * `Alpaking_Evolved`, `Cactoro_Blob`, `Bat_CM` e `MushroomKing` pertencem a
+ * `Alpaking`, `Cactoro`, `Bat` e `Mushroom`. E por familia que a evolucao se
+ * agrupa, nunca por elemento (agrupar por elemento fundiria Dragon e Demon).
+ *
+ * A palavra de porte so sai em camelCase depois de minuscula: `MushroomKing`
+ * perde `King`; `Alpaking` nao — medido, e o teste tem o nome real.
  */
 export function familyOf(modelName: string): string {
-  return modelName.replace(EVOLVED_SUFFIX, '').replace(/[_-]+$/, '');
+  let family = modelName.replace(MODEL_PREFIX, '');
+  let previous = '';
+  while (previous !== family) {
+    previous = family;
+    family = family.replace(TRAILING_MARKER, '').replace(/[_-]+$/, '');
+  }
+  return family.replace(CAMEL_STAGE_WORD, '');
 }
 
 /**
@@ -90,60 +77,56 @@ function tokensOf(modelName: string): string[] {
     .filter(Boolean);
 }
 
-/** A pista casa quando um TOKEN comeca por ela (cobre plural e sufixo curto). */
+/** Pista longa casa por prefixo (plural, sufixo); pista curta so inteira. */
 function matchesHint(tokens: readonly string[], hint: string): boolean {
+  if (hint.length <= SHORT_HINT_LENGTH) return tokens.includes(hint);
   return tokens.some((t) => t === hint || t.startsWith(hint));
 }
 
+/** Todos os elementos que o nome sugere — mais de um e CONFLITO, nao escolha. */
+export function elementsSuggestedBy(modelName: string): Element[] {
+  const tokens = tokensOf(familyOf(modelName));
+  return ELEMENT_HINTS
+    .filter(([, hints]) => hints.some((h) => matchesHint(tokens, h)))
+    .map(([element]) => element);
+}
+
 /**
- * O elemento que o nome do modelo sugere, ou `undefined` quando nao ha pista.
- *
- * `undefined` e resposta VALIDA e importante: modelo sem pista NAO recebe um
- * elemento chutado — ele fica para a decisao humana (o gerador reporta a lista).
- * Chutar encheria o catalogo de erro silencioso.
+ * O elemento que o nome do modelo sugere, ou `undefined` quando nao ha pista —
+ * ou quando ha DUAS ("Bee" e planta e ar ao mesmo tempo). Nos dois casos a
+ * resposta e do humano: chutar encheria o catalogo de erro silencioso.
  */
 export function elementFromModelName(modelName: string): Element | undefined {
-  // A forma evoluida herda o elemento da familia: `Dragon_Evolved` e Fogo
-  // porque `Dragon` e Fogo — o sufixo nao muda o que o bicho e.
-  const tokens = tokensOf(familyOf(modelName));
-  for (const [element, hints] of ELEMENT_HINTS) {
-    if (hints.some((h) => matchesHint(tokens, h))) return element;
-  }
-  return undefined;
+  const suggested = elementsSuggestedBy(modelName);
+  return suggested.length === 1 ? suggested[0] : undefined;
+}
+
+/** De onde veio o estagio: do AUTOR (sufixo/palavra), do PORTE do corpo, ou padrao. */
+export type StageOrigin = 'autor' | 'porte' | 'padrao';
+
+export function stageOriginOf(modelName: string): StageOrigin {
+  if (EVOLVED_SUFFIX.test(modelName)) return 'autor';
+  const tokens = tokensOf(modelName);
+  if (STAGE_HINTS.some(([, hints]) => hints.some((h) => matchesHint(tokens, h)))) return 'autor';
+  if (BODY_STAGE_BLOB.test(modelName) || BODY_STAGE_BIG.test(modelName)) return 'porte';
+  return 'padrao';
 }
 
 /** O estagio que o nome sugere. Sem pista, `Adulto` — o meio, nunca um extremo. */
 export function stageFromModelName(modelName: string): Stage {
-  // A convencao do autor manda: o sufixo e explicito, a heuristica e palpite.
   if (EVOLVED_SUFFIX.test(modelName)) return 'Evoluido';
   const tokens = tokensOf(modelName);
   for (const [stage, hints] of STAGE_HINTS) {
     if (hints.some((h) => matchesHint(tokens, h))) return stage;
   }
+  if (BODY_STAGE_BLOB.test(modelName)) return 'Filhote';
+  if (BODY_STAGE_BIG.test(modelName)) return 'Evoluido';
   return 'Adulto';
 }
-
-/**
- * Tokens que denunciam que o arquivo NAO e criatura: rig, prop, cenario.
- *
- * Medido: o Cute Fish Pack traz `Lure_1..6`, `Dock_Long`, `Boat`; os packs de
- * personagem trazem `Rig_Medium_General`. Reportar isso como "sem pista, decida
- * o elemento" seria pedir ao humano que classificasse uma DOCA como bicho — o
- * relatorio precisa ser curto para ser lido, e ruido o mata.
- */
-const NON_CREATURE_TOKENS = [
-  'rig', 'lure', 'dock', 'boat', 'prop', 'anim', 'skeleton_rig', 'socket',
-  // Medidos no import de 04/09, que escaparam da primeira lista: o Cute Fish
-  // traz `FishingRod_Lvl1..5` (vara de pesca), e barco/doca ja estavam. Cada
-  // token aqui veio de um arquivo REAL que quase entrou como bicho.
-  'rod', 'fishingrod', 'crate', 'barrel', 'chest',
-] as const;
 
 /** Este arquivo e uma CRIATURA, ou e rig/prop/cenario que entrou junto? */
 export function isCreature(modelName: string): boolean {
   const tokens = tokensOf(modelName);
-  // `Skeletons` (o pack) e criatura; `Rig_Medium` nao. Token exato, nao prefixo:
-  // "rig" pega `Rig_Medium`, e nao pega `Frigate`.
   return !NON_CREATURE_TOKENS.some((bad) => tokens.includes(bad));
 }
 
@@ -154,23 +137,16 @@ export type ClassifiedModel = {
 };
 
 /**
- * Classifica uma leva de modelos (o que a MCP AssetTools devolve ao listar).
- *
- * `packElement` e a pista do PACOTE, e ela existe por medicao: o Cute Fish Pack
- * traz `Tetra`, `Betta`, `Koi`, `Piranha` — nomes de ESPECIE, que o nome sozinho
- * nao denuncia, mas cujo pacote nao deixa duvida. Ela e o ULTIMO recurso: o nome
- * ganha sempre, para um monstro de fogo dentro de um pacote de peixe continuar
- * sendo de fogo.
+ * Classifica uma leva de NOMES. `packElement` e a pista do PACOTE e preenche
+ * so o que o nome nao disse (`Tetra`, `Betta`, `Koi` sao especies). Para o
+ * import real, com pasta e caminho, ver `imported-assets.pure.ts`.
  */
 export function classifyModels(
   modelNames: readonly string[],
   packElement?: Element,
 ): ClassifiedModel[] {
-  // Rig e prop saem ANTES de classificar: eles nao sao bicho, e pedir elemento
-  // para uma doca e ruido no relatorio que o humano vai ler.
   return modelNames.filter(isCreature).map((modelName) => ({
     modelName,
-    // O nome primeiro; o pacote so preenche o que o nome nao soube dizer.
     element: elementFromModelName(modelName) ?? packElement,
     stage: stageFromModelName(modelName),
   }));
@@ -181,37 +157,38 @@ export function unclassified(models: readonly ClassifiedModel[]): ClassifiedMode
   return models.filter((m) => m.element === undefined);
 }
 
-export type EvolutionChain = {
+export type FamilyGroup = {
   /** A familia: `Alpaking` para `Alpaking` + `Alpaking_Evolved`. */
   readonly family: string;
   readonly element: Element | undefined;
   /** Um modelo por estagio, na ordem Filhote -> Adulto -> Evoluido. */
   readonly stages: Partial<Record<Stage, string>>;
+  /** Outra pele do MESMO estagio (`Bat_CM` ao lado de `Bat_AM`): nao e evolucao. */
+  readonly variantes: readonly string[];
 };
+export type EvolutionChain = FamilyGroup;
 
-/**
- * Monta as cadeias de evolucao: por ELEMENTO, um modelo de cada estagio.
- *
- * Uma cadeia so entra se tiver ao menos DOIS estagios — um modelo sozinho nao e
- * evolucao, e prometer evolucao que nao acontece e pior que nao prometer.
- * Modelos sem elemento ficam de fora (ver `unclassified`).
- */
-export function buildEvolutionChains(models: readonly ClassifiedModel[]): EvolutionChain[] {
-  // Por FAMILIA (o nome-base), nao por elemento: `Dragon` e `Demon` sao ambos
-  // Fogo e NAO evoluem um no outro. Agrupar por elemento inventaria parentesco.
-  const byFamily = new Map<string, { element: Element | undefined; stages: Partial<Record<Stage, string>> }>();
+/** Agrupa por FAMILIA, um modelo por estagio; o que sobra no estagio e variante. */
+export function groupByFamily(models: readonly ClassifiedModel[]): FamilyGroup[] {
+  const byFamily = new Map<string, { element: Element | undefined; stages: Partial<Record<Stage, string>>; variantes: string[] }>();
 
   for (const m of models) {
     const family = familyOf(m.modelName);
-    const entry = byFamily.get(family) ?? { element: m.element, stages: {} };
-    // O primeiro de cada estagio fica: determinismo por ordem de entrada, sem
-    // sorteio — a mesma lista de modelos da sempre a mesma cadeia.
-    if (!entry.stages[m.stage]) entry.stages[m.stage] = m.modelName;
+    const entry = byFamily.get(family) ?? { element: m.element, stages: {}, variantes: [] };
+    if (entry.stages[m.stage]) entry.variantes.push(m.modelName);
+    else entry.stages[m.stage] = m.modelName;
     entry.element = entry.element ?? m.element;
     byFamily.set(family, entry);
   }
 
-  return [...byFamily.entries()]
-    .map(([family, e]) => ({ family, element: e.element, stages: e.stages }))
-    .filter((c) => Object.keys(c.stages).length >= 2);
+  return [...byFamily.entries()].map(([family, e]) => ({ family, ...e }));
+}
+
+/**
+ * As cadeias de evolucao: familias com ao menos DOIS estagios. Um modelo
+ * sozinho nao e evolucao, e prometer evolucao que nao acontece e pior que nao
+ * prometer. Modelos sem elemento entram na cadeia mas ficam para decisao.
+ */
+export function buildEvolutionChains(models: readonly ClassifiedModel[]): EvolutionChain[] {
+  return groupByFamily(models).filter((c) => Object.keys(c.stages).length >= 2);
 }

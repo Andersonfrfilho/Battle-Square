@@ -4,8 +4,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Game\n"
-"POT-Creation-Date: 2026-09-04 12:16\n"
-"PO-Revision-Date: 2026-09-04 12:16\n"
+"POT-Creation-Date: 2026-09-04 14:52\n"
+"PO-Revision-Date: 2026-09-04 14:52\n"
 "Language-Team: \n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
@@ -886,6 +886,13 @@ msgstr ""
 #: Source/BattleSquare/Private/UI/WorldMapScreen.cpp(405)
 msgctxt "MapaDoMundo,LegendaEscuro"
 msgid "o escuro é o que você ainda não viu"
+msgstr ""
+
+#. Key:	NaoMontavel
+#. SourceLocation:	Source/BattleSquare/Private/World/MountEligibility.cpp(14)
+#: Source/BattleSquare/Private/World/MountEligibility.cpp(14)
+msgctxt "MountEligibility,NaoMontavel"
+msgid "este pet não pode ser montado"
 msgstr ""
 
 #. Key:	SeusItens

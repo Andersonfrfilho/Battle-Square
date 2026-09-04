@@ -110,6 +110,9 @@ public:
 
 	/** Monta/desmonta (MT1): mais rapido pelo custo de trajeto que ja existe. */
 	void SetMounted(bool bWantMounted);
+
+	/** Marca se o pet candidato pode ser montado (MT4). */
+	void SetCurrentPetMountable(bool bCan) { bCurrentPetMountable = bCan; }
 	void StopSprinting();
 
 	/** Alterna terceira pessoa → primeira pessoa → de cima → terceira. */
@@ -160,6 +163,9 @@ private:
 	/** Taxa-base de cansaco por unidade andada — config (MT2). */
 	UPROPERTY(config, EditDefaultsOnly, Category = "Montaria")
 	float MountFatigueRatePerUnit = 0.0005f;
+
+	/** O pet candidato a montaria pode ser montado? (MT4) Default nao — exige dado explicito. */
+	bool bCurrentPetMountable = false;
 
 	/** Peso do pet montado (MT3). Default = referencia -> multiplicador neutro. */
 	float MountedPetWeight = 0.0f;

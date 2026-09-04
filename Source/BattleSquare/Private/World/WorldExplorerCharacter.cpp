@@ -17,6 +17,7 @@
 #include "World/WorldObstacleBreaking.h"
 #include "World/MountedMovement.h"
 #include "World/MountFatigue.h"
+#include "World/MountEligibility.h"
 #include "Environment/IslandGeography.h"
 #include "Net/BattleSquareGameMode.h"
 #include "Environment/RegionResidency.h"
@@ -460,6 +461,16 @@ void AWorldExplorerCharacter::SetMounted(bool bWantMounted)
 
 	if (bWantMounted)
 	{
+		// MT4: so monta pet que o DADO diz montavel. Recusado, a tela diz por que
+		// — e nada muda. Dado antigo (default false) cai aqui, nunca monta por acaso.
+		if (!MountEligibility::CanMount(bCurrentPetMountable))
+		{
+			FBattleDebugScreen::Show(
+				MountEligibility::RefusalReason().ToString(),
+				4.0f, FColor(210, 150, 120), /*Key=*/732);
+			return;
+		}
+
 		// Guarda a velocidade a pe e sobe pela conta de montaria (MT1) — o
 		// ganho vem da fonte unica, nao de um multiplicador solto aqui.
 		WalkSpeedBeforeMount = Movement->MaxWalkSpeed;
@@ -566,4 +577,21 @@ static FAutoConsoleCommandWithWorldAndArgs GMontarCommand(
 				return;
 			}
 			Explorador->SetMounted(Args.Num() < 1 || Args[0].Equals(TEXT("on"), ESearchCase::IgnoreCase));
+		}));
+
+// Marca o pet candidato como montavel (MT4, dev): sem isto, bs.Montar recusa.
+static FAutoConsoleCommandWithWorldAndArgs GPetMontavelCommand(
+	TEXT("bs.PetMontavel"),
+	TEXT("bs.PetMontavel [on|off] — marca se o pet candidato pode ser montado (MT4)."),
+	FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(
+		[](const TArray<FString>& Args, UWorld* World)
+		{
+			const APlayerController* Ctrl = World ? World->GetFirstPlayerController() : nullptr;
+			AWorldExplorerCharacter* Explorador =
+				Ctrl ? Cast<AWorldExplorerCharacter>(Ctrl->GetPawn()) : nullptr;
+			if (Explorador)
+			{
+				Explorador->SetCurrentPetMountable(
+					Args.Num() < 1 || Args[0].Equals(TEXT("on"), ESearchCase::IgnoreCase));
+			}
 		}));

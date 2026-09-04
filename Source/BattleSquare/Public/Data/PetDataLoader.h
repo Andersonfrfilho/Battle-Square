@@ -71,6 +71,15 @@ struct FLoadedPetRecord
 	FString UpdatedAt;
 
 	/**
+	 * Este pet pode ser MONTADO? (montaria-e-trilhas, MT4)
+	 *
+	 * Default FALSE de proposito: dado de save ANTIGO, sem este campo, carrega
+	 * como nao-montavel — nunca crasha, e nunca vira montavel por acidente. Um
+	 * pet so monta quando o dado diz explicitamente que sim.
+	 */
+	bool bMountable = false;
+
+	/**
 	 * Até quatro golpes, na ordem do slot.
 	 *
 	 * Chegam pelo espelho como JSON canônico, e são parte do payload ASSINADO

@@ -285,15 +285,16 @@ bool FBattleArenaRejectsInitialPositionOnBlockedCellTest::RunTest(const FString&
 	return true;
 }
 
-// T5 🧠 (colecao-e-captura): vitória do jogador local captura o pet do
-// OPONENTE — nunca o próprio pet do jogador. CatalogIds distintos
-// tornam a inversão fácil de detectar se acontecer.
+// T5 🧠 (colecao-e-captura) + PS11: vitória contra um SELVAGEM captura o pet
+// do oponente — nunca o próprio pet do jogador. O oponente aqui NÃO tem dono
+// configurado (SideOwners[1] vazio), então é selvagem, e selvagem se captura.
+// CatalogIds distintos tornam a inversão fácil de detectar se acontecer.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FBattleArenaVictoryCapturesOpponentPetTest,
-	"BattleSquare.BattleArena.VictoryCapturesOpponentPet",
+	FBattleArenaVictoryCapturesWildPetTest,
+	"BattleSquare.BattleArena.VictoryCapturesWildPet",
 	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
 
-bool FBattleArenaVictoryCapturesOpponentPetTest::RunTest(const FString& Parameters)
+bool FBattleArenaVictoryCapturesWildPetTest::RunTest(const FString& Parameters)
 {
 	const FString TestSlotName = TEXT("PetCollectionTestSlot_ArenaVictory");
 	if (UGameplayStatics::DoesSaveGameExist(TestSlotName, 0))
@@ -397,6 +398,108 @@ bool FBattleArenaVictoryCapturesOpponentPetTest::RunTest(const FString& Paramete
 	return true;
 }
 
+// PS11: vencer o pet de OUTRO JOGADOR nao o captura — o oponente TEM dono, e
+// dono nao se ganha em batalha (isso e roubo, outra feature). Este e o par
+// negativo do teste acima: a MESMA vitoria, so que o oponente e de alguem.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FBattleArenaVictoryDoesNotStealOwnedPetTest,
+	"BattleSquare.BattleArena.VictoryDoesNotCaptureOwnedPet",
+	EAutomationTestFlags_ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+
+bool FBattleArenaVictoryDoesNotStealOwnedPetTest::RunTest(const FString& Parameters)
+{
+	const FString VencedorSlot = TEXT("PetCollectionTestSlot_PS11_Vencedor");
+	const FString DonoSlot = TEXT("PetCollectionTestSlot_PS11_Dono");
+	for (const FString& Slot : { VencedorSlot, DonoSlot })
+	{
+		if (UGameplayStatics::DoesSaveGameExist(Slot, 0))
+		{
+			UGameplayStatics::DeleteGameInSlot(Slot, 0);
+		}
+	}
+
+	UWorld* World = CreateHeadlessTestWorld();
+	if (!TestNotNull(TEXT("Mundo de teste criado"), World))
+	{
+		return false;
+	}
+
+	ABattleArena* Arena = World->SpawnActor<ABattleArena>();
+	Arena->PetCollectionSlotName = VencedorSlot;
+
+	// OS DOIS LADOS TEM DONO: o lado zero e o vencedor, o lado um pertence a
+	// OUTRA conta. E o oponente com dono que a regra nova protege.
+	Arena->SideOwners[0].CollectionSlot = VencedorSlot;
+	Arena->SideOwners[0].AccountId = TEXT("conta-vencedor");
+	Arena->SideOwners[1].CollectionSlot = DonoSlot;
+	Arena->SideOwners[1].AccountId = TEXT("conta-do-dono");
+
+	FBattleState InitialState;
+	FPetState PlayerPet;
+	PlayerPet.PetId = 1; PlayerPet.Side = 0; PlayerPet.Column = 1; PlayerPet.Row = 1;
+	PlayerPet.Health = 50; PlayerPet.MaxHealth = 50; PlayerPet.Attack = 20; PlayerPet.Defense = 5;
+	FPetState OpponentPet;
+	OpponentPet.PetId = 2; OpponentPet.Side = 1; OpponentPet.Column = 2; OpponentPet.Row = 1;
+	OpponentPet.Health = 1; OpponentPet.MaxHealth = 1; OpponentPet.Attack = 1; OpponentPet.Defense = 1000;
+	InitialState.Pets.Add(PlayerPet);
+	InitialState.Pets.Add(OpponentPet);
+
+	TArray<FPetPresentationInfo> Presentations;
+	FPetPresentationInfo PlayerPresentation;
+	PlayerPresentation.PetId = 1;
+	PlayerPresentation.CatalogId = TEXT("catalog-vencedor");
+	PlayerPresentation.Name = TEXT("MeuPet");
+	PlayerPresentation.Type = TEXT("Normal");
+	FPetPresentationInfo OpponentPresentation;
+	OpponentPresentation.PetId = 2;
+	OpponentPresentation.CatalogId = TEXT("catalog-do-outro-jogador");
+	OpponentPresentation.Name = TEXT("PetDoOutro");
+	OpponentPresentation.Type = TEXT("Fogo");
+	Presentations.Add(PlayerPresentation);
+	Presentations.Add(OpponentPresentation);
+
+	TestTrue(TEXT("Montagem aceita"), Arena->BeginBattle(InitialState, Presentations));
+
+	UBattleTurnCoordinator* Coordinator = NewObject<UBattleTurnCoordinator>();
+	Coordinator->BeginTurn(InitialState, 0.0);
+	Arena->ConfigureNetworkedOpponent(Coordinator);
+
+	Arena->PlayerActionQueue->BeginSelectingType(EActionType::Magia);
+	Arena->PlayerActionQueue->ConfirmMove(0);
+	Arena->PlayerActionQueue->BeginSelectingType(EActionType::Aguardar);
+	Arena->PlayerActionQueue->BeginSelectingType(EActionType::Aguardar);
+	Arena->PlayerActionQueue->Commit();
+
+	FTurnCommit OpponentCommit;
+	OpponentCommit.Actions[0] = { EActionType::Aguardar, EBattleDirection::Nenhuma };
+	OpponentCommit.Actions[1] = { EActionType::Aguardar, EBattleDirection::Nenhuma };
+	OpponentCommit.Actions[2] = { EActionType::Aguardar, EBattleDirection::Nenhuma };
+	Coordinator->SubmitCommit(1, OpponentCommit);
+
+	TestEqual(TEXT("O vencedor foi o lado 0"),
+		Arena->GetCurrentState().WinningSide, static_cast<uint8>(0));
+
+	// O ACEITE DA PS11: o pet do outro jogador NAO entrou na colecao do
+	// vencedor. A vitoria rendeu (premio/ranking sao de outra camada); o pet
+	// com dono ficou com o dono.
+	const TArray<FOwnedPetInstance> Colecao = FPetCollectionService::LoadCollection(VencedorSlot);
+	TestFalse(TEXT("o pet do outro jogador NAO foi capturado"),
+		Colecao.ContainsByPredicate([](const FOwnedPetInstance& Instance)
+		{
+			return Instance.CatalogId == TEXT("catalog-do-outro-jogador");
+		}));
+
+	for (const FString& Slot : { VencedorSlot, DonoSlot })
+	{
+		if (UGameplayStatics::DoesSaveGameExist(Slot, 0))
+		{
+			UGameplayStatics::DeleteGameInSlot(Slot, 0);
+		}
+	}
+	DestroyHeadlessTestWorld(World);
+	return true;
+}
+
 // T4 (niveis-experiencia-evolucao): vitória credita XP ao pet do
 // JOGADOR LOCAL, se já capturado; derrota credita menos; pet não
 // capturado não gera XP fantasma.
@@ -476,10 +579,10 @@ bool FBattleArenaVictoryGrantsExperienceToOwnPetTest::RunTest(const FString& Par
 	TestTrue(TEXT("Batalha terminou em vitória do jogador"), Arena->GetCurrentState().bBattleEnded && Arena->GetCurrentState().WinningSide == 0);
 
 	const TArray<FOwnedPetInstance> Collection = FPetCollectionService::LoadCollection(TestSlotName);
-	// Só o pet do jogador (já capturado antes da partida) — o oponente
-	// TAMBÉM foi capturado por CheckForCapture (T5, colecao-e-captura),
-	// então esperamos 2 instâncias: a original com XP, e a nova sem.
-	TestEqual(TEXT("Coleção tem as 2 instâncias (jogador + oponente recém-capturado)"), Collection.Num(), 2);
+	// PS11: este teste NAO configura SideOwners, entao o oponente e SELVAGEM
+	// (sem dono) e a vitoria o captura — o comportamento correto. Duas
+	// instancias: o pet do jogador com XP, e o selvagem recem-capturado sem.
+	TestEqual(TEXT("Coleção tem as 2 instâncias (jogador + selvagem recém-capturado)"), Collection.Num(), 2);
 
 	const FOwnedPetInstance* PlayerAfter = Collection.FindByPredicate(
 		[](const FOwnedPetInstance& Instance) { return Instance.CatalogId == TEXT("catalog-jogador-ja-capturado"); });
@@ -490,9 +593,9 @@ bool FBattleArenaVictoryGrantsExperienceToOwnPetTest::RunTest(const FString& Par
 
 	const FOwnedPetInstance* OpponentAfter = Collection.FindByPredicate(
 		[](const FOwnedPetInstance& Instance) { return Instance.CatalogId == TEXT("catalog-oponente-nao-capturado"); });
-	if (TestNotNull(TEXT("Instância do oponente (recém-capturada) existe"), OpponentAfter))
+	if (TestNotNull(TEXT("Instância do selvagem (recém-capturada) existe"), OpponentAfter))
 	{
-		TestEqual(TEXT("Instância do oponente recém-capturada não recebeu XP — só existe pela captura"), OpponentAfter->Experience, 0);
+		TestEqual(TEXT("Selvagem recém-capturado não recebeu XP — só existe pela captura"), OpponentAfter->Experience, 0);
 	}
 
 	if (UGameplayStatics::DoesSaveGameExist(TestSlotName, 0))
@@ -657,11 +760,14 @@ bool FBattleArenaCadaLadoTemSuaColecaoTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("O lado UM venceu"), Arena->GetCurrentState().WinningSide,
 		static_cast<uint8>(1));
 
-	// A CAPTURA é de quem venceu, na coleção DELE — mesmo não sendo o lado da
-	// tela. Antes, vitória do lado um não capturava nada.
+	// PS11 REESCREVEU O ACEITE: os DOIS lados têm `CollectionSlot`, então o
+	// perdedor TEM dono — e dono não se captura por vitória (é roubo, outra
+	// feature). O que este teste guarda continua sendo o coração do B-005 (a
+	// escrita vai para a coleção do lado CERTO, não a do servidor); o que
+	// muda é que o pet com dono NÃO troca de mão numa batalha comum.
 	const TArray<FOwnedPetInstance> ColecaoDoUm =
 		FPetCollectionService::LoadCollection(SlotDoLadoUm);
-	TestTrue(TEXT("Quem venceu capturou o pet do outro"),
+	TestFalse(TEXT("Vencer o pet de OUTRO DONO nao o captura (PS11)"),
 		ColecaoDoUm.ContainsByPredicate([](const FOwnedPetInstance& Instancia)
 		{ return Instancia.CatalogId == TEXT("catalog-do-lado-zero"); }));
 

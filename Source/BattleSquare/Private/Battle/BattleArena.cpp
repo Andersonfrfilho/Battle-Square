@@ -1651,6 +1651,24 @@ void ABattleArena::CheckForCapture(const TArray<FBattleEvent>& Trace)
 		// T5 🧠: o pet capturado é o do lado OPOSTO ao vencedor — nunca o
 		// próprio pet de quem venceu.
 		const uint8 OpponentSide = (WinningSide == 0) ? 1 : 0;
+
+		// PS11: CAPTURAR EXIGE SEM DONO. O critério deixou de ser a derrota e
+		// passou a ser a POSSE — vencer o pet de OUTRO jogador não o põe na
+		// sua coleção; só o SELVAGEM entra. Um pet com dono é um lado com
+		// conta OU com slot de coleção; sem os dois, é o bicho do mundo, que
+		// não pertence a ninguém.
+		//
+		// Isto entrega o DONO que `crime-e-recompensa` espera: tomar o pet de
+		// outro deixa de ser "ganhar a batalha" e passa a ser roubo, que é
+		// ação própria de outra feature.
+		if (!ResolveAccountIdForSide(OpponentSide).IsEmpty()
+			|| !ResolveCollectionSlotForSide(OpponentSide).IsEmpty())
+		{
+			// O oponente tem dono: a vitória rende prêmio e ranking, nunca o
+			// pet dele. Silenciar aqui é o certo — não é falha, é a regra.
+			return;
+		}
+
 		const FPetState* OpponentPet = CurrentState.Pets.FindByPredicate(
 			[OpponentSide](const FPetState& Pet) { return Pet.Side == OpponentSide; });
 		if (!OpponentPet)

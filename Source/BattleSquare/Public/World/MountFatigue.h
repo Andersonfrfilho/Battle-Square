@@ -26,4 +26,18 @@ namespace MountFatigue
 	 */
 	BATTLESQUARE_API float FatigueForStretch(
 		float StretchLengthUnits, float SlopeCostWeight, float BaseRatePerUnit);
+
+	/**
+	 * O multiplicador de cansaço pelo PESO do pet montado (MT3).
+	 *
+	 * Mais pesado, mais cansa — mas SEMPRE finito: preso entre um piso e um TETO
+	 * (MaxMultiplier), para que peso nunca torne um trajeto IMPOSSÍVEL, só mais
+	 * cansativo. É o contrapeso mandatório da MT3. Peso de referência não-positivo
+	 * devolve 1 (neutro), nunca divide por zero.
+	 */
+	BATTLESQUARE_API float WeightMultiplier(
+		float PetWeight, float ReferenceWeight, float MaxMultiplier);
+
+	/** O cansaço-base já pesado pelo peso do montado. */
+	BATTLESQUARE_API float FatigueWithWeight(float BaseFatigue, float WeightMult);
 }

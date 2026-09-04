@@ -419,8 +419,16 @@ void AWorldExplorerCharacter::Tick(float DeltaSeconds)
 				const float Peso = (Agora.Z >= LastFatiguePos.Z)
 					? IslandGeography::UphillCostWeight()
 					: IslandGeography::DownhillCostWeight();
-				AccumulatedMountFatigue += MountFatigue::FatigueForStretch(
+				const float FadigaTrecho = MountFatigue::FatigueForStretch(
 					Horizontal, Peso, MountFatigueRatePerUnit);
+				// MT3: o PESO do pet montado multiplica o cansaco — nunca bloqueia,
+				// so cansa mais (o multiplicador tem teto finito). Peso zero (nenhum
+				// pet definido, dado antigo) cai no neutro.
+				const float MultPeso = (MountedPetWeight > 0.0f)
+					? MountFatigue::WeightMultiplier(
+						MountedPetWeight, MountReferenceWeight, MountMaxWeightMultiplier)
+					: 1.0f;
+				AccumulatedMountFatigue += MountFatigue::FatigueWithWeight(FadigaTrecho, MultPeso);
 				FBattleDebugScreen::Show(
 					FString::Printf(TEXT("cansaco (montado): %.0f"), AccumulatedMountFatigue),
 					0.0f, FColor(210, 180, 120), /*Key=*/733);

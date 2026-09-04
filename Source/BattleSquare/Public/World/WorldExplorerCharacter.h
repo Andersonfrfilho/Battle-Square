@@ -161,6 +161,16 @@ private:
 	UPROPERTY(config, EditDefaultsOnly, Category = "Montaria")
 	float MountFatigueRatePerUnit = 0.0005f;
 
+	/** Peso do pet montado (MT3). Default = referencia -> multiplicador neutro. */
+	float MountedPetWeight = 0.0f;
+
+	/** Peso de referencia e teto do multiplicador de peso — config (MT3). */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Montaria")
+	float MountReferenceWeight = 100.0f;
+
+	UPROPERTY(config, EditDefaultsOnly, Category = "Montaria")
+	float MountMaxWeightMultiplier = 3.0f;
+
 	/** O ganho de velocidade de montaria — config (MT1), afinavel sem recompilar. */
 	UPROPERTY(config, EditDefaultsOnly, Category = "Montaria")
 	float MountSpeedMultiplier = 1.6f;

@@ -42,3 +42,40 @@ bool FMountFatigueBySlopeTest::RunTest(const FString&)
 
 	return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMountFatigueByWeightTest,
+	"BattleSquare.World.Montaria.PesoCansaMaisNuncaBloqueia",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FMountFatigueByWeightTest::RunTest(const FString&)
+{
+	using namespace MountFatigue;
+
+	const float Referencia = 100.0f;
+	const float Teto = 3.0f;
+
+	const float MultLeve = WeightMultiplier(50.0f, Referencia, Teto);
+	const float MultPesado = WeightMultiplier(200.0f, Referencia, Teto);
+
+	// PESADO cansa mais que LEVE — ritmos diferentes.
+	TestTrue(TEXT("pet pesado tem multiplicador maior"), MultPesado > MultLeve);
+
+	// O CONTRAPESO MANDATORIO: o multiplicador e SEMPRE finito — peso nunca
+	// torna o trajeto impossivel. O pet mais pesado do mundo continua no teto,
+	// nunca em infinito.
+	const float MultAbsurdo = WeightMultiplier(100000.0f, Referencia, Teto);
+	TestTrue(TEXT("peso absurdo trava no teto, nunca infinito"),
+		MultAbsurdo <= Teto + KINDA_SMALL_NUMBER);
+	TestTrue(TEXT("o teto e finito e positivo"), MultAbsurdo > 0.0f);
+
+	// Logo, a fadiga do trajeto continua FINITA para qualquer peso — completavel.
+	const float FadigaBase = 500.0f;
+	TestTrue(TEXT("fadiga do pet pesadissimo ainda e finita"),
+		FatigueWithWeight(FadigaBase, MultAbsurdo) < FadigaBase * (Teto + 1.0f));
+
+	// Peso de referencia degenerado nao divide por zero.
+	TestEqual(TEXT("referencia zero da multiplicador neutro"),
+		WeightMultiplier(200.0f, 0.0f, Teto), 1.0f);
+
+	return true;
+}

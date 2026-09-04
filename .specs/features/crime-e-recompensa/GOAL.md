@@ -30,7 +30,7 @@ mundo, e na próxima batalha em que o pet roubado aparecer.
 - [x] **CR2** — roubo é consequência de batalha vencida, e é escolha do vencedor
 - [x] **CR3** — toda transferência de posse por roubo grava trilha de auditoria
 - [x] **CR4** — o poste da praça mostra a lista de procurados
-- [ ] **CR5** — a recompensa é paga pelo criminoso, nunca do nada
+- [x] **CR5** — a recompensa é paga pelo criminoso, nunca do nada
 - [x] **CR6** — pet marcado como roubado não pode ser vendido nem trocado
 - [x] **CR7** — a marca de procurado sobrevive a desconectar
 - [x] **CR8** — o pet roubado se denuncia numa batalha, só para quem viu a lista

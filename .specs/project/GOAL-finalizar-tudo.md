@@ -19,7 +19,7 @@
 
 ## Ordem (do que fecha mais barato ao que é sistema novo)
 
-1. [ ] **crime-e-recompensa/CR5** — recompensa paga pelo criminoso. Pequena,
+1. [x] **crime-e-recompensa/CR5** — recompensa paga pelo criminoso. Pequena,
        fecha 100% do crime. Compõe com a carteira (CI1) e ecoa a decisão 28.
 2. [ ] **mundo-por-biomas** (MB1–MB4) — posto de fronteira, pet muda de elemento
        por bioma, vila veste a cor, desastre muda a vila. Reusa fontes já

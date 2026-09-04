@@ -17,6 +17,7 @@ import { matchCatalog, type CatalogMatch } from './catalog-matching.pure';
 import { buildAssetChains, groupAssetsByFamily, type AssetFamily } from './evolution-chains.pure';
 import { classifyImportedAssets, summarizeClassification, type ClassificationReport } from './imported-assets.pure';
 import type { ImportedAssetsFile } from './imported-assets.schema';
+import { buildUserDecisions, type UserDecision } from './user-decisions.pure';
 
 export const PET_MODELS_HANDOFF_PATH = new URL('../../../../../.specs/handoffs/pets-modelos.json', import.meta.url);
 
@@ -31,12 +32,15 @@ export type PetModelsHandoff = {
   readonly familiasLivres: CatalogMatch['livres'];
   readonly cadeias: readonly AssetFamily[];
   readonly classificacao: ClassificationReport;
+  readonly decisoes: readonly UserDecision[];
 };
 
 export function buildPetModelsHandoff(insumo: ImportedAssetsFile): PetModelsHandoff {
   const assets = classifyImportedAssets(insumo.malhas);
   const families = groupAssetsByFamily(assets);
   const match = matchCatalog({ seed: PET_CATALOG_SEED, assignments: PET_MODEL_ASSIGNMENTS, families });
+  const cadeias = buildAssetChains(assets);
+  const classificacao = summarizeClassification(assets);
   return {
     geradoEm: insumo.geradoEm,
     fonte: 'assets-importados.json',
@@ -44,8 +48,9 @@ export function buildPetModelsHandoff(insumo: ImportedAssetsFile): PetModelsHand
     pets: match.atribuicoes,
     semModelo: match.semModelo,
     familiasLivres: match.livres,
-    cadeias: buildAssetChains(assets),
-    classificacao: summarizeClassification(assets),
+    cadeias,
+    classificacao,
+    decisoes: buildUserDecisions({ classificacao, cadeias, match }),
   };
 }
 

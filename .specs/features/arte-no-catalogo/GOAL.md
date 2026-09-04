@@ -34,21 +34,26 @@ defeitos que só apareceram com nomes reais.
 
 ## PRONTO é isto, e nada menos
 
-- [⛔] **AR4a** — o gerador lê `assets-importados.json` e classifica os 128:
+- [x] **AR4a** — o gerador lê `assets-importados.json` e classifica os 128:
       elemento, estágio, família. O relatório separa o que ele soube do que
-      **não** soube
-- [⛔] **AR4b** — as cadeias de evolução saem nomeadas: as 6 do Ultimate
+      **não** soube (medido em 04/09: 121 criaturas, 6 humanos, 1 prop; 102 com
+      elemento, 19 sem, 1 conflito — `2fde892`)
+- [x] **AR4b** — as cadeias de evolução saem nomeadas: as 6 do Ultimate
       (`Dragon`, `Alpaking`, `Armabee`, `Glub`, `Goleling`, `Mushnub`) e as que
-      os packs novos trouxerem
-- [⛔] **AR4c** — o casamento com o catálogo: cada um dos 115 pets de
+      os packs novos trouxerem (7 assinadas pelo autor + 10 de porte — `9147510`)
+- [x] **AR4c** — o casamento com o catálogo: cada um dos 115 pets de
       `PET_CATALOG_SEED` recebe (ou não) um modelo, pelo ELEMENTO. Pet sem
       modelo é resposta válida e fica registrada — nunca um modelo chutado
-- [⛔] **AR4d** — o resultado vira dado consumível: um mapa
+      (**medido: o seed tem 23 pets, não 115.** 20 vestidos, 3 sem modelo com
+      motivo: Zunido, Candeia, Farol — `758f142`)
+- [x] **AR4d** — o resultado vira dado consumível: um mapa
       `catalogId → asset` que a trilha A vai apontar nos Blueprints
-- [⛔] **AR4e** — a lista curta do que precisa de decisão do USUÁRIO, com o
-      porquê de cada um
-- [⛔] `bun test` verde (o número só sobe a partir de **109**)
-- [⛔] Um commit por caixa, com o motivo
+      (`.specs/handoffs/pets-modelos.json`, chave = **nome** do pet: o C++
+      identifica por `Name` e o catalogId só nasce no seed — `e3501df`)
+- [x] **AR4e** — a lista curta do que precisa de decisão do USUÁRIO, com o
+      porquê de cada um (10 itens em `decisoes` do mesmo JSON, derivados do dado)
+- [x] `bun test` verde (o número só sobe a partir de **109**) — 171
+- [x] Um commit por caixa, com o motivo
 
 ## As invariantes desta trilha
 

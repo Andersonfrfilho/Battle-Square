@@ -697,5 +697,67 @@
         ]
       }
     ]
-  }
+  },
+  "decisoes": [
+    {
+      "id": "elemento-Alien",
+      "pergunta": "Alien (Alien, Alien_Big, Alien_Blob): que elemento?",
+      "porque": "e uma cadeia de evolucao inteira sem pista de elemento no nome; o gerador nao chuta",
+      "desbloqueia": "uma cadeia de 3 estagios para um pet desse elemento"
+    },
+    {
+      "id": "elemento-Alpaking",
+      "pergunta": "Alpaking (Alpaking, Alpaking_Evolved): Terra ou Planta?",
+      "porque": "e uma cadeia de evolucao inteira sem pista de elemento no nome; o gerador nao chuta",
+      "desbloqueia": "uma cadeia de 2 estagios para um pet desse elemento"
+    },
+    {
+      "id": "elemento-Armabee",
+      "pergunta": "Armabee (Armabee, Armabee_Evolved): Ar ou Planta?",
+      "porque": "e uma cadeia de evolucao inteira sem pista de elemento no nome; o gerador nao chuta",
+      "desbloqueia": "uma cadeia de 2 estagios para um pet desse elemento"
+    },
+    {
+      "id": "elemento-Ninja",
+      "pergunta": "Ninja (Ninja_Big, Ninja_Blob): que elemento?",
+      "porque": "e uma cadeia de evolucao inteira sem pista de elemento no nome; o gerador nao chuta",
+      "desbloqueia": "uma cadeia de 2 estagios para um pet desse elemento"
+    },
+    {
+      "id": "elemento-Tribal",
+      "pergunta": "Tribal (Tribal_Big, Tribal_Flying): que elemento?",
+      "porque": "e uma cadeia de evolucao inteira sem pista de elemento no nome; o gerador nao chuta",
+      "desbloqueia": "uma cadeia de 2 estagios para um pet desse elemento"
+    },
+    {
+      "id": "conflito-Bee",
+      "pergunta": "Bee: Planta ou Ar?",
+      "porque": "o nome sugere dois elementos, e o gerador so aceita um",
+      "desbloqueia": "o pet que hoje esta sem modelo por causa dele (ver semModelo)"
+    },
+    {
+      "id": "falta-pack-Luz",
+      "pergunta": "Luz: comprar/importar pack, ou aceitar Candeia e Farol sem modelo?",
+      "porque": "o insumo nao tem nenhuma familia livre desse elemento",
+      "desbloqueia": "os pets desse elemento que hoje ficam sem corpo"
+    },
+    {
+      "id": "cadeias-sem-adulto",
+      "pergunta": "Birb (Birb_Big, Birb_Blob); Cactoro (Cactoro_Big, Cactoro_Blob); Fish (Fish_Big, Fish_Blob): o Big vira Adulto e o Blob Filhote?",
+      "porque": "sao cadeias de porte com Blob e Big mas sem forma do meio, e EPetGrowthStage nasce em Adulto",
+      "desbloqueia": "tres cadeias de dois estagios que hoje ficam livres"
+    },
+    {
+      "id": "sem-pet-Raio",
+      "pergunta": "Raio: criar pet no seed para Hywirl, ou deixar o modelo parado?",
+      "porque": "ha modelo desse elemento e nenhum pet no catalogo para vesti-lo",
+      "desbloqueia": "um pet novo com modelo pronto"
+    },
+    {
+      "id": "sem-pista-soltos",
+      "pergunta": "Cat, Dog, GreenBlob, GreenSpikyBlob, PinkBlob, Slime: que elemento tem cada um — ou ficam de fora?",
+      "porque": "modelos unicos sem pista no nome; sao estoque, nao cadeia, entao decidir nao e urgente",
+      "desbloqueia": "6 modelos a mais no estoque de familias livres"
+    }
+  ]
 }

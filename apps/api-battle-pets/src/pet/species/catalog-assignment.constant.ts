@@ -57,3 +57,9 @@ export const PET_MODEL_ASSIGNMENTS: readonly PetModelAssignment[] = [
   { pet: 'Rajada', familia: 'Pigeon', motivo: 'ar natural: o pombo voando e o Adulto, o Blob e o filhote. Birb nao tem Adulto (so Blob e Big)' },
   { pet: 'Cirro', familia: 'Bat', adulto: 'Bat_CM', motivo: 'ar psiquico; a pele do Cute Monsters e a "veia Pokemon" da decisao 70' },
 ];
+
+/** Opcoes que o GOAL ja sugeriu para as cadeias sem elemento; o resto pergunta aberto. */
+export const SUGGESTED_ELEMENT_OPTIONS: Readonly<Record<string, string>> = {
+  Alpaking: 'Terra ou Planta',
+  Armabee: 'Ar ou Planta',
+};

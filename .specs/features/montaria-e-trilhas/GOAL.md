@@ -19,7 +19,7 @@ tela.
   e isolado, visível na tela
 - [x] **MT3** — pet mais pesado cansa mais no mesmo trajeto, mas nenhum
   trajeto fica impossível por peso
-- [⛔] **MT4** — nem todo pet pode ser montado; dado de save antigo sem o
+- [x] **MT4** — nem todo pet pode ser montado; dado de save antigo sem o
   campo novo carrega com default seguro
 - [⛔] **MT5** — o pet montado é visível na tela, com malha e cor atribuídas e
   testadas no construtor

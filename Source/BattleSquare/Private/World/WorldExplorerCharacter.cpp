@@ -2,6 +2,7 @@
 
 #include "World/WorldExplorerCharacter.h"
 #include "Environment/ScenaryPalette.h"
+#include "World/VillageBuildingArt.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Components/StaticMeshComponent.h"
@@ -603,23 +604,73 @@ static FAutoConsoleCommandWithWorldAndArgs GMontarCommand(
 // MV10 — "de onde veio a malha": reporta os caminhos que a FONTE UNICA resolve.
 // Com isto, "nao apareceu" (componente sem malha) e "veio do lugar errado"
 // (caminho inesperado) viram perguntas diferentes, nao o mesmo silencio.
+namespace DeOnde
+{
+	/** PACOTE quando o caminho sai de /Game/; PRIMITIVA quando cai em /Engine/. */
+	const TCHAR* Origem(const FString& Caminho)
+	{
+		if (Caminho.IsEmpty()) { return TEXT("VAZIO"); }
+		return Caminho.StartsWith(TEXT("/Engine/")) ? TEXT("primitiva") : TEXT("PACOTE");
+	}
+
+	/** Os sete papeis com chave de config, e a primitiva que cada um usa de reserva. */
+	struct FPapel { EScenaryRole Papel; EScenaryPrimitive Reserva; const TCHAR* Rotulo; };
+	const FPapel Papeis[] = {
+		{ EScenaryRole::ForestTree,  EScenaryPrimitive::Cylinder, TEXT("ForestTree")  },
+		{ EScenaryRole::CanopyTree,  EScenaryPrimitive::Cylinder, TEXT("CanopyTree")  },
+		{ EScenaryRole::Rock,        EScenaryPrimitive::Sphere,   TEXT("Rock")        },
+		{ EScenaryRole::DeadWood,    EScenaryPrimitive::Cylinder, TEXT("DeadWood")    },
+		{ EScenaryRole::Undergrowth, EScenaryPrimitive::Sphere,   TEXT("Undergrowth") },
+		{ EScenaryRole::Accent,      EScenaryPrimitive::Cone,     TEXT("Accent")      },
+		{ EScenaryRole::GroundCover, EScenaryPrimitive::Cube,     TEXT("GroundCover") },
+	};
+}
+
+// AR9 — "de onde veio a malha", por PAPEL e por PREDIO.
+//
+// A pergunta que ele responde nao e "existe um caminho?", e sim "esse papel
+// esta vestido de PACOTE ou ainda na PRIMITIVA?". Sem isso, "nao apareceu"
+// (componente sem malha) e "veio do lugar errado" (config apontando pro nada)
+// produzem o MESMO silencio na tela — que e o defeito que este projeto pagou
+// tres vezes com ator invisivel.
 static FAutoConsoleCommandWithWorld GMalhaDeOndeCommand(
 	TEXT("bs.MalhaDeOnde"),
-	TEXT("bs.MalhaDeOnde — mostra os caminhos de malha/material da fonte unica (ScenaryPalette)."),
+	TEXT("bs.MalhaDeOnde — diz, por papel e por predio, se a malha veio do PACOTE ou da primitiva."),
 	FConsoleCommandWithWorldDelegate::CreateStatic(
 		[](UWorld*)
 		{
+			int32 DoPacote = 0;
+			int32 Chave = 735;
+
+			// OS SETE PAPEIS DE CENARIO, um por linha, com a origem dita.
+			for (const DeOnde::FPapel& P : DeOnde::Papeis)
+			{
+				const FString Caminho = ScenaryPalette::MeshPathForRole(P.Papel, P.Reserva);
+				const bool bPacote = !Caminho.StartsWith(TEXT("/Engine/"));
+				if (bPacote) { ++DoPacote; }
+				FBattleDebugScreen::Show(
+					FString::Printf(TEXT("%-12s %s  %s"), P.Rotulo, DeOnde::Origem(Caminho), *Caminho),
+					12.0f, bPacote ? FColor(150, 220, 150) : FColor(200, 190, 140),
+					/*Key=*/Chave++);
+			}
+
+			// OS PREDIOS DA VILA (AR8): quantos ja vestem modelo proprio.
+			int32 PrediosVestidos = 0;
+			int32 PrediosTotal = 0;
+			for (int32 i = 0; i <= static_cast<int32>(EVillageBuilding::Chinampa); ++i)
+			{
+				const EVillageBuilding Predio = static_cast<EVillageBuilding>(i);
+				if (!*VillageBuildingArt::BuildingConfigKey(Predio)) { continue; }
+				++PrediosTotal;
+				if (!VillageBuildingArt::MeshPathFor(Predio).IsEmpty()) { ++PrediosVestidos; }
+			}
+
+			// O PLACAR, que e a resposta a "adotei tudo?".
 			FBattleDebugScreen::Show(
-				FString::Printf(TEXT("malha (fonte unica): cubo=%s | cilindro=%s"),
-					ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cube),
-					ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cylinder)),
-				10.0f, FColor(180, 200, 220), /*Key=*/735);
-			FBattleDebugScreen::Show(
-				FString::Printf(TEXT("malha (fonte unica): esfera=%s | cone=%s | material=%s"),
-					ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Sphere),
-					ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cone),
-					ScenaryPalette::ColorableBaseMaterialPath()),
-				10.0f, FColor(180, 200, 220), /*Key=*/736);
+				FString::Printf(TEXT("ADOCAO: %d/%d papeis e %d/%d predios vestidos de PACOTE"),
+					DoPacote, static_cast<int32>(UE_ARRAY_COUNT(DeOnde::Papeis)),
+					PrediosVestidos, PrediosTotal),
+				12.0f, FColor(180, 220, 255), /*Key=*/Chave);
 		}));
 
 // Marca o pet candidato como montavel (MT4, dev): sem isto, bs.Montar recusa.

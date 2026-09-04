@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "World/Village.h"
+#include "World/VillageBuildingArt.h"
 #include "Environment/BiomeTint.h"
 #include "Environment/IslandGeography.h"
 
@@ -188,12 +189,32 @@ void AVillage::BuildVillage()
 			*FString::Printf(TEXT("Predio_%d"), Indice));
 		Parede->SetupAttachment(VillageRoot);
 		Parede->RegisterComponent();
-		Parede->SetStaticMesh(BoxMesh);
 
-		Parede->SetRelativeScale3D(FVector(
-			(Peca.HalfExtentUnits.X * 2.0f) / Vila::CuboDaEngine,
-			(Peca.HalfExtentUnits.Y * 2.0f) / Vila::CuboDaEngine,
-			Peca.HeightUnits / Vila::CuboDaEngine));
+		// O PRÉDIO VESTE MALHA DE VERDADE quando o dado aponta uma (AR8).
+		// Sem override, cai no cubo de sempre — o jogo fecha verde SEM pacote
+		// (invariante 20). Asset que não carrega também cai no cubo: papel sem
+		// malha nunca fica invisível.
+		const FString CaminhoDaMalha = VillageBuildingArt::MeshPathFor(Peca.Building);
+		UStaticMesh* MalhaDoPredio = CaminhoDaMalha.IsEmpty()
+			? nullptr
+			: LoadObject<UStaticMesh>(nullptr, *CaminhoDaMalha);
+		const bool bMalhaPropria = (MalhaDoPredio != nullptr);
+
+		// ToRawPtr no BoxMesh: ele e TObjectPtr, e o ternario com ponteiro cru
+		// fica ambiguo (os dois lados se convertem um no outro).
+		Parede->SetStaticMesh(bMalhaPropria ? MalhaDoPredio : ToRawPtr(BoxMesh));
+
+		// A ESCALA SAI DA CAIXA MEDIDA, não de um 100 fixo. Malha autorada tem
+		// caixa própria; dividir por 100 (o lado do cubo da engine) a deformaria
+		// — o mesmo motivo pelo qual ForestBackdrop mede a árvore em vez de
+		// fixar altura por espécie.
+		const FVector2D Pegada(Peca.HalfExtentUnits.X * 2.0f, Peca.HalfExtentUnits.Y * 2.0f);
+		const FVector CaixaDaMalha = bMalhaPropria
+			? MalhaDoPredio->GetBoundingBox().GetSize()
+			: FVector(Vila::CuboDaEngine, Vila::CuboDaEngine, Vila::CuboDaEngine);
+
+		Parede->SetRelativeScale3D(
+			VillageBuildingArt::ScaleToFootprint(CaixaDaMalha, Pegada, Peca.HeightUnits));
 		Parede->SetRelativeLocation(FVector(
 			Peca.OffsetUnits.X, Peca.OffsetUnits.Y, Peca.HeightUnits * 0.5f));
 
@@ -207,8 +228,10 @@ void AVillage::BuildVillage()
 		BuiltMeshes.Add(Parede);
 
 		// A PRAÇA não tem telhado: ela é chão, e um telhado sobre ela seria
-		// um galpão no meio da vila.
-		if (Peca.Building != EVillageBuilding::Praca)
+		// um galpão no meio da vila. E o prédio que veste MALHA PRÓPRIA também
+		// não leva: ele já tem telhado no modelo, e um cubo por cima viraria
+		// caixa sobre casa.
+		if (Peca.Building != EVillageBuilding::Praca && !bMalhaPropria)
 		{
 			UStaticMeshComponent* Telhado = NewObject<UStaticMeshComponent>(this,
 				*FString::Printf(TEXT("Telhado_%d"), Indice));

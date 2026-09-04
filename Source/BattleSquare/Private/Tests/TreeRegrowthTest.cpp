@@ -35,5 +35,14 @@ bool FTreeRegrowthDeadlineTest::RunTest(const FString&)
 	// Relógio incoerente: na duvida continua cortada, nao rebrota por engano.
 	TestFalse(TEXT("agora antes do corte nao rebrota"), HasRegrown(Corte, 90, Prazo));
 
+	// QUANTO FALTA (MV5, o que a tela mostra): prazo inteiro no dia do corte,
+	// menos a cada dia, zero quando rebrota — e nunca negativo depois.
+	using TreeRegrowth::DaysUntilRegrowth;
+	TestEqual(TEXT("no corte, falta o prazo inteiro"), DaysUntilRegrowth(Corte, 100, Prazo), 7);
+	TestEqual(TEXT("na metade, falta a metade"), DaysUntilRegrowth(Corte, 103, Prazo), 4);
+	TestEqual(TEXT("no prazo, falta zero"), DaysUntilRegrowth(Corte, 107, Prazo), 0);
+	TestEqual(TEXT("passado o prazo, falta zero, nunca negativo"),
+		DaysUntilRegrowth(Corte, 200, Prazo), 0);
+
 	return true;
 }

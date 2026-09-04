@@ -31,4 +31,14 @@ namespace TreeRegrowth
 	 */
 	BATTLESQUARE_API bool HasRegrown(
 		int32 CutAtWorldAgeDays, int32 CurrentWorldAgeDays, int32 DeadlineDays);
+
+	/**
+	 * Quantos dias de mundo faltam para esta árvore rebrotar (0 se já rebrotou).
+	 *
+	 * É o que a tela mostra (MV5): "corte por perto, rebrota em N dias". Nunca
+	 * negativo — passado o prazo, falta zero, não um número que confundiria com
+	 * "faltam -3 dias".
+	 */
+	BATTLESQUARE_API int32 DaysUntilRegrowth(
+		int32 CutAtWorldAgeDays, int32 CurrentWorldAgeDays, int32 DeadlineDays);
 }

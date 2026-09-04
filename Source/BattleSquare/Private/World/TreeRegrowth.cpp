@@ -23,3 +23,17 @@ bool TreeRegrowth::HasRegrown(
 
 	return Decorrido >= DeadlineDays;
 }
+
+
+int32 TreeRegrowth::DaysUntilRegrowth(
+	int32 CutAtWorldAgeDays, int32 CurrentWorldAgeDays, int32 DeadlineDays)
+{
+	if (HasRegrown(CutAtWorldAgeDays, CurrentWorldAgeDays, DeadlineDays))
+	{
+		return 0;
+	}
+	// Ainda cortada: falta o prazo menos o que ja decorreu. HasRegrown ja
+	// garantiu prazo positivo e decorrido nao-negativo aqui.
+	const int32 Decorrido = CurrentWorldAgeDays - CutAtWorldAgeDays;
+	return FMath::Max(0, DeadlineDays - Decorrido);
+}

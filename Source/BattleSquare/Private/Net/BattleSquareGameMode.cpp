@@ -24,6 +24,7 @@
 #include "Environment/CaveSystem.h"
 #include "Environment/ForestBackdrop.h"
 #include "World/WorldCellKey.h"
+#include "World/TreeRegrowth.h"
 #include "Environment/FreshWater.h"
 #include "Environment/IslandFeatureLayout.h"
 #include "Environment/IslandGeography.h"
@@ -1336,16 +1337,47 @@ void ABattleSquareGameMode::FetchTreeCutsForChunk(const FIntPoint& Chunk, AFores
 			}
 
 			TSet<FString> Cortadas;
+			int32 RebrotaMaisProxima = MAX_int32;
+			ABattleSquareGameMode* OModo = Fraco.Get();
+			const int32 IdadeAgora = OModo ? OModo->CurrentWorldAge.AgeInDays : 0;
+			const int32 Prazo = OModo ? OModo->TreeRegrowthDeadlineDays() : 0;
 			for (const TSharedPtr<FJsonValue>& Item : *Itens)
 			{
 				const TSharedPtr<FJsonObject> Obj = Item->AsObject();
+				if (!Obj.IsValid())
+				{
+					continue;
+				}
 				FString Celula;
-				if (Obj.IsValid() && Obj->TryGetStringField(TEXT("cellKey"), Celula))
+				if (Obj->TryGetStringField(TEXT("cellKey"), Celula))
 				{
 					Cortadas.Add(Celula);
 				}
+				double CarimboDias = 0.0;
+				if (OModo && OModo->CurrentWorldAge.bKnown
+					&& Obj->TryGetNumberField(TEXT("cutAtWorldAgeDays"), CarimboDias))
+				{
+					const int32 Falta = TreeRegrowth::DaysUntilRegrowth(
+						static_cast<int32>(CarimboDias), IdadeAgora, Prazo);
+					RebrotaMaisProxima = FMath::Min(RebrotaMaisProxima, Falta);
+				}
 			}
 			AMata->SuppressCutCells(Cortadas, Quantum);
+
+			// MV5 — o corte pendente por perto aparece na tela (Key 773, nova).
+			// So quando ha corte; some quando nao ha, para nao poluir o painel.
+			if (Cortadas.Num() > 0)
+			{
+				const FString Linha = (RebrotaMaisProxima != MAX_int32)
+					? FString::Printf(TEXT("cortes por perto: %d — rebrota mais proxima em %d dias"),
+						Cortadas.Num(), RebrotaMaisProxima)
+					: FString::Printf(TEXT("cortes por perto: %d"), Cortadas.Num());
+				FBattleDebugScreen::Show(Linha, 0.0f, FColor(200, 160, 120), /*Key=*/773);
+			}
+			else
+			{
+				FBattleDebugScreen::Show(TEXT(""), 0.0f, FColor::White, /*Key=*/773);
+			}
 		});
 
 	Pedido->ProcessRequest();

@@ -25,7 +25,7 @@ namespace MataDoCenario
 	const TCHAR* PastaDaMata = TEXT("/Game/Environment/Nature/");
 
 	/** Primitiva do disco de chão — conteúdo da engine, não vendorizado. */
-	const TCHAR* CilindroDaEngine = TEXT("/Engine/BasicShapes/Cylinder.Cylinder");
+	const TCHAR* CilindroDaEngine = ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cylinder);
 
 	/**
 	 * Primitiva do LADRILHO de chão.
@@ -34,7 +34,7 @@ namespace MataDoCenario
 	 * ladrilhado deixa buraco em cada canto, e o jogador que anda em diagonal
 	 * cai justamente por lá.
 	 */
-	const TCHAR* CuboDaEngine = TEXT("/Engine/BasicShapes/Cube.Cube");
+	const TCHAR* CuboDaEngine = ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cube);
 
 	/**
 	 * Primitiva do MONTE de relevo.
@@ -43,7 +43,7 @@ namespace MataDoCenario
 	 * "montanhas pontudas extremamente esquisitas", e repeti-lo no chão
 	 * espalharia o mesmo defeito por bioma inteiro.
 	 */
-	const TCHAR* EsferaDaEngine = TEXT("/Engine/BasicShapes/Sphere.Sphere");
+	const TCHAR* EsferaDaEngine = ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Sphere);
 
 	/**
 	 * Onde começam os fluxos de sorteio dos montes.

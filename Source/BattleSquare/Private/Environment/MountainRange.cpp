@@ -23,7 +23,7 @@ namespace SerraDoHorizonte
 	 * invisível some do horizonte sem quebrar um teste sequer.
 	 */
 	const TCHAR* MalhaDoCorpo = TEXT("/Game/Environment/Nature/rock_tallA.rock_tallA");
-	const TCHAR* MalhaDeReserva = TEXT("/Engine/BasicShapes/Cone.Cone");
+	const TCHAR* MalhaDeReserva = ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cone);
 
 	/** Quantas montanhas em volta. */
 	constexpr int32 NumeroDePicos = 22;

@@ -18,10 +18,10 @@ namespace MontanhaDaIlha
 	 * Não é o cone: cone escalado continua cone, e foi o cone que o jogador
 	 * chamou de esquisito. Curva se obtém empilhando raios diferentes.
 	 */
-	const TCHAR* MalhaDoCorpo = TEXT("/Engine/BasicShapes/Cylinder.Cylinder");
+	const TCHAR* MalhaDoCorpo = ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cylinder);
 
 	/** O cubo da engine vira patamar quando achatado. */
-	const TCHAR* MalhaDoPatamar = TEXT("/Engine/BasicShapes/Cube.Cube");
+	const TCHAR* MalhaDoPatamar = ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cube);
 
 	/** A pedra esculpida do kit — o que dá curva onde o cilindro dá aresta. */
 	const TCHAR* MalhaDoCostado = TEXT("/Game/Environment/Nature/rock_largeA.rock_largeA");

@@ -20,10 +20,10 @@ namespace VulcaoDaIlha
 	 * dá a mesma silhueta E deixa o topo aberto — e o degrau entre um disco e o
 	 * outro vira, de brinde, a camada de derrame que a encosta vulcânica tem.
 	 */
-	const TCHAR* MalhaDoDisco = TEXT("/Engine/BasicShapes/Cylinder.Cylinder");
+	const TCHAR* MalhaDoDisco = ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cylinder);
 
 	/** O cubo da engine: fecha o anel da cratera e desce como derrame. */
-	const TCHAR* MalhaDoBloco = TEXT("/Engine/BasicShapes/Cube.Cube");
+	const TCHAR* MalhaDoBloco = ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cube);
 
 	/** Quanto cada pedaço de derrame passa do de baixo, para não haver falha. */
 	constexpr float SobreposicaoDoDerrame = 1.4f;
@@ -35,7 +35,7 @@ namespace VulcaoDaIlha
 	constexpr float AberturaEntreDerrames = 16.0f;
 
 	/** A esfera da engine: a fumaça é curva, e cubo de fumaça é caixa voando. */
-	const TCHAR* MalhaDoBafo = TEXT("/Engine/BasicShapes/Sphere.Sphere");
+	const TCHAR* MalhaDoBafo = ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Sphere);
 
 	/** O lado da esfera da engine, em unidades, com escala 1. */
 	constexpr float LadoDaEsfera = 100.0f;

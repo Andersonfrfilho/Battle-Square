@@ -12,10 +12,10 @@
 
 namespace CavernaDaIlha
 {
-	const TCHAR* MalhaDaPedra = TEXT("/Engine/BasicShapes/Cube.Cube");
+	const TCHAR* MalhaDaPedra = ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cube);
 
 	/** O cone da engine: estalactite é literalmente esta forma, de ponta-cabeça. */
-	const TCHAR* MalhaDaPonta = TEXT("/Engine/BasicShapes/Cone.Cone");
+	const TCHAR* MalhaDaPonta = ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cone);
 
 	/** Os fluxos de sorteio, um por assunto e bem separados. */
 	constexpr int32 PrimeiroFluxoDaPoca = 3000;

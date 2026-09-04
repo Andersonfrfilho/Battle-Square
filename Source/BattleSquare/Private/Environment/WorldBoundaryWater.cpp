@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Environment/WorldBoundaryWater.h"
+#include "Environment/ScenaryPalette.h"
 
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -37,14 +38,14 @@ AWorldBoundaryWater::AWorldBoundaryWater()
 	// ator com componente visual e sem asset passa em todo teste de lógica e
 	// não existe na tela.
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> Cilindro(
-		TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
+		ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cylinder));
 	if (Cilindro.Succeeded())
 	{
 		WaterMesh->SetStaticMesh(Cilindro.Object);
 	}
 
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> Basico(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+		ScenaryPalette::ColorableBaseMaterialPath());
 	if (Basico.Succeeded())
 	{
 		WaterMesh->SetMaterial(0, Basico.Object);

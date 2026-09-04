@@ -19,7 +19,7 @@ namespace AuroraDaGeleira
 	 * cortina desapareceria para quem chegasse à geleira pelo outro lado —
 	 * defeito que só aparece a quem der a volta, ou seja, tarde.
 	 */
-	const TCHAR* MalhaDaFita = TEXT("/Engine/BasicShapes/Cube.Cube");
+	const TCHAR* MalhaDaFita = ScenaryPalette::PrimitiveMeshPath(EScenaryPrimitive::Cube);
 
 	/** Abaixo disto a aurora não se vê, e mancha verde no céu é pior que nada. */
 	constexpr float ForcaMinimaVisivel = 0.02f;

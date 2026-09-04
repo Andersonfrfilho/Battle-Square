@@ -16,6 +16,8 @@
 #include "EngineUtils.h"
 #include "World/WorldObstacleBreaking.h"
 #include "World/MountedMovement.h"
+#include "World/MountFatigue.h"
+#include "Environment/IslandGeography.h"
 #include "Net/BattleSquareGameMode.h"
 #include "Environment/RegionResidency.h"
 #include "World/WorldCellKey.h"
@@ -400,6 +402,35 @@ void AWorldExplorerCharacter::Tick(float DeltaSeconds)
 		{
 			RememberSafeGround();
 		}
+	}
+
+	// CANSAÇO DE MONTARIA (MT2): so montado, e proporcional ao PESO de custo do
+	// trecho — subir cansa mais que descer, pelos pesos que a trilha ja usa. E
+	// valor proprio, alheio ao combate: batalha nenhuma o toca.
+	if (WalkSpeedBeforeMount > 0.0f)
+	{
+		const FVector Agora = GetActorLocation();
+		if (!LastFatiguePos.IsZero())
+		{
+			const float Horizontal = FVector2D::Distance(
+				FVector2D(Agora), FVector2D(LastFatiguePos));
+			if (Horizontal > 1.0f)
+			{
+				const float Peso = (Agora.Z >= LastFatiguePos.Z)
+					? IslandGeography::UphillCostWeight()
+					: IslandGeography::DownhillCostWeight();
+				AccumulatedMountFatigue += MountFatigue::FatigueForStretch(
+					Horizontal, Peso, MountFatigueRatePerUnit);
+				FBattleDebugScreen::Show(
+					FString::Printf(TEXT("cansaco (montado): %.0f"), AccumulatedMountFatigue),
+					0.0f, FColor(210, 180, 120), /*Key=*/733);
+			}
+		}
+		LastFatiguePos = Agora;
+	}
+	else
+	{
+		LastFatiguePos = FVector::ZeroVector;
 	}
 
 	CheckFallGuard();

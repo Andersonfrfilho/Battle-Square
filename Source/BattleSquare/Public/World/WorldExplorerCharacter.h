@@ -151,6 +151,16 @@ private:
 	/** Velocidade antes de montar (MT1). > 0 quando montado. */
 	float WalkSpeedBeforeMount = 0.0f;
 
+	/** Cansaço acumulado montado (MT2). Valor NOVO e isolado — nao e HP, nao zera em batalha. */
+	float AccumulatedMountFatigue = 0.0f;
+
+	/** Ultima posicao onde o cansaco foi contado. */
+	FVector LastFatiguePos = FVector::ZeroVector;
+
+	/** Taxa-base de cansaco por unidade andada — config (MT2). */
+	UPROPERTY(config, EditDefaultsOnly, Category = "Montaria")
+	float MountFatigueRatePerUnit = 0.0005f;
+
 	/** O ganho de velocidade de montaria — config (MT1), afinavel sem recompilar. */
 	UPROPERTY(config, EditDefaultsOnly, Category = "Montaria")
 	float MountSpeedMultiplier = 1.6f;

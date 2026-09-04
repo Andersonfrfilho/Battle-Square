@@ -536,6 +536,10 @@ public:
 	void SetRegionRanking(bool bWon);
 
 private:
+	/** A vila neste ponto foi abandonada por um desastre de WorldEvents? (MB4) */
+	bool VilaAbandonadaPorDesastre(const FVector2D& Onde) const;
+
+private:
 	/** Busca os cortes ativos do pedaço e some com as árvores cortadas (MV3). */
 	void FetchTreeCutsForChunk(const FIntPoint& Chunk, class AForestBackdrop* Mata);
 

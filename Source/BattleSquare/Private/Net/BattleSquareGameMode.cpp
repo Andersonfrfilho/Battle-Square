@@ -26,6 +26,7 @@
 #include "World/WorldCellKey.h"
 #include "World/BorderGate.h"
 #include "World/BiomeEncounterFilter.h"
+#include "World/SettlementDisaster.h"
 #include "World/TreeRegrowth.h"
 #include "Environment/FreshWater.h"
 #include "Environment/IslandFeatureLayout.h"
@@ -1385,6 +1386,24 @@ void ABattleSquareGameMode::FetchTreeCutsForChunk(const FIntPoint& Chunk, AFores
 	Pedido->ProcessRequest();
 }
 
+bool ABattleSquareGameMode::VilaAbandonadaPorDesastre(const FVector2D& Onde) const
+{
+	if (!CenaDoMundo)
+	{
+		return false;
+	}
+	// A magnitude do desastre AQUI, pela mesma conta pura de WorldEvents (L-032).
+	const float Magnitude = WorldEvents::EventStrength(
+		static_cast<uint32>(WorldScenerySeed), Onde, CenaDoMundo->GetElapsedHours());
+
+	// O limiar e config (MB4/invariante 2).
+	float Limiar = 0.7f;
+	GConfig->GetFloat(TEXT("/Script/BattleSquare.WorldEvents"),
+		TEXT("SettlementAbandonMagnitude"), Limiar, GGameIni);
+
+	return SettlementDisaster::IsAbandoned(Magnitude, Limiar);
+}
+
 void ABattleSquareGameMode::SetRegionRanking(bool bWon)
 {
 	bRegionRankingWon = bWon;
@@ -1783,7 +1802,13 @@ void ABattleSquareGameMode::ChallengeArena(bool bAutoPlay)
 		return;
 	}
 
-	if (!SettlementEconomy::Offers(CurrentBuildingKind, ESettlementService::PremioDeRanking))
+	// MB4: vila abandonada por desastre nao paga premio — o servico caiu com ela.
+	const APlayerController* CtrlPremio = GetWorld()->GetFirstPlayerController();
+	const APawn* JogadorPremio = CtrlPremio ? CtrlPremio->GetPawn() : nullptr;
+	const bool bVilaCaiu = JogadorPremio
+		&& VilaAbandonadaPorDesastre(FVector2D(JogadorPremio->GetActorLocation()));
+	if (!SettlementDisaster::OffersAfterDisaster(
+			CurrentBuildingKind, ESettlementService::PremioDeRanking, bVilaCaiu))
 	{
 		FBattleDebugScreen::Show(TEXT("esta Arena nao paga premio"),
 			6.0f, FColor::Orange, /*Key=*/-1);
@@ -2500,6 +2525,19 @@ void ABattleSquareGameMode::AnunciarPortaCruzada(EVillageBuilding Predio,
 			TEXT("Posto de Fronteira TRANCADO: vença o ranking da região para passar"),
 			6.0f, FColor(230, 120, 120), /*Key=*/774);
 		return;
+	}
+
+	// CIDADE ABANDONADA POR DESASTRE (MB4): se o lugar foi atingido acima do
+	// limiar, a vila caiu — avisa na tela, e os servicos deixam de valer aqui.
+	{
+		const APlayerController* Ctrl = GetWorld()->GetFirstPlayerController();
+		const APawn* JogadorAqui = Ctrl ? Ctrl->GetPawn() : nullptr;
+		if (JogadorAqui && VilaAbandonadaPorDesastre(FVector2D(JogadorAqui->GetActorLocation())))
+		{
+			FBattleDebugScreen::Show(
+				TEXT("vila ABANDONADA por desastre — sem servicos aqui"),
+				8.0f, FColor(180, 120, 100), /*Key=*/775);
+		}
 	}
 
 	// A porta é quem sabe ONDE o jogador está — e é este estado que os gestos

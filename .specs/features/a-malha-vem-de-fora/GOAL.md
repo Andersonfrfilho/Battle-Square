@@ -34,7 +34,7 @@ existiria sem componente. Nos dois casos, bateria verde e nada na tela.
 - [x] **MV5** — os atores de batalha migram (`PetOwnerView`, `BattleArena`)
 - [x] **MV6** — os atores de mundo migram (`Village`, `GroundUseActor`,
       `FerryActor`, `WorldEncounterActor`, `WorldExplorerCharacter`)
-- [⛔] **MV7** — os atores de cenário migram (`ForestBackdrop`, `MountainRange`,
+- [x] **MV7** — os atores de cenário migram (`ForestBackdrop`, `MountainRange`,
       `WalkableMountain`, `CaveSystem`, `Volcano`, `AuroraCurtain`,
       `WorldBoundaryWater`)
 - [⛔] **MV8** — os cinco de malha procedural pegam MATERIAL pelo dado

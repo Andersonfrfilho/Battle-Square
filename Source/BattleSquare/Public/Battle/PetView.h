@@ -162,6 +162,15 @@ public:
 	static FString CharacterMeshPathForType(const FString& PetType);
 
 	/**
+	 * O caminho da malha deste pet: o CATÁLOGO primeiro, o tipo como reserva.
+	 *
+	 * Exposto para o teste poder cobrar a precedência sem levantar mundo — é a
+	 * regra que decide o que aparece na tela, e regra sem teste é regra que se
+	 * descobre quebrada jogando.
+	 */
+	static FString CharacterMeshPathFor(const FString& PetName, const FString& PetType);
+
+	/**
 	 * Vira para uma posição do MUNDO, não para uma casa da grade.
 	 *
 	 * A casa muda de uma vez; a posição desliza. Olhando para a casa, o pet
@@ -283,6 +292,16 @@ private:
 
 	UPROPERTY()
 	FString PetType;
+
+	/**
+	 * O NOME deste pet, guardado para achar a malha adotada (AR6).
+	 *
+	 * O tipo (`Fogo`, `Agua`) diz a ESCOLA do bicho; o nome diz QUAL bicho. A
+	 * malha adotada é por bicho — e o nome é a chave estável, porque o id de
+	 * catálogo é UUID de banco e muda a cada seed.
+	 */
+	UPROPERTY()
+	FString PetName;
 
 	// Guardadas no CDO para a silhueta poder trocar de adorno em tempo de
 	// execução: o tipo só é conhecido em SetInitialState, e ConstructorHelpers

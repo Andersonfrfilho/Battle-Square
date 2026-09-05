@@ -1,6 +1,7 @@
 // Copyright 2026 Anderson. All Rights Reserved.
 
 #include "Battle/PetView.h"
+#include "Battle/PetModelArt.h"
 #include "Environment/ScenaryPalette.h"
 #include "Battle/BattleTypes.h"
 #include "Components/SceneComponent.h"
@@ -494,6 +495,22 @@ FString APetView::CharacterMeshPathForType(const FString& PetType)
 		PetSilhueta::PrefixoDoPersonagem, *PetType);
 }
 
+FString APetView::CharacterMeshPathFor(const FString& PetName, const FString& PetType)
+{
+	// O NOME manda: a malha adotada é por BICHO (`SK_Dragon`), e o nome é o que
+	// identifica o bicho de forma estável. O tipo só diz a escola dele.
+	const FString DoNome = PetModelArt::MeshPathFor(PetName);
+	if (!DoNome.IsEmpty())
+	{
+		return DoNome;
+	}
+
+	// Reserva: o caminho por TIPO, que existia antes desta feature. Mantido
+	// para não quebrar quem já tivesse um pacote em /Game/Pets/Characters/ —
+	// e porque tirar um caminho que funciona nunca é parte de adicionar outro.
+	return CharacterMeshPathForType(PetType);
+}
+
 void APetView::RefreshCharacterMesh()
 {
 	if (!CharacterMesh)
@@ -501,7 +518,7 @@ void APetView::RefreshCharacterMesh()
 		return;
 	}
 
-	const FString Caminho = CharacterMeshPathForType(PetType);
+	const FString Caminho = CharacterMeshPathFor(PetName, PetType);
 	if (Caminho.IsEmpty())
 	{
 		return;
@@ -642,6 +659,9 @@ void APetView::SetInitialState(const FPetState& InitialState, const FPetPresenta
 	// diferentes ficavam idênticos na tela, e a skill que só um deles tem não
 	// tinha de onde ser adivinhada.
 	PetType = Presentation.Type;
+	// Guardado para a malha adotada (AR6): a malha e por BICHO, e o NOME e a
+	// chave estavel — o id de catalogo e UUID de banco e muda a cada seed.
+	PetName = Presentation.Name;
 
 	// O corpo é gerado a partir do id de CATÁLOGO, não do PetId da partida:
 	// dentro de uma batalha o PetId é só 1 ou 2, e semear por ele daria os

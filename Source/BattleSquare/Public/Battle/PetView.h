@@ -247,6 +247,9 @@ private:
 	/** Carrega o personagem do tipo, se houver um. Sem asset, não mexe em nada. */
 	void RefreshCharacterMesh();
 
+	/** Põe o pet para respirar: a animação PARADA, em laço, sem AnimBP (AR7). */
+	void PlayIdleAnimation(const FString& MeshPath);
+
 	/**
 	 * Quem aparece: personagem OU silhueta, nunca os dois, nenhum se derrotado.
 	 *

@@ -2,12 +2,14 @@
 
 #include "Battle/PetView.h"
 #include "Battle/PetModelArt.h"
+#include "Battle/PetAnimationArt.h"
 #include "Environment/ScenaryPalette.h"
 #include "Battle/BattleTypes.h"
 #include "Components/SceneComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
+#include "Animation/AnimSequence.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
@@ -533,6 +535,35 @@ void APetView::RefreshCharacterMesh()
 	if (Personagem)
 	{
 		CharacterMesh->SetSkeletalMeshAsset(Personagem);
+		PlayIdleAnimation(Caminho);
+	}
+}
+
+void APetView::PlayIdleAnimation(const FString& MeshPath)
+{
+	if (!CharacterMesh)
+	{
+		return;
+	}
+
+	// O PET RESPIRA (AR7). Sem isto ele veste o modelo e fica em pose de
+	// manequim — que na tela lê como "travou", não como "está parado".
+	//
+	// Silencioso como o carregamento da malha, e pelo mesmo motivo: quem não
+	// tem a animação fica na pose, que é visível. Um aviso por pet por partida
+	// afogaria o log de quem depura outra coisa.
+	for (const FString& Candidato : PetAnimationArt::IdleCandidatesFor(MeshPath))
+	{
+		UAnimSequence* Parada = LoadObject<UAnimSequence>(
+			nullptr, *Candidato, nullptr, LOAD_NoWarn | LOAD_Quiet);
+		if (Parada)
+		{
+			// Nó único, sem Animation Blueprint: o AnimBP seria um asset por
+			// esqueleto (são 128), cada um nascendo à mão porque a fábrica
+			// pede o esqueleto e o MCP não passa — a tentativa trava o editor.
+			CharacterMesh->PlayAnimation(Parada, /*bLooping=*/true);
+			return;
+		}
 	}
 }
 

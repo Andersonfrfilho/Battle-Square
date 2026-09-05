@@ -36,7 +36,7 @@ Animation Blueprint —, tudo por MCP, sem clique manual.
       separou (`Boat`, `Dock_*`, `Lure_*`, `FishingRod_*`)
 - [x] **AR5** — os sete papéis apontados em `[/Script/BattleSquare.Art]`, e
       nenhum caindo na primitiva (é edição de `.ini`, não pede build)
-- [⛔] **AR6** — Blueprint por pet: `BlueprintTools.create` + `set_parent`,
+- [x] **AR6** — Blueprint por pet: `BlueprintTools.create` + `set_parent`,
       `SkeletalMeshComponent` com o modelo, e **compilado**
 - [⛔] **AR7** 🧠 (`fable`/`opus`) — o Animation Blueprint: Idle e Walk ligados. As animações já vêm
       nomeadas por ação (Idle, Walk, Punch, Headbutt, HitReact, Death)

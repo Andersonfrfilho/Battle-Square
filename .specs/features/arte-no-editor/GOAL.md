@@ -38,12 +38,12 @@ Animation Blueprint —, tudo por MCP, sem clique manual.
       nenhum caindo na primitiva (é edição de `.ini`, não pede build)
 - [x] **AR6** — Blueprint por pet: `BlueprintTools.create` + `set_parent`,
       `SkeletalMeshComponent` com o modelo, e **compilado**
-- [⛔] **AR7** 🧠 (`fable`/`opus`) — o Animation Blueprint: Idle e Walk ligados. As animações já vêm
+- [x] **AR7** 🧠 (`fable`/`opus`) — o Animation Blueprint: Idle e Walk ligados. As animações já vêm
       nomeadas por ação (Idle, Walk, Punch, Headbutt, HitReact, Death)
 - [x] **AR8** — a VILA veste o Medieval Builder: os 12 prédios de
       `EVillageBuilding` deixam de ser caixa colorida
-- [⛔] Nenhum import com colisão de nome silenciosa
-- [⛔] Um commit por caixa, com o motivo
+- [x] Nenhum import com colisão de nome silenciosa
+- [x] Um commit por caixa, com o motivo
 
 ## As regras desta trilha (todas pagas por medição)
 
